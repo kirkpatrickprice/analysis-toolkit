@@ -42,7 +42,8 @@ function usage () {
                     For container packages, it lists each server and container where the result was found
             -h      this help
 
-        NOTE: This script must be run in a directory containing Linux-Audit-Script results (https://github.com/kirkpatrickprice/linux-audit-script)
+        NOTE:   This script must be run in a directory containing Linux-Audit-Script results 
+                (https://github.com/kirkpatrickprice/linux-audit-script)
     "
 }
 
