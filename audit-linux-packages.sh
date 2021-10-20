@@ -75,6 +75,7 @@ function OS_Packages {
     MAX_LENGTH=$((MAX_LENGTH+3))
 
     #Format and print the results with hyperlinks
+    printf "\nOperating System Packages\n"
     for (( i=0; i<$RESULTS_COUNT; i++)); do 
         # Eliminate the trailing newline captured in the results
         RESULT="$(echo -e ${RESULTS[$i]} | awk '{ gsub(/\n$/,"",$0); print $0 }')"
@@ -126,6 +127,7 @@ function Container_Packages {
     MAX_LENGTH=$((MAX_LENGTH+3))
 
     #Format and print the results with hyperlinks
+    printf "\nContainer Packages\n"
     for (( i=0; i<$RESULTS_COUNT; i++)); do 
         # Eliminate the trailing newline captured in the results
         RESULT="$(echo -e ${RESULTS[$i]} | awk '{ gsub(/\n$/,"",$0); print $0 }')"
