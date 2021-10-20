@@ -17,13 +17,17 @@ Installation is as simple as cloning this repo to your system.
 
 Change to your favorite location where you'd like to install them.  A sub-directory will be created called `analysis-toolkit`.  If you're not sure where to put them, use your Windows Downloads directory if you're using WSL (the examples below assume this is your path).
 
-`cd /mnt/c/Users/RandyBartels/Downloads/`
-`git clone https://github.com/kirkpatrickprice/analysis-toolkit`
+```
+cd /mnt/c/Users/RandyBartels/Downloads/
+git clone https://github.com/kirkpatrickprice/analysis-toolkit
+```
 
 Edit your user's .bashrc file
+
 `nano ~/.bashrc`
 
 And add the `analysis-toolkit` directory to your path by appending the following to the end of the file
+
 `export PATH="${HOME}/tools:/mnt/c/Users/RandyBartels/Downloads/analysis-toolkit:${PATH}"`
 
 With the `analysis-toolkit` in your path, you will be able to use these commands anywhere in your Bash shell prompt.
