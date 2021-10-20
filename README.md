@@ -17,6 +17,8 @@ Installation is as simple as cloning this repo to your system.
 
 Change to your favorite location where you'd like to install them.  A sub-directory will be created called `analysis-toolkit`.  If you're not sure where to put them, use your Windows Downloads directory if you're using WSL (the examples below assume this is your path).
 
+I also recommend that you use the Windows Terminal app available from the Microsoft Store.  Among other numerous benefits, this will allow to click on hyperlinks created by some of the tools.
+
 ```
 cd /mnt/c/Users/RandyBartels/Downloads/
 git clone https://github.com/kirkpatrickprice/analysis-toolkit
