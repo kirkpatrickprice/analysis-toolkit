@@ -12,12 +12,13 @@ The scripts have been tested and are usually used on Ubuntu distributions. They 
 
 For KP auditors, I strongly recommend following the [Getting started with WSL](https://kirkpatrickprice.atlassian.net/l/c/jP0AuG7j) and [Bashing Our Way to Efficient Audits](https://kirkpatrickprice.atlassian.net/l/c/6oaQWQpv) pages on Confluence.
 
+
+I also recommend that you use the Windows Terminal app available from the Microsoft Store.  Among other numerous benefits, this will allow to click on hyperlinks created by some of the tools.
+
 ## Installation ##
 Installation is as simple as cloning this repo to your system.
 
 Change to your favorite location where you'd like to install them.  A sub-directory will be created called `analysis-toolkit`.  If you're not sure where to put them, use your Windows Downloads directory if you're using WSL (the examples below assume this is your path).
-
-I also recommend that you use the Windows Terminal app available from the Microsoft Store.  Among other numerous benefits, this will allow to click on hyperlinks created by some of the tools.
 
 ```
 cd /mnt/c/Users/RandyBartels/Downloads/
