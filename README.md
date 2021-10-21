@@ -37,7 +37,8 @@ With the `analysis-toolkit` in your path, you will be able to use these commands
 
 ## Updating the toolkit ##
 Change to the analysis-toolkit directory
-    `cd /mnt/c/Users/RandyBartels/Downloads/analysis-toolkit`
+
+`cd /mnt/c/Users/RandyBartels/Downloads/analysis-toolkit`
 
 And issue the following `git` commands.  All local changes will be overwritten.
 ```

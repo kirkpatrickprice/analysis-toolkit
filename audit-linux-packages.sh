@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Change log
-#   0.1    Initially, this works on Ubuntu server results (maybe even all Debian-based distros).  RPM-based distros will be added later.
+#   0.1     Initially, this works on Ubuntu server results (maybe even all Debian-based distros).  RPM-based distros will be added later.
+#   0.1.1   Added Verbose output to the -f option to display individual server package update counts per month
 
 # Bring in our shared functions
 source functions.inc.sh
@@ -29,17 +30,18 @@ function usage () {
     Analyze Linux servers for missing, important package updates.
 
     USAGE:
-        $(basename $0) [ -cdho ] [ -f MONTH_COUNT ]
+        $(basename $0) [ -cdhov ] [ -f MONTH_COUNT [-v] ]
         Options:
             -o      DEFAULT ACTION 
                     Print the missing OS package updates (using the \"interesting\" packages list)
             -c      Print the missing container package updates (using the \"interesting\" packages list)
             -f      Audit package manager logs/package install dates for patching frequency by month
                     Only works on OS packages (not on container packages)
-                    MONTH_COUNT is how many months to count backwards -- always counted from today
-            -v      Print details for each missing package update.  Must be used with either -o or -c
+                    MONTH_COUNT is how many months to count backwards -- always counted from the current month
+            -v      Print details for each missing package update.  Must be used with either -o, -c or -f
                     For OS packages, it lists each server where the result was found
                     For container packages, it lists each server and container where the result was found
+                    For frequency counts, it also lists the individual hits for each system in the sample
             -h      this help
 
         NOTE:   This script must be run in a directory containing Linux-Audit-Script results 
@@ -48,7 +50,7 @@ function usage () {
 }
 
 function OS_Packages {
-    # SECTION_HEADER and PACKAGES are just inputs to Grep.  Any grep-able regular expression is acceptable.
+    # SECTION_HEADER is just an input to Grep.  Any grep-able regular expression is acceptable.
     SECTION_HEADER="System_PackageManagerUpdates"
 
     readarray RESULTS < <(searchfor.sh "${SECTION_HEADER}.*=>" | 
@@ -97,6 +99,15 @@ function Frequency {
         DATESTR=$(date -d "$(date +%Y-%m-1) -$n month" +%Y-%m)
         COUNT=$(searchfor.sh "${SECTION_HEADER}.*${DATESTR}" | wc -l)
         printf "%s: %d\n" ${DATESTR} ${COUNT}
+
+        #If the Verbose option is set and there were results for the current month, provide per-item counts for each month.
+        if [[ ${OPTIONS[Verbose]} -eq 1 ]] && [[ ${COUNT} -gt 0 ]]; then
+            for ITEM in $(ls); do
+                ITEM_COUNT=$(grep "${SECTION_HEADER}.*${DATESTR}" ${ITEM} | wc -l)
+                MAX_WIDTH=$(file-width.sh)
+                printf "\t%-${MAX_WIDTH}s:\t%d\n" ${ITEM} ${ITEM_COUNT}
+            done
+        fi
     done
 }
 
@@ -190,8 +201,8 @@ fi
 
 #Check if Verbose was used without either OS_Packages or Container_Packages options
 if [[ ${OPTIONS[Verbose]} -eq 1 ]]; then
-    if [[ ${OPTIONS[OS_Packages]} -eq 0 ]] && [[ ${OPTIONS[Container_Packages]} -eq 0 ]]; then
-        printf "Verbose was used, but requires either -o or -c options.\n"
+    if [[ ${OPTIONS[OS_Packages]} -eq 0 ]] && [[ ${OPTIONS[Container_Packages]} -eq 0 ]] && [[ ${OPTIONS[Frequency]} -eq 0 ]]; then
+        printf "Verbose was used, but requires -o, -c or -f options.\n"
         usage
         EXITCODE=1
         exit $EXITCODE
