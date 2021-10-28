@@ -3,7 +3,9 @@
 # Change log
 #   0.1     Initially, this works on Ubuntu server results (maybe even all Debian-based distros).  RPM-based distros will be added later.
 #   0.1.1   Added Verbose output to the -f option to display individual server package update counts per month
-#   0.1.2   Added EMAIL servers for both MTAs and IMAP servers
+#   0.1.2   Added EMAIL and DNS servers 
+
+VERSION=0.1.2
 
 # Bring in our shared functions
 source functions.inc.sh
@@ -18,6 +20,8 @@ PACKAGES+=( ansible chef chrony ftpd gdm jenkins jq libc linux-headers linux-ima
 PACKAGES+=( containerd docker etcd kubectl kubernetes )
 #Add some WEB, PROXY and APPLICATION SERVERS to the array
 PACKAGES+=( apache2 java jetty lighttpd nginx nodejs openjdk squid tomcat )
+#Add some popular DNS servers to the array
+PACKAGES+=( bind dnsmasq maradns nsd yadifa )
 # Add some EMAIL servers to the array
 PACKAGES+=( dovecot exim4 postfix qmail sendmail )
 #Add some DATABASE SERVERS to the array
@@ -29,6 +33,7 @@ PACKAGES+=( aide apparmor clamav openvpn selinux snort tripwire )
 
 function usage () {
     echo "
+    audit-linux-packages.sh Version $VERSION
 
     Analyze Linux servers for missing, important package updates.
 
