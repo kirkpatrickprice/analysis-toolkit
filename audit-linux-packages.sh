@@ -63,6 +63,7 @@ function OS_Packages {
         grep "$INTERESTING" )
 
     # Get the longest result so we can set up some columns to print the results
+    SAVEIFS=$IFS
     IFS='::'                            #Set IFS to something that won't be seen so it doesn't mangle the line on every [SPACE]
     MAX_LENGTH=0
     RESULTS_COUNT=${#RESULTS[@]}
@@ -90,6 +91,7 @@ function OS_Packages {
             done
         fi
     done
+    IFS=$SAVEIFS
 }
 
 function Frequency {
@@ -124,6 +126,7 @@ function Container_Packages {
         grep "$INTERESTING" )
 
     # Get the longest result so we can set up some columns to print the results
+    SAVEIFS=$IFS
     IFS='::'                            #Set IFS to something that won't be seen so it doesn't mangle the line on every [SPACE]
     MAX_LENGTH=0
     RESULTS_COUNT=${#RESULTS[@]}
@@ -159,6 +162,7 @@ function Container_Packages {
                     }'
         fi
     done
+    IFS=$SAVEIFS
 }
 
 declare -A OPTIONS
