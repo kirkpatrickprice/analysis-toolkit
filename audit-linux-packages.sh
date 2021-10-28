@@ -3,6 +3,7 @@
 # Change log
 #   0.1     Initially, this works on Ubuntu server results (maybe even all Debian-based distros).  RPM-based distros will be added later.
 #   0.1.1   Added Verbose output to the -f option to display individual server package update counts per month
+#   0.1.2   Added EMAIL servers for both MTAs and IMAP servers
 
 # Bring in our shared functions
 source functions.inc.sh
@@ -15,8 +16,10 @@ declare -a PACKAGES
 PACKAGES+=( ansible chef chrony ftpd gdm jenkins jq libc linux-headers linux-image linux-modules ntpd openssh puppet samba snapd timesyncd xserver )
 #Add CONTAINER packages to the packages array
 PACKAGES+=( containerd docker etcd kubectl kubernetes )
-#Add some WEB,PROXY and APPLICATION SERVERS to the array
+#Add some WEB, PROXY and APPLICATION SERVERS to the array
 PACKAGES+=( apache2 java jetty lighttpd nginx nodejs openjdk squid tomcat )
+# Add some EMAIL servers to the array
+PACKAGES+=( dovecot exim4 postfix qmail sendmail )
 #Add some DATABASE SERVERS to the array
 PACKAGES+=( cassandra elastic mysql postgres )
 #Add some AUTHENTICATION SERVERS to the array
