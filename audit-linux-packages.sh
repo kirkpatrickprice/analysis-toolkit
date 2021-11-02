@@ -4,6 +4,7 @@
 #   0.1     Initially, this works on Ubuntu server results (maybe even all Debian-based distros).  RPM-based distros will be added later.
 #   0.1.1   Added Verbose output to the -f option to display individual server package update counts per month
 #   0.1.2   Added EMAIL and DNS servers 
+#   0.1.3   Rename "usage" to "usage_local" to support changes made in functions.inc.sh for "long options"
 
 VERSION=0.1.2
 
@@ -31,7 +32,7 @@ PACKAGES+=( 389-ds apacheds openldap sssd )
 #Add some SECURITY packages to the array
 PACKAGES+=( aide apparmor clamav openvpn selinux snort tripwire )
 
-function usage () {
+function usage_local () {
     echo "
     audit-linux-packages.sh Version $VERSION
 
@@ -203,7 +204,7 @@ else
                 MONTH_COUNT=$((OPTARG-1))
                 ;;
             * )
-                usage
+                usage_local
                 EXITCODE=1
                 exit $EXITCODE
                 ;;
@@ -215,7 +216,7 @@ fi
 if [[ ${OPTIONS[Verbose]} -eq 1 ]]; then
     if [[ ${OPTIONS[OS_Packages]} -eq 0 ]] && [[ ${OPTIONS[Container_Packages]} -eq 0 ]] && [[ ${OPTIONS[Frequency]} -eq 0 ]]; then
         printf "Verbose was used, but requires -o, -c or -f options.\n"
-        usage
+        usage_local
         EXITCODE=1
         exit $EXITCODE
     fi
