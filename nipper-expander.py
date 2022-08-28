@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 
+"""
+Process a Nipper CSV export to create one row for each device where each finding was observed.
+This allows eaier analysis using Excel, such as with PivotTables.
+"""
+
 import csv
 import argparse
 
@@ -22,16 +27,22 @@ with open(args.infile, newline='') as csvinfile:
     fieldnames=csvreader.fieldnames
     csvwriter=csv.DictWriter(csvoutfile, fieldnames=fieldnames)
     csvwriter.writeheader()
+    #Initialize some counters so we can list a summary of the work done at the end.
     finding_counter=0
     row_counter=0
-#    finaldata=[]
+
+    #For each list in the original file
     for record in csvreader:
+        #The Nipper CSV file lists mulitple devices on a single row.  They are listed in the 'Devices' column and separate with a Carriage Return
+        #We split them out there into a Python list.  We'll iterate through them in the for loop a few lines down.
         devices=record['Devices'].split('\r')
+        
+        #We need to create a fresh 'Row' dictionary each time through to avoid contamination on subsequent passes
         row={}
-        #row['Devices']=[]
         finding_counter += 1
         for device in devices:
             row_counter += 1
+            #Create our new 'expanded' row
             row['Issue Title']=record['Issue Title']
             row['Devices'] = device.strip()
             row['Rating'] = record['Rating']
@@ -39,8 +50,13 @@ with open(args.infile, newline='') as csvinfile:
             row['Impact'] = record['Impact']
             row['Ease'] = record['Ease']
             row['Recommendation'] = record['Recommendation']
+            
+            #Print a summary of the row to the screen
             print('Row#:%d\t%s\t%s' % (row_counter, row['Issue Title'], row['Devices']))
+            
+            #Write the row to the new 'expanded' file
             csvwriter.writerow(row)
     csvoutfile.close()
 
+#Print the final summary
 print('\n\n%d findings expanded into %d rows.\n\nYou can now open the %s file in Excel' % (finding_counter, row_counter, outfile))
