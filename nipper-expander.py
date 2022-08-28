@@ -1,28 +1,81 @@
 #!/usr/bin/python3
 
+version="0.1.2"
+
+"""Change History
+#0.1    Initial version
+#0.1.1  Typos and code clean-up, add more comments
+#0.1.2  Auto-select the file if only one CSV file is present in the present working directory / otherwise print appropriate messages
+        Add try-except blocks to catch CTRL-C KeyboardInterrupt
 """
-Process a Nipper CSV export to create one row for each device where each finding was observed.
+
+desc="""Process a Nipper CSV export to create one row for each device where each finding was observed.
 This allows easier analysis using Excel, such as with PivotTables.
+The input file will be autoselected if only one CSV file is in the current directory.
+If more than one CSV is present, a choice will be offered.
 """
 
 import csv
 import argparse
 import sys
+import os
 
-version="0.1.1"
-
-parser = argparse.ArgumentParser(prog=sys.argv[0], description='Expand Nipper CSV file into one line per finding instance')
-parser.add_argument('infile', help="Nipper CSV filename")
+parser = argparse.ArgumentParser(prog=sys.argv[0].split('/')[-1], description=desc)
+parser.add_argument('-i', '--infile', dest='infile', help="Nipper CSV filename")
 parser.add_argument('--version', '-v', action='version', version='%(prog)s v'+version)
 
 args=parser.parse_args()
 
-outfile=args.infile.split('.')[0] + '-expanded.csv'
-print('Infile : %s\nOutfile: %s' % (args.infile, outfile))
+# If an infile was specified, use it
+if args.infile:
+    infile=args.infile
+else:
+    #Get a directory listing of all CSV files in the current director
+    dirlist=[x for x in os.listdir('.') if x.endswith('.csv')]
+    if len(dirlist) == 0:
+        print ('No CSV files found.  Change to a directory with a Nipper CSV file or use the --infile to specify the input file')
+        quit()
+    elif len(dirlist) == 1:
+        infile=(dirlist[0])
+    else:
+        #if more than one CSV file is found, print the results and provide the user a choice
+        print ('Multiple CSV files found.  Use "nipper-expander.py --infile <filename>" to specify the input file or choose from below.')
+        for n,f in enumerate(dirlist):
+            print ('%3d) %s' % (n+1,f))
+        print()
+        try:
+            choice=int(input('Choose a file or press CTRL-C to quit: '))
+        except KeyboardInterrupt:
+            print()
+            print('Exiting...')
+            print()
+            quit()
+        except ValueError:
+            print()
+            print('Specify the line number (digits only)')
+            print()
+            quit()
+        else:
+            try:
+                infile=dirlist[choice-1]
+            except IndexError:
+                print()
+                print('Invalid line number selected')
+                print()
+                quit()
 
-confirm=input("\nPress ENTER to continue or CTRL-C to quit")
+outfile=infile.split('.')[0] + '-expanded.csv'
+print('Infile : %s\nOutfile: %s' % (infile, outfile))
 
-with open(args.infile, newline='') as csvinfile:
+try:
+    confirm=input("\nPress ENTER to continue or CTRL-C to quit")
+except KeyboardInterrupt:
+    print()
+    print('Exiting...')
+    quit()
+
+
+with open(infile, newline='') as csvinfile:
     csvreader=csv.DictReader(csvinfile)
     csvoutfile=open(outfile, 'w')
     fieldnames=csvreader.fieldnames
