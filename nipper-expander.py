@@ -2,15 +2,16 @@
 
 """
 Process a Nipper CSV export to create one row for each device where each finding was observed.
-This allows eaier analysis using Excel, such as with PivotTables.
+This allows easier analysis using Excel, such as with PivotTables.
 """
 
 import csv
 import argparse
+import sys
 
-version="0.1"
+version="0.1.1"
 
-parser = argparse.ArgumentParser(prog='nipper-expander.py', description='Expand Nipper CSV file into one line per finding instance')
+parser = argparse.ArgumentParser(prog=sys.argv[0], description='Expand Nipper CSV file into one line per finding instance')
 parser.add_argument('infile', help="Nipper CSV filename")
 parser.add_argument('--version', '-v', action='version', version='%(prog)s v'+version)
 
@@ -31,7 +32,7 @@ with open(args.infile, newline='') as csvinfile:
     finding_counter=0
     row_counter=0
 
-    #For each list in the original file
+    #For each row in the original file
     for record in csvreader:
         #The Nipper CSV file lists mulitple devices on a single row.  They are listed in the 'Devices' column and separate with a Carriage Return
         #We split them out there into a Python list.  We'll iterate through them in the for loop a few lines down.
