@@ -6,7 +6,7 @@ version="0.1.2"
 #0.1    Initial version
 #0.1.1  Typos and code clean-up, add more comments
 #0.1.2  Auto-select the file if only one CSV file is present in the present working directory / otherwise print appropriate messages
-        Add try-except blocks to catch CTRL-C KeyboardInterrupt
+        Add try-except blocks to catch CTRL-C KeyboardInterrupt and for file selection errors
 """
 
 desc="""Process a Nipper CSV export to create one row for each device where each finding was observed.
@@ -46,22 +46,16 @@ else:
         try:
             choice=int(input('Choose a file or press CTRL-C to quit: '))
         except KeyboardInterrupt:
-            print()
-            print('Exiting...')
-            print()
+            print('\nExiting...\n')
             quit()
         except ValueError:
-            print()
-            print('Specify the line number (digits only)')
-            print()
+            print('\nSpecify the line number (digits only)\n')
             quit()
         else:
             try:
                 infile=dirlist[choice-1]
             except IndexError:
-                print()
-                print('Invalid line number selected')
-                print()
+                print('\nInvalid line number selected\n')
                 quit()
 
 outfile=infile.split('.')[0] + '-expanded.csv'
@@ -70,9 +64,7 @@ print('Infile : %s\nOutfile: %s' % (infile, outfile))
 try:
     confirm=input("\nPress ENTER to continue or CTRL-C to quit")
 except KeyboardInterrupt:
-    print()
-    print('Exiting...')
-    quit()
+    print('\nExiting...\n')
 
 
 with open(infile, newline='') as csvinfile:
