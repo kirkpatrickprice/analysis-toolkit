@@ -1,0 +1,247 @@
+---
+# This file /should/ work well on most Debian-based Linux distro, which includes Ubuntu that we're likely to see in many customer environments.
+
+# Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
+#   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
+#   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
+#   maxResults:   How many results to return (default=0 or ALL)
+#   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
+#   groupList:    Regex groups to display.  See Python regex help on the Interwebs for more details, but groups are specified with '(Grouped Text)' syntax
+#   unique:       Display only one instance of each unique line from all files (similar to sort -u)
+#   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
+
+###################################################################
+######################### System_* items ##########################
+###################################################################
+
+01_system_01_kpnixversion:
+  regex: 'KPNIXVERSION:.*'
+  maxResults: 1
+  onlyMatching: True
+01_system_02_os_version:                                                     # Debian uses the PRETTY_NAME consistently
+  regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<os_version>.*)'  # Use regex groups.  The first group is non-capturing (?:...)
+  maxResults: 1                                                           # Only grab the first hit / will be faster as it will move to on the next file right away
+  onlyMatching: True
+  groupList:
+    - 'os_version'
+01_system_02_os_version_rpm:
+  # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
+  regex: 'System_VersionInformation::/etc/system-release::'
+  maxResults: 1
+01_system_03_file_system_encryption:                                         # Are there any systems using Linux-provided encypted file system capabilities                
+ regex: 'System_FSEncryption::'
+ truncate: True
+01_system_04_file_system_mounts:                                             # One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
+  regex: 'System_FSMounts.*active'                                        # including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
+01_system_05_supported_file_systems:                                         # List the supported and disabled file systems
+  regex: 'System_FSModules'
+01_system_06_apparmor_status:
+  regex: 'System_MACAppArmorInfo::(.*module|[0-9])|(.*profiles.*loaded)|([0-9].*profiles.*complain)|([0-9].*profiles.*enforce mode)|([0-9].*processes.*defined)|([0-9].*processes.*enforce mode)|([0-9].*processes.*complain)'
+01_system_07_aslr_config:
+  regex: 'System_MemoryASLRConfig::'
+01_system_08_suid_coredump:
+  regex: 'System_MemoryCoreDump::fs.suid_dumpable'
+01_system_09_installed_packages_deb:
+  regex: 'System_PackageInstalledSoftware::(?P<pkg_name>\w+).*install'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+01_system_09_installed_packages_rpm:
+  regex: 'System_PackageInstalledSoftware::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+    - 'install_date'
+01_system_10_package_history_deb:
+  regex: 'System_PackageInstalledSoftware::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
+  onlyMatching: True
+  groupList:                                                                    # Print the package name first (G2), followed by the date (G1)
+    - 'pkg_name'
+    - 'install_date'
+01_system_11_pending_package_updates_labeled_deb:                                             # This config uses grouping to grab the package name (G1), the current version (G2) and the pending version (G3)
+  regex: 'System_PackageManagerUpdates::\s+(?P<pkg_name>.+)\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+    - 'cur_version'
+    - 'pend_version'
+01_system_11_pending_package_updates_labeled_rpm:
+  regex: 'System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?P<pkg_name>[\w\-.]+)\s+(?P<pend_version>[\w\-.]+)'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+    - 'pend_version'
+01_system_12_pending_package_updates_raw_deb:
+  regex: 'System_PackageManagerUpdates::\s+(.+)\s+[(](.+)\s=>\s+(.+)[)]'        # This config gives you the yum update results exactly as it appears in the file
+01_system_12_pending_package_updates_raw_rpm:
+  regex: 'System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)[\w\-.]+\s+[\w\-.]'
+01_system_13_running_processes:
+  regex: 'System_RunningProcesses::(?!.*\[\w.*?\]$)'                            # Uses negative look-ahead '(?!...)' to ignore anything that ends with [...] which are system process names and probably not useful
+
+###################################################################
+######################### Networking items ########################
+###################################################################
+
+02_network_01_ping_results:
+  regex: 'Network_ConnectivityTest::[0-9]+ packets transmitted'
+02_network_02_dns_nameserver:
+  regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver'
+02_network_03_icmp_redirect:
+  regex: 'Network_ICMPRedirect::'
+02_network_04_ip_addresses:                                                        # Capture both ipv4 and ipv6 addresses in one file
+  regex: 'Network_InterfacesIPAddress::\s*inet'
+02_network_05_ip_forwarding:
+  regex: 'Network_IPForwarding::'
+02_network_06_listening_services:                                                                                      # Grab IPv4 and IPv6 listening ports and responsible binary
+  regex: 'Network_ListeningServicesSS::(?P<proto>udp|tcp).*?(?P<listening_port>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*?:\d{1,5}|\[.*\]:\d{1,5}).*?\(\("(?P<binary>.*?)".*'
+  groupList:
+    - 'proto'
+    - 'listening_port'
+    - 'binary'
+  onlyMatching: True
+
+###################################################################
+############################ SSH items ############################
+###################################################################
+
+03_ssh_01_permit_root_logon:
+  regex: 'Network_OpenSSHServerConfig::permitrootlogin'
+03_ssh_02_user_auth:
+  regex: 'Network_OpenSSHServerConfig::(passwordauthentication|usepam)'
+03_ssh_03_timeout:
+  regex: 'Network_OpenSSHServerConfig::clientalive'
+03_ssh_04_forwarding:
+  regex: 'Network_OpenSSHServerConfig::(disableforwarding|x11forwarding|allowtcpforwarding|allowagentforwarding|gatewayports)'
+03_ssh_05_crypto:
+  regex: 'Network_OpenSSHServerConfig::(ciphers|macs|kexalgorithms|hostbasedacceptedkeytypes)'
+03_ssh_06_crypto_weak_moduli:
+  regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535)'
+  groupList:
+    - 'mod_size'
+  unique: True
+03_ssh_07_subsystems:
+  regex: 'Network_OpenSSHServerConfig::subsystem'
+
+###################################################################
+######################### System Services #########################
+###################################################################
+
+04_services_01_system_services:
+  regex: 'Network_ServiceInfo::(?P<svc_name>.*?)\s(?P<status>enabled|disabled|generated|static|transient|masked|indirect).*'
+  groupList:
+    - 'svc_name'
+    - 'status'
+  onlyMatching: True
+04_services_02_nfs_status:
+  regex: 'Network_SharesNFS:: .*_status:'
+04_services_03_smb_status:
+  regex: 'Network_SharesSamba:: .*_status:'
+04_services_04_snmp_status:
+  regex: 'Network_SNMPInfo:: snmpd_status:'
+04_services_05_ntp_status:
+  regex: 'Network_NTP-(?P<ntp_type>ntpd|chronyc|timesyncd)::(?P<status>.*)'
+  groupList:
+    - 'ntp_type'
+    - 'status'
+04_services_06_ntp_version:
+  regex: 'Network_NTP-.*version'
+04_services_07_time_config:
+  regex: 'Network_NTP::.*?(ntp.conf|xntp.conf|chrony.conf|timesyncd.conf)::.*?(server|pool|restrict|peer|allow|deny|log|NTP)'
+
+###################################################################
+######################## Security Services ########################
+###################################################################
+
+05_security_01_fim_config:
+  regex: 'Security_HidsAIDEConfig::'
+05_security_02_carbonblack_status:
+  regex: 'Security_HidsCarbonBlack::(?!UID)'
+05_security_03_ossec_status:
+  regex: 'Security_HidsOSSECConfig::'
+05_security_04_tripwire_status:
+  regex: 'Security_HidsOSSECConfig::'
+05_security_05_ipsec_config:
+  regex: 'Security_IPSecConfig'
+05_security_06_openldap_config:
+  regex: 'Security_OpenLDAPConfig::'
+05_security_07_openvpn_config:
+  regex: 'Security_OpenVPNConfig'
+
+###################################################################
+########################## Logging Items ##########################
+###################################################################
+
+06_logging_01_auditd_status:
+  regex: 'Logging_Auditd((Status:: auditd_status:)|RunningConfig)'
+06_logging_02_auditd_setuid:
+  regex: 'Logging_AuditdSETUID::'
+06_logging_03_syslog_config:
+  regex: 'Logging_Syslog(rsyslogd|syslogd|syslogng)Config::((\s\w*)_status:|/etc/.*?\.conf::\w+)'
+06_logging_04_logrotate_config:
+  regex: 'Logging_SyslogLogrotateConfig::'
+06_logging_05_var_log_list:
+  regex: 'Logging_SamplesVarLogList::'
+06_logging_06_logging_samples:
+  regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
+  groupList:
+    - 'logfile'
+    - 'head_tail'
+    - 'logentry'
+  onlyMatching: True
+
+###################################################################
+########################### Users Items ###########################
+###################################################################
+
+07_users_01_blank_passwd:
+  regex: 'Users_BlankPasswd::'
+07_users_02_default_passwd_hash:
+  regex: '(Users_DefaultSettings::/etc/login.defs::ENCRYPT_METHOD)|(Users_PAMConfig::/etc/pam.d/common-password::password.*pam_unix.so)'
+07_users_03_etc_passwd_raw:
+  regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
+07_users_04_etc_passwd_labeled:
+  regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
+  groupList:
+    - 'username'
+    - 'uid'
+    - 'gid'
+    - 'default_group'
+    - 'home_path'
+    - 'shell'
+  onlyMatching: True
+07_users_05_user_status_raw:
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)'
+07_users_06_user_status_labeled:
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)' 
+  groupList:
+    - 'username'
+    - 'status'
+    - 'last_pw_change'
+    - 'min_age'
+    - 'max_age'
+    - 'warn_days'
+    - 'inactive_days'
+07_users_07_etc_group_raw:
+  regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)'
+07_users_08_etc_group_labeled:
+  regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)'
+  groupList:
+    - 'groupname'
+    - 'gid'
+    - 'members'
+  onlyMatching: True
+07_users_09_login_history:
+  regex: 'Users_LoginHistory::'
+07_users_10_no_login_90_days:
+  regex: 'Users_LastLog90::'
+07_users_11_sudoers_all_commands:
+  regex: 'Users_SudoersConfig::/etc/sudoers.*::.*ALL='
+07_users_12_ssh_authorized_keys:
+  regex: 'Users_AuthorizedKeys::/home/(?P<username>\w+)/.ssh/authorized_keys'
+
+###################################################################
+############### Interesting World Writeable Files #################
+###################################################################
+
+08_worldFiles_01_interesting_world_writable_files:
+  regex: 'WorldFiles::.*(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin)'

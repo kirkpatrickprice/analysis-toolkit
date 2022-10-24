@@ -1,0 +1,6 @@
+---
+windows_update_history:               # Print the KB Number and the Install Date for all hot fixes
+  regex: 'System_WindowsUpdateHistory::Installation\s*(?P<install_date>[0-9/-]{4,}).*(?P<kb_num>KB[0-9]+)'
+  groupList:
+    - 'install_date'
+    - 'kb_num'

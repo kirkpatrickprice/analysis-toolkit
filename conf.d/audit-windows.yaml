@@ -1,0 +1,159 @@
+---
+# This file /should/ work well on most Debian-based Linux distro, which includes Ubuntu that we're likely to see in many customer environments.
+
+# Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
+#   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
+#   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
+#   maxResults:   How many results to return (default=0 or ALL)
+#   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
+#   groupList:    Regex groups to display.  See Python regex help on the Interwebs for more details, but groups are specified with '(Grouped Text)' syntax
+#   unique:       Display only one instance of each unique line from all files (similar to sort -u)
+#   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
+
+###################################################################
+######################### System_* items ##########################
+###################################################################
+
+01_system_01_kpnixversion:
+  regex: 'KPWINVERSION:.*'
+  maxResults: 1
+  onlyMatching: True
+01_system_02_os_version:                                                     
+  regex: 'System_OSInfo::((ProductName  :)|(ReleaseId    :)|(CurrentBuild :)|(UBR          :)).*'
+01_system_03_bitlocker_status:
+  regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
+  groupList:
+    - 'MountPoint'
+    - 'EncryptionMethod'
+    - 'KeyProtector'
+    - 'VolumeStatus'
+    - 'ProtectionStatus'
+  onlyMatching: True
+01_system_04_gpo_summary:
+  regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
+01_system_05_installed_capabilities:
+  regex: 'System_InstalledCapabilities::.*Installed'
+01_system_06_installed_features:
+  regex: 'System_InstalledFeatures::.*Enabled'
+01_system_07_windows_update_history_raw:
+  regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
+01_system_08_installed_software:
+  regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
+01_system_09_pending_updates:
+  regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
+01_system_10_windows_update_config:
+  regex: 'System_WindowsUpdateConfig::(?!PS.*?(Path|Child|Drive|Provider))\w+'
+01_system_11_running_processes:
+  regex: 'System_RunningProcesses::(ProcessName|Path|Company|Product)'
+01_system_12_system_services_raw:
+  regex: 'System_Services::(?!DisplayName)(?!--)'
+01_system_13_system_services_labeled:
+  regex: 'System_Services::(?!DisplayName)(?!--)(?P<systemname>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)'
+  groupList:
+    - 'systemname'
+    - 'status'
+    - 'startuptype'
+  onlyMatching: True
+01_system_14_rdp_config:
+  regex: 'System_RDPEncryption::(SecurityLayer|MinEncryptionLevel)'
+01_system_15_screensaver_gpo:
+  regex: 'System_ScreenSaverConfigGPO::(ScreenSaveActive|ScreenSaverIsSecure|ScreenSaveTimeOut)'
+01_system_16_screensaver_registry:
+  regex: 'System_ScreenSaverConfigRunning::(ScreenSaveActive|ScreenSaverIsSecure|ScreenSaveTimeOut)'
+01_system_17_snmp:
+  regex: 'System_SNMPConfig::'
+
+###################################################################
+######################### Network items ###########################
+###################################################################
+
+02_network_01_ping_results:
+  regex: 'Networking_ConnectivityTest::\s+Packets:'
+02_network_02_ip_addresses_labeled:
+  regex: 'Networking_IPInfo::(?P<interface_id>\d+)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<prefix_length>\d+)\s+(?P<prefix_origin>\w+)\s+(?P<suffix_origin>\w+)\s+(?P<address_state>\w+)'
+  groupList:
+    - 'interface_id'
+    - 'ip_address'
+    - 'prefix_length'
+    - 'prefix_origin'
+    - 'suffix_origin'
+    - 'address_state'
+  onlyMatching: True
+02_network_03_ip_addresses_raw:
+  regex: 'Networking_IPInfo::\d.*[\da-f:.%]+'
+02_network_04_dns_nameserver:
+  regex: 'Networking_DNSInfo::.*{[\da-f:.% ,]+}'
+02_network_05_listening_services_labeled:
+  regex: 'Networking_ListeningServices::(?P<protocol>TCP|UDP)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<local_port>\d+).*LISTENING\s(?P<process_name>[\w-]+)\s+(?P<pid>\d+)'
+  groupList:
+    - 'protocol'
+    - 'ip_address'
+    - 'local_port'
+    - 'process_name'
+    - 'pid'
+02_network_06_listening_services_raw:
+  regex: 'Networking_ListeningServices::(TCP|UDP)'
+02_network_07_lanman_server:
+  regex: 'Networking_LanmanServerConfig::\w'
+02_network_08_lanman_client:
+  regex: 'Networking_LanmanClientConfig::\w'
+02_network_09_network_shares:
+  regex: 'Networking_Shares::(?!Name)(?!--)'
+02_network_10_wlan_available:
+  regex: 'Networking_WLANNetworks::'
+02_network_11_firewall_status:
+  regex: 'Networking_WindowsFirewallStatus(::\w+\sProfile Settings)|(::State\s{2,})'
+02_network_12_ipsec_config:
+  regex: 'Networking_IPSecConfig'
+02_network_13_ntp_config_pre_0_4_5:
+  regex: '(Time_W32TimeRegistry::(NtpServer|Type|Enabled|EventLogFlags|InputProvider|Chain))|(Time_ClockPermissions::SeSystemtimePrivilege)'
+02_network_14_ntp_base_config:
+  regex: 'Time_W32TimeRegistry-(Config|Parameters)::(NtpServer|Type|Enabled|EventLogFlags|InputProvider)|(Time_ClockPermissions::SeSystemtimePrivilege)'
+02_network_15_ntp_client_config:
+  regex: 'Time_W32TimeRegistry-NtpClient::(NtpServer|Type|Enabled|EventLogFlags|InputProvider)'
+02_network_16_ntp_server_config:
+  regex: 'Time_W32TimeRegistry-NtpServer::(NtpServer|Type|Enabled|EventLogFlags|InputProvider)'
+02_network_17_w32time_status:
+  regex: '(Time_W32TimeConfig::(Type|NtpServer))|(Time_W32TimePeers::((Peer:)|(State:)|(Last Successful Sync Time:)|(LastSyncError:)))'
+02_network_18_w32time_log_sample:
+  regex: 'Time_W32TimeLogs::'
+
+###################################################################
+######################## Users and Groups #########################
+###################################################################
+
+03_users_01_local_admin_user:
+  regex: 'Users_LocalAdministrator::\w'
+03_users_02_local_admin_group:
+  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(!The command completed successfully)\w'
+03_users_03_local_password_policy:
+  regex: 'Users_LocalPasswordPolicy::(!The command completed successfully)\w'
+03_users_04_local_users_raw:
+  regex: 'Users_LocalUsers::(?!Name\s+Enabled)(?!--)\w'
+03_users_05_local_groups_raw:
+  regex: 'Users_LocalGroups::(?!Name\s+Enabled)(?!--)\w'
+
+###################################################################
+############################ AV Status ############################
+###################################################################
+
+04_users_06_av_status_security_center:
+  regex: 'AntiVirus_AVStatus::((displayName  :)|(productState :))'
+
+###################################################################
+####################### Auditing/Logging ##########################
+###################################################################
+
+05_logging_01_auditpol_config:
+  regex: 'Logging_AuditEventsConfig::'
+05_logging_02_fs_audit_config:
+  regex: 'Logging_FSAuditing-(?P<drive>[A-Za-z]):(?P<path>[\w\\. ]+?)::Audit\s+(?P<auditConfig>.*)'
+  onlyMatching: True
+  groupList:
+    - 'drive'
+    - 'path'
+    - 'auditConfig'
+05_logging_03_event_log_config:
+  regex: 'Logging_AuditLogConfig::(?!PrimaryModule)(?!--)\w'
+05_logging_04_event_log_samples:
+  regex: 'Logging_EventLogSamples[A-Za-z]+::'

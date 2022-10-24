@@ -1,0 +1,31 @@
+---
+# Instructions for working in YAML mode:
+#   * Use an arbitary-but-descriptive name for the section
+#   * Config options use the same names as the argument parser variables in searchfor.py
+#   * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
+#   * List items are indented with a hyphen under the list variable's name
+#   * Booleans are set to either True or False (case sensitive)
+# Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
+#
+# When using YAML mode, results will be displayed on the screen and written to Excel-compatible CSV files.  These will be saved as 'saved-csv/<check_name>.csv' 
+# under the currect directory.  For the time being, this is hard-coded behavior.
+#
+# Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
+#   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
+#   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
+#   maxResults:   How many results to return (default=0 or ALL)
+#   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
+#   groupList:    Regex groups to display.  See Python regex help on the Interwebs for more details, but groups are specified with '(Grouped Text)' syntax
+#   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
+
+linux_pretty_name:
+  regex: '(?:System_VersionInformation.*PRETTY_NAME=)(.*)'  # Use regex groups.  The first group is non-capturing (?:...)
+  maxResults: 1                                             # Only grab the first hit / will be faster as it will move to on the next file right away
+  onlyMatching: True
+  groupList:                                                # Since System_Version... is non-capturing, our only interesting group is actually Group 1
+    - 1
+  truncate: True
+supported_file_systems:                                     # Find only those file systems that are current supported
+  fileSpec: 'jitsi-*.txt'
+  regex: 'System_FSModules.*'
+  truncate: True
