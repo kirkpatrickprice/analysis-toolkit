@@ -469,5 +469,5 @@ if args.confFile:
         # Remove the CSV file there weren't any matches written
         print('Matches found:',matchCount)
         if matchCount == 0:
-            error('Zero matches found. Removing',config['csvFile'])
+            error('Zero matches found. Removing ',config['csvFile'])
             os.remove(config['csvFile'])
