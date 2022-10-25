@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.1.0"
+version="0.1.1"
 
 # Set up the exit codes for different error conditions and other global variables
 err_noresults=1
@@ -13,6 +13,8 @@ csvPath='saved-csv/'                                                # Hard-coded
 '''
 Version History:
     0.1.0   Initial release
+    0.1.1   Colorized the "no results found... deleting file" message in CSV mode
+            Corrected the CSV file header line
 '''
 
 import argparse                                                     # To handle command line arguments and usage
@@ -282,6 +284,7 @@ def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatc
         csvOutFile=open(csvFile, 'w')
         fieldnames=['System Name', 'Results']
         csvWriter=csv.DictWriter(csvOutFile, fieldnames=fieldnames)
+        csvWriter.writeheader()
     if args.truncate:
         fileColumnWidth=min(fileColumnWidth, int(screenXY[0]*shortenFactor))
 
@@ -466,5 +469,5 @@ if args.confFile:
         # Remove the CSV file there weren't any matches written
         print('Matches found:',matchCount)
         if matchCount == 0:
-            print('Zero matches found. Removing',config['csvFile'])
+            error('Zero matches found. Removing',config['csvFile'])
             os.remove(config['csvFile'])

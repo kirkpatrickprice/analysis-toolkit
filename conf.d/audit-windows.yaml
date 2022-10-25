@@ -13,11 +13,12 @@
 ###################################################################
 ######################### System_* items ##########################
 ###################################################################
-
 01_system_01_kpnixversion:
-  regex: 'KPWINVERSION:.*'
+  regex: 'KPWINVERSION: (?P<KPWINVERSION>.*)'
   maxResults: 1
   onlyMatching: True
+  groupList:
+    - 'KPWINVERSION'
 01_system_02_os_version:                                                     
   regex: 'System_OSInfo::((ProductName  :)|(ReleaseId    :)|(CurrentBuild :)|(UBR          :)).*'
 01_system_03_bitlocker_status:
@@ -125,9 +126,9 @@
 03_users_01_local_admin_user:
   regex: 'Users_LocalAdministrator::\w'
 03_users_02_local_admin_group:
-  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(!The command completed successfully)\w'
+  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(?!The command completed successfully)\w'
 03_users_03_local_password_policy:
-  regex: 'Users_LocalPasswordPolicy::(!The command completed successfully)\w'
+  regex: 'Users_LocalPasswordPolicy::(?!The command completed successfully)\w'
 03_users_04_local_users_raw:
   regex: 'Users_LocalUsers::(?!Name\s+Enabled)(?!--)\w'
 03_users_05_local_groups_raw:
