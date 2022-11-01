@@ -119,7 +119,7 @@ miscOptions.add_argument(
     help='Print extra debug messages.  Really only helpful for developing', 
     action='store_true')
 miscOptions.add_argument(
-    '-l', '--list', 
+    '--list', 
     dest='listSections', 
     help='List all section headings found in the current FILESPEC',
     action='store_true')
