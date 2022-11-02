@@ -35,7 +35,7 @@
 01_system_05_installed_capabilities:
   regex: 'System_InstalledCapabilities::.*Installed'
 01_system_06_installed_features:
-  regex: 'System_InstalledFeatures::.*Enabled'
+  regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
 01_system_07_windows_update_history_raw:
   regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
 01_system_08_installed_software:
