@@ -1,5 +1,5 @@
 ---
-# This file /should/ work well on most Debian-based Linux distro, which includes Ubuntu that we're likely to see in many customer environments.
+# This file /should/ work well on most Linux distros, which including both Debian-based (e.g. Ubuntu) and RPM-based (CentOS, Oracle Linux, RHEL, Amazon Linux) we're likely to see in many customer environments.
 
 # Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
 #   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
