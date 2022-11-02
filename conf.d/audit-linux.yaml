@@ -29,53 +29,55 @@
   regex: 'System_VersionInformation::/etc/system-release::'
   maxResults: 1
 01_system_03_file_system_encryption:                                         # Are there any systems using Linux-provided encypted file system capabilities                
- regex: 'System_FSEncryption::'
+ regex: 'System_FSEncryption::(?!#)'
  truncate: True
 01_system_04_file_system_mounts:                                             # One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
   regex: 'System_FSMounts.*active'                                        # including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
 01_system_05_supported_file_systems:                                         # List the supported and disabled file systems
   regex: 'System_FSModules'
-01_system_06_apparmor_status:
+01_system_06_selinux_status:
+  regex: 'System_MACSELinuxInfo'
+01_system_07_apparmor_status:
   regex: 'System_MACAppArmorInfo::(.*module|[0-9])|(.*profiles.*loaded)|([0-9].*profiles.*complain)|([0-9].*profiles.*enforce mode)|([0-9].*processes.*defined)|([0-9].*processes.*enforce mode)|([0-9].*processes.*complain)'
-01_system_07_aslr_config:
+01_system_08_aslr_config:
   regex: 'System_MemoryASLRConfig::'
-01_system_08_suid_coredump:
+01_system_09_suid_coredump:
   regex: 'System_MemoryCoreDump::fs.suid_dumpable'
-01_system_09_installed_packages_deb:
+01_system_10_installed_packages_deb:
   regex: 'System_PackageInstalledSoftware::(?P<pkg_name>\w+).*install'
   onlyMatching: True
   groupList:
     - 'pkg_name'
-01_system_09_installed_packages_rpm:
+01_system_10_installed_packages_rpm:
   regex: 'System_PackageInstalledSoftware::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
   onlyMatching: True
   groupList:
     - 'pkg_name'
     - 'install_date'
-01_system_10_package_history_deb:
+01_system_11_package_history_deb:
   regex: 'System_PackageInstalledSoftware::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
   onlyMatching: True
   groupList:                                                                    # Print the package name first (G2), followed by the date (G1)
     - 'pkg_name'
     - 'install_date'
-01_system_11_pending_package_updates_labeled_deb:                                             # This config uses grouping to grab the package name (G1), the current version (G2) and the pending version (G3)
+01_system_12_pending_package_updates_labeled_deb:                                             # This config uses grouping to grab the package name (G1), the current version (G2) and the pending version (G3)
   regex: 'System_PackageManagerUpdates::\s+(?P<pkg_name>.+)\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
   onlyMatching: True
   groupList:
     - 'pkg_name'
     - 'cur_version'
     - 'pend_version'
-01_system_11_pending_package_updates_labeled_rpm:
+01_system_12_pending_package_updates_labeled_rpm:
   regex: 'System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?P<pkg_name>[\w\-.]+)\s+(?P<pend_version>[\w\-.]+)'
   onlyMatching: True
   groupList:
     - 'pkg_name'
     - 'pend_version'
-01_system_12_pending_package_updates_raw_deb:
+01_system_13_pending_package_updates_raw_deb:
   regex: 'System_PackageManagerUpdates::\s+(.+)\s+[(](.+)\s=>\s+(.+)[)]'        # This config gives you the yum update results exactly as it appears in the file
-01_system_12_pending_package_updates_raw_rpm:
+01_system_13_pending_package_updates_raw_rpm:
   regex: 'System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)[\w\-.]+\s+[\w\-.]'
-01_system_13_running_processes:
+01_system_14_running_processes:
   regex: 'System_RunningProcesses::(?!.*\[\w.*?\]$)'                            # Uses negative look-ahead '(?!...)' to ignore anything that ends with [...] which are system process names and probably not useful
 
 ###################################################################
@@ -127,7 +129,7 @@
 ###################################################################
 
 04_services_01_system_services:
-  regex: 'Network_ServiceInfo::(?P<svc_name>.*?)\s(?P<status>enabled|disabled|generated|static|transient|masked|indirect).*'
+  regex: 'Network_ServiceInfo-systemctl::(?P<svc_name>.*?)\s(?P<status>enabled|disabled|generated|static|transient|masked|indirect).*'
   groupList:
     - 'svc_name'
     - 'status'
@@ -137,16 +139,16 @@
 04_services_03_smb_status:
   regex: 'Network_SharesSamba:: .*_status:'
 04_services_04_snmp_status:
-  regex: 'Network_SNMPInfo:: snmpd_status:'
+  regex: 'Network_SNMPInfo::([\s\w]+)|(.*snmpd\.conf::[\s\w]+)'
 04_services_05_ntp_status:
-  regex: 'Network_NTP-(?P<ntp_type>ntpd|chronyc|timesyncd)::(?P<status>.*)'
+  regex: 'Network_NTP-(?P<ntp_type>ntpd|chronyd|timesyncd)::(?P<status>.*)'
   groupList:
     - 'ntp_type'
     - 'status'
 04_services_06_ntp_version:
   regex: 'Network_NTP-.*version'
 04_services_07_time_config:
-  regex: 'Network_NTP::.*?(ntp.conf|xntp.conf|chrony.conf|timesyncd.conf)::.*?(server|pool|restrict|peer|allow|deny|log|NTP)'
+  regex: 'Network_NTP::.*?(ntp.conf|xntp.conf|chrony.conf|timesyncd.conf)::(?!#).*?(server|pool|restrict|peer|allow|deny|log|NTP)'
 
 ###################################################################
 ######################## Security Services ########################
@@ -163,7 +165,7 @@
 05_security_05_ipsec_config:
   regex: 'Security_IPSecConfig'
 05_security_06_openldap_config:
-  regex: 'Security_OpenLDAPConfig::'
+  regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
 05_security_07_openvpn_config:
   regex: 'Security_OpenVPNConfig'
 
@@ -210,9 +212,9 @@
     - 'shell'
   onlyMatching: True
 07_users_05_user_status_raw:
-  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)'
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)'
 07_users_06_user_status_labeled:
-  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)' 
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)' 
   groupList:
     - 'username'
     - 'status'
@@ -235,7 +237,7 @@
 07_users_10_no_login_90_days:
   regex: 'Users_LastLog90::'
 07_users_11_sudoers_all_commands:
-  regex: 'Users_SudoersConfig::/etc/sudoers.*::.*ALL='
+  regex: 'Users_SudoersConfig::/etc/sudoers.*::(?!#).*ALL='
 07_users_12_ssh_authorized_keys:
   regex: 'Users_AuthorizedKeys::/home/(?P<username>\w+)/.ssh/authorized_keys'
 
