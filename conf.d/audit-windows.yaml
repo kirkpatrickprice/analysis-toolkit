@@ -1,26 +1,28 @@
 ---
-# This file /should/ work well on most Debian-based Linux distro, which includes Ubuntu that we're likely to see in many customer environments.
+# This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
+# Basically, anything that can run kpwinaudit.ps1
 
 # Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
 #   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
 #   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
 #   maxResults:   How many results to return (default=0 or ALL)
 #   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
-#   groupList:    Regex groups to display.  See Python regex help on the Interwebs for more details, but groups are specified with '(Grouped Text)' syntax
+#   groupList:    Regex groups to display.  Accepts either PCRE group numbers, or Python RE Named Groups.
 #   unique:       Display only one instance of each unique line from all files (similar to sort -u)
 #   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
 
 ###################################################################
 ######################### System_* items ##########################
 ###################################################################
-01_system_01_kpnixversion:
+01_system_01_kpwinversion:
   regex: 'KPWINVERSION: (?P<KPWINVERSION>.*)'
   maxResults: 1
   onlyMatching: True
   groupList:
     - 'KPWINVERSION'
 01_system_02_os_version:                                                     
-  regex: 'System_OSInfo::((ProductName  :)|(ReleaseId    :)|(CurrentBuild :)|(UBR          :)).*'
+  regex: 'System_OSInfo::((ProductName)|(ReleaseId)|(CurrentBuild)|(UBR)).*'
+  maxResults: 4
 01_system_03_bitlocker_status:
   regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
   groupList:
@@ -36,7 +38,7 @@
   regex: 'System_InstalledCapabilities::.*Installed'
 01_system_06_installed_features:
   regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
-01_system_07_windows_update_history_raw:
+01_system_07_windows_update_history:
   regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
 01_system_08_installed_software:
   regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'

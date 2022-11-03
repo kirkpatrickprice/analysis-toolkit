@@ -15,7 +15,8 @@
 #   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
 #   maxResults:   How many results to return (default=0 or ALL)
 #   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
-#   groupList:    Regex groups to display.  See Python regex help on the Interwebs for more details, but groups are specified with '(Grouped Text)' syntax
+#   groupList:    Regex groups to display.  Accepts either PCRE group numbers, or Python RE Named Groups.
+#   unique:       Display only one instance of each unique line from all files (similar to sort -u)
 #   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
 
 linux_pretty_name:
