@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.1.1"
+version="0.1.2"
 
 # Set up the exit codes for different error conditions and other global variables
 err_noresults=1
@@ -15,6 +15,7 @@ Version History:
     0.1.0   Initial release
     0.1.1   Colorized the "no results found... deleting file" message in CSV mode
             Corrected the CSV file header line
+    0.1.2   Fixed CSV export issue with non-printable characters in input files
 '''
 
 import argparse                                                     # To handle command line arguments and usage
@@ -25,6 +26,7 @@ import textwrap                                                     # Text handl
 import csv                                                          # Import the CSV module so we can write the output to CSV as well...
 import os                                                           # Import the OS module so can work with files and directories in the local file system
 from time import sleep                                              # Grab the sleep function from time to support delays for user confirmation
+import string                                                       # Needed to process matches for potentially unprintable characters
 
 # Set up the arguments that can be set on the command line
 parser = argparse.ArgumentParser(
@@ -296,6 +298,13 @@ def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatc
         if not getReportVersion(file)[0] == 'unknown':
             matches = findResults(regex=regex, file=file, maxResults=maxResults, onlyMatching=onlyMatching, groupList=groupList, unique=unique)
             for match in matches:
+                # Clean up any non-printable characters that might be in the results
+                if not match.isprintable():
+                    printableMatch = filter(lambda x: x in string.printable, match)
+                    match = ''.join(list(printableMatch))
+                    error('WARNING: Potential corruption detected.')
+                    error('File: ',file)
+                    error('Match:',match)
                 matchCount+=1
                 if csvFile:
                     row={}
