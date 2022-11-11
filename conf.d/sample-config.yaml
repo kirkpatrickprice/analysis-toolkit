@@ -8,12 +8,16 @@
 # Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
 #
 # When using YAML mode, results will be displayed on the screen and written to Excel-compatible CSV files.  These will be saved as 'saved-csv/<check_name>.csv' 
-# under the currect directory.  For the time being, this is hard-coded behavior.
+# under the currect directory.  For the time being, this is a hard-coded path.  The display can be quieted with with the -q switch on the command line.
 #
 # Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
 #   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
 #   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
-#   maxResults:   How many results to return (default=0 or ALL)
+#                 If you identify a section header with '::', then the tool will use everything up to the '::' to identify the interesting section
+#                 and then once it moves beyond that section, it will stop looking.  Override this behavior with the 'fullScan' option below.  This will 
+#                 save substantial time in processing files, especially if they're very large (100s of MBs to GBs)
+#   maxResults:   How many results to return (default=0 or ALL).  Also an effective short-circuit to help with processing time.
+#   fullScan:     Override the short-circuit behavior by forcing a full scan of the entire file.
 #   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
 #   groupList:    Regex groups to display.  Accepts either PCRE group numbers, or Python RE Named Groups.
 #   unique:       Display only one instance of each unique line from all files (similar to sort -u)

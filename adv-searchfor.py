@@ -15,7 +15,10 @@ Version History:
     0.1.0   Initial release
     0.1.1   Colorized the "no results found... deleting file" message in CSV mode
             Corrected the CSV file header line
-    0.1.2   Fixed CSV export issue with non-printable characters in input files
+    0.1.2   2022-11-04
+            Fixed CSV export issue with non-printable characters in input files
+    0.1.3   2022-11-11
+            Added a short-circuit to stop processing files once we've moved beyond the interesting content.  Requires use of a "::" in the regex to identify the section we're looking for
 '''
 
 import argparse                                                     # To handle command line arguments and usage
@@ -27,6 +30,7 @@ import csv                                                          # Import the
 import os                                                           # Import the OS module so can work with files and directories in the local file system
 from time import sleep                                              # Grab the sleep function from time to support delays for user confirmation
 import string                                                       # Needed to process matches for potentially unprintable characters
+import time                                                         # To report run length for each check in YAML mode
 
 # Set up the arguments that can be set on the command line
 parser = argparse.ArgumentParser(
@@ -54,7 +58,7 @@ inputControl.add_argument(
     default='*.txt', 
     help='Optional file spec (single or glob matching) to process (default=*.txt).  NOTE: filespec must be enclosed in single- or double-quotes')
 inputControl.add_argument(
-    '-c', '--conf',
+    '-c', '--conf', '--yaml',
     dest='confFile',
     help=textwrap.dedent('''
         Provide a YAML configuration file to specify the options.  If only a file name, assumes analysis-toolit/conf.d location.  Multiple 
@@ -73,6 +77,14 @@ outputControl.add_argument(
     default=0, 
     type=int, 
     help='Number of matches from each file to return (default = 0/ALL)')
+outputControl.add_argument(
+    '--fullscan',
+    dest='fullScan',
+    help=textwrap.dedent('''
+        Command line only: Override the short-circuit behavior to scan the entire file.  Recommended if you're testing a complex Regex expression until you 
+        know you have the resulst you expect.  This is always OFF for YAML mode, but you can use the 'fullScan: True' setting to enabled it for specific checks.'''),
+    action='store_true'
+)
 outputControl.add_argument(
     '-o', '--only-matching', 
     dest='onlyMatching',
@@ -229,20 +241,58 @@ def getSections(files):
     #Return an alphabetized list of sections
     return list(sorted(sections))
 
-def findResults(regex, file, maxResults, onlyMatching, groupList, unique):
+def findResults(regex, file, maxResults, onlyMatching, groupList, unique, fullScan):
+    # Create a short-circuit detection so that once we move beyond the desired section in the file, we stop looking
+    desiredSectionRegex=None
+    desiredSectionPattern=None 
+    limitToSection=False
+    if regex.find('::') > 0 and not fullScan and maxResults == 0:
+        desiredSectionRegex=regex.split('::')[0]
+
+        # If the regex begins with a caret anchor, then drop it as some of our lines we want could have other text at the beginning
+        if desiredSectionRegex[0] == '^':
+            desiredSectionRegex=desiredSectionRegex[1:]
+        
+        # We can only short circuit if these regex syntax characters are balanced
+        parenBalance=desiredSectionRegex.count('(') - desiredSectionRegex.count(')')
+        curlyBalance=desiredSectionRegex.count('{') - desiredSectionRegex.count('}')
+        squareBalance=desiredSectionRegex.count('[') - desiredSectionRegex.count(']')
+        if parenBalance + curlyBalance + squareBalance == 0:
+            desiredSectionPattern=re.compile(desiredSectionRegex, re.IGNORECASE)
+            limitToSection=True
+            debug('Desired section:', desiredSectionRegex)
+    
+    # Matches the provided pattern
     pattern=re.compile(regex, re.IGNORECASE)
+    
     # Matches comment lines and [BEGIN], [CISReference], etc.
     commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')
+    
     # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
     blankLinePattern=re.compile(r'::\s*$')
+    
+    # Setup some more state variables
     counter=0
     res=[]
+    sectionFound=False
+    inDesiredSection=None
+
     for line in open(file):
+        #Capture the current line's section header
+        if limitToSection:
+            inDesiredSection=desiredSectionPattern.search(line)
+            debug('\nCurrent line:', line.strip())
+            debug('Desired section:', desiredSectionRegex)
+            if inDesiredSection:
+                sectionFound=True
         found = pattern.search(line)
         isComment = commentsPattern.search(line)
         isBlankLine = blankLinePattern.search(line)
         if found and not isComment and not isBlankLine:
             counter+=1
+            # # Capture the current section as the one we want and flag that we found what we're looking for
+            # desiredSection=currentSection
+            # sectionFound=True
             # If we're only supposed to grab the matching text...
             if onlyMatching:
                 groupText=''
@@ -267,12 +317,16 @@ def findResults(regex, file, maxResults, onlyMatching, groupList, unique):
                 # This paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
                 # before rejoining on the :: field separator (at the beginning of the line)
                 res.append('::'.join((line.split('::')[1:])).strip())
-            # If we're at the limit of our results, then break of the loop for this file
+
+            # If we're at the limit of our results
             if counter == maxResults:
                 break
+        
+        if (sectionFound and not inDesiredSection and not isComment and not isBlankLine):
+            break
     return res
 
-def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatching, groupList, quiet=False, shortenFactor=defaultShortenFactor, unique=False):
+def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatching, groupList, quiet=False, shortenFactor=defaultShortenFactor, unique=False, fullScan=False):
     '''
     Receives regex, list of files, truncate flag, shortenFactor, maxResults, onlyMatching flag, group numbers and screen geometry
     Prints one line for each result that includes the file name (system name) and the matching text from Regex and other output control options
@@ -296,7 +350,7 @@ def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatc
     for file in files:
         matches=None
         if not getReportVersion(file)[0] == 'unknown':
-            matches = findResults(regex=regex, file=file, maxResults=maxResults, onlyMatching=onlyMatching, groupList=groupList, unique=unique)
+            matches = findResults(regex=regex, file=file, maxResults=maxResults, onlyMatching=onlyMatching, groupList=groupList, unique=unique, fullScan=fullScan)
             for match in matches:
                 # Clean up any non-printable characters that might be in the results
                 if not match.isprintable():
@@ -327,6 +381,8 @@ def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatc
 ##################### Let's get started ######################
 ##############################################################
 
+# Capture the start time
+startTime=time.time()
 
 # Process command line arguments
 args=parser.parse_args()
@@ -408,7 +464,8 @@ if not args.confFile:
         'groupList': args.groupList,
         'truncate': args.truncate,
         'screenXY': screenXY,
-        'quiet': args.quiet}
+        'quiet': args.quiet,
+        'fullScan': args.fullScan}
     debug(config)
     matchCount=printMatches(**config)
             
@@ -434,7 +491,7 @@ if args.confFile:
         error(csvPath,' directory already exists.  Existing files will be replaced.  Press CTRL-C within 5 seconds to abort...')
         sleep(5)
 
-    # Check if the CSV output directoryt exists and create it if needed
+    # Check if the CSV output directory exists and create it if needed
     if not os.path.exists(csvPath):
         os.makedirs(csvPath)
     
@@ -443,7 +500,10 @@ if args.confFile:
         configYAML=yaml.safe_load(file)
 
     for configSection in configYAML.keys():
+        sectionStartTime=time.time()
         fileSpec = args.fileSpec
+        print('\n', '=' * 50, sep='')
+
         config={
             'regex': args.regex,
             'maxResults': args.maxResults,
@@ -453,13 +513,14 @@ if args.confFile:
             'groupList': args.groupList,
             'truncate': args.truncate,
             'screenXY': screenXY,
-            'quiet': args.quiet}
+            'quiet': args.quiet,
+            'fullScan': args.fullScan}
         for key in configYAML[configSection]:
             if key == 'fileSpec': 
                 fileSpec=configYAML[configSection][key]
             else: 
                 config[key]=configYAML[configSection][key]
-      
+
         debug(config)
 
         # Automatically enable onlyMatching if a groupList is used
@@ -472,11 +533,14 @@ if args.confFile:
             print()
             parser.print_usage()
             exit(err_nofiles)
-        print('\n', '=' * 50)
         print('Checking:', configSection)
         matchCount=printMatches(**config)
         # Remove the CSV file there weren't any matches written
         print('Matches found:',matchCount)
+        print('Section time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - sectionStartTime))))
+        print('Elapsed time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))
         if matchCount == 0:
             error('Zero matches found. Removing ',config['csvFile'])
             os.remove(config['csvFile'])
+
+print('Total time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))

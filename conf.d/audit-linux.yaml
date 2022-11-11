@@ -1,10 +1,26 @@
 ---
-# This file /should/ work well on most Linux distros, which including both Debian-based (e.g. Ubuntu) and RPM-based (CentOS, Oracle Linux, RHEL, Amazon Linux) we're likely to see in many customer environments.
+# Instructions for working in YAML mode:
+#   * Use an arbitary-but-descriptive name for the section
+#   * Config options use the same names as the argument parser variables in searchfor.py
+#   * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
+#   * List items are indented with a hyphen under the list variable's name
+#   * Booleans are set to either True or False (case sensitive)
+# Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
+#
+# When using YAML mode, results will be displayed on the screen and written to Excel-compatible CSV files.  These will be saved as 'saved-csv/<check_name>.csv' 
+# under the currect directory.  For the time being, this is a hard-coded path.  The display can be quieted with with the -q switch on the command line.
+
+# This file /should/ work well on most Linux distros, which including both Debian-based (e.g. Ubuntu) and RPM-based (CentOS, Oracle Linux, RHEL, 
+# Amazon Linux) we're likely to see in many customer environments.
 
 # Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
 #   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
 #   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
-#   maxResults:   How many results to return (default=0 or ALL)
+#                 If you identify a section header with '::', then the tool will use everything up to the '::' to identify the interesting section
+#                 and then once it moves beyond that section, it will stop looking.  Override this behavior with the 'fullScan' option below.  This will 
+#                 save substantial time in processing files, especially if they're very large (100s of MBs to GBs)
+#   maxResults:   How many results to return (default=0 or ALL).  Also an effective short-circuit to help with processing time.
+#   fullScan:     Override the short-circuit behavior by forcing a full scan of the entire file.
 #   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
 #   groupList:    Regex groups to display.  Accepts either PCRE group numbers, or Python RE Named Groups.
 #   unique:       Display only one instance of each unique line from all files (similar to sort -u)
@@ -32,11 +48,11 @@
  regex: 'System_FSEncryption::(?!#)'
  truncate: True
 01_system_04_file_system_mounts:                                             # One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
-  regex: 'System_FSMounts.*active'                                        # including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
+  regex: 'System_FSMounts::.*active'                                        # including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
 01_system_05_supported_file_systems:                                         # List the supported and disabled file systems
-  regex: 'System_FSModules'
+  regex: 'System_FSModules::'
 01_system_06_selinux_status:
-  regex: 'System_MACSELinuxInfo'
+  regex: 'System_MACSELinuxInfo::'
 01_system_07_apparmor_status:
   regex: 'System_MACAppArmorInfo::(.*module|[0-9])|(.*profiles.*loaded)|([0-9].*profiles.*complain)|([0-9].*profiles.*enforce mode)|([0-9].*processes.*defined)|([0-9].*processes.*enforce mode)|([0-9].*processes.*complain)'
 01_system_08_aslr_config:
@@ -163,11 +179,11 @@
 05_security_04_tripwire_status:
   regex: 'Security_HidsOSSECConfig::'
 05_security_05_ipsec_config:
-  regex: 'Security_IPSecConfig'
+  regex: 'Security_IPSecConfig::'
 05_security_06_openldap_config:
   regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
 05_security_07_openvpn_config:
-  regex: 'Security_OpenVPNConfig'
+  regex: 'Security_OpenVPNConfig::'
 
 ###################################################################
 ########################## Logging Items ##########################
