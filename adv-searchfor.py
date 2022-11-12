@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.1.2"
+version="0.1.3"
 
 # Set up the exit codes for different error conditions and other global variables
 err_noresults=1

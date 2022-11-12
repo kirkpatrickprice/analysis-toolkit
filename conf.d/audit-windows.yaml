@@ -60,8 +60,10 @@
   regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
 01_system_08_installed_software:
   regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
+  fullScan: True
 01_system_09_pending_updates:
   regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
+  fullScan: True
 01_system_10_windows_update_config:
   regex: 'System_WindowsUpdateConfig::(?!PS.*?(Path|Child|Drive|Provider))\w+'
 01_system_11_running_processes:
@@ -126,8 +128,10 @@
   regex: 'Networking_WindowsFirewallStatus(::\w+\sProfile Settings)|(::State\s{2,})'
 02_network_12_ipsec_config:
   regex: 'Networking_IPSecConfig::'
+  fullScan: True
 02_network_13_ntp_config_pre_0_4_5:
   regex: '(Time_W32TimeRegistry::(NtpServer|Type|Enabled|EventLogFlags|InputProvider|Chain))|(Time_ClockPermissions::SeSystemtimePrivilege)'
+  fullScan: True
 02_network_14_ntp_base_config:
   regex: 'Time_ClockPermissions|Time_W32TimeRegistry-(Config|Parameters)::(NtpServer|Type|Enabled|EventLogFlags|InputProvider|SeSystemPrivilege)'
   fullScan: True
@@ -152,6 +156,7 @@
   regex: 'Users_LocalPasswordPolicy::(?!The command completed successfully)\w'
 03_users_04_local_users_raw:
   regex: 'Users_LocalUsers::(?!Name\s+Enabled)(?!--)\w'
+  fullScan: True
 03_users_05_local_groups_raw:
   regex: 'Users_LocalGroups::(?!Name\s+Enabled)(?!--)\w'
 
