@@ -257,7 +257,7 @@ def findResults(regex, file, maxResults, onlyMatching, groupList, unique, fullSc
         parenBalance=desiredSectionRegex.count('(') - desiredSectionRegex.count(')')
         curlyBalance=desiredSectionRegex.count('{') - desiredSectionRegex.count('}')
         squareBalance=desiredSectionRegex.count('[') - desiredSectionRegex.count(']')
-        if parenBalance + curlyBalance + squareBalance == 0:
+        if parenBalance == 0 and curlyBalance == 0 and squareBalance == 0:
             desiredSectionPattern=re.compile(desiredSectionRegex, re.IGNORECASE)
             limitToSection=True
             debug('Desired section:', desiredSectionRegex)
