@@ -1,0 +1,404 @@
+import re
+import os
+import textwrap
+import sys
+from colorama import Fore
+import console
+import string
+
+
+errorCodes = {
+    'invalidConfig': 1024,
+    'generalError': 1023,
+    'noResults': 1,
+    'noFiles': 2,
+}
+
+class Search:
+    '''
+    Inputs:
+        Config      Dictionary containing the parameters of the search
+            systems             List: Class System  Systems to which to apply the search
+            regex               Raw string          Python-compatible regex to use https://docs.python.org/3/howto/regex.html
+            maxResults          Integer             Maximum number of results to return per System (default: 0 - unlimited)
+            onlyMatching        Boolean             Limit the RE match to only the text that matches the RE (default: full line)
+            unique              Boolean             Only display one instance of each match 
+            groupList           List                Regex groups to display -- supports both PCRE group nums and Python named groups (?P<groupName>regex)
+            truncate            Boolean             Truncate the screen output to display width
+            quiet               Boolean             Suppress output display to summary info only
+            fullScan            Boolean             Override the search short-circuit logic to always scan the entire System.filename
+            combine             Boolean             Combine results from across multiple lines to form a single record (only valid if groupList is specified)
+                                                    e.g. matching Windows ProductName, ReleaseId, CurrentBuild, and UBR code
+
+    '''
+    def __init__(self, config):
+        configOptions = [
+            'systems',
+            'regex',
+            'maxResults',
+            'onlyMatching',
+            'unique',
+            'groupList',
+            'truncate',
+            'quiet',
+            'fullScan',
+            'combine',
+        ]
+        # Set up a default configuration -- systems and regex must be provided so no defaults are set
+        self.config = {
+            'maxResults': 0,
+            'onlyMatching': False,
+            'unique': False,
+            'truncate': False,
+            'quiet': False,
+            'fullScan': False,
+            'combine': False,
+        }
+
+        # Set any user-provided config options
+        for key in config.keys():
+            if key in configOptions:
+                self.config[key] = config[key]
+            else:
+                error('Invalid search config key [%s]' % key)
+                exit(errorCodes['invalidConfig'])
+        
+        try:
+            self.config['systems']
+        except KeyError:
+            error('Search config requires Systems to search')
+            exit(errorCodes['invalidConfig'])
+        else:
+            if type(self.config['systems']) != list:                    # If a single System object was passed, then make it a list
+                self.config['systems'] = [self.config['systems']]       # Later, findResults expects a list to iterate over
+
+        try:
+            self.config['regex']
+        except KeyError:
+            error('Search config requires regular expression')
+            exit(errorCodes['invalidConfig'])
+
+        if self.config['unique'] and not self.config['onlyMatching']:           # Unique requires onlyMatching
+            self.config['onlyMatching'] = True
+            error('Unique was enabled.  Forcing onlyMatching...')
+
+        # If groupList contains any entries, force onlyMatching to be True
+        try:
+            self.config['groupList']
+        except KeyError:                            # If groupList is not defined, but onlyMatching is defined...
+            if self.config['onlyMatching']:
+                error('Search config includes onlyMatching, but groupList is undefined')
+                exit(errorCodes['invalidConfig'])
+        else:                                       # If groupList is defined, then always set onlyMatching to true
+            if not self.config['onlyMatching']:
+                self.config['onlyMatching'] = True
+                error('groupList was providing.  Forcing onlyMatching...')
+
+    def __str__(self):
+        res=[]
+        for key in self.config.keys():
+            try:
+                res.append(key+': '+self.config[key])
+            except TypeError:
+                res.append(key+': '+str(self.config[key]))
+        
+        return '\n'.join(res)
+
+    def getRegex(self):
+        return self.config['regex']
+
+    def findResults(self):
+        '''
+            Inputs:
+                Self        Class: Search       The search object to take action against
+
+            Outputs:
+                res         List of results consisting of a dictionary of each result
+                    system              Class: System   Reference to the System where the result was found
+                    result | groupNames String          The matching results.  will be a one item dictionary with key 'Results' OR
+                                                        a dictionary key for each groupname that was used
+        '''
+        def combineResults(results):
+            '''
+                Inputs:
+                    results     List of results         List of one-item dictionaries for each groupList group
+
+                Outputs
+                    res         List of results         One list item where each groupList value is comined into a dictionary
+            '''
+            combinedResults={}
+            for result in results:
+                for key in result.keys():
+                    combinedResults[key]=result[key]
+            return [combinedResults]
+
+        # Create a short-circuit detection so that once we move beyond the desired section in the file, we stop looking
+        desiredSectionRegex=None
+        desiredSectionPattern=None 
+        limitToSection=False
+        if self.getRegex().find('::') > 0 and not self.config['fullScan'] and self.config['maxResults'] == 0:
+            desiredSectionRegex=self.getRegex().split('::')[0]
+
+            # If the regex begins with a caret anchor, then drop it as some of our lines we want could have other text at the beginning
+            if desiredSectionRegex[0] == '^':
+                desiredSectionRegex=desiredSectionRegex[1:]
+            
+            # We can only short circuit if these regex syntax characters are balanced
+            parenBalance=desiredSectionRegex.count('(') - desiredSectionRegex.count(')')
+            curlyBalance=desiredSectionRegex.count('{') - desiredSectionRegex.count('}')
+            squareBalance=desiredSectionRegex.count('[') - desiredSectionRegex.count(']')
+            if parenBalance == 0 and curlyBalance == 0 and squareBalance == 0:
+                desiredSectionPattern=re.compile(desiredSectionRegex, re.IGNORECASE)
+                limitToSection=True
+        
+        # Matches the provided pattern
+        pattern=re.compile(self.getRegex(), re.IGNORECASE)
+        
+        # Matches comment lines and [BEGIN], [CISReference], etc.
+        commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')
+        
+        # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
+        blankLinePattern=re.compile(r'::\s*$')
+        
+        # Setup some more state variables
+        counter=0
+        res=[]
+        sectionFound=False
+        inDesiredSection=None
+
+        for system in self.config['systems']:
+            groupDict={}
+            for line in open(system.getFilename()):
+                #Capture the current line's section header
+                if limitToSection:
+                    inDesiredSection=desiredSectionPattern.search(line)
+                    if inDesiredSection:
+                        sectionFound=True
+                found = pattern.search(line)
+                isComment = commentsPattern.search(line)
+                isBlankLine = blankLinePattern.search(line)
+                if found and not isComment and not isBlankLine:
+                    counter+=1
+                    # # Capture the current section as the one we want and flag that we found what we're looking for
+                    # desiredSection=currentSection
+                    # sectionFound=True
+                    # If we're only supposed to grab the matching text...
+                    if self.config['onlyMatching']:
+                        groupDict={}
+                        groupDict['systemname'] = system.sysName
+
+                        for group in self.config['groupList']:
+                            if found.group(group):
+                                foundText=found.group(group)
+
+                                #remove any non-printable characters from the matching results
+                                if not foundText.isprintable():
+                                    printableText = filter(lambda x: x in string.printable, foundText)
+                                    foundText = ''.join(list(printableText))
+
+                                groupDict[group] = foundText
+
+                        if self.config['unique']:
+                            # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError 
+                            # if the value isn't found, in which case we'll add it to the results
+                            try:
+                                res.index(groupDict)
+                            except ValueError:
+                                res.append(groupDict)
+                        else:
+                            res.append(groupDict)
+                    else:
+                        # This paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
+                        # before rejoining on the :: field separator (at the beginning of the line)
+                        foundText=line
+
+                        #remove any non-printable characters from the matching results
+                        if not foundText.isprintable():
+                            printableText = filter(lambda x: x in string.printable, foundText)
+                            foundText = ''.join(list(printableText))
+
+                        res.append({
+                            'SystemName': system.sysName,
+                            'Results': '::'.join((foundText.split('::')[1:])).strip()
+                        })
+
+                    # If we're at the limit of our results
+                    if counter == self.config['maxResults']:
+                        break
+                
+                if (sectionFound and not inDesiredSection and not isComment and not isBlankLine):
+                    break
+        
+        # if this search config requests to combine the results, pass the results to the combine routine
+        if self.config['combine']:
+            res=combineResults(res)
+
+        self.results=res
+
+    def to_screen(self):
+        results=self.results
+
+        #Set up the header row and column widths
+        longest={}
+        for item in results:
+            for key in item.keys():
+                try:
+                    longest[key]
+                except KeyError:
+                    longest[key] = len(key)
+                else:
+                    if len(key) > longest[key]:
+                        longest[key] = len(key)
+                
+                ###PICKUP HERE
+                for value in item[key]:
+                    if len(value) > longest[key]:
+                        longest[key] = len(value)
+                    value=item[key]
+                res+=key+': '+value+'\n'
+        
+        # Return everything except for the final new-line
+        return res[:-1]
+
+
+class System(object):
+    def __init__(self, filename):
+        self.sysName = os.path.split(filename)[-1].replace('.txt', '')
+        self.filename = filename
+        self.scriptDetails = getReportVersion(self.getFilename())
+        if self.scriptDetails[0] == 'KPNIXVERSION':
+            self.OSFamily = 'Linux'
+            self.producer = 'kpnixaudit'
+        elif self.scriptDetails[0] == 'KPWINVERSION':
+            self.OSFamily = 'Windows'
+            self.producer = 'kpwinaudit'
+            OSDetailsSearchConfig = {
+                'systems'   : self,
+                'regex'     : r'System_OSInfo::(ProductName\s+:\s+(?P<ProductName>[\w ]+))|(ReleaseId\s+:\s+(?P<ReleaseId>\w+))|(CurrentBuild\s+:\s+(?P<CurrentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))',
+                'groupList' : [
+                    'ProductName',
+                    'ReleaseId',
+                    'CurrentBuild',
+                    'UBR',
+                ],
+                'maxResults': 4,
+                'combine' : True,
+                'onlyMatching': True,
+            }
+            OSDetails=Search(OSDetailsSearchConfig)
+            OSDetails.findResults()
+            self.productName=OSDetails.results[0]['ProductName']
+            self.ReleaseID=OSDetails.results[0]['ReleaseId']
+            self.CurrentBuild=OSDetails.results[0]['CurrentBuild']
+            self.UBR=OSDetails.results[0]['UBR']
+        else: 
+            self.OSFamily = 'unknown'
+
+    def __str__(self):
+        
+        res=''
+        for item in self.__dict__:
+            value=self.__dict__[item]
+            if not item.startswith('__'):
+                if item == 'scriptDetails':
+                    res+=value[0]+': '+'.'.join(str(i) for i in value[1])+'\n'
+                else:
+                    res+=item+': '+value+'\n'
+        
+        return res
+
+        # return '''
+        # System Name     : %s
+        # File Name       : %s
+        # OS Family       : %s
+        # Script Producer : %s
+        # Script Version  : %s
+        # ''' % (self.getSystemName(), self.getFilename(), self.getOSFamily(), self.getScriptProducer(), self.getScriptVersion())
+
+    def getSystemName(self):
+        return self.sysName
+    
+    def getFilename(self):
+        return self.filename
+
+    def getOSFamily(self):
+        return self.OSFamily
+
+    def getScriptProducer(self):
+        return self.producer
+    
+    def getScriptVersion(self):
+        return self.scriptDetails[1]
+
+def error(*pargs):
+    '''
+    Print an error to STDERR
+    '''
+   
+
+    nativeColor='\033[m'
+
+    # Textwrap.wrap only appears to accept a single text string for wrapping (unlike print('String', variable)).  So, we'll build the full string first.
+    #Set the color to RED
+    text=Fore.RED
+    for arg in pargs:
+        text+=str(arg)
+
+    # Set the color back.
+    text+=nativeColor
+
+    lines=textwrap.wrap(text, width=console.getTerminalSize()[0])
+    for line in lines:
+        print(line, file=sys.stderr)
+
+def getReportVersion(filename):
+    '''
+    Read the file to determine which audit script produced it -- KPNIXAUDIT or KPWINAUDIT.
+    
+    Returns a tuple with (ScriptType, Version) where:
+        ScriptType  - KPNIXVERSION, KPWINVERSION, ... unknown
+        Version     - a list of [major, minor, release] such as [0, 4, 3] for "0.4.3"
+    '''
+
+    found=False
+    # The following regex matches
+    #   producer:       "KP...VERSION"
+    #   Non-capturing:  ": " (so we can throw it away)
+    #   version:        Version string consisting of 3 sets of one or more digits separated by periods
+    pattern=re.compile(r'(?P<producer>KP\w{3}VERSION)(?:: )(?P<version>\d+.\d+.\d+)')
+    for line in open(filename):
+        match=pattern.search(line)
+        if match:
+            found=True
+            reportType=match.group('producer')
+            #Turn the version string into a list of integers instead of a list of strings consisting of numbers.
+            reportVersion=[int(i) for i in match.group('version').split('.')]
+            break
+
+    if not found:
+        reportType='unknown'
+        reportVersion=None
+    
+    return (reportType, reportVersion)
+
+
+if __name__ == '__main__':
+    test=System('/home/randy/downloads/Test/THE-BEAST.txt')
+    print(test)
+    config={
+        'systems': test,
+        'regex': r'System_Services::(?!DisplayName)(?!--)(?P<systemname>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
+        'maxResults': 5,
+        'onlyMatching': True,
+        'groupList': [
+            'systemname',
+            'status',
+            'startuptype',
+        ],
+        'truncate': True,
+        'quiet': True,
+    }
+    search1=Search(config)
+    print(search1.config)
+    search1.findResults()
+    print(search1)
