@@ -140,7 +140,7 @@ class Search:
                 Self        Class: Search       The search object to take action against
 
             Outputs:
-                res         List of results consisting of a dictionary of each result
+                self.results                            List of results consisting of a dictionary of each result
                     system              Class: System   Reference to the System where the result was found
                     result | groupNames String          The matching results.  will be a one item dictionary with key 'Results' OR
                                                         a dictionary key for each groupname that was provided in 
@@ -225,7 +225,7 @@ class Search:
                                     printableText = filter(lambda x: x in string.printable, foundText)
                                     foundText = ''.join(list(printableText))
 
-                                groupDict[group] = foundText
+                                groupDict[group] = foundText.strip()
 
                         if self.config['unique']:
                             # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError 
@@ -282,20 +282,22 @@ class Search:
                 colWidth['Results']-=whiteSpace                             #If groupList wasn't used...
             reduceBy=1
             firstPass=True
+            needShorter = False
 
             # Build the format string and the header row
-            while firstPass or (totalWidth > screenWidth and truncate):                #Keep making the columns shorter until they fit on the available screenWidth
+            while firstPass or needShorter:                #Keep making the columns shorter until they fit on the available screenWidth
                 totalWidth=0
                 formatStr=''
                 header=[]
 
                 for col in colWidth:
-                    if colWidth[col] > minColWidth and colWidth[col] > len(col):    # make sure that a min column width is preserved and no shorter than the column heading
+                    if needShorter and colWidth[col] > minColWidth and colWidth[col] > len(col):    # make sure that a min column width is preserved and no shorter than the column heading
                         colWidth[col]-=reduceBy
                     formatStr+=f'%-{colWidth[col]-whiteSpace}s'+' '*whiteSpace
                     header+=[str(col).upper()]
                     totalWidth+=colWidth[col]
                 firstPass=False
+                needShorter=(totalWidth > screenWidth) and truncate
 
             formatStr=formatStr[:-whiteSpace]                #Remove the final whitespace from the end of the line
                     
