@@ -15,23 +15,24 @@ errorCodes = {
 }
 
 class Search:
-    '''
-    Inputs:
-        Config      Dictionary containing the parameters of the search
-            systems             List: Class System  Systems to which to apply the search
-            regex               Raw string          Python-compatible regex to use https://docs.python.org/3/howto/regex.html
-            maxResults          Integer             Maximum number of results to return per System (default: 0 - unlimited)
-            onlyMatching        Boolean             Limit the RE match to only the text that matches the RE (default: full line)
-            unique              Boolean             Only display one instance of each match 
-            groupList           List                Regex groups to display -- supports both PCRE group nums and Python named groups (?P<groupName>regex)
-            truncate            Boolean             Truncate the screen output to display width
-            quiet               Boolean             Suppress output display to summary info only
-            fullScan            Boolean             Override the search short-circuit logic to always scan the entire System.filename
-            combine             Boolean             Combine results from across multiple lines to form a single record (only valid if groupList is specified)
-                                                    e.g. matching Windows ProductName, ReleaseId, CurrentBuild, and UBR code
-
-    '''
     def __init__(self, config):
+        '''
+        Inputs:
+            Config      Dictionary containing the parameters of the search
+                systems             List: Class System  Systems to which to apply the search
+                regex               Raw string          Python-compatible regex to use https://docs.python.org/3/howto/regex.html
+                maxResults          Integer             Maximum number of results to return per System (default: 0 - unlimited)
+                onlyMatching        Boolean             Limit the RE match to only the text that matches the RE (default: full line)
+                unique              Boolean             Only display one instance of each match 
+                groupList           List                Regex groups to display -- supports both PCRE group nums and Python named groups (?P<groupName>regex)
+                truncate            Boolean             Truncate the screen output to display width
+                quiet               Boolean             Suppress output display to summary info only
+                fullScan            Boolean             Override the search short-circuit logic to always scan the entire System.filename
+                combine             Boolean             Combine results from across multiple lines to form a single record (only valid if groupList is specified)
+                                                        e.g. matching Windows ProductName, ReleaseId, CurrentBuild, and UBR code
+        '''
+
+        # Define the list of possible options.  Used later to determine if, e.g., the YAML file has an error in it
         configOptions = [
             'systems',
             'regex',
@@ -63,6 +64,7 @@ class Search:
                 error('Invalid search config key [%s]' % key)
                 exit(errorCodes['invalidConfig'])
         
+        # Check if 'systems' has been defined and quit with an error if not
         try:
             self.config['systems']
         except KeyError:
@@ -72,6 +74,7 @@ class Search:
             if type(self.config['systems']) != list:                    # If a single System object was passed, then make it a list
                 self.config['systems'] = [self.config['systems']]       # Later, findResults expects a list to iterate over
 
+        # Check if 'regex' has been defined and quit with an error if not
         try:
             self.config['regex']
         except KeyError:
@@ -95,6 +98,9 @@ class Search:
                 error('groupList was providing.  Forcing onlyMatching...')
 
     def __str__(self):
+        '''
+        Returns a prettified list of name/vaule pairs in the Search.config dictionary
+        '''
         res=[]
         for key in self.config.keys():
             try:
@@ -105,6 +111,9 @@ class Search:
         return '\n'.join(res)
 
     def getRegex(self):
+        '''
+        Returns the regular expression in the Search.config dictionary
+        '''
         return self.config['regex']
 
     def findResults(self):
@@ -116,15 +125,16 @@ class Search:
                 res         List of results consisting of a dictionary of each result
                     system              Class: System   Reference to the System where the result was found
                     result | groupNames String          The matching results.  will be a one item dictionary with key 'Results' OR
-                                                        a dictionary key for each groupname that was used
+                                                        a dictionary key for each groupname that was provided in 
+                                                        Search.config['grounName']
         '''
         def combineResults(results):
             '''
                 Inputs:
-                    results     List of results         List of one-item dictionaries for each groupList group
+                    results         List of results         List of one-item dictionaries for each groupList group
 
                 Outputs
-                    res         List of results         One list item where each groupList value is comined into a dictionary
+                    combinedResults Dictionary of results   One list item where each groupList value is comined into a dictionary
             '''
             combinedResults={}
             for result in results:
