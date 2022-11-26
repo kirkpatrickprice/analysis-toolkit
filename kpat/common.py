@@ -247,28 +247,14 @@ class Search:
 
     def to_screen(self):
         results=self.results
+        whiteSpace=2                # Number of spaces between columns
 
         #Set up the header row and column widths
-        longest={}
-        for item in results:
-            for key in item.keys():
-                try:
-                    longest[key]
-                except KeyError:
-                    longest[key] = len(key)
-                else:
-                    if len(key) > longest[key]:
-                        longest[key] = len(key)
-                
-                ###PICKUP HERE
-                for value in item[key]:
-                    if len(value) > longest[key]:
-                        longest[key] = len(value)
-                    value=item[key]
-                res+=key+': '+value+'\n'
+        colWidth=getLongest(results)
+        print('Column widths are:\n',colWidth)
         
         # Return everything except for the final new-line
-        return res[:-1]
+        return True
 
 
 class System(object):
@@ -391,17 +377,52 @@ def getReportVersion(filename):
     
     return (reportType, reportVersion)
 
+def getLongest(data, pad=0):
+    '''
+    Inputs:
+        data            ==> A list of either strings or dictionaries whose key-value pairs are also strings
+        pad             ==> An optional pad to add (e.g. for whitespace between columns)
+
+    Returns the longest item in a list of dictionary.  If data type is:
+        List of strings         ==> The length of the longest item in the list
+        List of Dictionaries    ==> A dictionary of the longest item for each key (includes both max(len(key)) and max(len(value)))
+
+    If type(data) is not a list or if it's neither of strings or dictionaries, it will return type None, which should cause most
+    calling code to fail
+
+    NOTE: List elements are assumed to be homogenous -- the first item in the list is used to determine the list element type
+    '''
+    res=None                        # default res to None type
+    if type(data) == list:
+        if type(data[0]) == dict:
+            res={}
+            for item in data:
+                for key in item.keys():
+                    try:
+                        res[key]
+                    except KeyError:
+                        res[key] = len(key) + pad
+                    else:
+                        if len(key) > res[key] - pad:
+                            res[key] = len(key) + pad
+                    
+                    # Check if the key's value is longer than the key
+                    if len(item[key]) > res[key] - pad:
+                        res[key] = len(item[key]) + pad
+        elif type(data[0]) == str:
+            res=max(data, key=len) + pad
+    return res
 
 if __name__ == '__main__':
     test=System('/home/randy/downloads/Test/THE-BEAST.txt')
     print(test)
     config={
         'systems': test,
-        'regex': r'System_Services::(?!DisplayName)(?!--)(?P<systemname>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
+        'regex': r'System_Services::(?!DisplayName)(?!--)(?P<servicename>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
         'maxResults': 5,
         'onlyMatching': True,
         'groupList': [
-            'systemname',
+            'servicename',
             'status',
             'startuptype',
         ],
@@ -409,6 +430,6 @@ if __name__ == '__main__':
         'quiet': True,
     }
     search1=Search(config)
-    print(search1.config)
-    search1.findResults()
     print(search1)
+    search1.findResults()
+    search1.to_screen()
