@@ -30,6 +30,8 @@ class Search:
                 fullScan            Boolean             Override the search short-circuit logic to always scan the entire System.filename
                 combine             Boolean             Combine results from across multiple lines to form a single record (only valid if groupList is specified)
                                                         e.g. matching Windows ProductName, ReleaseId, CurrentBuild, and UBR code
+                comment             String              A helpful comment that will be added to the output file to describe how
+                                                        to use this particular set of search results
         '''
 
         # Define the list of possible options.  Used later to determine if, e.g., the YAML file has an error in it
@@ -44,6 +46,7 @@ class Search:
             'quiet',
             'fullScan',
             'combine',
+            'comment',
         ]
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
@@ -97,24 +100,26 @@ class Search:
                 self.config['onlyMatching'] = True
                 error('groupList was providing.  Forcing onlyMatching...')
 
-    def __str__(self):
+    def printConfig(self):
         '''
-        Returns a prettified list of name/vaule pairs in the Search.config dictionary
+        Prints a prettified list of name/vaule pairs in the Search.config dictionary
+
+        Returns None
         '''
-        res=[]
-        for key in self.config.keys():
-            try:
-                if key == 'systems':
-                    sysList=[]
-                    for system in self.config['systems']:
-                        sysList.append(system.getSystemName())
-                    res.append(key+': ['+', '.join(sysList)+']')
-                else:
-                    res.append(key+': '+self.config[key])
-            except TypeError:
-                res.append(key+': '+str(self.config[key]))
+
+        colWidth=getLongest(list(self.config.keys()))
+        print('getConfig Longest\n',colWidth)
+        for key in sorted(self.config.keys()):
+            if key == 'systems':
+                sysList=[]
+                for system in self.config['systems']:
+                    sysList.append(system.getSystemName())
+                content='['+', '.join(sysList)+']'
+            else:
+                content=str(self.config[key])
+            print(f'%-{colWidth}s: %s' % (key, content))
         
-        return '\n'.join(res)
+        return None
 
     def getRegex(self):
         '''
@@ -257,7 +262,6 @@ class Search:
 
         #Set up the header row and column widths
         colWidth=getLongest(results)
-        print('Column widths are:\n',colWidth)
         
         # Return everything except for the final new-line
         return True
@@ -408,7 +412,7 @@ def getLongest(data, pad=0):
                     if len(item[key]) > res[key] - pad:
                         res[key] = len(item[key]) + pad
         elif type(data[0]) == str:
-            res=max(data, key=len) + pad
+            res=len(max(data, key=len))+pad
     return res
 
 if __name__ == '__main__':
@@ -426,8 +430,9 @@ if __name__ == '__main__':
         ],
         'truncate': True,
         'quiet': True,
+        'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details'''
     }
     search1=Search(config)
-    print(search1)
+    search1.printConfig()
     search1.findResults()
     search1.to_screen()
