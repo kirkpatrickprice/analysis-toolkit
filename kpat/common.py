@@ -261,7 +261,26 @@ class Search:
         whiteSpace=2                # Number of spaces between columns
 
         #Set up the header row and column widths
-        colWidth=getLongest(results)
+        colWidth=getLongest(results, whiteSpace)
+        colWidth[self.config['groupList'][-1]]-=whiteSpace          #Remove the pad from the last item in the groupList
+        formatStr=f''
+        header=[]
+        totalWidth=0
+
+        # Build the format string and the header row
+        for col in colWidth:
+            formatStr+=f'%-{colWidth[col]}s'
+            header+=[str(col).capitalize()]
+            totalWidth+=colWidth[col]
+                
+        print(formatStr % tuple(header))
+        print('='*totalWidth)
+
+        for item in results:
+            values=[]
+            for key in item.keys():
+                values+=[item[key]]
+            print(formatStr % tuple(values))
         
         # Return everything except for the final new-line
         return True
@@ -383,7 +402,7 @@ def getLongest(data, pad=0):
     '''
     Inputs:
         data            ==> A list of either strings or dictionaries whose key-value pairs are also strings
-        pad             ==> An optional pad to add (e.g. for whitespace between columns)
+        pad             ==> An optional pad to add (e.g. for whitespace between columns).
 
     Returns the longest item in a list of dictionary.  If data type is:
         List of strings         ==> The length of the longest item in the list
@@ -410,7 +429,7 @@ def getLongest(data, pad=0):
                     
                     # Check if the key's value is longer than the key
                     if len(item[key]) > res[key] - pad:
-                        res[key] = len(item[key]) + pad
+                        res[key] = len(item[key]) + pad            
         elif type(data[0]) == str:
             res=len(max(data, key=len))+pad
     return res
