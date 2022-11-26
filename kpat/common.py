@@ -189,12 +189,13 @@ class Search:
         blankLinePattern=re.compile(r'::\s*$')
         
         # Setup some more state variables
-        counter=0
         res=[]
-        sectionFound=False
-        inDesiredSection=None
 
         for system in self.config['systems']:
+            counter=0
+            sectionFound=False
+            inDesiredSection=None
+
             groupDict={}
             for line in open(system.getFilename()):
                 #Capture the current line's section header
