@@ -266,7 +266,8 @@ class Search:
     def to_screen(self):
         results=self.results
         screenWidth=console.getTerminalSize()[0]
-        print('='*screenWidth)
+        minColWidth=12
+        print('<>'*screenWidth)
         print('Name: %s' % self.getName())
         if not self.config['quiet']:
             truncate=self.config['truncate']
@@ -278,7 +279,7 @@ class Search:
                 colWidth[self.config['groupList'][-1]]-=whiteSpace          #Remove the pad from the last item in the groupList
             except KeyError:
                 colWidth['Results']-=whiteSpace                             #If groupList wasn't used...
-            reduce=0
+            reduceBy=1
             firstPass=True
 
             # Build the format string and the header row
@@ -288,11 +289,11 @@ class Search:
                 header=[]
 
                 for col in colWidth:
-                    colWidth[col]-=reduce
+                    if colWidth[col] > minColWidth and colWidth[col] > len(col):    # make sure that a min column width is preserved and no shorter than the column heading
+                        colWidth[col]-=reduceBy
                     formatStr+=f'%-{colWidth[col]-whiteSpace}s'+' '*whiteSpace
                     header+=[str(col).upper()]
                     totalWidth+=colWidth[col]
-                reduce+=1
                 firstPass=False
 
             formatStr=formatStr[:-whiteSpace]                #Remove the final whitespace from the end of the line
@@ -305,7 +306,7 @@ class Search:
                 for key in item.keys():
                     value=item[key]
                     if len(value) > colWidth[key]:
-                        value=value[:colWidth[key]-reduce-3]+'...'
+                        value=value[:colWidth[key]-reduceBy-3]+'...'
                     values+=[value]
                 print(formatStr % tuple(values))
         print('Results found: %d\n' % len(results))
@@ -462,7 +463,10 @@ def getLongest(data, pad=0):
     return res
 
 if __name__ == '__main__':
-    test=System('/home/randy/downloads/Test/THE-BEAST-221126.txt')
+    test=[
+        System('/home/randy/downloads/Test/test01.txt'),
+        System('/home/randy/downloads/Test/test02.txt'),
+    ]
     print(test)
     configs=[
         {
