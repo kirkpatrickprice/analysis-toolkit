@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import re
 import os
 import textwrap
@@ -19,6 +21,7 @@ class Search:
         '''
         Inputs:
             Config      Dictionary containing the parameters of the search
+                name                String              A name for the search config
                 systems             List: Class System  Systems to which to apply the search
                 regex               Raw string          Python-compatible regex to use https://docs.python.org/3/howto/regex.html
                 maxResults          Integer             Maximum number of results to return per System (default: 0 - unlimited)
@@ -36,6 +39,7 @@ class Search:
 
         # Define the list of possible options.  Used later to determine if, e.g., the YAML file has an error in it
         configOptions = [
+            'name',
             'systems',
             'regex',
             'maxResults',
@@ -50,6 +54,7 @@ class Search:
         ]
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
+            'name': 'Manual',
             'maxResults': 0,
             'onlyMatching': False,
             'unique': False,
@@ -108,7 +113,6 @@ class Search:
         '''
 
         colWidth=getLongest(list(self.config.keys()))
-        print('getConfig Longest\n',colWidth)
         for key in sorted(self.config.keys()):
             if key == 'systems':
                 sysList=[]
@@ -126,6 +130,9 @@ class Search:
         Returns the regular expression in the Search.config dictionary
         '''
         return self.config['regex']
+
+    def getName(self):
+        return self.config['name']
 
     def findResults(self):
         '''
@@ -258,30 +265,50 @@ class Search:
 
     def to_screen(self):
         results=self.results
-        whiteSpace=2                # Number of spaces between columns
+        screenWidth=console.getTerminalSize()[0]
+        print('='*screenWidth)
+        print('Name: %s' % self.getName())
+        if not self.config['quiet']:
+            truncate=self.config['truncate']
+            whiteSpace=2                                # Number of spaces between columns
 
-        #Set up the header row and column widths
-        colWidth=getLongest(results, whiteSpace)
-        colWidth[self.config['groupList'][-1]]-=whiteSpace          #Remove the pad from the last item in the groupList
-        formatStr=f''
-        header=[]
-        totalWidth=0
+            #Set up the header row and column widths
+            colWidth=getLongest(results, whiteSpace)
+            try:
+                colWidth[self.config['groupList'][-1]]-=whiteSpace          #Remove the pad from the last item in the groupList
+            except KeyError:
+                colWidth['Results']-=whiteSpace                             #If groupList wasn't used...
+            reduce=0
+            firstPass=True
 
-        # Build the format string and the header row
-        for col in colWidth:
-            formatStr+=f'%-{colWidth[col]}s'
-            header+=[str(col).capitalize()]
-            totalWidth+=colWidth[col]
-                
-        print(formatStr % tuple(header))
-        print('='*totalWidth)
+            # Build the format string and the header row
+            while firstPass or (totalWidth > screenWidth and truncate):                #Keep making the columns shorter until they fit on the available screenWidth
+                totalWidth=0
+                formatStr=''
+                header=[]
 
-        for item in results:
-            values=[]
-            for key in item.keys():
-                values+=[item[key]]
-            print(formatStr % tuple(values))
-        
+                for col in colWidth:
+                    colWidth[col]-=reduce
+                    formatStr+=f'%-{colWidth[col]-whiteSpace}s'+' '*whiteSpace
+                    header+=[str(col).upper()]
+                    totalWidth+=colWidth[col]
+                reduce+=1
+                firstPass=False
+
+            formatStr=formatStr[:-whiteSpace]                #Remove the final whitespace from the end of the line
+                    
+            print(formatStr % tuple(header))
+            print('='*totalWidth)
+
+            for item in results:
+                values=[]
+                for key in item.keys():
+                    value=item[key]
+                    if len(value) > colWidth[key]:
+                        value=value[:colWidth[key]-reduce-3]+'...'
+                    values+=[value]
+                print(formatStr % tuple(values))
+        print('Results found: %d\n' % len(results))
         # Return everything except for the final new-line
         return True
 
@@ -404,7 +431,7 @@ def getLongest(data, pad=0):
         data            ==> A list of either strings or dictionaries whose key-value pairs are also strings
         pad             ==> An optional pad to add (e.g. for whitespace between columns).
 
-    Returns the longest item in a list of dictionary.  If data type is:
+    Returns the longest item.  If data type is:
         List of strings         ==> The length of the longest item in the list
         List of Dictionaries    ==> A dictionary of the longest item for each key (includes both max(len(key)) and max(len(value)))
 
@@ -435,23 +462,37 @@ def getLongest(data, pad=0):
     return res
 
 if __name__ == '__main__':
-    test=System('/home/randy/downloads/Test/THE-BEAST.txt')
+    test=System('/home/randy/downloads/Test/THE-BEAST-221126.txt')
     print(test)
-    config={
-        'systems': test,
-        'regex': r'System_Services::(?!DisplayName)(?!--)(?P<servicename>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
-        'maxResults': 5,
-        'onlyMatching': True,
-        'groupList': [
-            'servicename',
-            'status',
-            'startuptype',
-        ],
-        'truncate': True,
-        'quiet': True,
-        'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details'''
-    }
-    search1=Search(config)
-    search1.printConfig()
-    search1.findResults()
-    search1.to_screen()
+    configs=[
+        {
+            'systems': test,
+            'regex': r'System_Services::(?!DisplayName)(?!--)(?P<servicename>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
+            'maxResults': 5,
+            'onlyMatching': True,
+            'groupList': [
+                'servicename',
+                'status',
+                'startuptype',
+            ],
+            'truncate': True,
+            'quiet': False,
+            'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details'''
+        },
+        {
+            'name': 'WindowsUpdateHistory',
+            'systems': test,
+            'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
+            'maxResults': 10,
+            'onlyMatching': False,
+            'truncate': True,
+            'quiet': False,
+            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history'''
+        },
+    ]
+    for config in configs:
+        print('\n'+'<>'*50)
+        search=Search(config)
+        search.printConfig()
+        search.findResults()
+        search.to_screen()
