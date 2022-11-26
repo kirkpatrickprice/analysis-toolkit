@@ -104,7 +104,13 @@ class Search:
         res=[]
         for key in self.config.keys():
             try:
-                res.append(key+': '+self.config[key])
+                if key == 'systems':
+                    sysList=[]
+                    for system in self.config['systems']:
+                        sysList.append(system.getSystemName())
+                    res.append(key+': ['+', '.join(sysList)+']')
+                else:
+                    res.append(key+': '+self.config[key])
             except TypeError:
                 res.append(key+': '+str(self.config[key]))
         
