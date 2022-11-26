@@ -303,14 +303,6 @@ class System(object):
         
         return res
 
-        # return '''
-        # System Name     : %s
-        # File Name       : %s
-        # OS Family       : %s
-        # Script Producer : %s
-        # Script Version  : %s
-        # ''' % (self.getSystemName(), self.getFilename(), self.getOSFamily(), self.getScriptProducer(), self.getScriptVersion())
-
     def getSystemName(self):
         return self.sysName
     
