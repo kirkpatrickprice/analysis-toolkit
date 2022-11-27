@@ -348,7 +348,7 @@ class Search:
         # Create a new Excel workbook to store the results
         # Use 'constant_memory' mode to write the results to the file as they are saved / saves memory
         wb=xlsxwriter.Workbook(path+'/'+filename, {'constant_memory': True})
-        ws=wb.add_worksheet(self.getName())
+        ws=wb.add_worksheet(self.config['name'])
 
         # We're gonna cheat a little bit by using getLongest.  We don't really need column widths, just the column names
         columns=getLongest(self.results)
