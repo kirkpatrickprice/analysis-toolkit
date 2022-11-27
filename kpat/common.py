@@ -7,6 +7,7 @@ import sys
 from colorama import Fore
 import console
 import string
+import xlsxwriter
 
 
 errorCodes = {
@@ -35,6 +36,8 @@ class Search:
                                                         e.g. matching Windows ProductName, ReleaseId, CurrentBuild, and UBR code
                 comment             String              A helpful comment that will be added to the output file to describe how
                                                         to use this particular set of search results
+                outFile             String              File name to save the results to
+                outPath             String              Path to save the results to (Default: ./saved)
         '''
 
         # Define the list of possible options.  Used later to determine if, e.g., the YAML file has an error in it
@@ -51,10 +54,12 @@ class Search:
             'fullScan',
             'combine',
             'comment',
+            'outFile',
+            'outPath',
         ]
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
-            'name': 'Manual',
+            'name': '',
             'maxResults': 0,
             'onlyMatching': False,
             'unique': False,
@@ -62,6 +67,7 @@ class Search:
             'quiet': False,
             'fullScan': False,
             'combine': False,
+            'outPath': 'saved',
         }
 
         # Set any user-provided config options
@@ -264,7 +270,7 @@ class Search:
 
         self.results=res
 
-    def to_screen(self):
+    def toScreen(self):
         results=self.results
         screenWidth=console.getTerminalSize()[0]
         minColWidth=12
@@ -316,6 +322,67 @@ class Search:
         # Return everything except for the final new-line
         return True
 
+    def toExcel(self):
+        '''
+        Saves the results to an Excel file in self.config['outPath']/self.config['outFile]
+        '''
+
+        #Set up some variables we'll need...
+        results=self.results
+        path=self.config['outPath']
+        filename=self.config['outFile']
+        header=[]
+        cell={
+            'row': 0,
+            'col': 0,
+        }
+
+        # Create the folder if it doesn't already exist
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        # If the filename doesn't already end with an '.xlsx', then add it
+        if not filename.endswith('.xlsx'):
+            filename+='.xlsx'
+
+        # Create a new Excel workbook to store the results
+        # Use 'constant_memory' mode to write the results to the file as they are saved / saves memory
+        wb=xlsxwriter.Workbook(path+'/'+filename, {'constant_memory': True})
+        ws=wb.add_worksheet(self.config['name'])
+
+        # We're gonna cheat a little bit by using getLongest.  We don't really need column widths, just the column names
+        columns=getLongest(self.results)
+
+        # Write the comment (if provided) into the first cell
+        try:
+            ws.write(cell['row'], cell['col'], self.config['comment'])
+            cell['row']+=2                                            #Skip a line before writing the header
+        except KeyError:
+            pass                                                    # Do nothing if there's no comment
+
+        for col in columns:
+            ws.write(cell['row'], cell['col'], col)
+            cell['col']+=1
+
+        # Reset the cursor to the beginning of the next row
+        cell['row']+=1
+        cell['col']=0
+
+        for result in results:
+            for key in result.keys():
+                value=result[key]
+                ws.write(cell['row'], cell['col'], value)
+                cell['col']+=1
+            # Reset the cursor to the beginning of the next row
+            cell['row']+=1
+            cell['col']=0
+
+        # Save the workbook
+        try:
+            wb.close()        
+        except:
+            print('File '+filename+' appears to be open.  Close the file and try again\n')
+            exit(errorCodes['generalError'])
 
 class System(object):
     def __init__(self, filename):
@@ -465,12 +532,15 @@ def getLongest(data, pad=0):
             res=len(max(data, key=len))+pad
     return res
 
+############################################
+####### Module Self-test Code ##############
+############################################
+
 if __name__ == '__main__':
     test=[
         System('/home/randy/downloads/Test/test01.txt'),
         System('/home/randy/downloads/Test/test02.txt'),
     ]
-    print(test)
     configs=[
         {
             'systems': test,
@@ -483,8 +553,9 @@ if __name__ == '__main__':
                 'startuptype',
             ],
             'truncate': True,
-            'quiet': False,
-            'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details'''
+            'quiet': True,
+            'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
+            'outFile': 'system_services'
         },
         {
             'name': 'WindowsUpdateHistory',
@@ -493,13 +564,14 @@ if __name__ == '__main__':
             'maxResults': 10,
             'onlyMatching': False,
             'truncate': True,
-            'quiet': False,
-            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history'''
+            'quiet': True,
+            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
+            'outFile': 'windows_update_history'
         },
     ]
     for config in configs:
-        print('\n'+'<>'*50)
         search=Search(config)
-        search.printConfig()
+        #search.printConfig()
         search.findResults()
-        search.to_screen()
+        search.toScreen()
+        search.toExcel()
