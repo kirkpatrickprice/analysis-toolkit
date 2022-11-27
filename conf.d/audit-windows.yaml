@@ -26,6 +26,9 @@
 #   groupList:    Regex groups to display.  Accepts either PCRE group numbers, or Python RE Named Groups.
 #   unique:       Display only one instance of each unique line from all files (similar to sort -u)
 #   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
+#   combine:      Combine the results from multi-line content into one result (only works with groupList)
+#   outFile:      Filename to use for saving results.  Defaults to the top-level name used for each check
+#   outPath:      Folder name to use for saving results.  Defaults to "saved" in the current folder
 
 ###################################################################
 ######################### System_* items ##########################
@@ -37,7 +40,8 @@
   groupList:
     - 'KPWINVERSION'
 01_system_02_os_version:                                                     
-  regex: 'System_OSInfo::((ProductName)|(ReleaseId)|(CurrentBuild)|(UBR)).*'
+  regex: 'System_OSInfo::(ProductName\s+:\s+(?P<ProductName>[\w ]+))|(ReleaseId\s+:\s+(?P<ReleaseId>\w+))|(CurrentBuild\s+:\s+(?P<CurrentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
+  combine: True
   maxResults: 4
 01_system_03_bitlocker_status:
   regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'

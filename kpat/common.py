@@ -543,6 +543,7 @@ if __name__ == '__main__':
     ]
     configs=[
         {
+            'name': 'System Services',
             'systems': test,
             'regex': r'System_Services::(?!DisplayName)(?!--)(?P<servicename>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
             'maxResults': 5,
