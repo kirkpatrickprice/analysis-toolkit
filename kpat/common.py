@@ -331,8 +331,11 @@ class Search:
         results=self.results
         path=self.config['outPath']
         filename=self.config['outFile']
-        header=[]
-        cell={
+        defaultCommentWidth=6                  # Number of columns to merge into the comment cell.  We'll adjust based on the actual number of columns so that the marged cell doesn't get out of control
+        heightPerLine=15                # Excel row height for a single row (defaults to 15 on my Excel).  We'll use it to approximate a row height for the merged comment cell
+        commentLen=len(self.config['comment'])
+        commentHeight=int(commentLen / 50) * heightPerLine
+        cursor={
             'row': 0,
             'col': 0,
         }
@@ -347,35 +350,91 @@ class Search:
 
         # Create a new Excel workbook to store the results
         # Use 'constant_memory' mode to write the results to the file as they are saved / saves memory
-        wb=xlsxwriter.Workbook(path+'/'+filename, {'constant_memory': True})
+        #wb=xlsxwriter.Workbook(path+'/'+filename, {'constant_memory': True})
+        wb=xlsxwriter.Workbook(path+'/'+filename)
         ws=wb.add_worksheet(self.config['name'])
+
+        # Create Excel format objects we'll need to make things pretty
+        merge_format = wb.add_format({
+            'border': 2,
+            'align': 'left',
+            'valign': 'top',
+            'text_wrap': True,
+        })
+        cell_format = wb.add_format({
+            'border': 0,
+            'align': 'left',
+            'valign':'top',
+            'text_wrap': True,
+        })                                               
 
         # We're gonna cheat a little bit by using getLongest.  We don't really need column widths, just the column names
         columns=getLongest(self.results)
 
         # Write the comment (if provided) into the first cell
         try:
-            ws.write(cell['row'], cell['col'], self.config['comment'])
-            cell['row']+=2                                            #Skip a line before writing the header
+#            ws.write(cursor['row'], cursor['col'], 'Comment', cell_format)
+            if len(columns) > 2:
+                commentWidth=defaultCommentWidth
+            else:
+                commentWidth = 1
+            ws.merge_range(cursor['row'], cursor['col'], cursor['row'], cursor['col']+commentWidth, self.config['comment'], merge_format)
+            ws.set_row(cursor['row'], commentHeight)
+            cursor['row']+=2                                            #Skip a line before writing the header
         except KeyError:
             pass                                                    # Do nothing if there's no comment
 
-        for col in columns:
-            ws.write(cell['row'], cell['col'], col)
-            cell['col']+=1
+        # # Write the header row
+        # for col in columns:
+        #     ws.write(cursor['row'], cursor['col'], col, cell_format)
+        #     cursor['col']+=1
 
-        # Reset the cursor to the beginning of the next row
-        cell['row']+=1
-        cell['col']=0
+        # Populate the Excel table's header row
+        tableColumns=[]
+        for col in columns:
+            tableColumns.append({'header': col})
+
+        # Move the cursor to the beginning of the next row
+        cursor['row']+=1
+        cursor['col']=0
+
+        # Get the dimensions for the table we'll add to contain the results
+        tableStart={}
+        tableStart['row']=cursor['row']
+        tableStart['col']=0
+        tableEnd={}
+        tableEnd['row']=tableStart['row']+len(results)
+        tableEnd['col']=tableStart['col']+len(columns)-1
+
+        # Initialize a list for use in creating the Excel table
+        tableData=[]
 
         for result in results:
+            rowData=[]
             for key in result.keys():
-                value=result[key]
-                ws.write(cell['row'], cell['col'], value)
-                cell['col']+=1
-            # Reset the cursor to the beginning of the next row
-            cell['row']+=1
-            cell['col']=0
+                rowData.append(result[key])                
+            tableData.append(rowData.copy())
+            
+        tableName=self.getName().replace(' ', '_')
+        if tableName[0].isdigit():
+            tableName='_'+tableName
+
+        # Create a table out of the results so their easier to work with.
+        ws.add_table(
+            tableStart['row'], 
+            tableStart['col'], 
+            tableEnd['row'], 
+            tableEnd['col'], 
+            {
+                'data': tableData,
+                'columns': tableColumns,
+                'name': tableName
+            }
+        )
+
+        # Move the cursor to the beginning of the next row after the end of the table
+        cursor['row']=tableEnd['row']+1
+        cursor['col']=0
 
         # Save the workbook
         try:
@@ -416,6 +475,8 @@ class System(object):
             self.UBR=OSDetails.results[0]['UBR']
         else: 
             self.OSFamily = 'unknown'
+            error('Report version details could not be determined.\nFile will not be processed.')
+            error('Filename: '+self.getFilename())
 
     def __str__(self):
         
@@ -538,8 +599,9 @@ def getLongest(data, pad=0):
 
 if __name__ == '__main__':
     test=[
-        System('/home/randy/downloads/Test/test01.txt'),
-        System('/home/randy/downloads/Test/test02.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/THE-BEAST.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/TOR3INFRACCTV06.txt'),
     ]
     configs=[
         {
@@ -572,7 +634,7 @@ if __name__ == '__main__':
     ]
     for config in configs:
         search=Search(config)
-        #search.printConfig()
+        search.printConfig()
         search.findResults()
         search.toScreen()
         search.toExcel()
