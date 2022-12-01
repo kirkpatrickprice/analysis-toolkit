@@ -38,7 +38,57 @@ class Search:
                                                         to use this particular set of search results
                 outFile             String              File name to save the results to
                 outPath             String              Path to save the results to (Default: ./saved)
+                sysFilter           List: Dictionary   A list of conditions represented in a dictionary of:
+                                                            [
+                                                                {
+                                                                    "attr": <see below>,
+                                                                    "comp": "eq" | "gt" | "lt" | "ge" | "le", "in"
+                                                                    "value": <see below>,
+                                                                },
+                                                                ...
+                                                            ]
+                                                        Attributes and values (attr : value) are platform-dependent attributes of the System class such as:
+                                                        For all:
+                                                            osFamily        : Windows | Linux
+                                                            producer        : kpnixaudit | kpwinaudit                                                            
+                                                        For Windows (attr : value):
+                                                            kpwinversion    : A list of [major, minor, release] such as [0, 6, 15]
+                                                            productName     : Exactly as it appears from Windows - e.g. "Windows 10 Professional"
+                                                            releaseID       : Exactly as it appears from Windows - e.g. "2009"
+                                                            currentBuild    : Exactly as it appears from Windows - e.g. "17763"
+                                                            ubr             : Exactly as it appears from WIndows - e.g. "3153"
+                                                        For Linux:
+                                                            kpnixversion    : A list of [major, minor, release] such as [0, 4, 3]
+                                                            distroFamily    : rpm | deb | unknown
+                                                            osPrettyName    : Directly from /etc/os-release - e.g. "Ununtu 22.04.1 LTS"
+                                                            rpmPrettyName   : For RPM-based distros, osPrettyName will be non-descript, but rpmPrettyName will be more specific
         '''
+
+        def compareAttr(f, system):
+            '''
+            Compares attributes provided in a sysFilter dictionary against a system object.  Returns True or False
+            '''
+            
+            comp=f['comp']
+            value1=f['value']
+            value2=system.__getattribute__(f['attr'])
+            
+            res=False
+
+            if comp == 'eq':
+                res=value1 == value2
+            elif comp == 'gt':
+                res=value1 > value2
+            elif comp == 'lt':
+                res=value1 < value2
+            elif comp == 'ge':
+                res=value1 >= value2
+            elif comp == 'le':
+                res=value1 <= value2
+            elif comp == 'in':
+                res=value1 in value2
+
+            return res
 
         # Define the list of possible options.  Used later to determine if, e.g., the YAML file has an error in it
         configOptions = [
@@ -56,7 +106,42 @@ class Search:
             'comment',
             'outFile',
             'outPath',
+            'sysFilter',
         ]
+
+                # Define the list of sysFilter keys
+        sysFilterOptions=[
+            'attr',
+            'comp',
+            'value',
+        ]
+
+        #Define the list of comparators that can be used
+        compOptions=[
+            'eq',
+            "gt",
+            "lt",
+            "ge",
+            "le",
+            'in',
+        ]
+
+        # Define the list of attr options
+        attrOptions=[
+            'OSFamily',
+            'producer',
+            'kpwinversion',
+            'productName',
+            'releaseID',
+            'currentBuilt',
+            'ubr',
+            'kpnixversion',
+            'distroFamily',
+            'osPrettyName',
+            'rpmPrettyName',
+            'osVersion',
+        ]
+
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
             'name': '',
@@ -73,6 +158,21 @@ class Search:
         # Set any user-provided config options
         for key in config.keys():
             if key in configOptions:
+                if key == 'sysFilter':
+                    for filterItem in config[key]:
+                        for filterKey in filterItem.keys():
+                            if filterKey not in sysFilterOptions:
+                                error('sysFilter key invalid: '+filterKey)
+                                error('Should be one of: ',sysFilterOptions)
+                                exit(errorCodes['invalidConfig'])
+                            elif filterKey == 'attr' and filterItem[filterKey] not in attrOptions:
+                                error('sysFilter attr invalid: '+filterItem[filterKey])
+                                error('Should be one of: ',attrOptions)
+                                exit(errorCodes['invalidConfig'])
+                            elif filterKey == 'comp' and filterItem[filterKey] not in compOptions:
+                                error('sysFilter comparison invalid: '+filterItem[filterKey])
+                                error('Should be one of: ',compOptions)
+                                exit(errorCodes['invalidConfig'])
                 self.config[key] = config[key]
             else:
                 error('Invalid search config key [%s]' % key)
@@ -94,6 +194,19 @@ class Search:
         except KeyError:
             error('Search config requires regular expression')
             exit(errorCodes['invalidConfig'])
+
+        # Check the list of systems against any sysFilters that have been defined
+        if 'sysFilter' in self.config.keys():
+            sysList=self.config['systems'][:]
+            popCount=0
+            for i in range(len(self.config['systems'])):
+                for f in self.config['sysFilter']:
+                    if not compareAttr(f, self.config['systems'][i]):
+                        popped=sysList.pop(i-popCount).getSystemName()
+                        popCount+=1
+                        error('Removing',popped,'. sysFilter does not match: ', f['attr'],' ',f['comp'],' ',f['value'])
+                        break
+            self.config['systems']=sysList[:]
 
         if self.config['unique'] and not self.config['onlyMatching']:           # Unique requires onlyMatching
             self.config['onlyMatching'] = True
@@ -449,12 +562,27 @@ class System(object):
         self.filename = filename
         self.scriptDetails = getReportVersion(self.getFilename())
         if self.scriptDetails[0] == 'KPNIXVERSION':
-            self.OSFamily = 'Linux'
+            self.osFamily = 'Linux'
             self.producer = 'kpnixaudit'
+            self.kpnixversion = self.scriptDetails[1]
+            osDetailsSearchConfig = {
+                'systems'   : self,
+                'regex'     : r'(System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<prettyName>.*)"$)|(System_VersionInformation::/etc/redhat-release::(?P<rpmPrettyName>.*))',
+                'groupList' : [
+                    'prettyName',
+                ],
+                'maxResults': 2,
+                'combine' : True,
+                'onlyMatching': True,
+            }
+            osDetails=Search(osDetailsSearchConfig)
+            osDetails.findResults()
+            
         elif self.scriptDetails[0] == 'KPWINVERSION':
-            self.OSFamily = 'Windows'
+            self.osFamily = 'Windows'
             self.producer = 'kpwinaudit'
-            OSDetailsSearchConfig = {
+            self.kpwinversion = self.scriptDetails[1]
+            osDetailsSearchConfig = {
                 'systems'   : self,
                 'regex'     : r'System_OSInfo::(ProductName\s+:\s+(?P<ProductName>[\w ]+))|(ReleaseId\s+:\s+(?P<ReleaseId>\w+))|(CurrentBuild\s+:\s+(?P<CurrentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))',
                 'groupList' : [
@@ -467,14 +595,14 @@ class System(object):
                 'combine' : True,
                 'onlyMatching': True,
             }
-            OSDetails=Search(OSDetailsSearchConfig)
-            OSDetails.findResults()
-            self.productName=OSDetails.results[0]['ProductName']
-            self.ReleaseID=OSDetails.results[0]['ReleaseId']
-            self.CurrentBuild=OSDetails.results[0]['CurrentBuild']
-            self.UBR=OSDetails.results[0]['UBR']
+            osDetails=Search(osDetailsSearchConfig)
+            osDetails.findResults()
+            self.productName=osDetails.results[0]['ProductName']
+            self.releaseID=osDetails.results[0]['ReleaseId']
+            self.currentBuild=osDetails.results[0]['CurrentBuild']
+            self.ubr=osDetails.results[0]['UBR']
         else: 
-            self.OSFamily = 'unknown'
+            self.osFamily = 'unknown'
             error('Report version details could not be determined.\nFile will not be processed.')
             error('Filename: '+self.getFilename())
 
@@ -600,8 +728,10 @@ def getLongest(data, pad=0):
 if __name__ == '__main__':
     test=[
         System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/THE-BEAST.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/TOR3INFRACCTV06.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'), 
+        System('/home/randy/Downloads/Customers/Test Script Results/Linux/11792-tdc3-dns.modernniagara.miaas.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Linux/chalet_chalet-realm-chalet-ng-erl.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/cpaas_dev-jenkins-win.txt')
     ]
     configs=[
         {
@@ -618,19 +748,31 @@ if __name__ == '__main__':
             'truncate': True,
             'quiet': True,
             'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
-            'outFile': 'system_services'
+            'outFile': 'system_services',
+            'sysFilter': [
+                {
+                    'attr': 'producer',
+                    'comp': 'eq',
+                    'value': 'kpwinaudit'
+                },
+                {
+                    'attr': 'kpwinversion',
+                    'comp': 'eq',
+                    'value': [0, 4, 4]
+                }
+            ]
         },
-        {
-            'name': 'WindowsUpdateHistory',
-            'systems': test,
-            'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
-            'maxResults': 10,
-            'onlyMatching': False,
-            'truncate': True,
-            'quiet': True,
-            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
-            'outFile': 'windows_update_history'
-        },
+        # {
+        #     'name': 'WindowsUpdateHistory',
+        #     'systems': test,
+        #     'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
+        #     'maxResults': 10,
+        #     'onlyMatching': False,
+        #     'truncate': True,
+        #     'quiet': True,
+        #     'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
+        #     'outFile': 'windows_update_history'
+        # },
     ]
     for config in configs:
         search=Search(config)
