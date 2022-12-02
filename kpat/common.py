@@ -62,6 +62,7 @@ class Search:
                                                             distroFamily    : rpm | deb | unknown
                                                             osPrettyName    : Directly from /etc/os-release - e.g. "Ununtu 22.04.1 LTS"
                                                             rpmPrettyName   : For RPM-based distros, osPrettyName will be non-descript, but rpmPrettyName will be more specific
+                                                            osVersion       : Exactly as it appears in PrettyName or rpmPrettyName -- e.g. 22.04.1 or 8.7
         '''
 
         def compareAttr(f, system):
@@ -116,7 +117,7 @@ class Search:
                 elif comp == 'le':
                     res=value1 <= value2
                 elif comp == 'in':
-                    res=value1 in value2
+                    res=value2 in value1
 
             return res
 
@@ -516,7 +517,6 @@ class Search:
 
         # Write the comment (if provided) into the first cell
         try:
-#            ws.write(cursor['row'], cursor['col'], 'Comment', cell_format)
             if len(columns) > 2:
                 commentWidth=defaultCommentWidth
             else:
@@ -583,7 +583,7 @@ class Search:
         try:
             wb.close()        
         except:
-            print('File '+filename+' appears to be open.  Close the file and try again\n')
+            error('File %s appears to be open.  Close the file and try again\n' % filename)
             exit(errorCodes['generalError'])
 
 class System(object):
@@ -600,6 +600,7 @@ class System(object):
                 'regex'     : r'(System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<prettyName>.*)"$)|(System_VersionInformation::/etc/redhat-release::(?P<rpmPrettyName>.*))',
                 'groupList' : [
                     'prettyName',
+                    'rpmPrettyName',
                 ],
                 'maxResults': 2,
                 'combine' : True,
@@ -607,7 +608,29 @@ class System(object):
             }
             osDetails=Search(osDetailsSearchConfig)
             osDetails.findResults()
-            
+            if len(osDetails.results) > 0:
+                self.osPrettyName=osDetails.results[0]['prettyName']
+                rpmPattern=r'Alma|Amazon|ClearOS|CentOS|Oracle|(Red Hat)|SUSE'
+                debPattern=r'Debian|Gentoo|Knoppix|Ubuntu'
+                distroSearch=re.compile(r'(?P<debDistro>'+debPattern+')|(?P<rpmDistro>'+rpmPattern+')')
+                versionSearch=re.compile(r'(?P<osVersion>((\d+\.?)+))')
+                searchText=osDetails.results[0]['prettyName']
+                if 'rpmPrettyName' in osDetails.results[0]:
+                    searchText=osDetails.results[0]['rpmPrettyName']
+                distro=distroSearch.search(searchText)
+                version=versionSearch.search(searchText)
+                if distro.group('debDistro'):
+                    self.distroFamily='deb'
+                elif distro.group('rpmDistro'):
+                    self.distroFamily='rpm'
+                else:
+                    self.distroFamily='unknown'
+                if version.group('osVersion'):
+                    self.osVersion = [int(x) for x in version.group('osVersion').split('.')]
+                else:
+                    self.osVersion = 0
+            else:
+                error("File: %s\nCouldn't determine OS Pretty Name" % filename)
         elif self.scriptDetails[0] == 'KPWINVERSION':
             self.osFamily = 'Windows'
             self.producer = 'kpwinaudit'
@@ -759,13 +782,19 @@ if __name__ == '__main__':
     test=[
         System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/THE-BEAST.txt'),
         System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'), 
+        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/cpaas_dev-jenkins-win.txt'),
         System('/home/randy/Downloads/Customers/Test Script Results/Linux/11792-tdc3-dns.modernniagara.miaas.txt'),
         System('/home/randy/Downloads/Customers/Test Script Results/Linux/chalet_chalet-realm-chalet-ng-erl.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/cpaas_dev-jenkins-win.txt')
+        System('/home/randy/Downloads/Customers/Test Script Results/Linux/olorin-0.6.11.txt'),
+        System('/home/randy/Downloads/Customers/Test Script Results/Linux/ccaas-fr1-eu51-ldap64-1.fr1.whitepj.net.txt'),
+
     ]
+    for i in test:
+        if i.osFamily == 'Linux':
+            print('System: %s\t%s\t%s\t%s' % (i.getSystemName(), i.distroFamily, i.osVersion, i.osPrettyName))
     configs=[
         {
-            'name': 'System Services',
+            'name': 'Windows System Services',
             'systems': test,
             'regex': r'System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartupType>.*)',
             'maxResults': 5,
@@ -792,24 +821,62 @@ if __name__ == '__main__':
                 }
             ]
         },
-        # {
-        #     'name': 'WindowsUpdateHistory',
-        #     'systems': test,
-        #     'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
-        #     'maxResults': 10,
-        #     'onlyMatching': False,
-        #     'truncate': True,
-        #     'quiet': True,
-        #     'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
-        #     'outFile': 'windows_update_history'
-        # },
+        
+        {
+            'name': 'Linux Pending Yum Updates',
+            'systems': test,
+            'regex': r'System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?P<pkg_name>[\w\-.]+)\s+(?P<pend_version>[\d\-.\w]+\s)',
+            'maxResults': 5,
+            'onlyMatching': True,
+            'groupList': [
+                'pkg_name',
+                'pend_version',
+            ],
+            'truncate': True,
+            'quiet': True,
+            'comment': '''A list of packages with a pending update.  The version string indicates the version that is pending installation.  You can use this to search the internet for CVEs that were fixed.''',
+            'outFile': 'yum_updates',
+            'sysFilter': [
+                {
+                    'attr': 'osPrettyName',
+                    'comp': 'in',
+                    'value': 'CentOS'
+                },
+                {
+                    'attr': 'osVersion',
+                    'comp': 'gt',
+                    'value': [7, 7, 1807],
+                },
+            ]
+        },
+        {
+            'name': 'WindowsUpdateHistory',
+            'systems': test,
+            'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
+            'maxResults': 10,
+            'onlyMatching': False,
+            'truncate': True,
+            'quiet': True,
+            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
+            'outFile': 'windows_update_history',
+            'sysFilter': [
+                {
+                    'attr': 'osFamily',
+                    'comp': 'eq',
+                    'value': 'Windows'
+                },
+            ]
+        },
     ]
     for config in configs:
         search=Search(config)
         search.printConfig()
         if len(search.config['systems']) > 0:
             search.findResults()
-            search.toScreen()
-            search.toExcel()
+            if search.results:
+                search.toScreen()
+                search.toExcel()
+            else:
+                error('No results found')
         else:
             error('No systems matched provided criteria.  Skipping search: %s' % search.getName())
