@@ -617,6 +617,7 @@ class System(object):
                 searchText=osDetails.results[0]['prettyName']
                 if 'rpmPrettyName' in osDetails.results[0]:
                     searchText=osDetails.results[0]['rpmPrettyName']
+                    self.rpmPrettyName=searchText
                 distro=distroSearch.search(searchText)
                 version=versionSearch.search(searchText)
                 if distro.group('debDistro'):
@@ -666,7 +667,10 @@ class System(object):
             value=self.__dict__[item]
             if not item.startswith('__'):
                 if item == 'scriptDetails':
-                    res+=value[0]+': '+'.'.join(str(i) for i in value[1])+'\n'
+                    # res+=value[0]+': '+'.'.join(str(i) for i in value[1])+'\n'
+                    pass
+                elif type(value) == list:
+                    res+=item+': '+'.'.join(str(i) for i in value)+'\n'
                 else:
                     res+=item+': '+value+'\n'
         
@@ -791,7 +795,7 @@ if __name__ == '__main__':
     ]
     for i in test:
         if i.osFamily == 'Linux':
-            print('System: %s\t%s\t%s\t%s' % (i.getSystemName(), i.distroFamily, i.osVersion, i.osPrettyName))
+            print('SYSTEM DETAILS','*'*25,'\n',i,)
     configs=[
         {
             'name': 'Windows System Services',
@@ -807,7 +811,7 @@ if __name__ == '__main__':
             'truncate': True,
             'quiet': True,
             'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
-            'outFile': 'system_services',
+            'outFile': 'windows_system_services',
             'sysFilter': [
                 {
                     'attr': 'osFamily',
@@ -835,7 +839,7 @@ if __name__ == '__main__':
             'truncate': True,
             'quiet': True,
             'comment': '''A list of packages with a pending update.  The version string indicates the version that is pending installation.  You can use this to search the internet for CVEs that were fixed.''',
-            'outFile': 'yum_updates',
+            'outFile': 'linux_yum_updates',
             'sysFilter': [
                 {
                     'attr': 'osPrettyName',
