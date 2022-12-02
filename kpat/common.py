@@ -68,25 +68,55 @@ class Search:
             '''
             Compares attributes provided in a sysFilter dictionary against a system object.  Returns True or False
             '''
-            
-            comp=f['comp']
-            value1=f['value']
-            value2=system.__getattribute__(f['attr'])
-            
-            res=False
+            def compareList(value1, comp, value2):
+                '''
+                Compares list elements 
+                '''
+                
+                if len(value1) == len(value2):
+                    tests=[]                              # Create a list to hold the results.  We'll convert it to a single Boolean at the end
+                    for i in range(len(value1)):
+                        if comp == 'eq':
+                            tests.append(value1 == value2)
+                        elif comp == 'gt':
+                            tests.append(value1 > value2)
+                        elif comp == 'lt':
+                            tests.append(value1 < value2)
+                        elif comp == 'ge':
+                            tests.append(value1 >= value2)
+                        elif comp == 'le':
+                            tests.append(value1 <= value2)
+                        elif comp == 'in':
+                            tests.append(value1 in value2)
 
-            if comp == 'eq':
-                res=value1 == value2
-            elif comp == 'gt':
-                res=value1 > value2
-            elif comp == 'lt':
-                res=value1 < value2
-            elif comp == 'ge':
-                res=value1 >= value2
-            elif comp == 'le':
-                res=value1 <= value2
-            elif comp == 'in':
-                res=value1 in value2
+                    res=all(tests)                   # Perform a boolean AND on all items in res and return the final result
+                else:
+                    res=False
+
+                return res
+
+            comp=f['comp']
+            value2=f['value']
+            try:
+                value1=system.__getattribute__(f['attr'])
+            except AttributeError:                                  # If the provided System attribute doesn't exist, return False
+                return False
+                        
+            if type(value1) == list:                             # If it's a List, we need to compare each list element in 
+                res=compareList(value1, comp, value2)
+            else:
+                if comp == 'eq':
+                    res=value1 == value2
+                elif comp == 'gt':
+                    res=value1 > value2
+                elif comp == 'lt':
+                    res=value1 < value2
+                elif comp == 'ge':
+                    res=value1 >= value2
+                elif comp == 'le':
+                    res=value1 <= value2
+                elif comp == 'in':
+                    res=value1 in value2
 
             return res
 
@@ -128,7 +158,7 @@ class Search:
 
         # Define the list of attr options
         attrOptions=[
-            'OSFamily',
+            'osFamily',
             'producer',
             'kpwinversion',
             'productName',
@@ -162,16 +192,16 @@ class Search:
                     for filterItem in config[key]:
                         for filterKey in filterItem.keys():
                             if filterKey not in sysFilterOptions:
-                                error('sysFilter key invalid: '+filterKey)
-                                error('Should be one of: ',sysFilterOptions)
+                                error('sysFilter key invalid: %s' % filterKey)
+                                error('Should be one of: %s' % sysFilterOptions)
                                 exit(errorCodes['invalidConfig'])
                             elif filterKey == 'attr' and filterItem[filterKey] not in attrOptions:
-                                error('sysFilter attr invalid: '+filterItem[filterKey])
-                                error('Should be one of: ',attrOptions)
+                                error('sysFilter attr invalid: %s' % filterItem[filterKey])
+                                error('Should be one of: %s' % attrOptions)
                                 exit(errorCodes['invalidConfig'])
                             elif filterKey == 'comp' and filterItem[filterKey] not in compOptions:
-                                error('sysFilter comparison invalid: '+filterItem[filterKey])
-                                error('Should be one of: ',compOptions)
+                                error('sysFilter comparison invalid: %s' % filterItem[filterKey])
+                                error('Should be one of: %s' % compOptions)
                                 exit(errorCodes['invalidConfig'])
                 self.config[key] = config[key]
             else:
@@ -204,7 +234,7 @@ class Search:
                     if not compareAttr(f, self.config['systems'][i]):
                         popped=sysList.pop(i-popCount).getSystemName()
                         popCount+=1
-                        error('Removing',popped,'. sysFilter does not match: ', f['attr'],' ',f['comp'],' ',f['value'])
+                        error('Removing %s. sysFilter does not match: %s %s %s' % (popped, f['attr'],f['comp'],f['value']))
                         break
             self.config['systems']=sysList[:]
 
@@ -604,7 +634,7 @@ class System(object):
         else: 
             self.osFamily = 'unknown'
             error('Report version details could not be determined.\nFile will not be processed.')
-            error('Filename: '+self.getFilename())
+            error('Filename: %s' % self.getFilename())
 
     def __str__(self):
         
@@ -737,13 +767,13 @@ if __name__ == '__main__':
         {
             'name': 'System Services',
             'systems': test,
-            'regex': r'System_Services::(?!DisplayName)(?!--)(?P<servicename>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)',
+            'regex': r'System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartupType>.*)',
             'maxResults': 5,
             'onlyMatching': True,
             'groupList': [
-                'servicename',
-                'status',
-                'startuptype',
+                'ServiceName',
+                'Status',
+                'StartupType',
             ],
             'truncate': True,
             'quiet': True,
@@ -751,14 +781,14 @@ if __name__ == '__main__':
             'outFile': 'system_services',
             'sysFilter': [
                 {
-                    'attr': 'producer',
+                    'attr': 'osFamily',
                     'comp': 'eq',
-                    'value': 'kpwinaudit'
+                    'value': 'Windows'
                 },
                 {
                     'attr': 'kpwinversion',
-                    'comp': 'eq',
-                    'value': [0, 4, 4]
+                    'comp': 'gt',
+                    'value': [0, 4, 3]
                 }
             ]
         },
@@ -777,6 +807,9 @@ if __name__ == '__main__':
     for config in configs:
         search=Search(config)
         search.printConfig()
-        search.findResults()
-        search.toScreen()
-        search.toExcel()
+        if len(search.config['systems']) > 0:
+            search.findResults()
+            search.toScreen()
+            search.toExcel()
+        else:
+            error('No systems matched provided criteria.  Skipping search: %s' % search.getName())
