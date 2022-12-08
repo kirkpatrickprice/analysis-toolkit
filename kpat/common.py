@@ -206,7 +206,7 @@ class Search:
                                 exit(errorCodes['invalidConfig'])
                 self.config[key] = config[key]
             else:
-                error('Invalid search config key [%s]' % key)
+                error('Invalid search config key [%s].  Valid options: %s' % (key, configOptions))
                 exit(errorCodes['invalidConfig'])
         
         # Check if 'systems' has been defined and quit with an error if not
@@ -253,7 +253,7 @@ class Search:
         else:                                       # If groupList is defined, then always set onlyMatching to true
             if not self.config['onlyMatching']:
                 self.config['onlyMatching'] = True
-                error('groupList was providing.  Forcing onlyMatching...')
+                error('groupList was provided.  Forcing onlyMatching...')
 
     def printConfig(self):
         '''
@@ -343,10 +343,12 @@ class Search:
 
         for system in self.config['systems']:
             counter=0
+            groupCounter=0
             sectionFound=False
             inDesiredSection=None
 
             groupDict={}
+            groupRes=[]
             for line in open(system.getFilename()):
                 #Capture the current line's section header
                 if limitToSection:
@@ -363,6 +365,7 @@ class Search:
                     # sectionFound=True
                     # If we're only supposed to grab the matching text...
                     if self.config['onlyMatching']:
+                        groupCounter+=1
                         groupDict={}
                         groupDict['systemname'] = system.sysName
 
@@ -381,11 +384,16 @@ class Search:
                             # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError 
                             # if the value isn't found, in which case we'll add it to the results
                             try:
-                                res.index(groupDict)
+                                groupRes.index(groupDict)
                             except ValueError:
-                                res.append(groupDict)
+                                groupRes.append(groupDict)
                         else:
-                            res.append(groupDict)
+                            groupRes.append(groupDict)
+
+                        # if this search config requests to combine the results, pass the results to the combine routine
+                        if groupCounter == len(self.config['groupList']) and self.config['combine'] and len(groupDict) > 0:
+                            res+=combineResults(groupRes)
+                            groupCounter=0
                     else:
                         # This paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
                         # before rejoining on the :: field separator (at the beginning of the line)
@@ -407,10 +415,7 @@ class Search:
                 
                 if (sectionFound and not inDesiredSection and not isComment and not isBlankLine):
                     break
-        
-        # if this search config requests to combine the results, pass the results to the combine routine
-        if self.config['combine']:
-            res=combineResults(res)
+                   
 
         self.results=res
 
@@ -651,10 +656,12 @@ class System(object):
             }
             osDetails=Search(osDetailsSearchConfig)
             osDetails.findResults()
-            self.productName=osDetails.results[0]['ProductName']
-            self.releaseID=osDetails.results[0]['ReleaseId']
-            self.currentBuild=osDetails.results[0]['CurrentBuild']
-            self.ubr=osDetails.results[0]['UBR']
+            for key in osDetails.results[0]:
+                setattr(self, key, osDetails.results[0][key])
+            # self.productName=osDetails.results[0]['ProductName']
+            # self.releaseID=osDetails.results[0]['ReleaseId']
+            # self.currentBuild=osDetails.results[0]['CurrentBuild']
+            # self.ubr=osDetails.results[0]['UBR']
         else: 
             self.osFamily = 'unknown'
             error('Report version details could not be determined.\nFile will not be processed.')
@@ -777,6 +784,35 @@ def getLongest(data, pad=0):
         elif type(data[0]) == str:
             res=len(max(data, key=len))+pad
     return res
+
+def getSections(files):
+    '''
+    Get the list of identified sections (lines containining "[BEGIN]") for all of the files in the list.
+    Uses a set to ensure that each item is listed only once.
+
+    Returns an alphabetized list containing all items
+    '''
+    sections=set()
+    pattern=re.compile(r'\[BEGIN\]')
+    for file in files:
+        counter=0
+        reportType=getReportVersion(file)
+        if reportType[0] == 'unknown':
+            error('Skipping... unable to determine which script produced file "', file, '".')
+            break
+
+        for line in open(file):
+            if pattern.search(line):
+                if reportType[0] == 'KPNIXVERSION':
+                    header=line.split(':')[-1].strip()
+                elif reportType[0] == 'KPWINVERSION':
+                    header=line.split(':')[0].strip()
+                sections.add(header)
+            counter+=1
+    
+    #Return an alphabetized list of sections
+    return list(sorted(sections))
+
 
 ############################################
 ####### Module Self-test Code ##############
