@@ -9,60 +9,22 @@ import console
 import string
 import xlsxwriter
 
+def getErrorCodes():
+    return {
+        'invalidConfig': 1024,
+        'generalError': 1023,
+        'noResults': 1,
+        'noFiles': 2,
+    }
 
-errorCodes = {
-    'invalidConfig': 1024,
-    'generalError': 1023,
-    'noResults': 1,
-    'noFiles': 2,
-}
+errorCodes = getErrorCodes()
 
 class Search:
     def __init__(self, config):
         '''
         Inputs:
             Config      Dictionary containing the parameters of the search
-                name                String              A name for the search config
-                systems             List: Class System  Systems to which to apply the search
-                regex               Raw string          Python-compatible regex to use https://docs.python.org/3/howto/regex.html
-                maxResults          Integer             Maximum number of results to return per System (default: 0 - unlimited)
-                onlyMatching        Boolean             Limit the RE match to only the text that matches the RE (default: full line)
-                unique              Boolean             Only display one instance of each match 
-                groupList           List                Regex groups to display -- supports both PCRE group nums and Python named groups (?P<groupName>regex)
-                truncate            Boolean             Truncate the screen output to display width
-                quiet               Boolean             Suppress output display to summary info only
-                fullScan            Boolean             Override the search short-circuit logic to always scan the entire System.filename
-                combine             Boolean             Combine results from across multiple lines to form a single record (only valid if groupList is specified)
-                                                        e.g. matching Windows ProductName, ReleaseId, CurrentBuild, and UBR code
-                comment             String              A helpful comment that will be added to the output file to describe how
-                                                        to use this particular set of search results
-                outFile             String              File name to save the results to
-                outPath             String              Path to save the results to (Default: ./saved)
-                sysFilter           List: Dictionary   A list of conditions represented in a dictionary of:
-                                                            [
-                                                                {
-                                                                    "attr": <see below>,
-                                                                    "comp": "eq" | "gt" | "lt" | "ge" | "le", "in"
-                                                                    "value": <see below>,
-                                                                },
-                                                                ...
-                                                            ]
-                                                        Attributes and values (attr : value) are platform-dependent attributes of the System class such as:
-                                                        For all:
-                                                            osFamily        : Windows | Linux
-                                                            producer        : kpnixaudit | kpwinaudit                                                            
-                                                        For Windows (attr : value):
-                                                            kpwinversion    : A list of [major, minor, release] such as [0, 6, 15]
-                                                            productName     : Exactly as it appears from Windows - e.g. "Windows 10 Professional"
-                                                            releaseID       : Exactly as it appears from Windows - e.g. "2009"
-                                                            currentBuild    : Exactly as it appears from Windows - e.g. "17763"
-                                                            ubr             : Exactly as it appears from WIndows - e.g. "3153"
-                                                        For Linux:
-                                                            kpnixversion    : A list of [major, minor, release] such as [0, 4, 3]
-                                                            distroFamily    : rpm | deb | unknown
-                                                            osPrettyName    : Directly from /etc/os-release - e.g. "Ununtu 22.04.1 LTS"
-                                                            rpmPrettyName   : For RPM-based distros, osPrettyName will be non-descript, but rpmPrettyName will be more specific
-                                                            osVersion       : Exactly as it appears in PrettyName or rpmPrettyName -- e.g. 22.04.1 or 8.7
+                See definition in getConfigOptions, getSysFilterAttrs, getSysFilterKeys, and getSysFilterComps
         '''
 
         def compareAttr(f, system):
@@ -113,7 +75,7 @@ class Search:
                 elif comp == 'lt':
                     res=value1 < value2
                 elif comp == 'ge':
-                    res=value1 >= value2
+                    res=value2 >= value1
                 elif comp == 'le':
                     res=value1 <= value2
                 elif comp == 'in':
@@ -122,56 +84,16 @@ class Search:
             return res
 
         # Define the list of possible options.  Used later to determine if, e.g., the YAML file has an error in it
-        configOptions = [
-            'name',
-            'systems',
-            'regex',
-            'maxResults',
-            'onlyMatching',
-            'unique',
-            'groupList',
-            'truncate',
-            'quiet',
-            'fullScan',
-            'combine',
-            'comment',
-            'outFile',
-            'outPath',
-            'sysFilter',
-        ]
+        configOptions = list(getConfigOptions().keys())
 
-                # Define the list of sysFilter keys
-        sysFilterOptions=[
-            'attr',
-            'comp',
-            'value',
-        ]
+        # Define the list of sysFilter keys
+        sysFilterOptions= list(getSysFilterKeys().keys())
 
         #Define the list of comparators that can be used
-        compOptions=[
-            'eq',
-            "gt",
-            "lt",
-            "ge",
-            "le",
-            'in',
-        ]
+        compOptions= list(getSysFilterComps().keys())
 
         # Define the list of attr options
-        attrOptions=[
-            'osFamily',
-            'producer',
-            'kpwinversion',
-            'productName',
-            'releaseID',
-            'currentBuilt',
-            'ubr',
-            'kpnixversion',
-            'distroFamily',
-            'osPrettyName',
-            'rpmPrettyName',
-            'osVersion',
-        ]
+        attrOptions= list(getSysFilterAttrs().keys())
 
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
@@ -254,7 +176,7 @@ class Search:
             if not self.config['onlyMatching']:
                 self.config['onlyMatching'] = True
                 error('groupList was provided.  Forcing onlyMatching...')
-
+    
     def printConfig(self):
         '''
         Prints a prettified list of name/vaule pairs in the Search.config dictionary
@@ -813,6 +735,57 @@ def getSections(files):
     #Return an alphabetized list of sections
     return list(sorted(sections))
 
+def getConfigOptions():
+        return {
+            'name': 'A name for the search config.  Will be used to name the Excel table and worksheet.',
+            'systems': 'Systems (Class: System) to apply the search to',
+            'regex': 'Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html',
+            'maxResults': 'Maximum number of results to return per System (default: 0 - unlimited)',
+            'onlyMatching': 'Only provide the matching string instead of the full line (default: full line)',
+            'unique': 'Only display one instance of each match',
+            'groupList': 'Regex group to display, if groups are used (default=0/ALL).  Must be used with -o / --only-matching',
+            'truncate': 'Truncate lines to fit current screen width.  Does not affect CSV output.',
+            'quiet': 'Quiet mode -- suppress screen output except status messages / especially helpful in YAML mode or with Excel output',
+            'fullScan': 'Override the search short-circuit logic to always scan the entire file',
+            'combine': 'Combine results from across multiple lines to form a single record (only valid if groupList is specified)',
+            'comment': 'A helpful comment that will be added to the output file to describe how to use this particular set of search results',
+            'outFile': 'File name to save the results to',
+            'outPath': 'Path to save the results to (Default: ./saved)',
+            'sysFilter': 'A list of conditions represented in a dictionary with keys ''attr'', ''comp'', and ''value''',
+        }
+
+def getSysFilterAttrs():
+    return {
+            'osFamily': 'OS Family such as Windows or Linux',
+            'producer': 'Script that produced the file such as kpnixaudit.sh or kpwinaudit.ps1',
+            'kpwinversion': 'kpwinaudit.ps1 script version that produced the results',
+            'productName': 'Windows Product Name such as "Windows 10 Professional"',
+            'releaseID': 'Windows Release ID as captured from the registry -- e.g. "2009" or "2H21',
+            'currentBuild': "Windows CurrentBuild as captured from the registry",
+            'ubr': "Windows UBR Code",
+            'kpnixversion': 'kpnixaudit.sh script that produced the results',
+            'distroFamily': 'Linux distribution family such as "rpm", "deb" or "unknown"',
+            'osPrettyName': 'Directly from /etc/os-release - e.g. "Ununtu 22.04.1 LTS"',
+            'rpmPrettyName': 'For RPM-based distros, osPrettyName will be non-descript, but rpmPrettyName will be more specific',
+            'osVersion': 'Exactly as it appears in PrettyName or rpmPrettyName -- e.g. 22.04.1 or 8.7',
+    }
+
+def getSysFilterComps():
+    return {
+            'eq': 'Equals -- an exact comparion',
+            "gt": 'Greater than -- compares numbers, strings, list members, etc',
+            "lt": 'Less than -- compares numbers, strings, list members, etc',
+            "ge": 'Greater than or equals',
+            "le": 'Less than or equals',
+            'in': 'Tests set membership',
+    }
+
+def getSysFilterKeys():
+    return {
+            'attr': 'The attribute to compare.  See list of possible attributes.',
+            'comp': 'The comparison operator.  See list of possible comparison operators.',
+            'value': 'The value to test against',
+    }
 
 ############################################
 ####### Module Self-test Code ##############

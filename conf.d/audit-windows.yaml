@@ -8,13 +8,14 @@
 #   * Booleans are set to either True or False (case sensitive)
 # Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
 #
-# When using YAML mode, results will be displayed on the screen and written to Excel-compatible CSV files.  These will be saved as 'saved-csv/<check_name>.csv' 
-# under the currect directory.  For the time being, this is hard-coded behavior.
+# When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
+# under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
 
 # This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
 # Basically, anything that can run kpwinaudit.ps1
 
-# Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
+# See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
+Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
 #   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
 #   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
 #                 If you identify a section header with '::', then the tool will use everything up to the '::' to identify the interesting section

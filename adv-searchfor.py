@@ -3,7 +3,7 @@
 version="0.2.0"
 
 # Import what we need from the kpat package
-from kpat.common import errorCodes, System, Search, error, getSections
+from kpat.common import errorCodes, System, Search, error, getLongest, getSections, getSysFilterAttrs, getSysFilterComps, getConfigOptions, getSysFilterKeys, getErrorCodes
 from kpat import console
 import os
 from time import sleep
@@ -24,6 +24,7 @@ Version History:
             Export to Excel instad CSV files
             Unique columns whenever groupLists are provided
             Combine results from mulitple lines in the source files into a single row
+            Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version)
 '''
 
 import argparse                                                     # To handle command line arguments and usage
@@ -32,6 +33,7 @@ import glob                                                         # Used to ma
 import textwrap                                                     # Text handling routines
 import string                                                       # Needed to process matches for potentially unprintable characters
 import time                                                         # To report run length for each check in YAML mode
+import ast
 
 # Set up the arguments that can be set on the command line
 parser = argparse.ArgumentParser(
@@ -49,9 +51,21 @@ parser = argparse.ArgumentParser(
             * Using -g (Regex groups) forces -o (only matching)
         '''),
     epilog=textwrap.dedent('''
-        Returns EXITCODE=0 if successful.  Examine source code for "err_*" for other exit codes that could be returned (hint: they're at the very top)
-        ''')
+        Returns EXITCODE=0 if successful.
+        
+        Other EXITCODEs:
+        '''+str(getErrorCodes()))
     )
+
+# Define a custom action to store any sysFilter options as a dictionary for use in defining the Search
+class StoreDictKeyPair(argparse.Action):
+     def __call__(self, parser, namespace, values, option_string=None):
+         my_dict = {}
+         for kv in values.split(","):
+             k,v = kv.split("=")
+             my_dict[k] = v
+         setattr(namespace, self.dest, my_dict)
+
 
 inputControl = parser.add_argument_group(title='Input Control')
 inputControl.add_argument(
@@ -74,36 +88,32 @@ outputControl = parser.add_argument_group(title='Output Control')
 outputControl.add_argument(
     '-e', '--regexp', 
     dest='regex', 
-    help='Regular expression to search for (CaSeInSenSiTiVe).'
+    help=getConfigOptions()['regex']
     )
 outputControl.add_argument(
     '--name',
     dest='name',
     default='CommandLineSearch',
     type=str,
-    help='Give the search a name.  This will be used as the name of the Excel table and worksheet.'
+    help=getConfigOptions()['name']
     )
 outputControl.add_argument(
     '-m', '--count', 
     dest='maxResults', 
     default=0, 
     type=int, 
-    help='Number of matches from each file to return (default = 0/ALL)'
+    help=getConfigOptions()['maxResults']
     )
 outputControl.add_argument(
     '--fullscan',
     dest='fullScan',
-    help=textwrap.dedent('''
-        Command line only: Override the short-circuit behavior to scan the entire file.  Recommended if you're testing a complex Regex expression until you 
-        know you have the resulst you expect.  This is always OFF for YAML mode, but you can use the 'fullScan: True' setting to enabled it for specific checks.'''),
+    help=getConfigOptions()['fullScan'],
     action='store_true'
     )
 outputControl.add_argument(
     '-o', '--only-matching', 
     dest='onlyMatching',
-    help=textwrap.dedent('''
-        Only provide the matching string instead of the full line.  NOTE: Especially useful with -g / --group as this overrides any clean-up to remove the section
-        header from the output.  Results will be an exact match of REGEXP.  Adds ''G#: '' to separate group numbers.'''), 
+    help=getConfigOptions()['onlyMatching'], 
     action='store_true'
     )
 outputControl.add_argument(
@@ -113,58 +123,73 @@ outputControl.add_argument(
     action='append',
     type=str,
     #nargs='+',
-    help='Regex group to display, if groups are used (default=0/ALL).  Must be used with -o / --only-matching')
+    help=getConfigOptions()['groupList']
+    )
 outputControl.add_argument(
     '--combine',
     dest='combine',
-    help='Combine the results from multiple lines in the source file to one row in the search results.',
+    help=getConfigOptions()['combine'],
     action='store_true'
     )
 outputControl.add_argument(
     '-t', '--truncate', 
     dest='truncate',
-    help='Truncate lines to fit current screen width.  Does not affect CSV output.',
+    help=getConfigOptions()['truncate'],
     action='store_true'
     )
 outputControl.add_argument(
     '--out-file', '-oF',
     dest='outFile',
     type=str,
-    help='Create an Excel output of the results in the "saved" folder (override with --outPath).  When using YAML config files, results will always be saved.'
+    help=getConfigOptions()['outFile']
     )
 outputControl.add_argument(
     '--out-path', '-oP',
     dest='outPath',
     default=defaultPath,
     type=str,
-    help='Specify the folder for saved files (default="saved/")'
-)
+    help=getConfigOptions()['outPath'],
+    )
 outputControl.add_argument(
     '-u', '--unique',
     action='store_true',
     dest='unique',
-    help='Only display each unique value once / similar to "sort -u".'
-)
+    help=getConfigOptions()['unique']
+    )
 outputControl.add_argument(
     '--comment',
     dest='comment',
     type=str,
-    help='Comment to add to the Excel output to explain how to use these search results'
+    help=getConfigOptions()['comment']
     )
 outputControl.add_argument(
     '-q', '--quiet',
     dest='quiet',
     action='store_true',
-    help='Quiet mode -- suppress screen output except status messages / especially helpful in YAML mode or with CSV output'
-)
+    help=getConfigOptions()['comment']
+    )
 
+sysFilterControl = parser.add_argument_group(title='System Filters')
+sysFilterControl.add_argument(
+    '--sys-filter',
+    dest='sysFilter',
+    type=ast.literal_eval,
+    help=getConfigOptions()['sysFilter'],
+    metavar="\"[{'attr'='validAttribute','comp'='comparisonOp','value'='string'}...]\""
+    )
 
 miscOptions = parser.add_argument_group(title='Misc. Options')
 miscOptions.add_argument(
-    '--list', 
+    '--list-sections', 
     dest='listSections', 
-    help='List all section headings found in the current FILESPEC',
-    action='store_true'
+    help='List all section headings found in the current FILESPEC and then exit',
+    action='store_true',
+    )
+miscOptions.add_argument(
+    '--yaml-help',
+    dest='yamlHelp',
+    help='Print some helpful information for working with YAML and then exit.',
+    action='store_true',
     )
 
 
@@ -177,6 +202,7 @@ startTime=time.time()
 
 # Process command line arguments
 args=parser.parse_args()
+print(args)
 
 # Get the screen geometry for use throughout
 screenXY=console.getTerminalSize()
@@ -205,12 +231,80 @@ if args.outFile or args.confFile:
         try:
             sleep(sleepTime)
         except KeyboardInterrupt:
-            print ('Quitting...')
+            print ('\nQuitting...')
             exit(0)
 
 
 # Branch based on listSections, Regex, or confFile usage modes
-if args.listSections:
+if args.yamlHelp:
+    optionsText={}
+    for option in [getConfigOptions, getSysFilterKeys, getSysFilterAttrs, getSysFilterComps]:
+        optionsText[option.__name__]=''
+        D=option()
+        longest=getLongest(list(D.keys()))
+        lineCount=0
+        for key in sorted(list(D.keys())):
+            lineCount+=1
+            if lineCount>1:                                         # Preserve indentation when printing
+                optionsText[option.__name__]+=f'    '
+            if key == 'systems':
+                optionsText[option.__name__]+=f'%-{longest+2}s%s\n' % ('fileSpec', 'A glob-able file specification such as "myfiles*.txt"')
+            else:
+                optionsText[option.__name__]+=f'%-{longest+2}s%s\n' % (key, option()[key])
+    
+    
+    text=textwrap.dedent('''\
+    YAML mode allows you to store your searches for reuse later, for instance when working the same client next year or for a set of general purpose content to use in all audits.
+
+    A YAML file is just a text file with a ".yaml" extension.  Two all-purpose YAML files are provided as part of the Analysis Toolkit:
+        .../conf.d
+            audit-windows.yaml      Set of searches appropriate for use with Windows systems
+            audit-linux.yaml        Set of searches appropriate for use with Linux systems
+
+    Reference these files for the basic structure of what a configuration section should look like.  There are also examples of most (all?) options that you can model your own after.
+    
+    You can also create your own, but it is strongly recommended to store them somewhere else besides in the Analysis Toolkit folder as this location will likely be overwritten upon the next update.
+
+    You can also include the contents in other YAML files by using the "!include path/to/file.yaml" within your own files.
+        myfile.yaml
+            !include audit-windows.yaml
+
+            my_custom_check:
+              regex: 'an awesome search pattern'
+              ...more options
+    
+    There are help sections at the top of each of the provided YAML files, but the most authoritative list of available options is provided here.
+
+    #####################################
+    #### VALID CONFIG SECTION OPTIONS ###
+    #####################################
+    '''+optionsText['getConfigOptions']+'''
+    
+    #####################################
+    ####### VALID SYSFILTER KEYS ########
+    #####################################
+    '''+optionsText['getSysFilterKeys']+'''
+
+    #####################################
+    #### VALID SYSFILTER ATTRIBUTES #####
+    #####################################
+    '''+optionsText['getSysFilterAttrs']+'''
+
+    #####################################
+    ## VALID SYSFILTER COMPARISON OPS ###
+    #####################################
+    '''+optionsText['getSysFilterComps']+'''
+    ''').splitlines()
+    for line in text:
+        if line=='':
+            print()
+        else:
+            wrapped=textwrap.wrap(line, width=screenXY[0], replace_whitespace=False)
+            for wrappedLine in wrapped:
+                print(wrappedLine)
+    #print(text)
+    exit()
+elif args.listSections:
     sections=getSections(files)
     for section in sections:
         print(section)
@@ -223,9 +317,11 @@ elif args.regex:
     config['systems']=systems
     if config['groupList']==None:
         config.pop('groupList')
-    for k in ['fileSpec', 'confFile', 'listSections']:
+    for k in ['fileSpec', 'confFile', 'listSections', 'yamlHelp']:          # Remove these keys from the dictionary as they aren't needed in the Search object
         config.pop(k)
-    config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
+
+    # The following is for testing and needs to be removed before going into production
+    #config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
     search=Search(config)
     search.findResults()
