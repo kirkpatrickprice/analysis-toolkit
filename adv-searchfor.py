@@ -47,7 +47,7 @@ parser = argparse.ArgumentParser(
 
         NOTES:
             * Either -e (command line mode) OR -c (YAML mode) is required.
-            * Batch/YAML mode forces CSV output (see '''+defaultPath+''' directory)
+            * Batch/YAML mode forces Excel output (see '''+defaultPath+''' directory)
             * Using -g (Regex groups) forces -o (only matching)
         '''),
     epilog=textwrap.dedent('''
@@ -79,7 +79,7 @@ inputControl.add_argument(
     dest='confFile',
     help=textwrap.dedent('''
         Provide a YAML configuration file to specify the options.  If only a file name, assumes analysis-toolit/conf.d location.  Multiple 
-        searches can be defined in a single file to create a scripted review.  CSV results will be written to '''+defaultPath+'''<check_name>.csv.
+        searches can be defined in a single file to create a scripted review.  Excel results will be written to '''+defaultPath+'''<check_name>.xlsx.
     ''')
     )
 
@@ -88,33 +88,34 @@ outputControl = parser.add_argument_group(title='Output Control')
 outputControl.add_argument(
     '-e', '--regexp', 
     dest='regex', 
-    help=getConfigOptions()['regex']
+    help=getConfigOptions()['regex'],
     )
 outputControl.add_argument(
     '--name',
     dest='name',
     default='CommandLineSearch',
     type=str,
-    help=getConfigOptions()['name']
+    help=getConfigOptions()['name'],
     )
 outputControl.add_argument(
     '-m', '--count', 
     dest='maxResults', 
     default=0, 
     type=int, 
-    help=getConfigOptions()['maxResults']
+    help=getConfigOptions()['maxResults'],
+    metavar='INT',
     )
 outputControl.add_argument(
     '--fullscan',
     dest='fullScan',
     help=getConfigOptions()['fullScan'],
-    action='store_true'
+    action='store_true',
     )
 outputControl.add_argument(
     '-o', '--only-matching', 
     dest='onlyMatching',
     help=getConfigOptions()['onlyMatching'], 
-    action='store_true'
+    action='store_true',
     )
 outputControl.add_argument(
     '-g', '--group',
@@ -123,25 +124,27 @@ outputControl.add_argument(
     action='append',
     type=str,
     #nargs='+',
-    help=getConfigOptions()['groupList']
+    help=getConfigOptions()['groupList'],
+    metavar='GROUPNAME [-g GROUPNAME...]',
     )
 outputControl.add_argument(
     '--combine',
     dest='combine',
     help=getConfigOptions()['combine'],
-    action='store_true'
+    action='store_true',
     )
 outputControl.add_argument(
     '-t', '--truncate', 
     dest='truncate',
     help=getConfigOptions()['truncate'],
-    action='store_true'
+    action='store_true',
     )
 outputControl.add_argument(
     '--out-file', '-oF',
     dest='outFile',
     type=str,
-    help=getConfigOptions()['outFile']
+    help=getConfigOptions()['outFile'],
+    metavar='FILENAME',
     )
 outputControl.add_argument(
     '--out-path', '-oP',
@@ -149,33 +152,35 @@ outputControl.add_argument(
     default=defaultPath,
     type=str,
     help=getConfigOptions()['outPath'],
+    metavar='PATH',
     )
 outputControl.add_argument(
     '-u', '--unique',
     action='store_true',
     dest='unique',
-    help=getConfigOptions()['unique']
+    help=getConfigOptions()['unique'],
     )
 outputControl.add_argument(
     '--comment',
     dest='comment',
     type=str,
-    help=getConfigOptions()['comment']
+    help=getConfigOptions()['comment'],
+    metavar="'COMMENT'",
     )
 outputControl.add_argument(
     '-q', '--quiet',
     dest='quiet',
     action='store_true',
-    help=getConfigOptions()['comment']
+    help=getConfigOptions()['comment'],
     )
 
-sysFilterControl = parser.add_argument_group(title='System Filters')
+sysFilterControl = parser.add_argument_group(title='System Filters',)
 sysFilterControl.add_argument(
     '--sys-filter',
     dest='sysFilter',
     type=ast.literal_eval,
     help=getConfigOptions()['sysFilter'],
-    metavar="\"[{'attr'='validAttribute','comp'='comparisonOp','value'='string'}...]\""
+    metavar="\"[{'attr'='validAttribute','comp'='eq|gt|lt|ge|le|in','value'='string'}...]\"",
     )
 
 miscOptions = parser.add_argument_group(title='Misc. Options')
@@ -401,7 +406,7 @@ if args.confFile:
         error(defaultPath,' directory already exists.  Existing files will be replaced.  Press CTRL-C within 5 seconds to abort...')
         sleep(5)
 
-    # Check if the CSV output directory exists and create it if needed
+    # Check if the Excel output directory exists and create it if needed
     if not os.path.exists(defaultPath):
         os.makedirs(defaultPath)
     
@@ -445,7 +450,7 @@ if args.confFile:
             exit(err_nofiles)
         print('Checking:', configSection)
         matchCount=printMatches(**config)
-        # Remove the CSV file there weren't any matches written
+        # Remove the Excel file there weren't any matches written
         print('Matches found:',matchCount)
         print('Section time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - sectionStartTime))))
         print('Elapsed time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))

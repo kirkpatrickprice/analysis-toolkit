@@ -157,7 +157,9 @@ class Search:
                     if not compareAttr(f, self.config['systems'][i]):
                         popped=sysList.pop(i-popCount).getSystemName()
                         popCount+=1
-                        error('Removing %s. sysFilter does not match: %s %s %s' % (popped, f['attr'],f['comp'],f['value']))
+                        error('Removing %s. sysFilter does not match: ' % popped)
+                        error('\tFilter: %s %s %s' % ( f['attr'],f['comp'],f['value'],))
+                        error('\tObserved value: %s' % self.config['systems'][i].__getattribute__(f['attr']))
                         break
             self.config['systems']=sysList[:]
 
@@ -314,8 +316,10 @@ class Search:
 
                         # if this search config requests to combine the results, pass the results to the combine routine
                         if groupCounter == len(self.config['groupList']) and self.config['combine'] and len(groupDict) > 0:
-                            res+=combineResults(groupRes)
+                            groupRes=combineResults(groupRes)
                             groupCounter=0
+                        
+                        res+=groupRes
                     else:
                         # This paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
                         # before rejoining on the :: field separator (at the beginning of the line)
@@ -539,7 +543,7 @@ class System(object):
                 self.osPrettyName=osDetails.results[0]['prettyName']
                 rpmPattern=r'Alma|Amazon|ClearOS|CentOS|Oracle|(Red Hat)|SUSE'
                 debPattern=r'Debian|Gentoo|Knoppix|Ubuntu'
-                distroSearch=re.compile(r'(?P<debDistro>'+debPattern+')|(?P<rpmDistro>'+rpmPattern+')')
+                distroSearch=re.compile(r'(?P<debDistro>'+debPattern+')|(?P<rpmDistro>'+rpmPattern+')', re.IGNORECASE)
                 versionSearch=re.compile(r'(?P<osVersion>((\d+\.?)+))')
                 searchText=osDetails.results[0]['prettyName']
                 if 'rpmPrettyName' in osDetails.results[0]:
