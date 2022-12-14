@@ -98,7 +98,7 @@ class Search:
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
             'name': '',
-            'maxResults': 0,
+            'maxResults': -1,
             'onlyMatching': False,
             'unique': False,
             'truncate': False,
@@ -748,7 +748,7 @@ def getConfigOptions():
             'name': 'A name for the search config.  Will be used to name the Excel table and worksheet.',
             'systems': 'Systems (Class: System) to apply the search to',
             'regex': 'Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html',
-            'maxResults': 'Maximum number of results to return per System (default: 0 - unlimited)',
+            'maxResults': 'Maximum number of results to return per System (default: -1 - unlimited)',
             'onlyMatching': 'Only provide the matching string instead of the full line (default: full line)',
             'unique': 'Only display one instance of each match',
             'groupList': 'Regex group to display, if groups are used (default=0/ALL).  Must be used with -o / --only-matching',

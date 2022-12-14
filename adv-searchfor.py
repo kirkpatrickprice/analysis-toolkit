@@ -96,7 +96,7 @@ outputControl.add_argument(
 outputControl.add_argument(
     '-m', '--count', 
     dest='maxResults', 
-    default=0, 
+    default=-1, 
     type=int, 
     help=getConfigOptions()['maxResults'],
     metavar='INT',
@@ -342,8 +342,8 @@ elif args.regex:
         config.pop(k)
 
     # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
-    # error('SPECIAL REGEX IN PLACE')
-    # config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
+    error('SPECIAL REGEX IN PLACE')
+    config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
     search=Search(config)
     search.findResults()
