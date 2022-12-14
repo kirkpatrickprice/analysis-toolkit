@@ -751,7 +751,7 @@ def getConfigOptions():
             'comment': 'A helpful comment that will be added to the output file to describe how to use this particular set of search results',
             'outFile': 'File name to save the results to',
             'outPath': 'Path to save the results to (Default: ./saved)',
-            'sysFilter': 'A list of conditions represented in a dictionary with keys ''attr'', ''comp'', and ''value''',
+            'sysFilter': 'A list of conditions represented in a dictionary with keys ''attr'', ''comp'', and ''value''.  See --yaml-help for details',
         }
 
 def getSysFilterAttrs():
