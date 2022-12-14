@@ -338,12 +338,8 @@ class Search:
 
                     # If we're at the limit of our results
                     if len(systemResults) == self.config['maxResults']:
-                        # for result in systemResults:
-                        #     finalResults.append(result)
                         break
                 elif (limitToSection and sectionFound and not inDesiredSection and not isComment and not isBlankLine):
-                    # for result in systemResults:
-                    #     finalResults.append(result)
                     break
             
             # If we finished the file, but we didn't find all of the groups we though we needed, go ahead and combine what we have
@@ -436,7 +432,6 @@ class Search:
 
         # Create a new Excel workbook to store the results
         # Use 'constant_memory' mode to write the results to the file as they are saved / saves memory
-        #wb=xlsxwriter.Workbook(path+'/'+filename, {'constant_memory': True})
         wb=xlsxwriter.Workbook(path+'/'+filename)
         ws=wb.add_worksheet(self.config['name'])
 
@@ -468,11 +463,6 @@ class Search:
             cursor['row']+=2                                            #Skip a line before writing the header
         except KeyError:
             pass                                                    # Do nothing if there's no comment
-
-        # # Write the header row
-        # for col in columns:
-        #     ws.write(cursor['row'], cursor['col'], col, cell_format)
-        #     cursor['col']+=1
 
         # Populate the Excel table's header row
         tableColumns=[]
@@ -595,10 +585,6 @@ class System(object):
             osDetails.findResults()
             for key in osDetails.results[0]:
                 setattr(self, key, osDetails.results[0][key])
-            # self.productName=osDetails.results[0]['ProductName']
-            # self.releaseID=osDetails.results[0]['ReleaseId']
-            # self.currentBuild=osDetails.results[0]['CurrentBuild']
-            # self.ubr=osDetails.results[0]['UBR']
         else: 
             self.osFamily = 'unknown'
             error('Report version details could not be determined.\nFile will not be processed.')
@@ -611,7 +597,6 @@ class System(object):
             value=self.__dict__[item]
             if not item.startswith('__'):
                 if item == 'scriptDetails':
-                    # res+=value[0]+': '+'.'.join(str(i) for i in value[1])+'\n'
                     pass
                 elif type(value) == list:
                     res+=item+': '+'.'.join(str(i) for i in value)+'\n'
@@ -830,29 +815,29 @@ if __name__ == '__main__':
     for system in test:
         print(system)
     configs=[
-        # {
-        #     'name': 'Windows System Services',
-        #     'systems': test,
-        #     'regex': r'System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartType>.*)',
-        #     'maxResults': 5,
-        #     'onlyMatching': True,
-        #     'groupList': [
-        #         'ServiceName',
-        #         'Status',
-        #         'StartType',
-        #     ],
-        #     'truncate': True,
-        #     'quiet': True,
-        #     'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
-        #     'outFile': 'windows_system_services',
-        #     'sysFilter': [
-        #         {
-        #             'attr': 'osFamily',
-        #             'comp': 'eq',
-        #             'value': 'Windows'
-        #         },
-        #     ]
-        # },        
+        {
+            'name': 'Windows System Services',
+            'systems': test,
+            'regex': r'System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartType>.*)',
+            'maxResults': 5,
+            'onlyMatching': True,
+            'groupList': [
+                'ServiceName',
+                'Status',
+                'StartType',
+            ],
+            'truncate': True,
+            'quiet': True,
+            'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
+            'outFile': 'windows_system_services',
+            'sysFilter': [
+                {
+                    'attr': 'osFamily',
+                    'comp': 'eq',
+                    'value': 'Windows'
+                },
+            ]
+        },        
         {
             'name': 'Linux Pending Yum Updates',
             'systems': test,
@@ -875,38 +860,38 @@ if __name__ == '__main__':
                 },
             ]
         },
-        # {
-        #     'name': 'WindowsUpdateHistory',
-        #     'systems': test,
-        #     'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
-        #     'maxResults': 10,
-        #     'onlyMatching': False,
-        #     'truncate': True,
-        #     'quiet': True,
-        #     'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
-        #     'outFile': 'windows_update_history',
-        #     'sysFilter': [
-        #         {
-        #             'attr': 'osFamily',
-        #             'comp': 'eq',
-        #             'value': 'Windows'
-        #         },
-        #     ]
-        # },
+        {
+            'name': 'WindowsUpdateHistory',
+            'systems': test,
+            'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
+            'maxResults': 10,
+            'onlyMatching': False,
+            'truncate': True,
+            'quiet': True,
+            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
+            'outFile': 'windows_update_history',
+            'sysFilter': [
+                {
+                    'attr': 'osFamily',
+                    'comp': 'eq',
+                    'value': 'Windows'
+                },
+            ]
+        },
     ]
-    # for config in configs:
-    #     search=Search(config)
-    #     search.printConfig()
-        # if len(search.config['systems']) > 0:
-        #     search.findResults()
-        #     if search.results:
-        #         search.toScreen()
-        #         try:
-        #             search.config['outfile']                
-        #             search.toExcel()
-        #         except KeyError:
-        #             pass
-        #     else:
-        #         error('No results found')
-        # else:
-        #     error('No systems matched provided criteria.  Skipping search: %s' % search.getName())
+    for config in configs:
+        search=Search(config)
+        search.printConfig()
+        if len(search.config['systems']) > 0:
+            search.findResults()
+            if search.results:
+                search.toScreen()
+                try:
+                    search.config['outfile']                
+                    search.toExcel()
+                except KeyError:
+                    pass
+            else:
+                error('No results found')
+        else:
+            error('No systems matched provided criteria.  Skipping search: %s' % search.getName())

@@ -331,7 +331,7 @@ elif args.regex:
     config['systems']=systems
     if config['groupList']==None:
         config.pop('groupList')
-    for k in ['fileSpec', 'confFile', 'listSections', 'yamlHelp']:          # Remove these keys from the dictionary as they aren't needed in the Search object
+    for k in ['fileSpec', 'confFile', 'listSections', 'yamlHelp', 'printSysDetails']:          # Remove these keys from the dictionary as they aren't needed in the Search object
         config.pop(k)
 
     # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
