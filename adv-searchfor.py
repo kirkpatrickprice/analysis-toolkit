@@ -192,6 +192,12 @@ miscOptions.add_argument(
     help='Print some helpful information for working with YAML and then exit.',
     action='store_true',
     )
+miscOptions.add_argument(
+    '--print-systems',
+    dest='printSysDetails',
+    action='store_true',
+    help='Print system details.  Helpful for debugging system filters',
+    )
 
 
 ##############################################################
@@ -310,6 +316,13 @@ elif args.listSections:
     for section in sections:
         print(section)
     exit(0)
+elif args.printSysDetails:
+    i=0
+    for system in [System(f) for f in files]:          # Build a list of systems from the matching files, and iterate through them
+        print(system)
+        i+=1
+    print('\nTotal systems: %d' % i)
+    exit(0)
 elif args.regex:
     systems=[System(f) for f in files]          # Build a list of systems from the matching files
     config=vars(args)                           # Mass-assign the args to the config dictionary
@@ -321,7 +334,7 @@ elif args.regex:
     for k in ['fileSpec', 'confFile', 'listSections', 'yamlHelp']:          # Remove these keys from the dictionary as they aren't needed in the Search object
         config.pop(k)
 
-    # The following is for testing and needs to be removed before going into production
+    # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
     config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
     search=Search(config)
@@ -431,8 +444,6 @@ if args.confFile:
                 fileSpec=configYAML[configSection][key]
             else: 
                 config[key]=configYAML[configSection][key]
-
-        debug(config)
 
         # Automatically enable onlyMatching if a groupList is used
         if config['groupList'] != [0]:
