@@ -164,24 +164,32 @@ class Search:
         # Check the list of systems against any sysFilters that have been defined
         if 'sysFilter' in self.config.keys():
             sysList=self.config['systems'][:]
+            poppedList=[]
             popCount=0
             for i in range(len(self.config['systems'])):
                 for f in self.config['sysFilter']:
                     if not compareAttr(f, self.config['systems'][i]):
                         popped=sysList.pop(i-popCount).getSystemName()
                         popCount+=1
-                        error('Removing %s. sysFilter does not match: ' % popped)
-                        if f['comp'] == 'in':
+                        poppedList.append(popped)
+                        if self.config['verbose']:
+                            error('Removing %s. sysFilter does not match: ' % popped)
+                        if f['comp'] == 'in' and self.config['verbose']:
                             error('\tFilter: %s %s %s' % ( f['value'],f['comp'],f['attr'],))
-                        else:
+                        elif self.config['verbose']:
                             error('\tFilter: %s %s %s' % ( f['attr'],f['comp'],f['value'],))
                         try:
                             obsValue=self.config['systems'][i].__getattribute__(f['attr'])
                         except AttributeError:
                             obsValue='NOT FOUND'
-                        error('\tObserved value: %s' % obsValue)
+                        if self.config['verbose']:
+                            error('\tObserved value: %s' % obsValue)
                         break
-            self.config['systems']=sysList[:]
+            if self.config['verbose']:
+                if len(poppedList) > 0:
+                    print('Removed systems:', poppedList)
+                print('\nFinal list of systems:', [x.getSystemName() for x in sysList])
+                self.config['systems']=sysList[:]
 
         if self.config['unique'] and not self.config['onlyMatching']:           # Unique requires onlyMatching
             self.config['onlyMatching'] = True
@@ -752,6 +760,7 @@ def getConfigOptions():
             'outFile': 'File name to save the results to',
             'outPath': 'Path to save the results to (Default: ./saved)',
             'sysFilter': 'A list of conditions represented in a dictionary with keys ''attr'', ''comp'', and ''value''.  See --yaml-help for details',
+            'verbose': 'Increase output verbosity',
         }
 
 def getSysFilterAttrs():

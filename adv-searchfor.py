@@ -198,6 +198,12 @@ miscOptions.add_argument(
     action='store_true',
     help='Print system details.  Helpful for debugging system filters',
     )
+miscOptions.add_argument(
+    '--verbose',
+    dest='verbose',
+    action='store_true',
+    help='Increase output verbosity.'
+    )
 
 
 ##############################################################
@@ -209,7 +215,8 @@ startTime=time.time()
 
 # Process command line arguments
 args=parser.parse_args()
-print(args)
+if args.verbose:
+    print(args)
 
 # Get the screen geometry for use throughout
 screenXY=console.getTerminalSize()
@@ -335,7 +342,8 @@ elif args.regex:
         config.pop(k)
 
     # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
-    config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
+    # error('SPECIAL REGEX IN PLACE')
+    # config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
     search=Search(config)
     search.findResults()
