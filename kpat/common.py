@@ -112,6 +112,7 @@ class Search:
         for key in config.keys():
             if key in configOptions:
                 if key == 'sysFilter':
+                    counter=0
                     for filterItem in config[key]:
                         for filterKey in filterItem.keys():
                             if filterKey not in sysFilterOptions:
@@ -126,6 +127,18 @@ class Search:
                                 error('sysFilter comparison invalid: %s' % filterItem[filterKey])
                                 error('Should be one of: %s' % compOptions)
                                 exit(errorCodes['invalidConfig'])
+                            attr=filterItem['attr']
+                            val=filterItem['value']
+
+                            # Search.findResults expects version-type data to be represented in a list
+                            if (attr == 'osVersion' or attr == 'kpnixversion' or attr == 'kpwinversion') and not type(val) == list:
+                                try:
+                                    config['sysFilter'][counter]['value'] = [int(x) for x in val.split('.')]
+                                except:
+                                    error('Error pasring version string info: %s %s.' % (attr, val))
+                                    exit(errorCodes['invalidConfig'])
+                        counter+=1
+
                 self.config[key] = config[key]
             else:
                 error('Invalid search config key [%s].  Valid options: %s' % (key, configOptions))
@@ -158,8 +171,15 @@ class Search:
                         popped=sysList.pop(i-popCount).getSystemName()
                         popCount+=1
                         error('Removing %s. sysFilter does not match: ' % popped)
-                        error('\tFilter: %s %s %s' % ( f['attr'],f['comp'],f['value'],))
-                        error('\tObserved value: %s' % self.config['systems'][i].__getattribute__(f['attr']))
+                        if f['comp'] == 'in':
+                            error('\tFilter: %s %s %s' % ( f['value'],f['comp'],f['attr'],))
+                        else:
+                            error('\tFilter: %s %s %s' % ( f['attr'],f['comp'],f['value'],))
+                        try:
+                            obsValue=self.config['systems'][i].__getattribute__(f['attr'])
+                        except AttributeError:
+                            obsValue='NOT FOUND'
+                        error('\tObserved value: %s' % obsValue)
                         break
             self.config['systems']=sysList[:]
 
@@ -226,19 +246,19 @@ class Search:
                     results         List of results         List of one-item dictionaries for each groupList group
 
                 Outputs
-                    combinedResults Dictionary of results   One list item where each groupList value is comined into a dictionary
+                    combinedResults Dictionary of results   A dictionary of groupList items value
             '''
             combinedResults={}
             for result in results:
                 for key in result.keys():
                     combinedResults[key]=result[key]
-            return [combinedResults]
+            return combinedResults
 
         # Create a short-circuit detection so that once we move beyond the desired section in the file, we stop looking
         desiredSectionRegex=None
         desiredSectionPattern=None 
         limitToSection=False
-        if self.getRegex().find('::') > 0 and not self.config['fullScan'] and self.config['maxResults'] == 0:
+        if self.getRegex().find('::') > 0 and not self.config['fullScan']: # and self.config['maxResults'] == 0:
             desiredSectionRegex=self.getRegex().split('::')[0]
 
             # If the regex begins with a caret anchor, then drop it as some of our lines we want could have other text at the beginning
@@ -253,97 +273,88 @@ class Search:
                 desiredSectionPattern=re.compile(desiredSectionRegex, re.IGNORECASE)
                 limitToSection=True
         
-        # Matches the provided pattern
-        pattern=re.compile(self.getRegex(), re.IGNORECASE)
-        
-        # Matches comment lines and [BEGIN], [CISReference], etc.
-        commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')
-        
-        # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
-        blankLinePattern=re.compile(r'::\s*$')
-        
-        # Setup some more state variables
-        res=[]
+        pattern=re.compile(self.getRegex(), re.IGNORECASE)                              # Matches the provided pattern
+        commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')                            # Matches comment lines and [BEGIN], [CISReference], etc.
+        blankLinePattern=re.compile(r'::\s*$')                                          # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
+        finalResults=[]                                                                          # Set up a blank list to hold our results
 
         for system in self.config['systems']:
-            counter=0
-            groupCounter=0
             sectionFound=False
             inDesiredSection=None
-
-            groupDict={}
-            groupRes=[]
+            groupDict={}                                                                # Create a blank dictionary to hold each regex group results
+            groupResults=[]                                                                 # Create a blank list to hold our group results dictionaries as we complete each one
+            systemResults=[]                                                                # Create a blank list to hold our system results that we'll append to the final results
             for line in open(system.getFilename()):
-                #Capture the current line's section header
-                if limitToSection:
+                if limitToSection:                                                      # Are we supposed to take the short cut?
                     inDesiredSection=desiredSectionPattern.search(line)
                     if inDesiredSection:
                         sectionFound=True
-                found = pattern.search(line)
-                isComment = commentsPattern.search(line)
-                isBlankLine = blankLinePattern.search(line)
+                found = pattern.search(line)                                            # Perform the search for our regex pattern
+                isComment = commentsPattern.search(line)                                # Check if we're on a comment or blank line that also matched our search pattern
+                isBlankLine = blankLinePattern.search(line)                             
                 if found and not isComment and not isBlankLine:
-                    counter+=1
-                    # # Capture the current section as the one we want and flag that we found what we're looking for
-                    # desiredSection=currentSection
-                    # sectionFound=True
-                    # If we're only supposed to grab the matching text...
-                    if self.config['onlyMatching']:
-                        groupCounter+=1
+                    if self.config['onlyMatching']:                                     # OnlyMatching is true when we're processing groups
                         groupDict={}
-                        groupDict['systemname'] = system.sysName
-
+                        groupDict['systemname'] = system.getSystemName()
                         for group in self.config['groupList']:
                             if found.group(group):
-                                foundText=found.group(group)
-
-                                #remove any non-printable characters from the matching results
-                                if not foundText.isprintable():
-                                    printableText = filter(lambda x: x in string.printable, foundText)
-                                    foundText = ''.join(list(printableText))
-
-                                groupDict[group] = foundText.strip()
+                                groupDict[group]=makePrintable(found.group(group)).strip()
 
                         if self.config['unique']:
                             # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError 
                             # if the value isn't found, in which case we'll add it to the results
                             try:
-                                groupRes.index(groupDict)
+                                groupResults.index(groupDict)
                             except ValueError:
-                                groupRes.append(groupDict)
+                                groupResults.append(groupDict)
                         else:
-                            groupRes.append(groupDict)
+                            groupResults.append(groupDict)
 
-                        # if this search config requests to combine the results, pass the results to the combine routine
-                        if groupCounter == len(self.config['groupList']) and self.config['combine'] and len(groupDict) > 0:
-                            groupRes=combineResults(groupRes)
-                            groupCounter=0
-                        
-                        res+=groupRes
+                        # if this search config requests to combine the results, append the combined results to the system results
+                        if self.config['combine']:
+                            foundGroups=[]
+                            foundBool=[]
+                            for result in groupResults:
+                                foundGroups+=list(result.keys())
+
+                            for reqdGroup in self.config['groupList']:
+                                foundBool+=[reqdGroup in foundGroups]
+
+                            #if (len(groupResults) == len(self.config['groupList'])):
+                            if all(foundBool):
+                                systemResults.append(combineResults(groupResults))
+                        else:
+                            for result in groupResults:
+                                systemResults.append(result)
                     else:
-                        # This paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
-                        # before rejoining on the :: field separator (at the beginning of the line)
-                        foundText=line
+                        foundText=makePrintable(line)
 
-                        #remove any non-printable characters from the matching results
-                        if not foundText.isprintable():
-                            printableText = filter(lambda x: x in string.printable, foundText)
-                            foundText = ''.join(list(printableText))
-
-                        res.append({
-                            'SystemName': system.sysName,
+                        # The "results" paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
+                        # before rejoining on the :: field separator (at the beginning of the line)                        
+                        systemResults.append({
+                            'SystemName': system.getSystemName(),
                             'Results': '::'.join((foundText.split('::')[1:])).strip()
                         })
 
                     # If we're at the limit of our results
-                    if counter == self.config['maxResults']:
+                    if len(systemResults) == self.config['maxResults']:
+                        # for result in systemResults:
+                        #     finalResults.append(result)
                         break
-                
-                if (sectionFound and not inDesiredSection and not isComment and not isBlankLine):
+                elif (limitToSection and sectionFound and not inDesiredSection and not isComment and not isBlankLine):
+                    # for result in systemResults:
+                    #     finalResults.append(result)
                     break
-                   
+            
+            # If we finished the file, but we didn't find all of the groups we though we needed, go ahead and combine what we have
+            if self.config['combine'] and not all(foundBool):
+                systemResults.append(combineResults(groupResults))
 
-        self.results=res
+            #Append all of our system system results to the final results
+            for result in systemResults:
+                finalResults.append(result)       
+
+        self.results=finalResults
 
     def toScreen(self):
         results=self.results
@@ -533,7 +544,7 @@ class System(object):
                     'prettyName',
                     'rpmPrettyName',
                 ],
-                'maxResults': 2,
+                'maxResults': 1,
                 'combine' : True,
                 'onlyMatching': True,
             }
@@ -576,7 +587,7 @@ class System(object):
                     'CurrentBuild',
                     'UBR',
                 ],
-                'maxResults': 4,
+                'maxResults': 1,
                 'combine' : True,
                 'onlyMatching': True,
             }
@@ -791,6 +802,16 @@ def getSysFilterKeys():
             'value': 'The value to test against',
     }
 
+def makePrintable(text):
+    '''
+    Receives text and will return only the printable characters
+    '''
+    if not text.isprintable():
+        printableText = filter(lambda x: x in string.printable, text)
+        return ''.join(list(printableText))
+    else:
+        return text
+
 ############################################
 ####### Module Self-test Code ##############
 ############################################
@@ -806,39 +827,32 @@ if __name__ == '__main__':
         System('/home/randy/Downloads/Customers/Test Script Results/Linux/ccaas-fr1-eu51-ldap64-1.fr1.whitepj.net.txt'),
 
     ]
-    for i in test:
-        if i.osFamily == 'Linux':
-            print('SYSTEM DETAILS','*'*25,'\n',i,)
+    for system in test:
+        print(system)
     configs=[
-        {
-            'name': 'Windows System Services',
-            'systems': test,
-            'regex': r'System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartupType>.*)',
-            'maxResults': 5,
-            'onlyMatching': True,
-            'groupList': [
-                'ServiceName',
-                'Status',
-                'StartupType',
-            ],
-            'truncate': True,
-            'quiet': True,
-            'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
-            'outFile': 'windows_system_services',
-            'sysFilter': [
-                {
-                    'attr': 'osFamily',
-                    'comp': 'eq',
-                    'value': 'Windows'
-                },
-                {
-                    'attr': 'kpwinversion',
-                    'comp': 'gt',
-                    'value': [0, 4, 3]
-                }
-            ]
-        },
-        
+        # {
+        #     'name': 'Windows System Services',
+        #     'systems': test,
+        #     'regex': r'System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartType>.*)',
+        #     'maxResults': 5,
+        #     'onlyMatching': True,
+        #     'groupList': [
+        #         'ServiceName',
+        #         'Status',
+        #         'StartType',
+        #     ],
+        #     'truncate': True,
+        #     'quiet': True,
+        #     'comment': '''A list of Windows services, their current status and the their startup config.  Useful to confirm things like anti-virus, web servers, database servers, and other system details''',
+        #     'outFile': 'windows_system_services',
+        #     'sysFilter': [
+        #         {
+        #             'attr': 'osFamily',
+        #             'comp': 'eq',
+        #             'value': 'Windows'
+        #         },
+        #     ]
+        # },        
         {
             'name': 'Linux Pending Yum Updates',
             'systems': test,
@@ -857,43 +871,42 @@ if __name__ == '__main__':
                 {
                     'attr': 'osPrettyName',
                     'comp': 'in',
-                    'value': 'CentOS'
-                },
-                {
-                    'attr': 'osVersion',
-                    'comp': 'gt',
-                    'value': [7, 7, 1807],
+                    'value': 'Red Hat'
                 },
             ]
         },
-        {
-            'name': 'WindowsUpdateHistory',
-            'systems': test,
-            'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
-            'maxResults': 10,
-            'onlyMatching': False,
-            'truncate': True,
-            'quiet': True,
-            'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
-            'outFile': 'windows_update_history',
-            'sysFilter': [
-                {
-                    'attr': 'osFamily',
-                    'comp': 'eq',
-                    'value': 'Windows'
-                },
-            ]
-        },
+        # {
+        #     'name': 'WindowsUpdateHistory',
+        #     'systems': test,
+        #     'regex': r'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate',
+        #     'maxResults': 10,
+        #     'onlyMatching': False,
+        #     'truncate': True,
+        #     'quiet': True,
+        #     'comment': '''A list of WindowsUpdate History log results filtered for Cumulative and Securty updates.  Useful to determine patching history''',
+        #     'outFile': 'windows_update_history',
+        #     'sysFilter': [
+        #         {
+        #             'attr': 'osFamily',
+        #             'comp': 'eq',
+        #             'value': 'Windows'
+        #         },
+        #     ]
+        # },
     ]
-    for config in configs:
-        search=Search(config)
-        search.printConfig()
-        if len(search.config['systems']) > 0:
-            search.findResults()
-            if search.results:
-                search.toScreen()
-                search.toExcel()
-            else:
-                error('No results found')
-        else:
-            error('No systems matched provided criteria.  Skipping search: %s' % search.getName())
+    # for config in configs:
+    #     search=Search(config)
+    #     search.printConfig()
+        # if len(search.config['systems']) > 0:
+        #     search.findResults()
+        #     if search.results:
+        #         search.toScreen()
+        #         try:
+        #             search.config['outfile']                
+        #             search.toExcel()
+        #         except KeyError:
+        #             pass
+        #     else:
+        #         error('No results found')
+        # else:
+        #     error('No systems matched provided criteria.  Skipping search: %s' % search.getName())
