@@ -24,14 +24,13 @@ Version History:
             Export to Excel instad CSV files
             Unique columns whenever groupLists are provided
             Combine results from mulitple lines in the source files into a single row
-            Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version)
+            Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version, osVersion, etc)
 '''
 
 import argparse                                                     # To handle command line arguments and usage
 import sys                                                          # Needed to test for basic pre-reqs like OS and Python version
 import glob                                                         # Used to match filespec to current directory contents
 import textwrap                                                     # Text handling routines
-import string                                                       # Needed to process matches for potentially unprintable characters
 import time                                                         # To report run length for each check in YAML mode
 import ast
 
@@ -51,10 +50,7 @@ parser = argparse.ArgumentParser(
             * Using -g (Regex groups) forces -o (only matching)
         '''),
     epilog=textwrap.dedent('''
-        Returns EXITCODE=0 if successful.
-        
-        Other EXITCODEs:
-        '''+str(getErrorCodes()))
+        Returns EXITCODE=0 if successful.  Other EXITCODEs: '''+str(getErrorCodes()))
     )
 
 # Define a custom action to store any sysFilter options as a dictionary for use in defining the Search
@@ -326,7 +322,7 @@ elif args.regex:
         config.pop(k)
 
     # The following is for testing and needs to be removed before going into production
-    #config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
+    config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
     search=Search(config)
     search.findResults()
