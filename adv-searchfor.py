@@ -315,20 +315,18 @@ if args.yamlHelp:
         else:
             wrapped=textwrap.wrap(line, width=screenXY[0], replace_whitespace=False)
             for wrappedLine in wrapped:
-                print(wrappedLine)
-    #print(text)
-    exit()
+                print(wrappedLine)    
+    exit(0)
 elif args.listSections:
     sections=getSections(files)
     for section in sections:
         print(section)
     exit(0)
 elif args.printSysDetails:
-    i=0
-    for system in [System(f) for f in files]:          # Build a list of systems from the matching files, and iterate through them
+    systems=[System(f) for f in files]          # Build a list of systems from the matching files, and iterate through them
+    for system in systems:
         print(system)
-        i+=1
-    print('\nTotal systems: %d' % i)
+    print('\nTotal systems: %d' % len(systems))
     exit(0)
 elif args.regex:
     systems=[System(f) for f in files]          # Build a list of systems from the matching files
@@ -342,8 +340,8 @@ elif args.regex:
         config.pop(k)
 
     # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
-    error('SPECIAL REGEX IN PLACE')
-    config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
+    # error('SPECIAL REGEX IN PLACE')
+    # config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
     search=Search(config)
     search.findResults()
