@@ -7,6 +7,7 @@ from kpat.common import errorCodes, System, Search, error, getLongest, getSectio
 from kpat import console
 import os
 from time import sleep
+import copy
 
 # Set up some defaults that we need early on
 defaultPath='saved/'
@@ -205,6 +206,105 @@ miscOptions.add_argument(
     help='Increase output verbosity.'
     )
 
+class Systems(dict):
+    # def __init__(self):
+    #     return dict()
+    
+    def add(self, filename):
+        self[filename]=System(filename, args.verbose)
+        return self[filename]
+
+    def search(self, filename):
+        try:
+            res=self[filename]
+        except KeyError:
+            res=False
+        return res
+
+
+def argsToConfig():
+    '''
+    Convert the ArgParse args object to a Search config object.  Mostly, there are a few items that need to be removed as they only have context from the command line
+    '''
+
+    config=copy.deepcopy(vars(args))                           # Mass-assign the args to the config dictionary
+    
+    # And then fix a few things
+    if config['groupList']==None:
+        config.pop('groupList')
+    for k in ['confFile', 'listSections', 'yamlHelp', 'printSysDetails']:       # Remove these keys from the dictionary as they aren't needed in the Search object
+        try:
+            config.pop(k)
+        except KeyError:
+            pass
+
+    return config
+
+def parseFileSpec(fileSpec):
+    '''
+    Receives a file spec and returns a list of systems (class System) that match the spec
+
+    NOTE: uses and makes changes to the GLOBAL AllSystems dictionary
+    '''
+
+    global AllSystems
+
+    # Expand the filespec into a list of files.  Print an error and exit if there aren't any matching files
+    files=glob.glob(fileSpec)
+
+    if not files:
+        error('No files match the provided filespec ("', args.fileSpec, '").')
+        print()
+        parser.print_usage()
+        exit(errorCodes['noFiles'])
+
+    systems=[]
+    for file in files:
+        found=AllSystems.search(file)
+        if not found:
+            systems.append(AllSystems.add(file))
+        else:
+            systems.append(found)
+
+    return systems
+
+
+def yamlParse(confFile):
+    '''
+    Receives a YAML configuration file and returns a list of configuration dictionaries.  The dictionaries will be ready to be passed to the Search object.
+    '''
+
+    import yaml
+
+    configs=[]
+    #If the provided confFile doesn't exist in the current directory and does not include path-y characters, then prepend the kpat/conf.d directory to the overall path
+    if not os.path.exists(confFile) and confFile.find('/') == -1:
+        # Split and rejoin the program's root path -- minus the program name
+        confPath='/'.join((sys.argv[0]).split('/')[:-1])
+        confFile=confPath+'/conf.d/'+confFile
+    
+    # Import and process the YAML configuration file
+    with open(confFile) as file:
+        configYAML=yaml.safe_load(file)
+
+    for configSection in configYAML.keys():
+        if configSection.startswith('include'):
+            for file in configYAML[configSection]['files']:
+                configs=yamlParse(file)
+
+        config=argsToConfig()                                       # Start with the command line options as defaults
+
+        for key in configYAML[configSection]:                       # Override the command line options if defined in the YAML section
+            config[key]=configYAML[configSection][key]
+
+        config['systems']=parseFileSpec(config['fileSpec'])
+        config.pop('fileSpec')
+
+        configs.append(config)
+
+    return configs
+
+
 
 ##############################################################
 ##################### Let's get started ######################
@@ -221,14 +321,8 @@ if args.verbose:
 # Get the screen geometry for use throughout
 screenXY=console.getTerminalSize()
 
-# Expand the filespec into a list of files.  Print an error and exit if there aren't any matching files
-files=glob.glob(args.fileSpec)
-
-if not files:
-    error('No files match the provided filespec ("', args.fileSpec, '").')
-    print()
-    parser.print_usage()
-    exit(errorCodes['noFiles'])
+# Create a dictionary to store all previously discovered systems to minimize the time necessary to capture the system details (esp for YAML mode)
+AllSystems=Systems()
 
 # Check if results will be output and warn if the folder already exists
 if args.outFile or args.confFile:
@@ -265,7 +359,6 @@ if args.yamlHelp:
                 optionsText[option.__name__]+=f'%-{longest+2}s%s\n' % ('fileSpec', 'A glob-able file specification such as "myfiles*.txt"')
             else:
                 optionsText[option.__name__]+=f'%-{longest+2}s%s\n' % (key, option()[key])
-    
     
     text=textwrap.dedent('''\
     YAML mode allows you to store your searches for reuse later, for instance when working the same client next year or for a set of general purpose content to use in all audits.
@@ -329,15 +422,11 @@ elif args.printSysDetails:
     print('\nTotal systems: %d' % len(systems))
     exit(0)
 elif args.regex:
-    systems=[System(f) for f in files]          # Build a list of systems from the matching files
-    config=vars(args)                           # Mass-assign the args to the config dictionary
-    
-    # And then fix a few things
-    config['systems']=systems
-    if config['groupList']==None:
-        config.pop('groupList')
-    for k in ['fileSpec', 'confFile', 'listSections', 'yamlHelp', 'printSysDetails']:          # Remove these keys from the dictionary as they aren't needed in the Search object
-        config.pop(k)
+
+    config=argsToConfig()
+    config['systems']=parseFileSpec(config['fileSpec'])                                     # Convert fileSpec into systems
+    config.pop('fileSpec')                                                                  # Remove fileSpec from the dictionary as we don't need it now
+
 
     # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
     # error('SPECIAL REGEX IN PLACE')
@@ -351,11 +440,38 @@ elif args.regex:
             search.toExcel()
     else:
         error('No results found')
+        exit(errorCodes['noFiles'])
     
-    exit()
+    exit(0)
 elif args.confFile:
     # Stub for YAML mode
     print('YAML mode')
+
+    configs=yamlParse(args.confFile)
+
+    for config in configs:
+        search=Search(config)
+        search.findResults()
+        if search.results:
+            search.toScreen()
+            try:
+                if config.outFile:
+                    search.toExcel()
+            except AttributeError:
+                if config['verbose']:
+                    error('Skipping Excel output')
+        else:
+            error('No results found')
+
+    # # Clean up the directory if it already exists
+    # if os.path.exists(defaultPath):
+    #     error(defaultPath,' directory already exists.  Existing files will be replaced.  Press CTRL-C within 5 seconds to abort...')
+    #     sleep(5)
+
+    # # Check if the Excel output directory exists and create it if needed
+    # if not os.path.exists(defaultPath):
+    #     os.makedirs(defaultPath)
+
     exit()
 else:
     error('REGEX, CONFFILE or LISTSECTIONS is required.')
@@ -365,110 +481,12 @@ else:
 
 
 
-if args.groupList != [0] and not args.onlyMatching:
-    error('Groups option was specified. Enabling --only-matching')
-    args.onlyMatching=True
-    # print()
-    # parser.print_usage()
-    # exit(err_general)
-
-
-
-# Print the list of sections from FILESPEC and exit
-if args.listSections:
-    sections=getSections(files)
-    for section in sections:
-        print(section)
-    exit(0)
-
-outFile=''
-
-if not args.confFile:
-    config={
-        'files': files,
-        'regex': args.regex,
-        'maxResults': args.maxResults,
-        'outFile': outFile,
-        'onlyMatching': args.onlyMatching,
-        'unique': args.unique,
-        'groupList': args.groupList,
-        'truncate': args.truncate,
-        'screenXY': screenXY,
-        'quiet': args.quiet,
-        'fullScan': args.fullScan}
-    debug(config)
-    matchCount=printMatches(**config)
-            
-    if matchCount == 0:
-        error('No matching results found using pattern "', args.regex, '"')
-        exit(err_noresults)
-    else:
-        print('Matches found:',matchCount)
 
 if args.confFile:
     import yaml
 
     confFile=args.confFile
 
-    #If the provided confFile does not include path-y characters, then prepend the conf.d directory to the overall path
-    if confFile.find('/') == -1 and confFile.find('\\') == -1:
-        # Split and rejoin the program's root path -- minus the program name
-        confPath='/'.join((sys.argv[0]).split('/')[:-1])
-        confFile=confPath+'/conf.d/'+confFile
 
-    # Clean up the directory if it already exists
-    if os.path.exists(defaultPath):
-        error(defaultPath,' directory already exists.  Existing files will be replaced.  Press CTRL-C within 5 seconds to abort...')
-        sleep(5)
-
-    # Check if the Excel output directory exists and create it if needed
-    if not os.path.exists(defaultPath):
-        os.makedirs(defaultPath)
-    
-    # Import and process the YAML configuration file
-    with open(confFile) as file:
-        configYAML=yaml.safe_load(file)
-
-    for configSection in configYAML.keys():
-        sectionStartTime=time.time()
-        fileSpec = args.fileSpec
-        print('\n', '=' * 50, sep='')
-
-        config={
-            'regex': args.regex,
-            'maxResults': args.maxResults,
-            'outFile': defaultPath+configSection+'.csv',
-            'onlyMatching': args.onlyMatching,
-            'unique': args.unique,
-            'groupList': args.groupList,
-            'truncate': args.truncate,
-            'screenXY': screenXY,
-            'quiet': args.quiet,
-            'fullScan': args.fullScan}
-        for key in configYAML[configSection]:
-            if key == 'fileSpec': 
-                fileSpec=configYAML[configSection][key]
-            else: 
-                config[key]=configYAML[configSection][key]
-
-        # Automatically enable onlyMatching if a groupList is used
-        if config['groupList'] != [0]:
-            config['onlyMatching'] = True
-
-        config['files']=glob.glob(fileSpec)
-        if not config['files']:
-            error('No files match the provided filespec ("', args.fileSpec, '").')
-            print()
-            parser.print_usage()
-            exit(err_nofiles)
-        print('Checking:', configSection)
-        matchCount=printMatches(**config)
-        # Remove the Excel file there weren't any matches written
-        print('Matches found:',matchCount)
-        print('Section time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - sectionStartTime))))
-        print('Elapsed time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))
-        if matchCount == 0:
-            error('Zero matches found. Removing ',config['outFile'])
-            os.remove(config['outFile'])
 
 print('Total time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))

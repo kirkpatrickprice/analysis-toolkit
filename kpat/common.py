@@ -109,6 +109,12 @@ class Search:
             'verbose': False,
         }
 
+        try:
+            if config['sysFilter'] is None:                     # sysFilter can come through as a None (null) object in a few scenarios.  Remove it.
+                config.pop('sysFilter')
+        except KeyError:
+            pass
+
         # Set any user-provided config options
         for key in config.keys():
             if key in configOptions:
@@ -528,7 +534,7 @@ class Search:
             exit(errorCodes['generalError'])
 
 class System(object):
-    def __init__(self, filename):
+    def __init__(self, filename, verbose):
         self.sysName = os.path.split(filename)[-1].replace('.txt', '')
         self.filename = filename
         self.scriptDetails = getReportVersion(self.getFilename())
@@ -571,7 +577,7 @@ class System(object):
                     self.osVersion = [int(x) for x in version.group('osVersion').split('.')]
                 else:
                     self.osVersion = 0
-            else:
+            elif verbose:
                 error("File: %s\nCouldn't determine OS Pretty Name" % filename)
         elif self.scriptDetails[0] == 'KPWINVERSION':
             self.osFamily = 'Windows'
@@ -596,8 +602,9 @@ class System(object):
                 setattr(self, key, osDetails.results[0][key])
         else: 
             self.osFamily = 'unknown'
-            error('Report version details could not be determined.\nFile will not be processed.')
-            error('Filename: %s' % self.getFilename())
+            if verbose:
+                error('Report version details could not be determined.\nFile will not be processed.')
+                error('Filename: %s' % self.getFilename())
 
     def __str__(self):
         
@@ -814,7 +821,7 @@ def makePrintable(text):
 if __name__ == '__main__':
     import glob
     files=glob.glob('/home/randy/Downloads/Customers/test-script-results/kpat-test-data/*.txt')
-    test=[System(f) for f in files]
+    test=[System(f, verbose=True) for f in files]
     #     System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/THE-BEAST.txt'),
     #     System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'), 
     #     System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/cpaas_dev-jenkins-win.txt'),
