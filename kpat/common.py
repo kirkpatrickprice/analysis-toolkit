@@ -106,6 +106,7 @@ class Search:
             'fullScan': False,
             'combine': False,
             'outPath': 'saved',
+            'verbose': False,
         }
 
         # Set any user-provided config options
@@ -811,18 +812,18 @@ def makePrintable(text):
 ############################################
 
 if __name__ == '__main__':
-    test=[
-        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/THE-BEAST.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'), 
-        System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/cpaas_dev-jenkins-win.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Linux/11792-tdc3-dns.modernniagara.miaas.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Linux/chalet_chalet-realm-chalet-ng-erl.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Linux/olorin-0.6.11.txt'),
-        System('/home/randy/Downloads/Customers/Test Script Results/Linux/ccaas-fr1-eu51-ldap64-1.fr1.whitepj.net.txt'),
+    import glob
+    files=glob.glob('/home/randy/Downloads/Customers/test-script-results/kpat-test-data/*.txt')
+    test=[System(f) for f in files]
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/THE-BEAST.txt'),
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/ACC-3791-PC.txt'), 
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Windows Script Results/cpaas_dev-jenkins-win.txt'),
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Linux/11792-tdc3-dns.modernniagara.miaas.txt'),
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Linux/chalet_chalet-realm-chalet-ng-erl.txt'),
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Linux/olorin-0.6.11.txt'),
+    #     System('/home/randy/Downloads/Customers/Test Script Results/Linux/ccaas-fr1-eu51-ldap64-1.fr1.whitepj.net.txt'),
 
-    ]
-    for system in test:
-        print(system)
+    # ]
     configs=[
         {
             'name': 'Windows System Services',
@@ -845,7 +846,8 @@ if __name__ == '__main__':
                     'comp': 'eq',
                     'value': 'Windows'
                 },
-            ]
+            ],
+            'verbose': True,
         },        
         {
             'name': 'Linux Pending Yum Updates',
@@ -890,7 +892,8 @@ if __name__ == '__main__':
     ]
     for config in configs:
         search=Search(config)
-        search.printConfig()
+        if search.config['verbose']:
+            search.printConfig()
         if len(search.config['systems']) > 0:
             search.findResults()
             if search.results:
