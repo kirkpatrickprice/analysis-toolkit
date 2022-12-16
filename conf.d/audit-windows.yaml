@@ -1,35 +1,35 @@
 ---
 
-# Instructions for working in YAML mode:
-#   * Use an arbitary-but-descriptive name for the section
-#   * Config options use the same names as the argument parser variables in searchfor.py
-#   * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
-#   * List items are indented with a hyphen under the list variable's name
-#   * Booleans are set to either True or False (case sensitive)
-# Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
-#
-# When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
-# under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
+Instructions for working in YAML mode:
+  * Use an arbitary-but-descriptive name for the section
+  * Config options use the same names as the argument parser variables in searchfor.py
+  * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
+  * List items are indented with a hyphen under the list variable's name
+  * Booleans are set to either True or False (case sensitive)
+Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
 
-# This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
-# Basically, anything that can run kpwinaudit.ps1
+When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
+under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
 
-# See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
+This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
+Basically, anything that can run kpwinaudit.ps1
 
-###################################################################
-######################### Global items ############################
-###################################################################
-# These items will apply to configs in this file.  If the same configurations options are included in any
-# specific checks below, these will be entirely overwritten (not additive)
+See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
+
+##################################################################
+######################## Global items ############################
+##################################################################
+These items will apply to configs in this file.  If the same configurations options are included in any
+specific checks below, these will be entirely overwritten (not additive)
 global:
   sysFilter:
     - attr: osFamily
       comp: eq
       value: Windows
 
-###################################################################
-######################### System_* items ##########################
-###################################################################
+##################################################################
+######################## System_* items ##########################
+##################################################################
 01_system_01_kpwinversion:
   regex: 'KPWINVERSION: (?P<KPWINVERSION>.*)'
   maxResults: 1
@@ -42,9 +42,22 @@ global:
     Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
     to determine if you're missing anything you find important.
 01_system_02_win_os_version:                                                     
-  regex: 'System_OSInfo::(ProductName\s+:\s+(?P<ProductName>[\w ]+))|(ReleaseId\s+:\s+(?P<ReleaseId>\w+))|(CurrentBuild\s+:\s+(?P<CurrentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
+  regex: 'System_OSInfo::(ProductName\s+:\s+(?P<productName>[\w ]+))|(ReleaseId\s+:\s+(?P<releaseId>\w+))|(CurrentBuild\s+:\s+(?P<currentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
   combine: True
   maxResults: 4
+  groupList:
+    - productName
+    - releaseId
+    - currentBuild
+    - UBR
+  comment: >-
+    Windows operating system details.  The most helpful fields are:
+      - ProductName is a friendly name, but isn't as good for identifying the OS within MS' documentation
+      - Release ID reflects the YYMM of this particular OS.  Especially on the desktop OSes, not all Release IDs of Windows 10 (for instance) are created equal
+      - CurrentBuild is the build number that represents the OS version and is more specific than the friendlier Product Name
+      - UBR identifies the latest specific hotfix that has been installed.  This is the best indicator as to whether the most recent patches have been installed
+
+    Visit https://kirkpatrickprice.atlassian.net/l/cp/7E9b522s for links to MS documentation that can be used to help interpret the results.
 01_system_03_bitlocker_status:
   regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
   groupList:
@@ -54,16 +67,61 @@ global:
     - 'VolumeStatus'
     - 'ProtectionStatus'
   onlyMatching: True
+  comment: >-
+    Capture the BitLocker status of each disk drive attached to the system.  This can be used to confirm statements such as 'All drives are encrypted with BitLocker.'
 01_system_04_gpo_summary:
   regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
+  comment: >-
+    This section includes a report for how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides details on the specific policy items that have been applied.
+
+    This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
 01_system_05_installed_capabilities:
   regex: 'System_InstalledCapabilities::.*Installed'
+  comment: >-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+    Windows Capabilities include such things as an OpenSSH client, Notepad and Internet Explorer.
 01_system_06_installed_features:
   regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
-01_system_07_hotfix_history:
-  regex: 'System_InstalledHotfixes::.*Update'
-01_system_07_windows_update_history:
-  regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
+  comment: >-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+# 01_system_07_hotfix_history:
+#   regex: 'System_InstalledHotfixes::.*Update'
+# 01_system_07_windows_update_history:
+#   regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
+01_system_07_patching_get_hotfix:
+  regex: 'System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})'
+  groupList:
+    - hfDate
+    - hfDescription
+    - hfKbNum
+  comment: >-
+    This list combines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
+
+    The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
+    accurately report hotfix installation history (see note on System_InstalledHotfixes section).  This is filtered just for Security Updates and Cumulative Updates.
+    Additional records are available in the raw files if needed, including for instance daily Defender updates.  That might be helpful as evidence that
+    anti-virus tools are being updated daily.  Basically, if it was action taken by WUS, then it /should/ be in the raw results.
+
+    The Hotfix update history provides a list of all hotfixes that have been installed.  Reviewing these results is a critical part of analyzing patch management practices.
+    IMPORTANT NOTE: Get-HotFix is not 100% reliable.  Whether it reports on the HF action depends on the manner used to install the HF.  Notably, it does not reliably capture
+    all HFs installed by WindowsUpdate.
+01_system_07_patching_wu_history:
+  regex: 'System_WindowsUpdateHistory::Installation\s(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+(?:AM|PM)\s(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+)'
+  groupList:
+    - wuDate
+    - wuDescription
+    - wuKbNum
+  comment: >-
+    This list combines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
+
+    The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
+    accurately report hotfix installation history (see note on System_InstalledHotfixes section).  This is filtered just for Security Updates and Cumulative Updates.
+    Additional records are available in the raw files if needed, including for instance daily Defender updates.  That might be helpful as evidence that
+    anti-virus tools are being updated daily.  Basically, if it was action taken by WUS, then it /should/ be in the raw results.
+
+    The Hotfix update history provides a list of all hotfixes that have been installed.  Reviewing these results is a critical part of analyzing patch management practices.
+    IMPORTANT NOTE: Get-HotFix is not 100% reliable.  Whether it reports on the HF action depends on the manner used to install the HF.  Notably, it does not reliably capture
+    all HFs installed by WindowsUpdate.
 01_system_08_installed_software:
   regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
   fullScan: True

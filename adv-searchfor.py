@@ -435,7 +435,7 @@ if args.yamlHelp:
                 print(wrappedLine)    
     exit(0)
 elif args.listSections:
-    sections=getSections(files)
+    sections=getSections(glob.glob(args.fileSpec))
     for section in sections:
         print(section)
     exit(0)

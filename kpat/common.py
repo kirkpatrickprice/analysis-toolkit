@@ -344,6 +344,7 @@ class Search:
                         else:
                             for result in groupResults:
                                 systemResults.append(result)
+                            groupResults=[]                             # Reset groupresults to null list after appending
                     else:
                         foundText=makePrintable(line)
 
