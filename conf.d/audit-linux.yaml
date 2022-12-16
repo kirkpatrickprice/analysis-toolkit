@@ -27,6 +27,18 @@
 #   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
 
 ###################################################################
+######################### Global items ############################
+###################################################################
+# These items will apply to configs in this file.  If the same configurations options are included in any
+# specific checks below, these will be entirely overwritten (not additive)
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+
+###################################################################
 ######################### System_* items ##########################
 ###################################################################
 
@@ -34,7 +46,7 @@
   regex: 'KPNIXVERSION:.*'
   maxResults: 1
   onlyMatching: True
-01_system_02_os_version:                                                     # Debian uses the PRETTY_NAME consistently
+01_system_02_linux_os_version:                                                     # Debian uses the PRETTY_NAME consistently
   regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<os_version>.*)'  # Use regex groups.  The first group is non-capturing (?:...)
   maxResults: 1                                                           # Only grab the first hit / will be faster as it will move to on the next file right away
   onlyMatching: True
@@ -100,7 +112,7 @@
 ######################### Networking items ########################
 ###################################################################
 
-02_network_01_ping_results:
+02_network_01_linux_ping_results:
   regex: 'Network_ConnectivityTest::[0-9]+ packets transmitted'
 02_network_02_dns_nameserver:
   regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver'

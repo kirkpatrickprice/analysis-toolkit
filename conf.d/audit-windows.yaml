@@ -17,6 +17,17 @@
 # See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
 
 ###################################################################
+######################### Global items ############################
+###################################################################
+# These items will apply to configs in this file.  If the same configurations options are included in any
+# specific checks below, these will be entirely overwritten (not additive)
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+
+###################################################################
 ######################### System_* items ##########################
 ###################################################################
 01_system_01_kpwinversion:
@@ -25,7 +36,12 @@
   onlyMatching: True
   groupList:
     - 'KPWINVERSION'
-01_system_02_os_version:                                                     
+  comment: >-
+    KPWinAudit version information.  Use this to confirm that all script results were produced with a recent version.
+    
+    Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
+    to determine if you're missing anything you find important.
+01_system_02_win_os_version:                                                     
   regex: 'System_OSInfo::(ProductName\s+:\s+(?P<ProductName>[\w ]+))|(ReleaseId\s+:\s+(?P<ReleaseId>\w+))|(CurrentBuild\s+:\s+(?P<CurrentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
   combine: True
   maxResults: 4
@@ -57,7 +73,13 @@
 01_system_10_windows_update_config:
   regex: 'System_WindowsUpdateConfig::(?!PS.*?(Path|Child|Drive|Provider))\w+'
 01_system_11_running_processes:
-  regex: 'System_RunningProcesses::(ProcessName|Path|Company|Product)'
+  regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
+  groupList:
+    - 'processName'
+    - 'path'
+    - 'company'
+    - 'product'
+  combine: True
 01_system_12_system_services_raw:
   regex: 'System_Services::(?!DisplayName)(?!--)'
 01_system_13_system_services_labeled:
@@ -80,7 +102,7 @@
 ######################### Network items ###########################
 ###################################################################
 
-02_network_01_ping_results:
+02_network_01_win_ping_results:
   regex: 'Networking_ConnectivityTest::\s+Packets:'
 02_network_02_ip_addresses_labeled:
   regex: 'Networking_IPInfo::(?P<interface_id>\d+)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<prefix_length>\d+)\s+(?P<prefix_origin>\w+)\s+(?P<suffix_origin>\w+)\s+(?P<address_state>\w+)'

@@ -212,7 +212,8 @@ class Search:
         else:                                       # If groupList is defined, then always set onlyMatching to true
             if not self.config['onlyMatching']:
                 self.config['onlyMatching'] = True
-                error('groupList was provided.  Forcing onlyMatching...')
+                if self.config['verbose']:
+                    error('groupList was provided.  Forcing onlyMatching...')
     
     def printConfig(self):
         '''
@@ -291,7 +292,8 @@ class Search:
         pattern=re.compile(self.getRegex(), re.IGNORECASE)                              # Matches the provided pattern
         commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')                            # Matches comment lines and [BEGIN], [CISReference], etc.
         blankLinePattern=re.compile(r'::\s*$')                                          # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
-        finalResults=[]                                                                          # Set up a blank list to hold our results
+        finalResults=[]                                                                 # Set up a blank list to hold our results
+        combined=False                                                                  # Have we successfully combined the results
 
         for system in self.config['systems']:
             sectionFound=False
@@ -338,6 +340,7 @@ class Search:
                             #if (len(groupResults) == len(self.config['groupList'])):
                             if all(foundBool):
                                 systemResults.append(combineResults(groupResults))
+                                combined=True
                         else:
                             for result in groupResults:
                                 systemResults.append(result)
@@ -358,7 +361,7 @@ class Search:
                     break
             
             # If we finished the file, but we didn't find all of the groups we though we needed, go ahead and combine what we have
-            if self.config['combine'] and not all(foundBool):
+            if self.config['combine'] and not combined and len(groupResults) > 0:
                 systemResults.append(combineResults(groupResults))
 
             #Append all of our system system results to the final results
@@ -425,12 +428,22 @@ class Search:
         '''
 
         #Set up some variables we'll need...
+        maxWorkSheetNameLength=31
         results=self.results
         path=self.config['outPath']
+        if not path.endswith('/'):
+            path+='/'
         filename=self.config['outFile']
-        defaultCommentWidth=6                  # Number of columns to merge into the comment cell.  We'll adjust based on the actual number of columns so that the marged cell doesn't get out of control
-        heightPerLine=15                # Excel row height for a single row (defaults to 15 on my Excel).  We'll use it to approximate a row height for the merged comment cell
-        commentLen=len(self.config['comment'])
+        if len(self.config['name']) > maxWorkSheetNameLength:
+            worksheetName=self.getName()[0:maxWorkSheetNameLength]
+        else:
+            worksheetName=self.getName()
+        defaultCommentWidth=6                   # Number of columns to merge into the comment cell.  We'll adjust based on the actual number of columns so that the marged cell doesn't get out of control
+        heightPerLine=15                        # Excel row height for a single row (defaults to 15 on my Excel).  We'll use it to approximate a row height for the merged comment cell
+        try:
+            commentLen=len(self.config['comment'])
+        except TypeError:
+            commentLen=0
         commentHeight=int(commentLen / 50) * heightPerLine
         cursor={
             'row': 0,
@@ -447,8 +460,15 @@ class Search:
 
         # Create a new Excel workbook to store the results
         # Use 'constant_memory' mode to write the results to the file as they are saved / saves memory
-        wb=xlsxwriter.Workbook(path+'/'+filename)
-        ws=wb.add_worksheet(self.config['name'])
+        if os.path.exists(path+filename):
+            try:
+                os.remove(path+filename)
+            except PermissionError:
+                error('File %s appears to be open.  Close the file and try again\n' % filename)
+                exit(errorCodes['generalError'])
+
+        wb=xlsxwriter.Workbook(path+filename)
+        ws=wb.add_worksheet(worksheetName)
 
         # Create Excel format objects we'll need to make things pretty
         merge_format = wb.add_format({
@@ -468,7 +488,7 @@ class Search:
         columns=getLongest(self.results)
 
         # Write the comment (if provided) into the first cell
-        try:
+        if commentLen > 0:
             if len(columns) > 2:
                 commentWidth=defaultCommentWidth
             else:
@@ -476,8 +496,6 @@ class Search:
             ws.merge_range(cursor['row'], cursor['col'], cursor['row'], cursor['col']+commentWidth, self.config['comment'], merge_format)
             ws.set_row(cursor['row'], commentHeight)
             cursor['row']+=2                                            #Skip a line before writing the header
-        except KeyError:
-            pass                                                    # Do nothing if there's no comment
 
         # Populate the Excel table's header row
         tableColumns=[]
@@ -527,11 +545,8 @@ class Search:
         cursor['col']=0
 
         # Save the workbook
-        try:
-            wb.close()        
-        except:
-            error('File %s appears to be open.  Close the file and try again\n' % filename)
-            exit(errorCodes['generalError'])
+        wb.close()                
+            
 
 class System(object):
     def __init__(self, filename, verbose):

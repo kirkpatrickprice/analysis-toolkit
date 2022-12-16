@@ -274,9 +274,10 @@ def yamlParse(confFile):
     Receives a YAML configuration file and returns a list of configuration dictionaries.  The dictionaries will be ready to be passed to the Search object.
     '''
 
-    import yaml
-
+    global configNames
+    globalConfig={}
     configs=[]
+    dupesFound=False
     #If the provided confFile doesn't exist in the current directory and does not include path-y characters, then prepend the kpat/conf.d directory to the overall path
     if not os.path.exists(confFile) and confFile.find('/') == -1:
         # Split and rejoin the program's root path -- minus the program name
@@ -284,23 +285,46 @@ def yamlParse(confFile):
         confFile=confPath+'/conf.d/'+confFile
     
     # Import and process the YAML configuration file
-    with open(confFile) as file:
-        configYAML=yaml.safe_load(file)
+    try:
+        with open(confFile) as file:
+            configYAML=yaml.safe_load(file)
+    except FileNotFoundError:
+        error("YAML file not found: "+confFile)
+        exit(errorCodes['generalError'])
 
     for configSection in configYAML.keys():
-        if configSection.startswith('include'):
+        if configSection.startswith('global'):
+            for key in configYAML[configSection]:
+                globalConfig[key]=configYAML[configSection][key]
+        elif configSection.startswith('include'):                       # If we've hit an include* section, process the additional files
             for file in configYAML[configSection]['files']:
-                configs=yamlParse(file)
+                configs+=yamlParse(file)                                # Append each file's configs to this one
+        else:
+            config=argsToConfig()                                       # Start with the command line options as defaults
+            config['name']=configSection
+            config['outFile']=configSection
 
-        config=argsToConfig()                                       # Start with the command line options as defaults
+            for globalKey in globalConfig.keys():                         # Assign any globally-assigned keys to the current config
+                config[globalKey]=globalConfig[globalKey]
 
-        for key in configYAML[configSection]:                       # Override the command line options if defined in the YAML section
-            config[key]=configYAML[configSection][key]
+            for key in configYAML[configSection]:                       # Override the command line options if defined in the YAML section
+                config[key]=configYAML[configSection][key]
 
-        config['systems']=parseFileSpec(config['fileSpec'])
-        config.pop('fileSpec')
+            config['systems']=parseFileSpec(config['fileSpec'])
+            config.pop('fileSpec')
 
-        configs.append(config)
+            # Check if the config name has been added already - this can only happen when including YAML configs
+            # This will cause a conflict in saved file names and maybe some other things
+            if not config['name'] in configNames:
+                configs.append(config)
+                configNames.add(config['name'])
+            else:
+                error('Conflicting configuration names found: '+config['name'])
+                dupesFound=True
+
+    if dupesFound:
+        error('Rename these configurations within your included YAML files')
+        exit(errorCodes['invalidConfig'])
 
     return configs
 
@@ -416,7 +440,7 @@ elif args.listSections:
         print(section)
     exit(0)
 elif args.printSysDetails:
-    systems=[System(f) for f in files]          # Build a list of systems from the matching files, and iterate through them
+    systems=parseFileSpec(args.fileSpec)          # Build a list of systems from the matching files, and iterate through them
     for system in systems:
         print(system)
     print('\nTotal systems: %d' % len(systems))
@@ -444,9 +468,8 @@ elif args.regex:
     
     exit(0)
 elif args.confFile:
-    # Stub for YAML mode
-    print('YAML mode')
-
+    import yaml
+    configNames=set()                           # Using a global set to capture the unique names for each config
     configs=yamlParse(args.confFile)
 
     for config in configs:
@@ -455,7 +478,7 @@ elif args.confFile:
         if search.results:
             search.toScreen()
             try:
-                if config.outFile:
+                if len(config['outFile']) > 0:
                     search.toExcel()
             except AttributeError:
                 if config['verbose']:
