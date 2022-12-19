@@ -171,8 +171,12 @@ global:
     - 'product'
   combine: True
   onlyMatching: True
+  comment: >-
+    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.
 01_system_12_system_services_raw:
   regex: 'System_Services::(?!DisplayName)(?!--)'
+  comment: >-
+    A list of system services and their current statusk.  This file shows the lines exactly as they appear in the text file (without too much processing).  Another file includes the results in columnar listing for easier sort/filter.
 01_system_13_system_services_labeled:
   regex: 'System_Services::(?!DisplayName)(?!--)(?P<systemname>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)'
   groupList:
@@ -180,8 +184,17 @@ global:
     - 'status'
     - 'startuptype'
   onlyMatching: True
+  comment: >-
+    A list of system services and their current statusk.  This file includes the results in columnar listing for easier sort/filter.  Another file shows the lines exactly as they appear in the text file (without too much processing).
 01_system_14_rdp_config:
   regex: 'System_RDPEncryption::(SecurityLayer|MinEncryptionLevel)'
+  comment: >-
+    This section pulls together a couple of settings for how Windows handles TDP encryption.
+    First, we collect the GPO setting from the registry for the source of RDP's encryption.  Reference the "Ensure 'Require use of specific security layer for RDP connections'" CIS benchmark items.
+      SecurityLayer = 0       Use RDP Security Layer (this is sub-par)
+      SecurityLayer = 1       Negotiate the security layer (not ideal)
+      SecurityLayer = 2       Use SSL/TLS Security Layer (best)
+    If there no results, then this GPO is not set, which results in "Negotiate" behavior.
 01_system_15_screensaver_gpo:
   regex: 'System_ScreenSaverConfigGPO::(ScreenSaveActive|ScreenSaverIsSecure|ScreenSaveTimeOut)'
 01_system_16_screensaver_registry:
