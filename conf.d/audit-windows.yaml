@@ -1,26 +1,26 @@
 ---
 
-Instructions for working in YAML mode:
-  * Use an arbitary-but-descriptive name for the section
-  * Config options use the same names as the argument parser variables in searchfor.py
-  * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
-  * List items are indented with a hyphen under the list variable's name
-  * Booleans are set to either True or False (case sensitive)
-Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
+# Instructions for working in YAML mode:
+#   * Use an arbitary-but-descriptive name for the section
+#   * Config options use the same names as the argument parser variables in searchfor.py
+#   * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
+#   * List items are indented with a hyphen under the list variable's name
+#   * Booleans are set to either True or False (case sensitive)
+# Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
 
-When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
-under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
+# When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
+# under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
 
-This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
-Basically, anything that can run kpwinaudit.ps1
+# This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
+# Basically, anything that can run kpwinaudit.ps1
 
-See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
+# See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
 
-##################################################################
-######################## Global items ############################
-##################################################################
-These items will apply to configs in this file.  If the same configurations options are included in any
-specific checks below, these will be entirely overwritten (not additive)
+# ##################################################################
+# ######################## Global items ############################
+# ##################################################################
+# These items will apply to configs in this file.  If the same configurations options are included in any
+# specific checks below, these will be entirely overwritten (not additive)
 global:
   sysFilter:
     - attr: osFamily
@@ -72,7 +72,7 @@ global:
 01_system_04_gpo_summary:
   regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
   comment: >-
-    This section includes a report for how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides details on the specific policy items that have been applied.
+    This section includes a summary of how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides some of the specific policy items that have been applied.
 
     This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
 01_system_05_installed_capabilities:
@@ -84,30 +84,36 @@ global:
   regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
   comment: >-
     Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+############### 
+## These sections are commented out in favor of a combined report that includes both the Get-Hotfix and Windows Update History results
+###############
 # 01_system_07_hotfix_history:
 #   regex: 'System_InstalledHotfixes::.*Update'
 # 01_system_07_windows_update_history:
 #   regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
-01_system_07_patching_get_hotfix:
-  regex: 'System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})'
+# 01_system_07_patching_wu_history:
+#   regex: 'System_WindowsUpdateHistory::Installation\s(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+(?:AM|PM)\s(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+)'
+#   groupList:
+#     - wuDate
+#     - wuDescription
+#     - wuKbNum
+#   comment: >-
+#     This list combines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
+
+#     The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
+#     accurately report hotfix installation history (see note on System_InstalledHotfixes section).  This is filtered just for Security Updates and Cumulative Updates.
+#     Additional records are available in the raw files if needed, including for instance daily Defender updates.  That might be helpful as evidence that
+#     anti-virus tools are being updated daily.  Basically, if it was action taken by WUS, then it /should/ be in the raw results.
+
+#     The Hotfix update history provides a list of all hotfixes that have been installed.  Reviewing these results is a critical part of analyzing patch management practices.
+#     IMPORTANT NOTE: Get-HotFix is not 100% reliable.  Whether it reports on the HF action depends on the manner used to install the HF.  Notably, it does not reliably capture
+#     all HFs installed by WindowsUpdate.
+01_system_07_patching:
+  regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+\s+(AM|PM)\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
   groupList:
     - hfDate
     - hfDescription
     - hfKbNum
-  comment: >-
-    This list combines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
-
-    The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
-    accurately report hotfix installation history (see note on System_InstalledHotfixes section).  This is filtered just for Security Updates and Cumulative Updates.
-    Additional records are available in the raw files if needed, including for instance daily Defender updates.  That might be helpful as evidence that
-    anti-virus tools are being updated daily.  Basically, if it was action taken by WUS, then it /should/ be in the raw results.
-
-    The Hotfix update history provides a list of all hotfixes that have been installed.  Reviewing these results is a critical part of analyzing patch management practices.
-    IMPORTANT NOTE: Get-HotFix is not 100% reliable.  Whether it reports on the HF action depends on the manner used to install the HF.  Notably, it does not reliably capture
-    all HFs installed by WindowsUpdate.
-01_system_07_patching_wu_history:
-  regex: 'System_WindowsUpdateHistory::Installation\s(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+(?:AM|PM)\s(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+)'
-  groupList:
     - wuDate
     - wuDescription
     - wuKbNum
@@ -122,6 +128,8 @@ global:
     The Hotfix update history provides a list of all hotfixes that have been installed.  Reviewing these results is a critical part of analyzing patch management practices.
     IMPORTANT NOTE: Get-HotFix is not 100% reliable.  Whether it reports on the HF action depends on the manner used to install the HF.  Notably, it does not reliably capture
     all HFs installed by WindowsUpdate.
+
+    Consider combining the results from the second set of columns into the first so you can sort-and-filter on just one set of dates.
 01_system_08_installed_software:
   regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
   fullScan: True
@@ -129,7 +137,31 @@ global:
   regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
   fullScan: True
 01_system_10_windows_update_config:
-  regex: 'System_WindowsUpdateConfig::(?!PS.*?(Path|Child|Drive|Provider))\w+'
+  regex: '(System_WindowsUpdateConfig::\s*UseWUServer\s+:\s+(?P<useWUServer>\d+))|(System_WindowsUpdateConfig::\s*WUServer\s+:\s+(?P<wuServer>.*))|(System_WindowsUpdateConfig::\s*ElevateNonAdmins\s+:\s+(?P<elevateNonAdmins>\d+))|(System_WindowsUpdateConfig::\s*DisableWindowsUpdateAccess\s+:\s+(?P<disableWUAccess>\d+))|(System_WindowsUpdateConfig::\s*NoAutoUpdate\s+:\s+(?P<noAutoUpdate>\s*\d+))|(System_WindowsUpdateConfig::\s*AUOptions\s+:\s+(?P<auOptions>\d+))'
+  groupList:
+    - useWUServer
+    - wuServer
+    - elevateNonAdmins
+    - disableWUAccess
+    - noAutoUpdate
+    - auOptions
+  combine: True
+  onlyMatching: True  
+  comment: >-
+    Interpreting Windows Update settings from: http://techgenix.com/Registry-Keys-Tweaking-Windows-Update-Part1/.
+      - WUServer will provide the update source if using WSUS.  If not set, WSUS is not being used to receive updates.
+      - ElevateNonAdmins allows non-admin users to approve/reject installing updates.  The default is "enabled"
+      - DisableWindowsUpdateAccess prevents end-users from interacting with the Windows Update control panel (http://support.microsoft.com/kb/326686)
+      - AUOptions means the following:
+        2 - Agent notifies user prior to downloading updates
+        3 - Automatic download with user notification prior to install
+        4 - Automatic download and install according to schedule (look for ScheduledInstallDay and ScheduledInstallTime keys)
+        5 - Automatic updates are required with some user configurability
+      - NoAutoUpdate=1 disables automatic updates altogether
+      - ScheduledInstallDay and ScheduledInstallTime only have relevance when AUOptions = 4.
+      - ScheduledInstallDay: 1 = Sunday, 7 = Saturday, 0 = Any day
+      - ScheduledInstallTime: 1 to 24 to indicate the hour in which updates should be installed
+    If these following registry paths are not found, then system updates are managed through another method (e.g. MDM)
 01_system_11_running_processes:
   regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
   groupList:
@@ -138,6 +170,7 @@ global:
     - 'company'
     - 'product'
   combine: True
+  onlyMatching: True
 01_system_12_system_services_raw:
   regex: 'System_Services::(?!DisplayName)(?!--)'
 01_system_13_system_services_labeled:

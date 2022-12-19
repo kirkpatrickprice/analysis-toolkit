@@ -11,8 +11,8 @@ import xlsxwriter
 
 def getErrorCodes():
     return {
-        'invalidConfig': 1024,
-        'generalError': 1023,
+        'invalidConfig': 126,
+        'generalError': 127,
         'noResults': 1,
         'noFiles': 2,
     }
@@ -289,7 +289,14 @@ class Search:
                 desiredSectionPattern=re.compile(desiredSectionRegex, re.IGNORECASE)
                 limitToSection=True
         
-        pattern=re.compile(self.getRegex(), re.IGNORECASE)                              # Matches the provided pattern
+        try:
+            pattern=re.compile(self.getRegex(), re.IGNORECASE)                          # Matches the provided pattern
+        except re.error as reError:
+            error('Regex error   : '+str(reError))
+            error('Search name:  '+self.getName())
+            error('Provided regex: '+self.getRegex())
+            exit(errorCodes['invalidConfig'])
+
         commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')                            # Matches comment lines and [BEGIN], [CISReference], etc.
         blankLinePattern=re.compile(r'::\s*$')                                          # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
         finalResults=[]                                                                 # Set up a blank list to hold our results
@@ -312,10 +319,16 @@ class Search:
                 if found and not isComment and not isBlankLine:
                     if self.config['onlyMatching']:                                     # OnlyMatching is true when we're processing groups
                         groupDict={}
-                        groupDict['systemname'] = system.getSystemName()
+                        groupDict['systemName'] = system.getSystemName()
                         for group in self.config['groupList']:
-                            if found.group(group):
-                                groupDict[group]=makePrintable(found.group(group)).strip()
+                            try:
+                                if found.group(group):
+                                    groupDict[group]=makePrintable(found.group(group)).strip()
+                            except IndexError as e:
+                                error('Group not found in search results')
+                                error('Search name: '+self.getName())
+                                error('Group name : '+group)
+                                exit(errorCodes['invalidConfig'])
 
                         if self.config['unique']:
                             # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError 
@@ -351,7 +364,7 @@ class Search:
                         # The "results" paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
                         # before rejoining on the :: field separator (at the beginning of the line)                        
                         systemResults.append({
-                            'SystemName': system.getSystemName(),
+                            'systemName': system.getSystemName(),
                             'Results': '::'.join((foundText.split('::')[1:])).strip()
                         })
 
@@ -363,6 +376,15 @@ class Search:
             
             # If we finished the file, but we didn't find all of the groups we though we needed, go ahead and combine what we have
             if self.config['combine'] and not combined and len(groupResults) > 0:
+                for group in self.config['groupList']:                      # Add a blank result for any group name that wasn't found
+                    if not group in foundGroups:
+                        groupResults.append(
+                            {
+                            'systemName': system.getSystemName(),
+                            group: '',
+                            }
+                        )
+
                 systemResults.append(combineResults(groupResults))
 
             #Append all of our system system results to the final results
@@ -427,10 +449,27 @@ class Search:
         '''
         Saves the results to an Excel file in self.config['outPath']/self.config['outFile]
         '''
+        class Columns():
+            def __init__(self, value=['systemName']):
+                self.names=[]
+                if value:
+                    if hasattr(value, '__iter__'):
+                        for v in value:
+                            self.names.append(v)
+                else:
+                    self.names=[value]
+
+            def append(self, value):
+                if hasattr(value, '__iter__'):
+                    for v in value:
+                        if not v in self.names:
+                            self.names.append(v)
+
 
         #Set up some variables we'll need...
         maxWorkSheetNameLength=31
         results=self.results
+        columns=Columns()
         path=self.config['outPath']
         if not path.endswith('/'):
             path+='/'
@@ -486,11 +525,11 @@ class Search:
         })                                               
 
         # We're gonna cheat a little bit by using getLongest.  We don't really need column widths, just the column names
-        columns=getLongest(self.results)
-
+        columns.append(getLongest(self.results).keys())
+            
         # Write the comment (if provided) into the first cell
         if commentLen > 0:
-            if len(columns) > 2:
+            if len(columns.names) > 2:
                 commentWidth=defaultCommentWidth
             else:
                 commentWidth = 1
@@ -500,7 +539,7 @@ class Search:
 
         # Populate the Excel table's header row
         tableColumns=[]
-        for col in columns:
+        for col in columns.names:
             tableColumns.append({'header': col})
 
         # Move the cursor to the beginning of the next row
@@ -513,14 +552,14 @@ class Search:
         tableStart['col']=0
         tableEnd={}
         tableEnd['row']=tableStart['row']+len(results)
-        tableEnd['col']=tableStart['col']+len(columns)-1
+        tableEnd['col']=tableStart['col']+len(columns.names)-1
 
         # Initialize a list for use in creating the Excel table
         tableData=[]
 
         for result in results:
             rowData=[]
-            for key in result.keys():
+            for key in columns.names:
                 rowData.append(result[key])                
             tableData.append(rowData.copy())
             
@@ -578,14 +617,14 @@ class System(object):
                 distroSearch=re.compile(r'(?P<debDistro>'+debPattern+')|(?P<rpmDistro>'+rpmPattern+')', re.IGNORECASE)
                 versionSearch=re.compile(r'(?P<osVersion>((\d+\.?)+))')
                 searchText=osDetails.results[0]['prettyName']
-                if 'rpmPrettyName' in osDetails.results[0]:
+                if len(osDetails.results[0]['rpmPrettyName']) > 0:
                     searchText=osDetails.results[0]['rpmPrettyName']
                     self.rpmPrettyName=searchText
                 distro=distroSearch.search(searchText)
                 version=versionSearch.search(searchText)
-                if distro.group('debDistro'):
+                if distro.group('debDistro') is not None:
                     self.distroFamily='deb'
-                elif distro.group('rpmDistro'):
+                elif distro.group('rpmDistro') is not None:
                     self.distroFamily='rpm'
                 else:
                     self.distroFamily='unknown'
