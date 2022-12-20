@@ -479,16 +479,15 @@ elif args.confFile:
     for config in configs:
         search=Search(config)
         search.findResults()
+        search.toScreen()
         if search.results:
-            search.toScreen()
             try:
                 if len(config['outFile']) > 0:
                     search.toExcel()
             except AttributeError:
                 if config['verbose']:
                     error('Skipping Excel output')
-        else:
-            error('No results found')
+        
 
     # # Clean up the directory if it already exists
     # if os.path.exists(defaultPath):

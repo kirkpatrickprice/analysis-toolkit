@@ -408,44 +408,47 @@ class Search:
             whiteSpace=2                                # Number of spaces between columns
 
             #Set up the header row and column widths
-            colWidth=getLongest(results, whiteSpace)
-            try:
-                colWidth[self.config['groupList'][-1]]-=whiteSpace          #Remove the pad from the last item in the groupList
-            except KeyError:
-                colWidth['Results']-=whiteSpace                             #If groupList wasn't used...
-            reduceBy=1
-            firstPass=True
-            needShorter = False
+            if len(results) > 0:
+                colWidth=getLongest(results, whiteSpace)
+                try:
+                    colWidth[self.config['groupList'][-1]]-=whiteSpace          #Remove the pad from the last item in the groupList
+                except KeyError:
+                    colWidth['Results']-=whiteSpace                             #If groupList wasn't used...
+                reduceBy=1
+                firstPass=True
+                needShorter = False
 
-            # Build the format string and the header row
-            while firstPass or needShorter:                #Keep making the columns shorter until they fit on the available screenWidth
-                totalWidth=0
-                formatStr=''
-                header=[]
+                # Build the format string and the header row
+                while firstPass or needShorter:                #Keep making the columns shorter until they fit on the available screenWidth
+                    totalWidth=0
+                    formatStr=''
+                    header=[]
 
-                for col in colWidth:
-                    if needShorter and colWidth[col] > minColWidth and colWidth[col] > len(col):    # make sure that a min column width is preserved and no shorter than the column heading
-                        colWidth[col]-=reduceBy
-                    formatStr+=f'%-{colWidth[col]-whiteSpace}s'+' '*whiteSpace
-                    header+=[str(col).upper()]
-                    totalWidth+=colWidth[col]
-                firstPass=False
-                needShorter=(totalWidth > screenWidth) and truncate
+                    for col in colWidth:
+                        if needShorter and colWidth[col] > minColWidth and colWidth[col] > len(col):    # make sure that a min column width is preserved and no shorter than the column heading
+                            colWidth[col]-=reduceBy
+                        formatStr+=f'%-{colWidth[col]-whiteSpace}s'+' '*whiteSpace
+                        header+=[str(col).upper()]
+                        totalWidth+=colWidth[col]
+                    firstPass=False
+                    needShorter=(totalWidth > screenWidth) and truncate
 
-            formatStr=formatStr[:-whiteSpace]                #Remove the final whitespace from the end of the line
-                    
-            print(formatStr % tuple(header))
-            print('='*totalWidth)
+                formatStr=formatStr[:-whiteSpace]                #Remove the final whitespace from the end of the line
+                        
+                print(formatStr % tuple(header))
+                print('='*totalWidth)
 
-            for item in results:
-                values=[]
-                for key in item.keys():
-                    value=item[key]
-                    if len(value) > colWidth[key]:
-                        value=value[:colWidth[key]-reduceBy-3]+'...'
-                    values+=[value]
-                print(formatStr % tuple(values))
+                for item in results:
+                    values=[]
+                    for key in item.keys():
+                        value=item[key]
+                        if len(value) > colWidth[key]:
+                            value=value[:colWidth[key]-reduceBy-3]+'...'
+                        values+=[value]
+                    print(formatStr % tuple(values))
         print('Results found: %d\n' % len(results))
+        if len(results) == 0:
+            error('No results found')
         # Return everything except for the final new-line
         return True
 
