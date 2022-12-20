@@ -417,6 +417,9 @@ class Search:
                 reduceBy=1
                 firstPass=True
                 needShorter = False
+                colHeaderLength=0
+                for colHeader in results[0].keys():
+                    colHeaderLength+=len(colHeader)+whiteSpace
 
                 # Build the format string and the header row
                 while firstPass or needShorter:                #Keep making the columns shorter until they fit on the available screenWidth
@@ -431,7 +434,11 @@ class Search:
                         header+=[str(col).upper()]
                         totalWidth+=colWidth[col]
                     firstPass=False
-                    needShorter=(totalWidth > screenWidth) and truncate
+                    if colHeaderLength > totalWidth and truncate:
+                        error('Cannot truncate')
+                        needShorter=False
+                    else:
+                        needShorter=(totalWidth > screenWidth) and truncate
 
                 formatStr=formatStr[:-whiteSpace]                #Remove the final whitespace from the end of the line
                         
