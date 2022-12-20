@@ -163,7 +163,10 @@ class Search:
 
         # Check if 'regex' has been defined and quit with an error if not
         try:
-            self.config['regex']
+            if self.config['regex'] is None:
+                error('Search config requires regular expression')
+                error('Search name: '+self.getName())
+                exit(errorCodes['invalidConfig'])    
         except KeyError:
             error('Search config requires regular expression')
             exit(errorCodes['invalidConfig'])
@@ -196,7 +199,7 @@ class Search:
                 if len(poppedList) > 0:
                     print('Removed systems:', poppedList)
                 print('\nFinal list of systems:', [x.getSystemName() for x in sysList])
-                self.config['systems']=sysList[:]
+            self.config['systems']=sysList[:]
 
         if self.config['unique'] and not self.config['onlyMatching']:           # Unique requires onlyMatching
             self.config['onlyMatching'] = True
@@ -300,7 +303,7 @@ class Search:
         commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')                            # Matches comment lines and [BEGIN], [CISReference], etc.
         blankLinePattern=re.compile(r'::\s*$')                                          # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
         finalResults=[]                                                                 # Set up a blank list to hold our results
-        combined=False                                                                  # Have we successfully combined the results
+        
 
         for system in self.config['systems']:
             sectionFound=False
@@ -308,6 +311,7 @@ class Search:
             groupDict={}                                                                # Create a blank dictionary to hold each regex group results
             groupResults=[]                                                                 # Create a blank list to hold our group results dictionaries as we complete each one
             systemResults=[]                                                                # Create a blank list to hold our system results that we'll append to the final results
+            combined=False                                                                  # Have we successfully combined the results
             for line in open(system.getFilename()):
                 if limitToSection:                                                      # Are we supposed to take the short cut?
                     inDesiredSection=desiredSectionPattern.search(line)
@@ -501,11 +505,19 @@ class Search:
         # Create a new Excel workbook to store the results
         # Use 'constant_memory' mode to write the results to the file as they are saved / saves memory
         if os.path.exists(path+filename):
-            try:
-                os.remove(path+filename)
-            except PermissionError:
-                error('File %s appears to be open.  Close the file and try again\n' % filename)
-                exit(errorCodes['generalError'])
+            fileIsOpen=True
+            while fileIsOpen:
+                try:
+                    os.remove(path+filename)
+                    fileIsOpen=False
+                except PermissionError:
+                    try:
+                        error('File %s appears to be open.  Close the file and press ENTER or CTRL-C to quit' % filename)
+                        input()
+                    except KeyboardInterrupt:
+                        print("\nQuitting...")
+                        exit(errorCodes['generalError'])
+        
 
         wb=xlsxwriter.Workbook(path+filename)
         ws=wb.add_worksheet(worksheetName)
@@ -560,7 +572,10 @@ class Search:
         for result in results:
             rowData=[]
             for key in columns.names:
-                rowData.append(result[key])                
+                try:
+                    rowData.append(result[key])
+                except KeyError:
+                    rowData.append('')
             tableData.append(rowData.copy())
             
         tableName=self.getName().replace(' ', '_')

@@ -291,6 +291,10 @@ def yamlParse(confFile):
     except FileNotFoundError:
         error("YAML file not found: "+confFile)
         exit(errorCodes['generalError'])
+    except yaml.parser.ParserError as e:
+        error("YAML Parsing Error")
+        error(str(e))
+        exit(errorCodes['invalidConfig'])
 
     for configSection in configYAML.keys():
         if configSection.startswith('global'):
