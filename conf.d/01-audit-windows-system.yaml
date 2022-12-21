@@ -10,7 +10,7 @@ global:
     onlyMatching: True
     groupList:
       - 'KPWINVERSION'
-    comment: >-
+    comment: |-
       KPWinAudit version information.  Use this to confirm that all script results were produced with a recent version.
       
       Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
@@ -24,7 +24,7 @@ global:
     - releaseId
     - currentBuild
     - UBR
-  comment: >-
+  comment: |-
     Windows operating system details.  The most helpful fields are:
       - ProductName is a friendly name, but isn't as good for identifying the OS within MS' documentation
       - Release ID reflects the YYMM of this particular OS.  Especially on the desktop OSes, not all Release IDs of Windows 10 (for instance) are created equal
@@ -41,22 +41,22 @@ global:
     - 'VolumeStatus'
     - 'ProtectionStatus'
   onlyMatching: True
-  comment: >-
+  comment: |-
     Capture the BitLocker status of each disk drive attached to the system.  This can be used to confirm statements such as 'All drives are encrypted with BitLocker.'
 01_system_04_gpo_summary:
   regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
-  comment: >-
+  comment: |-
     This section includes a summary of how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides some of the specific policy items that have been applied.
 
     This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
 01_system_05_installed_capabilities:
   regex: 'System_InstalledCapabilities::.*Installed'
-  comment: >-
+  comment: |-
     Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
     Windows Capabilities include such things as an OpenSSH client, Notepad and Internet Explorer.
 01_system_06_installed_features:
   regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
-  comment: >-
+  comment: |-
     Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
 01_system_07_patching:
   regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+\s+(AM|PM)\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
@@ -67,7 +67,7 @@ global:
     - wuDate
     - wuDescription
     - wuKbNum
-  comment: >-
+  comment: |-
     This list combines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
 
     The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
@@ -97,7 +97,7 @@ global:
     - auOptions
   combine: True
   onlyMatching: True  
-  comment: >-
+  comment: |-
     Interpreting Windows Update settings from: http://techgenix.com/Registry-Keys-Tweaking-Windows-Update-Part1/.
       - WUServer will provide the update source if using WSUS.  If not set, WSUS is not being used to receive updates.
       - ElevateNonAdmins allows non-admin users to approve/reject installing updates.  The default is "enabled"
@@ -155,7 +155,7 @@ global:
     Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
 01_system_12_system_services_raw:
   regex: 'System_Services::(?!DisplayName)(?!--)'
-  comment: >-
+  comment: |-
     A list of system services and their current statusk.  This file shows the lines exactly as they appear in the text file (without too much processing).  Another file includes the results in columnar listing for easier sort/filter.
 01_system_12_system_services_labeled:
   regex: 'System_Services::(?!DisplayName)(?!--)(?P<serviceName>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startupType>.*)'
@@ -164,11 +164,11 @@ global:
     - 'status'
     - 'startupType'
   onlyMatching: True
-  comment: >-
+  comment: |-
     A list of system services and their current status.  This file includes the results in columnar listing for easier sort/filter.  Another file shows the lines exactly as they appear in the text file (without too much processing).
 01_system_14_rdp_config:
   regex: 'System_RDPEncryption::((SecurityLayer\s*:\s*(?P<securityLayer>\d+))|(MinEncryptionLevel\s*:\s*(?P<minEncryptionLevel>\d+)))'
-  comment: >-
+  comment: |-
     This section pulls together a couple of settings for how Windows handles RDP encryption.
     First, we collect the GPO setting from the registry for the source of RDP's encryption.  https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-terminalservices-rdp-winstationextensions-securitylayer
       SecurityLayer = 0       Use RDP Security Layer (this is sub-par)
@@ -196,7 +196,7 @@ global:
     - localScreenSaveTimeout
   combine: True
   onlyMatching: True
-  comment: >-
+  comment: |-
     Using the screensaver is a common way of locking the computer after inactivity.  Many audit standards (e.g. PCI) look for no more than 15 minutes (900 seconds), which seems reasonable.
     There are other methods of achieving this (such as through Power Settings), but these registry keys related to using GPO and to user-directed configurations respectively.
     Don't put too much faith in these results, especially they aren't conclusive or contradict what the customer says.
@@ -215,7 +215,7 @@ global:
     - 'lastTaskResult'
     - 'nextRunTime'
   combine: True
-  comment: >-
+  comment: |-
     A list of all scheduled tasks.  Includes last and next run time as well as the result.  At least some anti-virus could use scheduled tasks to run a weekly full scan.
     
     Result codes:
