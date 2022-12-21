@@ -112,17 +112,49 @@ global:
       - ScheduledInstallDay: 1 = Sunday, 7 = Saturday, 0 = Any day
       - ScheduledInstallTime: 1 to 24 to indicate the hour in which updates should be installed
     If these following registry paths are not found, then system updates are managed through another method (e.g. MDM)
-01_system_11_running_processes:
+01_system_11_running_processes_old:
   regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
   groupList:
     - 'processName'
     - 'path'
     - 'company'
     - 'product'
-  combine: True
   onlyMatching: True
-  comment: >-
-    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.
+  combine: True
+  sysFilter:
+    - attr: 'osFamily'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'kpwinversion'
+      comp: 'lt'
+      value: '0.4.6'
+  verbose: True
+  comment: |-
+    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit prior to 0.4.5.
+
+    Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
+01_system_11_running_processes:
+  regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*))|(UserName\s+:(?P<userName>.*)))'
+  groupList:
+    - 'processName'
+    - 'path'
+    - 'company'
+    - 'product'
+    - 'userName'
+  onlyMatching: True
+  combine: True
+  sysFilter:
+    - attr: 'osFamily'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'kpwinversion'
+      comp: 'ge'
+      value: '0.4.6'
+  verbose: True
+  comment: |-
+    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit versions 0.4.6 and later and includes the username running the process.
+
+    Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
 01_system_12_system_services_raw:
   regex: 'System_Services::(?!DisplayName)(?!--)'
   comment: >-
