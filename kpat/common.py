@@ -445,10 +445,10 @@ class Search:
                 print(formatStr % tuple(header))
                 print('='*totalWidth)
 
-                for item in results:
+                for result in results:
                     values=[]
-                    for key in item.keys():
-                        value=item[key]
+                    for key in result.keys():
+                        value=result[key]
                         if len(value) > colWidth[key]:
                             value=value[:colWidth[key]-reduceBy-3]+'...'
                         values+=[value]
