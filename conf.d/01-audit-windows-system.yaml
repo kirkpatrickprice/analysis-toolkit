@@ -127,8 +127,7 @@ global:
       value: 'Windows'
     - attr: 'kpwinversion'
       comp: 'lt'
-      value: '0.4.6'
-  verbose: True
+      value: '0.4.6'  
   comment: |-
     A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit prior to 0.4.5.
 
@@ -150,7 +149,6 @@ global:
     - attr: 'kpwinversion'
       comp: 'ge'
       value: '0.4.6'
-  verbose: True
   comment: |-
     A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit versions 0.4.6 and later and includes the username running the process.
 
