@@ -33,7 +33,7 @@ global:
 ##################################################################
 include_system:
   files:
-    - 01-audit-windows-system.yaml
+    - audit-windows-system.yaml
 
 
 ###################################################################
@@ -42,7 +42,7 @@ include_system:
 
 include_network:
   files:
-    - 02-audit-windows-network.yaml
+    - audit-windows-network.yaml
 
 ###################################################################
 ######################## Users and Groups #########################
@@ -50,7 +50,7 @@ include_network:
 
 include_users:
   files:
-    - 03-audit-windows-users.yaml
+    - audit-windows-users.yaml
 
 ###################################################################
 ############################ AV Status ############################
@@ -58,7 +58,7 @@ include_users:
 
 include_security_software:
   files:
-    - 04-audit-windows-security-software.yaml
+    - audit-windows-security-software.yaml
 
 ###################################################################
 ####################### Auditing/Logging ##########################
@@ -66,4 +66,4 @@ include_security_software:
 
 include_logging:
   files:
-    - 05-audit-windows-logging.yaml
+    - audit-windows-logging.yaml
