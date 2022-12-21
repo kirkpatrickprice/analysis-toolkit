@@ -48,39 +48,22 @@ include_network:
 ######################## Users and Groups #########################
 ###################################################################
 
-03_users_01_local_admin_user:
-  regex: 'Users_LocalAdministrator::\w'
-03_users_02_local_admin_group:
-  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(?!The command completed successfully)\w'
-03_users_03_local_password_policy:
-  regex: 'Users_LocalPasswordPolicy::(?!The command completed successfully)\w'
-03_users_04_local_users_raw:
-  regex: 'Users_LocalUsers::(?!Name\s+Enabled)(?!--)\w'
-  fullScan: True
-03_users_05_local_groups_raw:
-  regex: 'Users_LocalGroups::(?!Name\s+Enabled)(?!--)\w'
+include_users:
+  files:
+    - 03-audit-windows-users.yaml
 
 ###################################################################
 ############################ AV Status ############################
 ###################################################################
 
-04_users_06_av_status_security_center:
-  regex: 'AntiVirus_AVStatus::((displayName  :)|(productState :))'
+include_security_software:
+  files:
+    - 04-audit-windows-security-software.yaml
 
 ###################################################################
 ####################### Auditing/Logging ##########################
 ###################################################################
 
-05_logging_01_auditpol_config:
-  regex: 'Logging_AuditEventsConfig::'
-05_logging_02_fs_audit_config:
-  regex: 'Logging_FSAuditing-(?P<drive>[A-Za-z]):(?P<path>[\w\\. ]+?)::Audit\s+(?P<auditConfig>.*)'
-  onlyMatching: True
-  groupList:
-    - 'drive'
-    - 'path'
-    - 'auditConfig'
-05_logging_03_event_log_config:
-  regex: 'Logging_AuditLogConfig::(?!PrimaryModule)(?!--)\w'
-05_logging_04_event_log_samples:
-  regex: 'Logging_EventLogSamples[A-Za-z]+::'
+include_logging:
+  files:
+    - 05-audit-windows-logging.yaml
