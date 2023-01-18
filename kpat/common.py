@@ -338,7 +338,7 @@ class Search:
                             # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError 
                             # if the value isn't found, in which case we'll add it to the results
                             try:
-                                groupResults.index(groupDict)
+                                systemResults.index(groupDict)
                             except ValueError:
                                 groupResults.append(groupDict)
                         else:
