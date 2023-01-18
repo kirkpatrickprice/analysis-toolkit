@@ -1,0 +1,20 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+05_security_01_fim_config:
+  regex: 'Security_HidsAIDEConfig::'
+05_security_02_carbonblack_status:
+  regex: 'Security_HidsCarbonBlack::(?!UID)'
+05_security_03_ossec_status:
+  regex: 'Security_HidsOSSECConfig::'
+05_security_04_tripwire_status:
+  regex: 'Security_HidsOSSECConfig::'
+05_security_05_ipsec_config:
+  regex: 'Security_IPSecConfig::'
+05_security_06_openldap_config:
+  regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
+05_security_07_openvpn_config:
+  regex: 'Security_OpenVPNConfig::'

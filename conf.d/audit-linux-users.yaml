@@ -1,0 +1,51 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+07_users_01_blank_passwd:
+  regex: 'Users_BlankPasswd::'
+07_users_02_default_passwd_hash:
+  regex: '(Users_DefaultSettings::/etc/login.defs::ENCRYPT_METHOD)|(Users_PAMConfig::/etc/pam.d/common-password::password.*pam_unix.so)'
+07_users_03_etc_passwd_raw:
+  regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
+07_users_04_etc_passwd_labeled:
+  regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
+  groupList:
+    - 'username'
+    - 'uid'
+    - 'gid'
+    - 'default_group'
+    - 'home_path'
+    - 'shell'
+  onlyMatching: True
+07_users_05_user_status_raw:
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)'
+07_users_06_user_status_labeled:
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)' 
+  groupList:
+    - 'username'
+    - 'status'
+    - 'last_pw_change'
+    - 'min_age'
+    - 'max_age'
+    - 'warn_days'
+    - 'inactive_days'
+07_users_07_etc_group_raw:
+  regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)'
+07_users_08_etc_group_labeled:
+  regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)'
+  groupList:
+    - 'groupname'
+    - 'gid'
+    - 'members'
+  onlyMatching: True
+07_users_09_login_history:
+  regex: 'Users_LoginHistory::'
+07_users_10_no_login_90_days:
+  regex: 'Users_LastLog90::'
+07_users_11_sudoers_all_commands:
+  regex: 'Users_SudoersConfig::/etc/sudoers.*::(?!#).*ALL='
+07_users_12_ssh_authorized_keys:
+  regex: 'Users_AuthorizedKeys::/home/(?P<username>\w+)/.ssh/authorized_keys'

@@ -1,0 +1,23 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+06_logging_01_auditd_status:
+  regex: 'Logging_Auditd((Status:: auditd_status:)|RunningConfig)'
+06_logging_02_auditd_setuid:
+  regex: 'Logging_AuditdSETUID::'
+06_logging_03_syslog_config:
+  regex: 'Logging_Syslog(rsyslogd|syslogd|syslogng)Config::((\s\w*)_status:|/etc/.*?\.conf::\w+)'
+06_logging_04_logrotate_config:
+  regex: 'Logging_SyslogLogrotateConfig::'
+06_logging_05_var_log_list:
+  regex: 'Logging_SamplesVarLogList::'
+06_logging_06_logging_samples:
+  regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
+  groupList:
+    - 'logfile'
+    - 'head_tail'
+    - 'logentry'
+  onlyMatching: True

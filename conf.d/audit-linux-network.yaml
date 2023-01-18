@@ -1,0 +1,23 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+02_network_01_linux_ping_results:
+  regex: 'Network_ConnectivityTest::[0-9]+ packets transmitted'
+02_network_02_dns_nameserver:
+  regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver'
+02_network_03_icmp_redirect:
+  regex: 'Network_ICMPRedirect::'
+02_network_04_ip_addresses:                                                        # Capture both ipv4 and ipv6 addresses in one file
+  regex: 'Network_InterfacesIPAddress::\s*inet'
+02_network_05_ip_forwarding:
+  regex: 'Network_IPForwarding::'
+02_network_06_listening_services:                                                                                      # Grab IPv4 and IPv6 listening ports and responsible binary
+  regex: 'Network_ListeningServicesSS::(?P<proto>udp|tcp).*?(?P<listening_port>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*?:\d{1,5}|\[.*\]:\d{1,5}).*?\(\("(?P<binary>.*?)".*'
+  groupList:
+    - 'proto'
+    - 'listening_port'
+    - 'binary'
+  onlyMatching: True

@@ -1,0 +1,24 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+
+03_ssh_01_permit_root_logon:
+  regex: 'Network_OpenSSHServerConfig::permitrootlogin'
+03_ssh_02_user_auth:
+  regex: 'Network_OpenSSHServerConfig::(passwordauthentication|usepam)'
+03_ssh_03_timeout:
+  regex: 'Network_OpenSSHServerConfig::clientalive'
+03_ssh_04_forwarding:
+  regex: 'Network_OpenSSHServerConfig::(disableforwarding|x11forwarding|allowtcpforwarding|allowagentforwarding|gatewayports)'
+03_ssh_05_crypto:
+  regex: 'Network_OpenSSHServerConfig::(ciphers|macs|kexalgorithms|hostbasedacceptedkeytypes)'
+03_ssh_06_crypto_weak_moduli:
+  regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535)'
+  groupList:
+    - 'mod_size'
+  unique: True
+03_ssh_07_subsystems:
+  regex: 'Network_OpenSSHServerConfig::subsystem'

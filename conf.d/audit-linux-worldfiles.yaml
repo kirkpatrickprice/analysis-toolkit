@@ -1,0 +1,8 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+08_worldFiles_01_interesting_world_writable_files:
+  regex: 'WorldFiles::.*(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin)'
