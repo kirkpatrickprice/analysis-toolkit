@@ -5,30 +5,139 @@ global:
       value: Linux
 
 01_system_01_kpnixversion:
-  regex: 'KPNIXVERSION:.*'
+  regex: 'KPNIXVERSION: (?P<KPNIXVERSION>.*)'
   maxResults: 1
-  onlyMatching: True
-01_system_02_linux_os_version:                                                     # Debian uses the PRETTY_NAME consistently
-  regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<os_version>.*)'  # Use regex groups.  The first group is non-capturing (?:...)
-  maxResults: 1                                                           # Only grab the first hit / will be faster as it will move to on the next file right away
   onlyMatching: True
   groupList:
-    - 'os_version'
-01_system_02_os_version_rpm:
+    - 'KPNIXVERSION'
+  comment: |-
+    KPNixAudit version information.  Use this to confirm that all script results were produced with a recent version.
+    
+    Check the version history comments in https://github.com/kirkpatrickprice/linux-audit-scripts/blob/main/kpnixaudit.sh
+    to determine if you're missing anything you find important.
+01_system_02_linux_os_version:                                                     # Debian uses the PRETTY_NAME consistently
+  regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<OSVersion>.*)'  
+  maxResults: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
+  onlyMatching: True
+  groupList:
+    - 'OSVersion'
+  comment: |-
+    For non-RPM based distro's, this will have an accurate OS version name.  You can use this to check online if the version is still supported by the vendor.
+    For RPM-based distros such as Amazon Linux, CentOS, Oracle Linux and Red Hat, check out the "01_system_02_os_version_rpm" file for more accurate version details.
+01_system_02_linux_os_version_rpm:
   # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
-  regex: 'System_VersionInformation::/etc/system-release::'
+  regex: 'System_VersionInformation::/etc/system-release::(?P<RPMVersion>.*)'
   maxResults: 1
-01_system_03_file_system_encryption:                                         # Are there any systems using Linux-provided encypted file system capabilities                
- regex: 'System_FSEncryption::(?!#)'
- truncate: True
-01_system_04_file_system_mounts:                                             # One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
-  regex: 'System_FSMounts::.*active'                                        # including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
-01_system_05_supported_file_systems:                                         # List the supported and disabled file systems
+  groupList:
+    - RPMVersion
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: distroFamily
+      comp: eq
+      value: rpm
+01_system_03_cron_jobs:
+  regex: 'System_CrontabConfig::/etc/crontab::(?P<minute>[\d\*/]+)\s+(?P<hour>[\d\*/]+)\s+(?P<dayOfMonth>[\d\*/]+)\s+(?P<month>[\d\*/]+)\s+(?P<dayOfWeek>[\d\*/]+)\s+(?P<user>\w+)(?P<command>.*)'
+  onlyMatching: True
+  groupList:
+    - minute
+    - hour
+    - dayOfMonth
+    - month
+    - dayOfWeek
+    - user
+    - command
+  comment: |-
+    Cron is the task scheduler, so you can use this to get a list of the scheduled tasks running on a system.  E.g. backup jobs on database servers.
+    Additionally, in the raw text file results, the contents of any scripts located in /etc/cron.* are provided.  If there any interesting jobs -- like a backup job on DB server --
+    you might look at them to see if there are hard-coded passwords or other interesting bits in there.
+
+    The fields should be self-explanatory, but Day of Week starts with Sunday = 0 (or 7)
+01_system_03_cron_files:
+  regex: 'System_CrontabConfig::(?P<filename>[\w/\-.\d]+)::'
+  onlyMatching: True
+  groupList:
+    - filename
+  unique: True
+01_system_04_file_system_encryption:
+  regex: 'System_FSEncryption::(?!#)'
+  comment: |-
+    We don't see if very often, but file system encryption can be provided internally by the OS using "dm-crypt" (very similar to BitLocker on Windows and FileVault on MacOS).
+01_system_05_file_system_mounts:
+  regex: 'System_FSMounts::(?P<unit>.\s[-\w.\d]+\.mount)\s+(?P<loadState>\w+)\s+(?P<status>\w+)\s+(?P<sub>\w+)\s+(?P<description>.*)'
+  onlyMatching: True
+  groupList:
+    - unit
+    - loadState
+    - status
+    - sub
+    - description
+  comment: |-
+    One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
+    including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
+01_system_06_supported_file_systems:
   regex: 'System_FSModules::'
-01_system_06_selinux_status:
-  regex: 'System_MACSELinuxInfo::'
+  comment: |-
+    This is a straight-up CIS benchmark check (1.1.1.1) for which file system modules are supported by the server.  Some of these might be required in specific situationsn -- such as Docker's need for squashfs.  But if those conditions aren't present, then this is the "brown M&Ms" test to see if CIS guidelines have been followed.
+01_system_07_selinux_status:
+  regex: 'System_MACSELinuxInfo::(SELinux status:\s+(?P<status>(enabled|disabled)))|(Loaded policy name:\s+(?P<policyName>\w+))|(Current mode:\s+(?P<currentMode>\w+))|(Mode from config file:\s+(?P<configMode>\w+))|(Memory protection checking:\s+(?P<memoryProtectionChecking>.*))'
+  onlyMatching: True
+  combine: True
+  sysFilter:
+  - attr: osFamily
+    comp: eq
+    value: Linux
+  - attr: distroFamily
+    comp: eq
+    value: rpm
+  groupList:
+    - status
+    - policyName
+    - currentMode
+    - configMode
+    - memoryProtectionChecking
+  comment: |-
+    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
+    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
+    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
+    is installed.  SELinux is usually used on RPM-based distros such as Red Hat, CentOS, Oracle Linux and Amazon Linux.
+
+    Recommended settings:
+        - Policy name "targeted"
+        - Current mode "enforcing"
+        - Memory protection should be "actual (secure)"
 01_system_07_apparmor_status:
-  regex: 'System_MACAppArmorInfo::(.*module|[0-9])|(.*profiles.*loaded)|([0-9].*profiles.*complain)|([0-9].*profiles.*enforce mode)|([0-9].*processes.*defined)|([0-9].*processes.*enforce mode)|([0-9].*processes.*complain)'
+  regex: 'System_MACAppArmorInfo::(apparmor module is (?P<status>.*))|((?P<loadedProfiles>[0-9]+) profiles are loaded)|((?P<enforceProfiles>[0-9]+) profiles are in enforce mode)|((?P<complainProfiles>[0-9]+) profiles are in complain mode)|((?P<definedProcesses>[0-9]+) processes have profiles defined)|((?P<enforceProcesses>[0-9]+) processes are in enforce mode)|((?P<complainProcesses>[0-9]+) processes are in complain mode)|((?P<unconstrainedProcesses>[0-9]+) processes are unconfined but have a profile defined)'
+  sysFilter:
+  - attr: osFamily
+    comp: eq
+    value: Linux
+  - attr: distroFamily
+    comp: eq
+    value: deb
+  onlyMatching: True
+  combine: True
+  groupList:
+    - status
+    - loadedProfiles
+    - enforceProfiles
+    - complainProfiles
+    - definedProcesses
+    - enforceProcesses
+    - complainProcesses
+    - unconstrainedProcesses
+  comment: |-
+    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
+    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
+    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
+    is installed.  AppArmor is usually used on Debian-based distros such as Debian and Ubuntu.
+
+    Recommendations:
+        - The module should report as "loaded"
+        - There should be at least some profiles and processes defined (>0)
+        - All defined profiles/processes should either be in "enforce" or "complain" mode
+        - No processes should be in "unconfined" status
 01_system_08_aslr_config:
   regex: 'System_MemoryASLRConfig::'
 01_system_09_suid_coredump:
