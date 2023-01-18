@@ -1,3 +1,9 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+
 05_logging_01_auditpol_config_raw:
     regex: 'Logging_AuditEventsConfig::[ ]+'
 05_logging_01_auditpol_config_labeled:
