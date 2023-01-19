@@ -40,54 +40,54 @@ include_linux_system:
 ######################### Networking items ########################
 ###################################################################
 
-include_linux_network:
-  files:
-    - audit-linux-network.yaml
+# include_linux_network:
+#   files:
+#     - audit-linux-network.yaml
 
 ###################################################################
 ############################ SSH items ############################
 ###################################################################
 
-include_linux_ssh:
-  files:
-    - audit-windows-ssh.yaml
+# include_linux_ssh:
+#   files:
+#     - audit-windows-ssh.yaml
 
 ###################################################################
 ######################### System Services #########################
 ###################################################################
 
-include_linux_system:
-  files:
-    - audit-linux-services.yaml
+# include_linux_services:
+#   files:
+#     - audit-linux-services.yaml
 
 ###################################################################
 ######################## Security Services ########################
 ###################################################################
 
-include_linux_sec_tools:
-  files:
-    - audit-linux-sec-tools.yaml
+# include_linux_sec_tools:
+#   files:
+#     - audit-linux-sec-tools.yaml
 
 ###################################################################
 ########################## Logging Items ##########################
 ###################################################################
 
-include_linux_logging:
-  files:
-    - audit-linux-logging.yaml
+# include_linux_logging:
+#   files:
+#     - audit-linux-logging.yaml
 
 ###################################################################
 ########################### Users Items ###########################
 ###################################################################
 
-include_linux_users:
-  files:
-    - audit-linux-users.yaml
+# include_linux_users:
+#   files:
+#     - audit-linux-users.yaml
 
 ###################################################################
 ############### Interesting World Writeable Files #################
 ###################################################################
 
-include_linux_worldfiles:
-  files:
-    - audit-linux-worldfiles.yaml
+# include_linux_worldfiles:
+#   files:
+#     - audit-linux-worldfiles.yaml
