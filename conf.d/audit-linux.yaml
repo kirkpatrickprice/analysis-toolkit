@@ -40,9 +40,9 @@ include_linux_system:
 ######################### Networking items ########################
 ###################################################################
 
-# include_linux_network:
-#   files:
-#     - audit-linux-network.yaml
+include_linux_network:
+  files:
+    - audit-linux-network.yaml
 
 ###################################################################
 ############################ SSH items ############################

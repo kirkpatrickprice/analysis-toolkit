@@ -50,10 +50,29 @@ global:
       -- Anything else - It's also totally fine if they're using it with intent.  All OSes support IPv6 natively as do the OS provided firewalls.  Same with network gear.  But if you see IPv6 enabled on some end-user's work-from-home laptop and the customer isn't actively managing IPv6, then it's working with the default configuration.
 02_network_05_ip_forwarding:
   regex: 'Network_IPForwarding::'
-02_network_06_listening_services:                                                                                      # Grab IPv4 and IPv6 listening ports and responsible binary
-  regex: 'Network_ListeningServicesSS::(?P<proto>udp|tcp).*?(?P<listening_port>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*?:\d{1,5}|\[.*\]:\d{1,5}).*?\(\("(?P<binary>.*?)".*'
+  comment: |-
+    Unless the device is functioning as a router/firewall, this value should be 0.  It might also be enabled if the device is a Docker host
+02_network_06_listening_services:
+  regex: 'Network_ListeningServicesSS::(?P<proto>udp(\d)?|tcp(\d)?).*?(?P<interface>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|(\[?[*:A-Fa-f\d]+\]?))(%(\w)+)?:(?P<port>\d{1,5}).*?users:\(\("(?P<binary>.*?)".*'
   groupList:
-    - 'proto'
-    - 'listening_port'
-    - 'binary'
+    - proto
+    - interface
+    - port
+    - binary
   onlyMatching: True
+  comment: |-
+    We list all of the listening ports, including the binary that's listening on it.  I consider the Package Manager Updates, Running Processes and this information to be among the most valuable data we collect from each system.
+
+    For the most part, you can probably ignore anything bound to localhost (127.0.0.1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
+    
+    Some interesting, common port numbers:
+      - 80,443,8080,8433 -- Web servers with and without encryption
+      - 20,21,989,990 -- FTP and FTP/S
+      - 25,465,587 -- SMTP email servers
+      - 23,992 -- Telnet and Telnet/S
+      - 110,143,220,993,995 -- Email client services (POP3 and IMAP with and without /S)
+      - 53 -- DNS
+      - 22 -- SSH and SFTP (distinct from FTP/S, which is FTP over TLS)
+      - 1433,1521,3306,5432 -- SQL Server, Oracle, MySQL and PostgreSQL databases
+
+    These are just a few of the highlights you're likely to stumble on.  Check out https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers or other Internet sources for more.
