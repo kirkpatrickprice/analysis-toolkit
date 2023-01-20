@@ -56,9 +56,9 @@ include_linux_ssh:
 ######################### System Services #########################
 ###################################################################
 
-# include_linux_services:
-#   files:
-#     - audit-linux-services.yaml
+include_linux_services:
+  files:
+    - audit-linux-services.yaml
 
 ###################################################################
 ######################## Security Services ########################
