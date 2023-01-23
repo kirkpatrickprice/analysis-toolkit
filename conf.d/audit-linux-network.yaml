@@ -63,7 +63,7 @@ global:
   comment: |-
     We list all of the listening ports, including the binary that's listening on it.  I consider the Package Manager Updates, Running Processes and this information to be among the most valuable data we collect from each system.
 
-    For the most part, you can probably ignore anything bound to localhost (127.0.0.1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
+    For the most part, you can probably ignore anything bound to localhost (127.0.0.1 and ::1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
     
     Some interesting, common port numbers:
       - 80,443,8080,8433 -- Web servers with and without encryption

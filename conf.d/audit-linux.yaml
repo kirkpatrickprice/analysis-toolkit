@@ -64,9 +64,9 @@ include_linux_services:
 ######################## Security Services ########################
 ###################################################################
 
-# include_linux_sec_tools:
-#   files:
-#     - audit-linux-sec-tools.yaml
+include_linux_sec_tools:
+  files:
+    - audit-linux-sec-tools.yaml
 
 ###################################################################
 ########################## Logging Items ##########################
