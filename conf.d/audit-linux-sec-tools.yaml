@@ -58,7 +58,7 @@ global:
     ClamAV for Linux.  Far from the best, but still we collect the configs in case that's the answer for "Linux AV".
     If you see reference to it (e.g., in the Cron_Jobs results), FreshClam is the process that checks for AV signature updates.  You should see that this process runs at least daily to update the signature files.
 05_security_09_crowdstrike:
-  regex: 'Security_HidsCrowdStrike::'
+  regex: 'Security_HidsCrowdStrike::(?!UID)'
   comment: |-
     CrowdStrike is a cloud-based HIDS agent from CrowdStrike.com.  The only check is to see that the service is running, but you should also check the running processes for something similar to "falcon"
 05_security_10_snort:
