@@ -72,9 +72,9 @@ include_linux_sec_tools:
 ########################## Logging Items ##########################
 ###################################################################
 
-# include_linux_logging:
-#   files:
-#     - audit-linux-logging.yaml
+include_linux_logging:
+  files:
+    - audit-linux-logging.yaml
 
 ###################################################################
 ########################### Users Items ###########################
