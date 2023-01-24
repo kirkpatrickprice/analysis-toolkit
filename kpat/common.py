@@ -447,7 +447,11 @@ class Search:
 
                 for result in results:
                     values=[result['systemName']]
-                    for key in self.config['groupList']:
+                    try:
+                        keys=self.config['groupList']           # Check if groupList was set in the config
+                    except KeyError:
+                        keys=list(result.keys())[1:]                     # If not, use the columns from the results dictionary, dropping systemname since we already have it
+                    for key in keys:
                         try:
                             value=result[key]
                         except KeyError:                      # If the result set didn't find the matching group name, fill it with <None>
