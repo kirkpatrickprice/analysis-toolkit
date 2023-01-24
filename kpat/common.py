@@ -446,13 +446,24 @@ class Search:
                 print('='*totalWidth)
 
                 for result in results:
-                    values=[]
-                    for key in result.keys():
-                        value=result[key]
+                    values=[result['systemName']]
+                    for key in self.config['groupList']:
+                        try:
+                            value=result[key]
+                        except KeyError:                      # If the result set didn't find the matching group name, fill it with <None>
+                            value='<None>'
                         if len(value) > colWidth[key]:
                             value=value[:colWidth[key]-reduceBy-3]+'...'
                         values+=[value]
-                    print(formatStr % tuple(values))
+                    try:
+                        print(formatStr % tuple(values))
+                    except TypeError as e:
+                        error("Error printing results: "+str(e))
+                        error("\tColumn headers  : "+str(header))
+                        error("\tFormat string   : "+formatStr)
+                        error('\tValues to print : '+str(tuple(values)))
+                        exit(errorCodes['generalError'])
+                    
         print('Results found: %d\n' % len(results))
         if len(results) == 0:
             error('No results found')
