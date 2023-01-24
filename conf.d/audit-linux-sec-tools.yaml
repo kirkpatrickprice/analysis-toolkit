@@ -5,6 +5,24 @@ global:
       value: Linux
 
 # We don't see these things very often, so not a lot of planning has gone into developing these checks.  We're mostly going to dump the sections as we collect them.
+05_security_01_system_crypto_policy:
+  regex: 'Security_SystemCryptoPolicy::(?P<policy>.*)'
+  onlyMatching: True
+  groupList:
+    - policy
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: kpnixversion
+      comp: ge
+      value: 0.6.17
+  comment: |-
+    System-wide crypto policies are used differently for Debian-based and RPM-based systems.  Refer to the links below for support documentation for each:
+        RPM-based: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening
+        Debian-based: https://manpages.ubuntu.com/manpages/focal/en/man7/crypto-policies.7.html
+    
+    Importantly, it covers OpenSSH, OpenSSL, IPSec (LibreSWAN), DNSSec (Bind) and OpenJDK.
 05_security_01_aide_status:
   regex: 'Security_HidsAIDEConfig::Aide (?P<version>.*)'
   onlyMatching: True
