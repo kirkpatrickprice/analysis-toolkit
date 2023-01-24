@@ -80,9 +80,9 @@ include_linux_logging:
 ########################### Users Items ###########################
 ###################################################################
 
-# include_linux_users:
-#   files:
-#     - audit-linux-users.yaml
+include_linux_users:
+  files:
+    - audit-linux-users.yaml
 
 ###################################################################
 ############### Interesting World Writeable Files #################
