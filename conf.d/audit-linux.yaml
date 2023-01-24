@@ -88,6 +88,6 @@ include_linux_users:
 ############### Interesting World Writeable Files #################
 ###################################################################
 
-# include_linux_worldfiles:
-#   files:
-#     - audit-linux-worldfiles.yaml
+include_linux_worldfiles:
+  files:
+    - audit-linux-worldfiles.yaml
