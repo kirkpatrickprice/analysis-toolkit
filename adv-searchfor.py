@@ -400,13 +400,17 @@ if args.yamlHelp:
     
     You can also create your own, but it is strongly recommended to store them somewhere else besides in the Analysis Toolkit folder as this location will likely be overwritten upon the next update.
 
-    You can also include the contents in other YAML files by using the "!include path/to/file.yaml" within your own files.
+    You can also include the contents in other YAML files by using the "include_<unique_but_arbitrary_name>:" section within your own files.
         myfile.yaml
-            !include audit-windows.yaml
+            include_audit_windows:
+                files:
+                  - audit-windows.yaml
 
             my_custom_check:
               regex: 'an awesome search pattern'
               ...more options
+    
+    This will bring in all of the checks in 'audit-windows.yaml' and the tool knows to look in it's conf.d folder if not path info is provided.  For anything not including the conf.d folder, you'll need to provide path info.  In fact, audit-windows.yaml and audit-linux.yaml both use this method to keep the configs easier to read and so that you can run just a subset of the checks if you'd like.
     
     There are help sections at the top of each of the provided YAML files, but the most authoritative list of available options is provided here.
 
