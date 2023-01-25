@@ -21,7 +21,8 @@ Installation is as simple as cloning this repo to your system.
 Change to your favorite location where you'd like to install them.  A sub-directory will be created called `analysis-toolkit`.  If you're not sure where to put them, use your Windows Downloads directory if you're using WSL (the examples below assume this is your path).
 
 ```
-cd /mnt/c/Users/RandyBartels/Downloads/
+mkdir ~/tools               # If the tools directory doesn't already exist...
+cd ~/tools
 git clone https://github.com/kirkpatrickprice/analysis-toolkit
 ```
 
@@ -35,6 +36,13 @@ And add the `analysis-toolkit` directory to your path by appending the following
 
 With the `analysis-toolkit` in your path, you will be able to use these commands anywhere in your Bash shell prompt.
 
+Now, you'll need to install the Python dependencies.  If you'll be using your Python install for more than just the analysis toolkit, you might want to create a `venv` to run it in.  Check out https://python.land/virtual-environments/virtualenv if you need a tutorial.  Then...
+```
+cd ~/tools/analysis-tookit
+python3 -m pip install --upgrade pip        # Upgrade PIP if it's already up to date
+python3 -m pip install -r requirements.txt  # Install the packages listed in the file
+```
+
 ## Updating the toolkit ##
 Change to the analysis-toolkit directory
 
@@ -46,6 +54,8 @@ git fetch
 git reset --hard HEAD
 git merge
 ```
+
+If you get any errors from Python about missing packages, re-run the PIP-related commands above to make sure you have all the dependencies installed.
 
 ## Using the toolkit scripts ##
 Each toolkit script includes a "help" function to explain the options.
