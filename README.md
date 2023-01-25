@@ -43,8 +43,6 @@ python3 -m pip install --upgrade pip        # Upgrade PIP if it's already up to 
 python3 -m pip install -r requirements.txt  # Install the packages listed in the file
 ```
 
-Finally, to make the changes to your `PATH` stick, you can either exit your Terminal session or force-load the changes with `source ~/.bashrc`
-
 ## Updating the toolkit ##
 Change to the analysis-toolkit directory
 
