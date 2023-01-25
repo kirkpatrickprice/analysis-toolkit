@@ -1,0 +1,70 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+
+03_users_01_local_admin_user:
+    regex: 'Users_LocalAdministrator::((Name[ ]+:[ ]+(?P<name>[\w ]+))|(Enabled[ ]+:[ ]+(?P<enabled>[\w ]+))|(LastLogon[ ]+:[ ]+(?P<lastLogon>[\w ]+))|(PasswordLastSet[ ]+:[ ]+(?P<passwordLastSet>[\w ]+))|(PasswordRequired[ ]+:[ ]+(?P<passwordReqd>[\w ]+))|(PasswordExpires[ ]+:[ ]+(?P<passwordExpires>[\w /-:]+)))'
+    groupList:
+      - name
+      - enabled
+      - lastLogon
+      - passwordLastSet
+      - passwordReqd
+      - passwordExpires
+    onlyMatching: True
+    combine: True
+    comment: |-
+      Details about the local Administrator account.
+03_users_02_local_admin_group:
+  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(?!The command completed successfully)\w'
+03_users_03_local_password_policy:
+  regex: 'Users_LocalPasswordPolicy::((Minimum password age \(days\):[ ]+)(?P<minAge>\d+)|(Maximum password age \(days\):[ ]+)(?P<maxAge>\d+)|(Minimum password length:[ ]+)(?P<minLength>\d+)|(Length of password history maintained:[ ]+)(?P<history>[\w\d]+)|(Lockout threshold:[ ]+)(?P<lockoutThreshold>[\w\d]+)|(Lockout duration \(minutes\):[ ]+)(?P<lockoutDuration>\d+)|(Lockout observation window \(minutes\):[ ]+)(?P<lockoutWindow>\d+))'
+  onlyMatching: True
+  groupList:
+    - minAge
+    - maxAge
+    - minLength
+    - history
+    - lockoutThreshold
+    - lockoutDuration
+    - lockoutWindow
+  combine: True
+  comment: |-
+    The local computer's password policy.  This may not be the same as the domain policy.  For the domain policy, you'll need to have your customer run the KPADAudit.ps1 script.
+  fullScan: True
+03_users_04_local_users_labeled:
+  regex: 'Users_LocalUsers::(?!Name)((?P<userName>[\w .$-]+?)(?P<enabled>(True|False))[ ]+(?P<lastLogon>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3}).*?(?P<userMayChangePassword>(True|False))[ ]+(?P<passwordExpires>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<passwordLastSet>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<sid>S-[\d-]+))'
+  groupList:
+    - userName
+    - enabled
+    - lastLogon
+    - userMayChangePassword
+    - passwordExpires
+    - passwordLastSet
+    - sid
+  fullScan: True
+  onlyMatching: True
+  comment: |-
+    The local computer's local user list.  All fields should be self-explanatory.  This was a particularly tricky regex pattern, so be sure to compare against the users_raw file or event the text files themselves to gain confidence.
+03_users_04_local_users_raw:
+  regex: 'Users_LocalUsers::(?!Name\s+(Enabled|Disabled))(?!--)\w'
+  fullScan: True
+  comment: |-
+    The local computer's localgroup memberships.
+03_users_05_local_groups_labeled:
+  regex: 'Users_LocalGroups::(((?P<groupName>[\w $.-]+))( (?P<sid>S[-\d]+))[ ]+(?P<groupDesc>[\w ]+))'
+  groupList:
+    - groupName
+    - sid
+    - groupDesc
+  onlyMatching: True
+  comment: |-
+    A list of all of the localgroups on the system.  Everything should be self-explanatory, but the SID can be used to verify, among other things, any unique SIDs you find in clock_permissions.
+
+    This is the labeled version, which should be reliable.  But if something doesn't look right (e.g. mismatched columns) then there's also a "groups_raw" file or revert to the original text files.
+03_users_05_local_groups_raw:
+  regex: 'Users_LocalGroups::(?!Name\s+SID)(?!--)\w'
+  comment: |-
+    A list of all of the localgroups on the system.  This is the raw results file to accompany the "groups_labeled" version.  Use this if something doesn't look right in the labeled file.

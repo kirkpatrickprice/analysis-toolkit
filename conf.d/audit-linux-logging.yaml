@@ -1,0 +1,77 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+06_logging_01_auditd_status:
+  regex: 'Logging_AuditdStatus:: auditd_status: (?P<status>.*)'
+  onlyMatching: True
+  groupList:
+    - status
+  comment: |-
+    AuditD performs kernel-level logging.  For instance, it's a common way to generate file system access logs and some FIM products (e.g. Rapid7) actually require it as they are only monitoring AuditD events.  It can generate a lot of data and requires special tools to make the most sense out of the output, so we only grab the configs and none of the events.  Some CIS benchmarks for both Linux and Docker (and probably others) are based on AuditD, so we also check to see if it's running at all.
+
+    NOTE: There's a relatively new replacement for AuditD called go-audit (written in Golang - hence the name).  This is a suitable replacement for what I've seen, but we don't currently pull any configs for it.  Reference: https://github.com/slackhq/go-audit
+06_logging_02_auditd_rules:
+  regex: 'Logging_AuditdRunningConfig::'
+  comment: |-
+    This list provides all of the rules configured in AuditD.  There should be one rule for each event that is to be logged by the kernel.
+06_logging_03_auditd_setuid:
+  regex: 'Logging_AuditdSETUID::(?P<binary>[\w/]+):(?P<ruleCount>\d+)'
+  onlyMatching: True
+  groupList: 
+    - binary
+    - ruleCount
+  comment: |-
+    SETUID binaries are those programs and utilities that will run as a fixed, usually ROOT, user).  We check that each SETUID binary has it's own AuditD log entry.  This is a specific CIS benchmark check.  See below for how to make sense of this output.
+
+    Output:
+        <path-to-binary> <number-of-auditd-matches>
+        A 0 following the file indicates it is not being monitored by auditd
+06_logging_04_syslog_config:
+  regex: 'Logging_Syslog(rsyslogd|syslogd|syslogng)Config::((\s\w*)_status:|/etc/.*?\.conf::\w+)'
+  comment: |-
+    Syslog, RSysLog and Syslog-ng all perform similar functions -- turn system and application messages into logs.  You should see one but probably not more than one of them listed below.  
+    
+    RSysLog is used for both RPM- and Debian-based installations, which covers just about the entire Linux landscape.  The others are collected here in the event local conditions have led to their use.
+    A common check here is to make sure that logs are shipped to an external, centralized log server.  OSSEC, FluentD, Datadog or another tool might also capture the logs, but if none of those are installed, then SysLog will be responsible shipping the logs to another system.  
+    
+    Check for:
+        - lines with an @ sign (sent remotely)
+        - lines with /dev/null (thrown away)
+        - lines with file names such as /var/log/auth.log (sent to this file)
+06_logging_05_logrotate_config:
+  regex: 'Logging_SyslogLogrotateConfig::'
+  comment: |-
+    LogRotate prunes the logs on the local disk so they don't fill up the drive.  If they're not shipped to another log server or SIEM tool by OSSEC, Syslog or something else then when LogRotate deletes the log, it's gone forever.  See https://www.redhat.com/sysadmin/setting-logrotate for more information on how to read these files.
+
+    Specifically, look for the "rotate" lines as well as "weekly", "daily", etc.
+06_logging_06_var_log_list:
+  regex: 'Logging_SamplesVarLogList::'
+  comment: |-
+    This is a full list of the /var/log sub-directory, in case you would like to ask for additional logging samples.  In the "logging_samples" file, we grab samples of some of the common ones.
+
+    Files with an extension such as ".1.gz" identify logs that have been rotated (see "logrotate_config" file).
+06_logging_07_logging_samples:
+  regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
+  groupList:
+    - 'logfile'
+    - 'head_tail'
+    - 'logentry'
+  onlyMatching: True
+  comment: |-
+    We collect samples of various logs below.  To save space, we collect only the first ('head') and last ('tail') 25 lines of each file to confirm that events were and continue to be written to the logs.  If you need to see more of some log files, you'll need to ask for those separately.
+06_logging_08_datadog:
+  regex: 'Logging_Datadog::'
+  comment: |-
+    Datadog is a popular log collection agent, especially for application logs.  While these logs are usually more than what we're looking for, we pull the Datadog configurations if they're available.
+
+    https://docs.datadoghq.com/agent/guide/agent-configuration-files/?tab=agentv6v7 for information on how to read this file
+07_logging_09_fluentd:
+  regex: 'Logging_FluentD::'
+  comment: |-
+    FluentD is a common log harvester solution we might see in use by our customers.  We'll grab the contents of the /etc/fluent/fluent.conf file.  
+    
+    See https://docs.fluentd.org/configuration/config-file for information on how to read this file
+

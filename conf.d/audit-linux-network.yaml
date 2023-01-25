@@ -1,0 +1,78 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+02_network_01_linux_ping_results:
+  regex: 'Network_ConnectivityTest::(?P<xmitPackets>\d) packets transmitted, (?P<recdPackets>\d) received, (?P<pktLoss>\d+.) packet loss'
+  onlyMatching: True
+  groupList:
+    - xmitPackets
+    - recdPackets
+    - pktLoss
+  comment: |-
+    A quick PING test to google.com.  On a PCI audit, ideally this would fail (pktLoss = 100%) from systems in the CDE (not necessarily those that are "connected to").
+    If it doesn't, it's worth a conversation as all inbound and outbound communication must be explicitly defined for the CDE, so is "Ping to Google, really necessary?"
+    If you're not working on a PCI audit, you can decide if this is helpful to you.
+02_network_02_dns_nameserver:
+  regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver (?P<nameServer>[\d.]+)'
+  onlyMatching: True
+  groupList:
+    - nameServer
+  comment: |-
+    We collect the DNS resolver configuration.  Using an external resolver (e.g. 8.8.8.8 for Google) could open up some interesting attack vectors through DNS poisoning.  And in PCI DSS, DNS Servers are listed as a possible system component to include in scope (see page 10 of v3.2.1).
+    It's also interesting to note if there are any differences across the sample population as differences could be indicative of systems under differing levels of management.
+02_network_03_icmp_redirect:
+  regex: 'Network_ICMPRedirect::'
+  comment: |-
+      Unless the device is functioning as a router/firewall, these values should be 0.  "send_redirects" refers to sending ICMP Redirects.
+      This occurs when two routers exist on the same VLAN and R1 wants to tell the end-node to use R2 instead.  This also opens up some interesting network-layer attack vectors that are best avoided.
+      Refer to https://www.cisco.com/c/en/us/support/docs/ios-nx-os-software/nx-os-software/213841-understanding-icmp-redirect-messages.html for more info.
+02_network_04_ip_addresses:
+  regex: 'Network_InterfacesIPAddress::\s+(?P<addrFamily>inet(\d)?)\s+(?P<address>[\dA-Fa-f:./]+)'
+  onlyMatching: True
+  groupList:
+    - addrFamily
+    - address
+  comment: |-
+    We collect the IP address information in case it's useful.  You might need to compare these against firewall rules or something else.
+
+    Address family denotes IPv4 (inet) and IPv6 (inet6).  On IPv6, if you see globally routable (called GUAs or Globally Unique Addresses) or even ULAs (Unique Local Addresses), it's worth a conversation to determine if they're actually using IPv6.
+
+    Spotting IPv6 addresses:
+      -- Link Local start with fe80 through fe8f -- thse are unroutable (layer 2 only) and, in many IP stacks, it's really hard to disable them.  I suggest not worrying about them too much if that's all you see.
+      -- ULAs start with fd - This is roughly equivalent to an RFC1918 address that we've been using for site addresses in IPv4 (10/8, 172.16/12, and 192.168/16).  This denotes intent to use IPv6.
+      -- GUAs currently start with 2 or 3 - IANA is currently "exprimenting" with only roughly 1/8th of the available GUA space.  That's still about a gazillion times for addresses than are available under IPv4.
+
+    IPv6 impact on your audit.
+      -- PCI DSS - It's totally fine if they're using it with intent and are managing it.  Otherwise, it's a no go since it falls under "ports, protocols and services"
+      -- Anything else - It's also totally fine if they're using it with intent.  All OSes support IPv6 natively as do the OS provided firewalls.  Same with network gear.  But if you see IPv6 enabled on some end-user's work-from-home laptop and the customer isn't actively managing IPv6, then it's working with the default configuration.
+02_network_05_ip_forwarding:
+  regex: 'Network_IPForwarding::'
+  comment: |-
+    Unless the device is functioning as a router/firewall, this value should be 0.  It might also be enabled if the device is a Docker host
+02_network_06_listening_services:
+  regex: 'Network_ListeningServicesSS::(?P<proto>udp(\d)?|tcp(\d)?).*?(?P<interface>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|(\[?[*:A-Fa-f\d]+\]?))(%(\w)+)?:(?P<port>\d{1,5}).*?users:\(\("(?P<binary>.*?)".*'
+  groupList:
+    - proto
+    - interface
+    - port
+    - binary
+  onlyMatching: True
+  comment: |-
+    We list all of the listening ports, including the binary that's listening on it.  I consider the Package Manager Updates, Running Processes and this information to be among the most valuable data we collect from each system.
+
+    For the most part, you can probably ignore anything bound to localhost (127.0.0.1 and ::1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
+    
+    Some interesting, common port numbers:
+      - 80,443,8080,8433 -- Web servers with and without encryption
+      - 20,21,989,990 -- FTP and FTP/S
+      - 25,465,587 -- SMTP email servers
+      - 23,992 -- Telnet and Telnet/S
+      - 110,143,220,993,995 -- Email client services (POP3 and IMAP with and without /S)
+      - 53 -- DNS
+      - 22 -- SSH and SFTP (distinct from FTP/S, which is FTP over TLS)
+      - 1433,1521,3306,5432 -- SQL Server, Oracle, MySQL and PostgreSQL databases
+
+    These are just a few of the highlights you're likely to stumble on.  Check out https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers or other Internet sources for more.

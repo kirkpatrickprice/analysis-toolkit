@@ -1,0 +1,32 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+08_worldFiles_01_interesting_world_writable_files:
+  regex: 'WorldFiles::.*?(?P<permissions>.[-rwx]{9}).*?(?P<path>(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin|/opt|/lib(?!/docker)|/mnt).*)'
+  onlyMatching: True
+  groupList:
+    - permissions
+    - path
+  comment: |-
+    This is a filtered list of files that are writable by any user on the system.  We're focusing on files that are in the following locations, as there are several more that are required by the operating system.
+
+    See https://linuxhandbook.com/linux-directory-structure/ for info about the common directory names on the Linux file system.
+
+    Linux file system permissions are grouped into four parts:
+      - A flag -- this might be a "d" for directory, a "-" for nothing, and maybe some more (we're only going to see "d" or "blank" in these results)
+      - User -- a set of "rwx-"" for "read", "write", "execute" and "none" for what the user who owns the file/directory can do
+      - Group -- same as above, but this time for the group owner of the file.  See "etc_group" for group names and members
+      - World -- same as above, but this time for anyone who's not an owner or in a group.  These are the interesting things we're exposing in this list. 
+    
+    Locations:
+      - /home -- users home directories
+      - /etc -- configuration files for the system
+      - /opt -- Where 3rd party software is frequently installed
+      - /lib -- System libraries and frequent storage location for data used by applications
+      - /mnt -- Where remote (e.g. NFS) or external (e.g. USB drives) file systems are usually mounted (we're excluding /lib/docker)
+      - (/usr)/bin -- locations of OS binaries used by users
+      - (/usr)/sbin -- Where privileged binaries are kept
+

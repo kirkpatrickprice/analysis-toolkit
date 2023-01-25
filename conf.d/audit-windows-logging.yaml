@@ -1,0 +1,61 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+
+05_logging_01_auditpol_config_raw:
+    regex: 'Logging_AuditEventsConfig::[ ]+'
+05_logging_01_auditpol_config_labeled:
+    regex: 'Logging_AuditEventsConfig::[ ]+((Security System Extension[ ]+(?P<systemSecurityExtension>.*))|(System Integrity[ ]+(?P<systemIntegrity>.*))|(Security State Change[ ]+(?P<securityStateChange>.*))|(Logon[ ]+(?P<logon>.*))|(Logoff[ ]+(?P<logoff>.*))|(Sensitive Privilege Use[ ]+(?P<sensitivePrivUse>.*))|(Process Creation[ ]+(?P<processCreation>.*))|(Process Termination[ ]+(?P<processTermination>.*))|(File System[ ]+(?P<fileSystem>.*))|(Audit Policy Change[ ]+(?P<auditPolicyChange>.*))|(Directory Service Access[ ]+(?P<directoryServiceAccess>.*))|(Directory Service Changes[ ]+(?P<directoryServiceChanges>.*)))'
+    groupList:
+      - 'sensitivePrivUse'
+      - 'directoryServiceAccess'
+      - 'systemIntegrity'
+      - 'securityStateChange'
+      - 'systemSecurityExtension'
+      - 'logon'
+      - 'logoff'
+      - 'directoryServiceChanges'
+      - 'fileSystem'
+      - "processTermination"
+      - "auditPolicyChange"
+      - 'processCreation'
+    combine: True
+    onlyMatching: True
+    comment: |-
+      Provides a detailed report of the events that will be captured by the local Windows Event Log service.  NOTE: There are additional settings captured in the raw results, but these are likely the ones you're looking for.
+      Reference: https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/advanced-security-auditing-faq
+05_logging_02_fs_audit_config:
+  regex: 'Logging_FSAuditing-(?P<drive>[A-Za-z]):(?P<path>[\w\\. ]+?)::Audit[ ]+:(?P<auditConfig>.*)'
+  onlyMatching: True
+  groupList:
+    - 'drive'
+    - 'path'
+    - 'auditConfig'
+  comment: |-
+    These results include any local file system auditing that has been enabled.  Be sure to check the auditpol_config to make sure that File System auditing is enabled.  Once that's verified, then these are the files and events that will be logged to Windows Event Log.  No other file system access will be logged.
+
+    The results are difficult to work with as there may be more than one result.  However, if no results are shown on the "audit" line, then there aren't any audit configs.  If you do receive at least one result, you'll need to review the raw text files to see if there are more than one.
+
+    NOTE: Some "light-weight" FIM tools such as those included with Log Event collector tools, rely on Windows Event Log events for file system events.  If this isn't configured per the vendor's manuals, then events are likely not being captured.  You may need to test for this separately if there's any doubt.
+05_logging_03_event_log_config:
+  regex: 'Logging_AuditLogConfig::(?!PrimaryModule)(?!--)\w'
+  comment: |-
+    If logs are being pulled off in real-time by some collector agent (e.g. Splunk, FluentD, etc), then these configs should have no bearing.  If they are not, then that's a worthy recommendation.
+
+    Reference: See https://docs.microsoft.com/en-us/windows/win32/eventlog/eventlog-key for details about what each item means.
+05_logging_04_event_log_samples:
+  regex: 'Logging_EventLogSamples(?P<eventLogSource>[A-Za-z]+)::(?!(Index[ ]+Time)|---)(?P<logMessage>.*)'
+  onlyMatching: True
+  groupList:
+    - eventLogSource
+    - logMessage
+  comment: |-
+    Provides samples of Windows Event Logs (50 newest events).  Use this to test that event logs are being actively written to the Windows Event Log system.
+    NOTE:  There are many tools that can collect the logs for centralized storage and analysis, but most -- if not all -- rely on the Event Log system in Windows.
+          If Event Log doesn't have the event, then it's unlikely that Splunk, FluentD or other collection agents will have the event.
+    Event Logs captured include:
+      Application     Contains events logged by applications. For example, a database application might record a file error. The application developer decides which events to record.
+      Security        Contains events such as valid and invalid logon attempts, as well as events related to resource use such as creating, opening, or deleting files or other objects.
+      System          Contains events logged by system components, such as the failure of a driver or other system component to load during startup.

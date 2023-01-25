@@ -1,0 +1,47 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+
+04_secsoft_01_av_status_security_center:
+  regex: 'AntiVirus_AVStatus::((displayName[ ]+:[ ]+)(?P<displayName>.*)|(productState[ ]+:[ ]+(?P<productState>\d+))|(Enabled[ ]+:[ ]+(?P<avEnabled>.*))|(AntispywareEnabled[ ]+:[ ]+(?P<antispywareEnabled>.*))|(AntivirusEnabled[ ]+:[ ]+(?P<antivirusEnabled>.*))|(BehaviorMonitorEnabled[ ]+:[ ]+(?P<behaviorMonitorEnabled>.*))|(OnAccessProtectionEnabled[ ]+:[ ]+(?P<onAccessProtectionEnabled>.*))|(AntispywareSignatureAge[ ]+:[ ]+(?P<antispywareSignatureAge>\d+))|(LastFullScanAge[ ]+:[ ]+(?P<lastFullScanAge>\d+))|(LastQuickScanAge[ ]+:[ ]+(?P<lastQuickScanAge>\d+))|(ProductStatus[ ]+:[ ]+(?P<productStatus>\d+)))'
+  groupList:
+    - displayName
+    - productState
+    - avEnabled
+    - antispywareEnabled
+    - antivirusEnabled
+    - behaviorMonitorEnabled
+    - onAccessProtectionEnabled
+    - antispywareSignatureAge
+    - lastFullScanAge
+    - lastQuickScanAge
+    - productStatus
+  onlyMatching: True
+  combine: True
+  comment: |-
+    This shows results coming from Windows Security Center.  Exactly how different products use SC is a bit of mystery, but for clients using Microsoft Defender, this should give reliable data.
+    For ProductState (not ProductStatus -- sorry for the confusing names -- they come from Micorosft)
+      **IF OUTPUT IS BLANK - NO ANTI VIRUS IS INSTALLED OR REQUIRES MANUAL CHECK**.  If that happens, you might also review the running process list (System_RunningProcesses) to see if you can find the A/V binaries.  This would at least provide that A/V is running, even if other details need to tested manually.
+      AVG Antivirus productState https://mspscripts.com/get-installed-antivirus-information-2/
+        262144 | Definitions = Up to date  | Status = Disabled
+        266240 | Definitions = Up to date  | Status = Enabled
+        262160 | Definitions = Out of date | Status = Disabled
+        266256 | Definitions = Out of date | Status = Enabled
+        393216 | Definitions = Up to date  | Status = Disabled
+        393232 | Definitions = Out of date | Status = Disabled
+        393488 | Definitions = Out of date | Status = Disabled
+        397312 | Definitions = Up to date  | Status = Enabled
+        397328 | Definitions = Out of date | Status = Enabled
+      Windows Defender productState https://social.msdn.microsoft.com/Forums/en-US/6501b87e-dda4-4838-93c3-244daa355d7c/wmisecuritycenter2-productstate
+        393472 | Definitions = Up to date  | Status = Disabled
+        397584 | Definitions = Out of date | Status = Enabled
+        397568 | Definitions = Up to date  | Status = Enabled
+      McAfee productState https://kc.mcafee.com/corporate/index?page=content&id=KB90221
+        ProductState=262144 = Up to Date Defs, On Access Scanning OFF
+        ProductState=266240 = Up to Date Defs, ON Access Scanning ON
+        ProductState=393216 = Up to Date Defs, On Access Scanning OFF
+        ProductState=397312 = Up to Date Defs, ON Access Scanning ON
+      Other antivirus products will need to be researched
+    For the other fields: These are known to provide good data for Microsoft Defender.  For other products, they could entirely unreliable.  For Defender, these field names should be self-explanatory, but https://learn.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpcomputerstatus has some more details on what the fields mean.

@@ -7,180 +7,63 @@
 #   * List items are indented with a hyphen under the list variable's name
 #   * Booleans are set to either True or False (case sensitive)
 # Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
-#
-# When using YAML mode, results will be displayed on the screen and written to Excel-compatible CSV files.  These will be saved as 'saved-csv/<check_name>.csv' 
-# under the currect directory.  For the time being, this is hard-coded behavior.
+
+# When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
+# under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
 
 # This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
 # Basically, anything that can run kpwinaudit.ps1
 
-# Argument parser variables include (case sensitive -- all variable are in camelCase, with a lowercase first word):
-#   fileSpec:     Specific files or glob-matched patterns (default='*.txt')
-#   regex:        Any regex supported by python.  No special escapes needed, unless it's required directly by the Python regex syntax
-#                 If you identify a section header with '::', then the tool will use everything up to the '::' to identify the interesting section
-#                 and then once it moves beyond that section, it will stop looking.  Override this behavior with the 'fullScan' option below.  This will 
-#                 save substantial time in processing files, especially if they're very large (100s of MBs to GBs)
-#   maxResults:   How many results to return (default=0 or ALL).  Also an effective short-circuit to help with processing time.
-#   fullScan:     Override the short-circuit behavior by forcing a full scan of the entire file.
-#   onlyMatching: Display only the text that matches the regular expression.  Especially helpful when used with regex grouping
-#   groupList:    Regex groups to display.  Accepts either PCRE group numbers, or Python RE Named Groups.
-#   unique:       Display only one instance of each unique line from all files (similar to sort -u)
-#   truncate:     Truncate long lines to fit on the available screen geometry (default=False)
+# See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
 
-###################################################################
-######################### System_* items ##########################
-###################################################################
-01_system_01_kpwinversion:
-  regex: 'KPWINVERSION: (?P<KPWINVERSION>.*)'
-  maxResults: 1
-  onlyMatching: True
-  groupList:
-    - 'KPWINVERSION'
-01_system_02_os_version:                                                     
-  regex: 'System_OSInfo::((ProductName)|(ReleaseId)|(CurrentBuild)|(UBR)).*'
-  maxResults: 4
-01_system_03_bitlocker_status:
-  regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
-  groupList:
-    - 'MountPoint'
-    - 'EncryptionMethod'
-    - 'KeyProtector'
-    - 'VolumeStatus'
-    - 'ProtectionStatus'
-  onlyMatching: True
-01_system_04_gpo_summary:
-  regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
-01_system_05_installed_capabilities:
-  regex: 'System_InstalledCapabilities::.*Installed'
-01_system_06_installed_features:
-  regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
-01_system_07_hotfix_history:
-  regex: 'System_InstalledHotfixes::.*Update'
-01_system_07_windows_update_history:
-  regex: 'System_WindowsUpdateHistory::.*(Cumulative|Security)\sUpdate'
-01_system_08_installed_software:
-  regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
-  fullScan: True
-01_system_09_pending_updates:
-  regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
-  fullScan: True
-01_system_10_windows_update_config:
-  regex: 'System_WindowsUpdateConfig::(?!PS.*?(Path|Child|Drive|Provider))\w+'
-01_system_11_running_processes:
-  regex: 'System_RunningProcesses::(ProcessName|Path|Company|Product)'
-01_system_12_system_services_raw:
-  regex: 'System_Services::(?!DisplayName)(?!--)'
-01_system_13_system_services_labeled:
-  regex: 'System_Services::(?!DisplayName)(?!--)(?P<systemname>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startuptype>.*)'
-  groupList:
-    - 'systemname'
-    - 'status'
-    - 'startuptype'
-  onlyMatching: True
-01_system_14_rdp_config:
-  regex: 'System_RDPEncryption::(SecurityLayer|MinEncryptionLevel)'
-01_system_15_screensaver_gpo:
-  regex: 'System_ScreenSaverConfigGPO::(ScreenSaveActive|ScreenSaverIsSecure|ScreenSaveTimeOut)'
-01_system_16_screensaver_registry:
-  regex: 'System_ScreenSaverConfigRunning::(ScreenSaveActive|ScreenSaverIsSecure|ScreenSaveTimeOut)'
-01_system_17_snmp:
-  regex: 'System_SNMPConfig::'
+# ##################################################################
+# ######################## Global items ############################
+# ##################################################################
+# These items will apply to configs in this FILE and only for this file (not for includes).  If the same configurations options are included in any
+# specific checks below, these will be entirely overwritten (not additive)
+# NOTE: Despite the name, "global" does not apply to included files.  This prevents some headaches that could occur when inheriting conflicting "globals" across a set of files
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+
+##################################################################
+######################## System_* items ##########################
+##################################################################
+include_win_system:
+  files:
+    - audit-windows-system.yaml
+
 
 ###################################################################
 ######################### Network items ###########################
 ###################################################################
 
-02_network_01_ping_results:
-  regex: 'Networking_ConnectivityTest::\s+Packets:'
-02_network_02_ip_addresses_labeled:
-  regex: 'Networking_IPInfo::(?P<interface_id>\d+)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<prefix_length>\d+)\s+(?P<prefix_origin>\w+)\s+(?P<suffix_origin>\w+)\s+(?P<address_state>\w+)'
-  groupList:
-    - 'interface_id'
-    - 'ip_address'
-    - 'prefix_length'
-    - 'prefix_origin'
-    - 'suffix_origin'
-    - 'address_state'
-  onlyMatching: True
-02_network_03_ip_addresses_raw:
-  regex: 'Networking_IPInfo::\d.*[\da-f:.%]+'
-02_network_04_dns_nameserver:
-  regex: 'Networking_DNSInfo::.*{[\da-f:.% ,]+}'
-02_network_05_listening_services_labeled:
-  regex: 'Networking_ListeningServices::(?P<protocol>TCP|UDP)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<local_port>\d+).*LISTENING\s(?P<process_name>[\w-]+)\s+(?P<pid>\d+)'
-  groupList:
-    - 'protocol'
-    - 'ip_address'
-    - 'local_port'
-    - 'process_name'
-    - 'pid'
-02_network_06_listening_services_raw:
-  regex: 'Networking_ListeningServices::(TCP|UDP)'
-02_network_07_lanman_server:
-  regex: 'Networking_LanmanServerConfig::\w'
-02_network_08_lanman_client:
-  regex: 'Networking_LanmanClientConfig::\w'
-02_network_09_network_shares:
-  regex: 'Networking_Shares::(?!Name)(?!--)'
-02_network_10_wlan_available:
-  regex: 'Networking_WLANNetworks::'
-02_network_11_firewall_status:
-  regex: 'Networking_WindowsFirewallStatus(::\w+\sProfile Settings)|(::State\s{2,})'
-02_network_12_ipsec_config:
-  regex: 'Networking_IPSecConfig::'
-  fullScan: True
-02_network_13_ntp_config_pre_0_4_5:
-  regex: '(Time_W32TimeRegistry::(NtpServer|Type|Enabled|EventLogFlags|InputProvider|Chain))|(Time_ClockPermissions::SeSystemtimePrivilege)'
-  fullScan: True
-02_network_14_ntp_base_config:
-  regex: 'Time_ClockPermissions|Time_W32TimeRegistry-(Config|Parameters)::(NtpServer|Type|Enabled|EventLogFlags|InputProvider|SeSystemPrivilege)'
-  fullScan: True
-02_network_15_ntp_client_config:
-  regex: 'Time_W32TimeRegistry-NtpClient::(NtpServer|Type|Enabled|EventLogFlags|InputProvider)'
-02_network_16_ntp_server_config:
-  regex: 'Time_W32TimeRegistry-NtpServer::(NtpServer|Type|Enabled|EventLogFlags|InputProvider)'
-02_network_17_w32time_status:
-  regex: '(Time_W32TimeConfig::(Type|NtpServer))|(Time_W32TimePeers::((Peer:)|(State:)|(Last Successful Sync Time:)|(LastSyncError:)))'
-02_network_18_w32time_log_sample:
-  regex: 'Time_W32TimeLogs::'
+include_win_network:
+  files:
+    - audit-windows-network.yaml
 
 ###################################################################
 ######################## Users and Groups #########################
 ###################################################################
 
-03_users_01_local_admin_user:
-  regex: 'Users_LocalAdministrator::\w'
-03_users_02_local_admin_group:
-  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(?!The command completed successfully)\w'
-03_users_03_local_password_policy:
-  regex: 'Users_LocalPasswordPolicy::(?!The command completed successfully)\w'
-03_users_04_local_users_raw:
-  regex: 'Users_LocalUsers::(?!Name\s+Enabled)(?!--)\w'
-  fullScan: True
-03_users_05_local_groups_raw:
-  regex: 'Users_LocalGroups::(?!Name\s+Enabled)(?!--)\w'
+include_win_users:
+  files:
+    - audit-windows-users.yaml
 
 ###################################################################
 ############################ AV Status ############################
 ###################################################################
 
-04_users_06_av_status_security_center:
-  regex: 'AntiVirus_AVStatus::((displayName  :)|(productState :))'
+include_win_security_software:
+  files:
+    - audit-windows-security-software.yaml
 
 ###################################################################
 ####################### Auditing/Logging ##########################
 ###################################################################
 
-05_logging_01_auditpol_config:
-  regex: 'Logging_AuditEventsConfig::'
-05_logging_02_fs_audit_config:
-  regex: 'Logging_FSAuditing-(?P<drive>[A-Za-z]):(?P<path>[\w\\. ]+?)::Audit\s+(?P<auditConfig>.*)'
-  onlyMatching: True
-  groupList:
-    - 'drive'
-    - 'path'
-    - 'auditConfig'
-05_logging_03_event_log_config:
-  regex: 'Logging_AuditLogConfig::(?!PrimaryModule)(?!--)\w'
-05_logging_04_event_log_samples:
-  regex: 'Logging_EventLogSamples[A-Za-z]+::'
+include_win_logging:
+  files:
+    - audit-windows-logging.yaml

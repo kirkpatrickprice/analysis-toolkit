@@ -1,14 +1,16 @@
 #!/usr/bin/python3
 
-version="0.1.3"
+version="0.2.0"
 
-# Set up the exit codes for different error conditions and other global variables
-err_noresults=1
-err_nofiles=2
-err_general=999
+# Import what we need from the kpat package
+from kpat.common import errorCodes, System, Search, error, getLongest, getSections, getSysFilterAttrs, getSysFilterComps, getConfigOptions, getSysFilterKeys, getErrorCodes
+from kpat import console
+import os
+from time import sleep
+import copy
 
-defaultShortenFactor=.25                                                   # defaultShortenFactor is used when truncating the output.  It's the max column width for the file name.
-csvPath='saved-csv/'                                                # Hard-coded path for exporting CSV files.  Future development to make this configurable from the command line.
+# Set up some defaults that we need early on
+defaultPath='saved/'
 
 '''
 Version History:
@@ -19,18 +21,19 @@ Version History:
             Fixed CSV export issue with non-printable characters in input files
     0.1.3   2022-11-11
             Added a short-circuit to stop processing files once we've moved beyond the interesting content.  Requires use of a "::" in the regex to identify the section we're looking for
+    0.2.0   Rewrite to use OOP -- eases managing data and passing info around
+            Export to Excel instad CSV files
+            Unique columns whenever groupLists are provided
+            Combine results from mulitple lines in the source files into a single row
+            Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version, osVersion, etc)
 '''
 
 import argparse                                                     # To handle command line arguments and usage
 import sys                                                          # Needed to test for basic pre-reqs like OS and Python version
 import glob                                                         # Used to match filespec to current directory contents
-import re                                                           # Regular expression parser
 import textwrap                                                     # Text handling routines
-import csv                                                          # Import the CSV module so we can write the output to CSV as well...
-import os                                                           # Import the OS module so can work with files and directories in the local file system
-from time import sleep                                              # Grab the sleep function from time to support delays for user confirmation
-import string                                                       # Needed to process matches for potentially unprintable characters
 import time                                                         # To report run length for each check in YAML mode
+import ast
 
 # Set up the arguments that can be set on the command line
 parser = argparse.ArgumentParser(
@@ -44,338 +47,292 @@ parser = argparse.ArgumentParser(
 
         NOTES:
             * Either -e (command line mode) OR -c (YAML mode) is required.
-            * Batch/YAML mode forces CSV output (see '''+csvPath+''' directory)
+            * Batch/YAML mode forces Excel output (see '''+defaultPath+''' directory)
             * Using -g (Regex groups) forces -o (only matching)
         '''),
     epilog=textwrap.dedent('''
-        Returns EXITCODE=0 if successful.  Examine source code for "err_*" for other exit codes that could be returned (hint: they're at the very top)
-        '''))
+        Returns EXITCODE=0 if successful.  Other EXITCODEs: '''+str(getErrorCodes()))
+    )
+
+# Define a custom action to store any sysFilter options as a dictionary for use in defining the Search
+class StoreDictKeyPair(argparse.Action):
+     def __call__(self, parser, namespace, values, option_string=None):
+         my_dict = {}
+         for kv in values.split(","):
+             k,v = kv.split("=")
+             my_dict[k] = v
+         setattr(namespace, self.dest, my_dict)
+
 
 inputControl = parser.add_argument_group(title='Input Control')
 inputControl.add_argument(
     '-f', '--filespec', 
     dest='fileSpec', 
     default='*.txt', 
-    help='Optional file spec (single or glob matching) to process (default=*.txt).  NOTE: filespec must be enclosed in single- or double-quotes')
+    help='Optional file spec (single or glob matching) to process (default=*.txt).  NOTE: filespec must be enclosed in single- or double-quotes'
+    )
 inputControl.add_argument(
     '-c', '--conf', '--yaml',
     dest='confFile',
     help=textwrap.dedent('''
         Provide a YAML configuration file to specify the options.  If only a file name, assumes analysis-toolit/conf.d location.  Multiple 
-        searches can be defined in a single file to create a scripted review.  CSV results will be written to '''+csvPath+'''<check_name>.csv.
-    '''))
+        searches can be defined in a single file to create a scripted review.  Excel results will be written to '''+defaultPath+'''<check_name>.xlsx.
+    ''')
+    )
 
 
 outputControl = parser.add_argument_group(title='Output Control')
 outputControl.add_argument(
     '-e', '--regexp', 
     dest='regex', 
-    help='Regular expression to search for (CaSeInSenSiTiVe).')
+    help=getConfigOptions()['regex'],
+    )
+outputControl.add_argument(
+    '--name',
+    dest='name',
+    default='CommandLineSearch',
+    type=str,
+    help=getConfigOptions()['name'],
+    )
 outputControl.add_argument(
     '-m', '--count', 
     dest='maxResults', 
-    default=0, 
+    default=-1, 
     type=int, 
-    help='Number of matches from each file to return (default = 0/ALL)')
+    help=getConfigOptions()['maxResults'],
+    metavar='INT',
+    )
 outputControl.add_argument(
     '--fullscan',
     dest='fullScan',
-    help=textwrap.dedent('''
-        Command line only: Override the short-circuit behavior to scan the entire file.  Recommended if you're testing a complex Regex expression until you 
-        know you have the resulst you expect.  This is always OFF for YAML mode, but you can use the 'fullScan: True' setting to enabled it for specific checks.'''),
-    action='store_true'
-)
+    help=getConfigOptions()['fullScan'],
+    action='store_true',
+    )
 outputControl.add_argument(
     '-o', '--only-matching', 
     dest='onlyMatching',
-    help=textwrap.dedent('''
-        Only provide the matching string instead of the full line.  NOTE: Especially useful with -g / --group as this overrides any clean-up to remove the section
-        header from the output.  Results will be an exact match of REGEXP.  Adds ''G#: '' to separate group numbers.'''), 
-    action='store_true')
+    help=getConfigOptions()['onlyMatching'], 
+    action='store_true',
+    )
 outputControl.add_argument(
     '-g', '--group',
     dest='groupList',
-    default=[0],
+    #default=[0],
+    action='append',
     type=str,
-    nargs='+',
-    help='Regex group to display, if groups are used (default=0/ALL).  Must be used with -o / --only-matching')
+    #nargs='+',
+    help=getConfigOptions()['groupList'],
+    metavar='GROUPNAME [-g GROUPNAME...]',
+    )
+outputControl.add_argument(
+    '--combine',
+    dest='combine',
+    help=getConfigOptions()['combine'],
+    action='store_true',
+    )
 outputControl.add_argument(
     '-t', '--truncate', 
     dest='truncate',
-    help=textwrap.dedent('''
-        Truncate lines to fit current screen width.  System name will be truncated to '''+str(int(defaultShortenFactor*100))+'''%% of screen width and the 
-        results will fill the rest of the line.  Does not affect CSV output.'''), 
-    action='store_true')
+    help=getConfigOptions()['truncate'],
+    action='store_true',
+    )
 outputControl.add_argument(
-    '--csv',
-    dest='csvFile',
+    '--out-file', '-oF',
+    dest='outFile',
     type=str,
-    help='Create a CSV output of the results.  Especially useful in batch (config-file) mode.  Results will be saved in "'+csvPath+'<csvFile>.csv".'
-)
+    help=getConfigOptions()['outFile'],
+    metavar='FILENAME',
+    )
+outputControl.add_argument(
+    '--out-path', '-oP',
+    dest='outPath',
+    default=defaultPath,
+    type=str,
+    help=getConfigOptions()['outPath'],
+    metavar='PATH',
+    )
 outputControl.add_argument(
     '-u', '--unique',
     action='store_true',
     dest='unique',
-    help='Only display each unique value once / similar to "sort -u".'
-)
+    help=getConfigOptions()['unique'],
+    )
+outputControl.add_argument(
+    '--comment',
+    dest='comment',
+    type=str,
+    help=getConfigOptions()['comment'],
+    metavar="'COMMENT'",
+    )
 outputControl.add_argument(
     '-q', '--quiet',
     dest='quiet',
     action='store_true',
-    help='Quiet mode -- suppress screen output except status messages / especially helpful in YAML mode or with CSV output'
-)
+    help=getConfigOptions()['comment'],
+    )
 
+sysFilterControl = parser.add_argument_group(title='System Filters',)
+sysFilterControl.add_argument(
+    '--sys-filter',
+    dest='sysFilter',
+    type=ast.literal_eval,
+    help=getConfigOptions()['sysFilter'],
+    metavar="\"[{'attr'='validAttribute','comp'='eq|gt|lt|ge|le|in','value'='string'}...]\"",
+    )
 
 miscOptions = parser.add_argument_group(title='Misc. Options')
 miscOptions.add_argument(
-    '-d', '--debug', 
-    dest='debug',
-    help='Print extra debug messages.  Really only helpful for developing', 
-    action='store_true')
-miscOptions.add_argument(
-    '--list', 
+    '--list-sections', 
     dest='listSections', 
-    help='List all section headings found in the current FILESPEC',
-    action='store_true')
+    help='List all section headings found in the current FILESPEC and then exit',
+    action='store_true',
+    )
+miscOptions.add_argument(
+    '--yaml-help',
+    dest='yamlHelp',
+    help='Print some helpful information for working with YAML and then exit.',
+    action='store_true',
+    )
+miscOptions.add_argument(
+    '--print-systems',
+    dest='printSysDetails',
+    action='store_true',
+    help='Print system details.  Helpful for debugging system filters',
+    )
+miscOptions.add_argument(
+    '--verbose',
+    dest='verbose',
+    action='store_true',
+    help='Increase output verbosity.'
+    )
 
-
-#############################################################
-################# Define the necessary functions ############
-#############################################################
-
-
-def debug(*pargs, **kargs):
-    '''
-    Accept an arbitrary number of parameters for use in a print statement.  Any parameters that are valid in print() are acceptable.  
-    Only prints if args.debug (Global var) is True.
-    '''
-    if args.debug:
-        print(*pargs, **kargs)
-
-
-def error(*pargs):
-    '''
-    Print an error to STDERR
-    '''
-    from colorama import Fore
-    nativeColor='\033[m'
-
-    # Textwrap.wrap only appears to accept a single text string for wrapping (unlike print('String', variable)).  So, we'll build the full string first.
-    #Set the color to RED
-    text=Fore.RED
-    for arg in pargs:
-        text+=arg
-
-    # Set the color back.
-    text+=nativeColor
-
-    lines=textwrap.wrap(text, width=70)
-    for line in lines:
-        print(line, file=sys.stderr)
-
-def getMaxWidth(l):
-    '''
-    Function to return the longest item in a list.
-    '''
-    longest=-1
-    for item in (l):
-        if len(item) > longest:
-            longest=len(item)
-    return longest
-
-def getReportVersion(file):
-    '''
-    Read the first line of the file to determine which audit script produced it.
+class Systems(dict):
+    # def __init__(self):
+    #     return dict()
     
-    Returns a tuple with (ScriptType, Version) where:
-        ScriptType  - KPNIXVERSION, KPWINVERSION, etc.
-        Version     - a list of [major, minor, release] such as [0, 4, 3] for "0.4.3"
+    def add(self, filename):
+        self[filename]=System(filename, args.verbose)
+        return self[filename]
+
+    def search(self, filename):
+        try:
+            res=self[filename]
+        except KeyError:
+            res=False
+        return res
+
+
+def argsToConfig():
+    '''
+    Convert the ArgParse args object to a Search config object.  Mostly, there are a few items that need to be removed as they only have context from the command line
     '''
 
-    found=False
-    # The following regex matches
-    #   producer:       "KP...VERSION"
-    #   Non-capturing:  ": " (so we can throw it away)
-    #   version:        Version string consisting of 3 sets of one or more digits separated by periods
-    pattern=re.compile(r'(?P<producer>KP.{3}VERSION)(?:: )(?P<version>\d+.\d+.\d+)')
-    for line in open(file):
-        match=pattern.search(line)
-        if match:
-            found=True
-            reportType=match.group('producer')
-            #Turn the version string into a list of integers instead of a list of strings consisting of numbers.
-            reportVersion=[int(i) for i in match.group('version').split('.')]
-            break
-
-    if not found:
-        reportType='unknown'
-        reportVersion=None
+    config=copy.deepcopy(vars(args))                           # Mass-assign the args to the config dictionary
     
-    return (reportType, reportVersion)
+    # And then fix a few things
+    if config['groupList']==None:
+        config.pop('groupList')
+    for k in ['confFile', 'listSections', 'yamlHelp', 'printSysDetails']:       # Remove these keys from the dictionary as they aren't needed in the Search object
+        try:
+            config.pop(k)
+        except KeyError:
+            pass
 
-def getSections(files):
-    '''
-    Get the list of identified sections (lines containining "[BEGIN]") for all of the files in the list.
-    Uses a set to ensure that each item is listed only once.
+    return config
 
-    Returns an alphabetized list containing all items
+def parseFileSpec(fileSpec):
     '''
-    sections=set()
-    pattern=re.compile(r'\[BEGIN\]')
+    Receives a file spec and returns a list of systems (class System) that match the spec
+
+    NOTE: uses and makes changes to the GLOBAL AllSystems dictionary
+    '''
+
+    global AllSystems
+
+    # Expand the filespec into a list of files.  Print an error and exit if there aren't any matching files
+    files=glob.glob(fileSpec)
+
+    if not files:
+        error('No files match the provided filespec ("', args.fileSpec, '").')
+        print()
+        parser.print_usage()
+        exit(errorCodes['noFiles'])
+
+    systems=[]
     for file in files:
-        counter=0
-        reportType=getReportVersion(file)
-        if reportType[0] == 'unknown':
-            error('Skipping... unable to determine which script produced file "', file, '".')
-            break
+        found=AllSystems.search(file)
+        if not found:
+            systems.append(AllSystems.add(file))
+        else:
+            systems.append(found)
 
-        for line in open(file):
-            if pattern.search(line):
-                if reportType[0] == 'KPNIXVERSION':
-                    header=line.split(':')[-1].strip()
-                elif reportType[0] == 'KPWINVERSION':
-                    header=line.split(':')[0].strip()
-                sections.add(header)
-            counter+=1
-    
-    #Return an alphabetized list of sections
-    return list(sorted(sections))
+    return systems
 
-def findResults(regex, file, maxResults, onlyMatching, groupList, unique, fullScan):
-    # Create a short-circuit detection so that once we move beyond the desired section in the file, we stop looking
-    desiredSectionRegex=None
-    desiredSectionPattern=None 
-    limitToSection=False
-    if regex.find('::') > 0 and not fullScan and maxResults == 0:
-        desiredSectionRegex=regex.split('::')[0]
 
-        # If the regex begins with a caret anchor, then drop it as some of our lines we want could have other text at the beginning
-        if desiredSectionRegex[0] == '^':
-            desiredSectionRegex=desiredSectionRegex[1:]
-        
-        # We can only short circuit if these regex syntax characters are balanced
-        parenBalance=desiredSectionRegex.count('(') - desiredSectionRegex.count(')')
-        curlyBalance=desiredSectionRegex.count('{') - desiredSectionRegex.count('}')
-        squareBalance=desiredSectionRegex.count('[') - desiredSectionRegex.count(']')
-        if parenBalance == 0 and curlyBalance == 0 and squareBalance == 0:
-            desiredSectionPattern=re.compile(desiredSectionRegex, re.IGNORECASE)
-            limitToSection=True
-            debug('Desired section:', desiredSectionRegex)
-    
-    # Matches the provided pattern
-    pattern=re.compile(regex, re.IGNORECASE)
-    
-    # Matches comment lines and [BEGIN], [CISReference], etc.
-    commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')
-    
-    # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
-    blankLinePattern=re.compile(r'::\s*$')
-    
-    # Setup some more state variables
-    counter=0
-    res=[]
-    sectionFound=False
-    inDesiredSection=None
+def yamlParse(confFile):
+    '''
+    Receives a YAML configuration file and returns a list of configuration dictionaries.  The dictionaries will be ready to be passed to the Search object.
+    '''
 
-    for line in open(file):
-        #Capture the current line's section header
-        if limitToSection:
-            inDesiredSection=desiredSectionPattern.search(line)
-            debug('\nCurrent line:', line.strip())
-            debug('Desired section:', desiredSectionRegex)
-            if inDesiredSection:
-                sectionFound=True
-        found = pattern.search(line)
-        isComment = commentsPattern.search(line)
-        isBlankLine = blankLinePattern.search(line)
-        if found and not isComment and not isBlankLine:
-            counter+=1
-            # # Capture the current section as the one we want and flag that we found what we're looking for
-            # desiredSection=currentSection
-            # sectionFound=True
-            # If we're only supposed to grab the matching text...
-            if onlyMatching:
-                groupText=''
-                for group in groupList:
-                    # See if the group can be converted to an integer.  If so, numbered groups are in use.  Otherwise, they must be named groups.
-                    try:
-                        int(group)
-                        groupText+='G'+str(group)+'='+found.group(group)+' '
-                    except ValueError:
-                        # If the try fails, it must be a string.
-                        groupText+=str(group)+'='+found.group(group)+' '
+    global configNames
+    globalConfig={}
+    configs=[]
+    dupesFound=False
+    #If the provided confFile doesn't exist in the current directory and does not include path-y characters, then prepend the kpat/conf.d directory to the overall path
+    if not os.path.exists(confFile) and confFile.find('/') == -1:
+        # Split and rejoin the program's root path -- minus the program name
+        confPath='/'.join((sys.argv[0]).split('/')[:-1])
+        confFile=confPath+'/conf.d/'+confFile
+    
+    # Import and process the YAML configuration file
+    try:
+        with open(confFile) as file:
+            configYAML=yaml.safe_load(file)
+    except FileNotFoundError:
+        error("YAML file not found: "+confFile)
+        exit(errorCodes['generalError'])
+    except yaml.parser.ParserError as e:
+        error("YAML Parsing Error")
+        error(str(e))
+        exit(errorCodes['invalidConfig'])
 
-                if unique:
-                    # If we're only trying to get the unique values, then try an index using a groupText.  It will throw a ValueError if the value isn't found, in which case we'll add it to the results
-                    try:
-                        res.index(groupText)
-                    except ValueError:
-                        res.append(groupText)
-                else:
-                    res.append(groupText)
+    for configSection in configYAML.keys():
+        if configSection.startswith('global'):
+            for key in configYAML[configSection]:
+                globalConfig[key]=configYAML[configSection][key]
+        elif configSection.startswith('include'):                       # If we've hit an include* section, process the additional files
+            for file in configYAML[configSection]['files']:
+                configs+=yamlParse(file)                                # Append each file's configs to this one
+        else:
+            config=argsToConfig()                                       # Start with the command line options as defaults
+            config['name']=configSection
+            config['outFile']=configSection
+
+            for globalKey in globalConfig.keys():                         # Assign any globally-assigned keys to the current config
+                config[globalKey]=globalConfig[globalKey]
+
+            for key in configYAML[configSection]:                       # Override the command line options if defined in the YAML section
+                config[key]=configYAML[configSection][key]
+
+            config['systems']=parseFileSpec(config['fileSpec'])
+            config.pop('fileSpec')
+
+            # Check if the config name has been added already - this can only happen when including YAML configs
+            # This will cause a conflict in saved file names and maybe some other things
+            if not config['name'] in configNames:
+                configs.append(config)
+                configNames.add(config['name'])
             else:
-                # This paranthetical salad (inside-out) -- splices ('[1:]') the split line (on '::') to drop the first field (section header), 
-                # before rejoining on the :: field separator (at the beginning of the line)
-                res.append('::'.join((line.split('::')[1:])).strip())
+                error('Conflicting configuration names found: '+config['name'])
+                dupesFound=True
 
-            # If we're at the limit of our results
-            if counter == maxResults:
-                break
-        
-        if (sectionFound and not inDesiredSection and not isComment and not isBlankLine):
-            break
-    return res
+    if dupesFound:
+        error('Rename these configurations within your included YAML files')
+        exit(errorCodes['invalidConfig'])
 
-def printMatches(regex, files, screenXY, csvFile, truncate, maxResults, onlyMatching, groupList, quiet=False, shortenFactor=defaultShortenFactor, unique=False, fullScan=False):
-    '''
-    Receives regex, list of files, truncate flag, shortenFactor, maxResults, onlyMatching flag, group numbers and screen geometry
-    Prints one line for each result that includes the file name (system name) and the matching text from Regex and other output control options
+    return configs
 
-    Returns a total count of hits found across the set of files
-    '''
 
-    #Get the max length of all of the files.
-    fileColumnWidth=getMaxWidth(files)
-    if csvFile:
-        csvOutFile=open(csvFile, 'w')
-        fieldnames=['System Name', 'Results']
-        csvWriter=csv.DictWriter(csvOutFile, fieldnames=fieldnames)
-        csvWriter.writeheader()
-    if args.truncate:
-        fileColumnWidth=min(fileColumnWidth, int(screenXY[0]*shortenFactor))
-
-    debug('Max width of all files:', fileColumnWidth, "Truncate:", args.truncate)
-
-    matchCount=0
-    for file in files:
-        matches=None
-        if not getReportVersion(file)[0] == 'unknown':
-            matches = findResults(regex=regex, file=file, maxResults=maxResults, onlyMatching=onlyMatching, groupList=groupList, unique=unique, fullScan=fullScan)
-            for match in matches:
-                # Clean up any non-printable characters that might be in the results
-                if not match.isprintable():
-                    printableMatch = filter(lambda x: x in string.printable, match)
-                    match = ''.join(list(printableMatch))
-                    error('WARNING: Potential corruption detected.')
-                    error('File: ',file)
-                    error('Match:',match)
-                matchCount+=1
-                if csvFile:
-                    row={}
-                    row['System Name']=file.replace('.txt', '')
-                    row['Results']=match
-                    csvWriter.writerow(row)
-                if truncate:
-                    resultsWidth=screenXY[0]-fileColumnWidth
-                    if len(file) > fileColumnWidth:
-                        file=file.replace('.txt', '')[:fileColumnWidth-5] + '...'
-                    if len(match) > resultsWidth:
-                        match=match[:resultsWidth-3] + '...'
-                if not quiet:
-                    line=f'%-{fileColumnWidth}s%s' % (file.replace('.txt', ''), match)
-                    print(line)
-    return(matchCount)
-    csvWriter.close()
 
 ##############################################################
 ##################### Let's get started ######################
@@ -386,161 +343,180 @@ startTime=time.time()
 
 # Process command line arguments
 args=parser.parse_args()
-
-# Print the args object if the debug switch was set
-debug(args)
-
+if args.verbose:
+    print(args)
 
 # Get the screen geometry for use throughout
-import console
 screenXY=console.getTerminalSize()
-debug('Screensize:', screenXY)
 
-# Check to make sure that either, listSections regex or confFile was used
-if not (args.regex or args.confFile or args.listSections):
-    error('Either REGEX or CONFFILE is required.')
-    print()
-    parser.print_usage()
-    exit(err_general)
+# Create a dictionary to store all previously discovered systems to minimize the time necessary to capture the system details (esp for YAML mode)
+AllSystems=Systems()
+
+# Check if results will be output and warn if the folder already exists
+if args.outFile or args.confFile:
+    outPath, outFile=args.outPath, args.outFile
+    
+    # Fix outPath if it doesn't already end in a slash
+    if not outPath.endswith('/'):
+        outPath+='/'
+    
+    # Warn if the results folder already exists
+    if os.path.exists(outPath):
+        sleepTime=5
+        error('%s folder already exists.  File will be replaced.  Press CTRL-C within %d seconds to abort...' % (outPath, sleepTime))
+        try:
+            sleep(sleepTime)
+        except KeyboardInterrupt:
+            print ('\nQuitting...')
+            exit(0)
 
 
+# Branch based on listSections, Regex, or confFile usage modes
+if args.yamlHelp:
+    optionsText={}
+    for option in [getConfigOptions, getSysFilterKeys, getSysFilterAttrs, getSysFilterComps]:
+        optionsText[option.__name__]=''
+        D=option()
+        longest=getLongest(list(D.keys()))
+        lineCount=0
+        for key in sorted(list(D.keys())):
+            lineCount+=1
+            if lineCount>1:                                         # Preserve indentation when printing
+                optionsText[option.__name__]+=f'    '
+            if key == 'systems':
+                optionsText[option.__name__]+=f'%-{longest+2}s%s\n' % ('fileSpec', 'A glob-able file specification such as "myfiles*.txt"')
+            else:
+                optionsText[option.__name__]+=f'%-{longest+2}s%s\n' % (key, option()[key])
+    
+    text=textwrap.dedent('''\
+    YAML mode allows you to store your searches for reuse later, for instance when working the same client next year or for a set of general purpose content to use in all audits.
 
-if args.groupList != [0] and not args.onlyMatching:
-    error('Groups option was specified. Enabling --only-matching')
-    args.onlyMatching=True
-    # print()
-    # parser.print_usage()
-    # exit(err_general)
+    A YAML file is just a text file with a ".yaml" extension.  Two all-purpose YAML files are provided as part of the Analysis Toolkit:
+        .../conf.d
+            audit-windows.yaml      Set of searches appropriate for use with Windows systems
+            audit-linux.yaml        Set of searches appropriate for use with Linux systems
 
+    Reference these files for the basic structure of what a configuration section should look like.  There are also examples of most (all?) options that you can model your own after.
+    
+    You can also create your own, but it is strongly recommended to store them somewhere else besides in the Analysis Toolkit folder as this location will likely be overwritten upon the next update.
 
-# Expand the filespec into a list of files.  Print an error and exit if there aren't any matching files
-files=glob.glob(args.fileSpec)
+    You can also include the contents in other YAML files by using the "include_<unique_but_arbitrary_name>:" section within your own files.
+        myfile.yaml
+            include_audit_windows:
+                files:
+                  - audit-windows.yaml
 
-if not files:
-    error('No files match the provided filespec ("', args.fileSpec, '").')
-    print()
-    parser.print_usage()
-    exit(err_nofiles)
+            my_custom_check:
+              regex: 'an awesome search pattern'
+              ...more options
+    
+    This will bring in all of the checks in 'audit-windows.yaml' and the tool knows to look in it's conf.d folder if not path info is provided.  For anything not including the conf.d folder, you'll need to provide path info.  In fact, audit-windows.yaml and audit-linux.yaml both use this method to keep the configs easier to read and so that you can run just a subset of the checks if you'd like.
+    
+    There are help sections at the top of each of the provided YAML files, but the most authoritative list of available options is provided here.
 
-# Print the list of sections from FILESPEC and exit
-if args.listSections:
-    sections=getSections(files)
+    #####################################
+    #### VALID CONFIG SECTION OPTIONS ###
+    #####################################
+    '''+optionsText['getConfigOptions']+'''
+    
+    #####################################
+    ####### VALID SYSFILTER KEYS ########
+    #####################################
+    '''+optionsText['getSysFilterKeys']+'''
+
+    #####################################
+    #### VALID SYSFILTER ATTRIBUTES #####
+    #####################################
+    '''+optionsText['getSysFilterAttrs']+'''
+
+    #####################################
+    ## VALID SYSFILTER COMPARISON OPS ###
+    #####################################
+    '''+optionsText['getSysFilterComps']+'''
+    ''').splitlines()
+    for line in text:
+        if line=='':
+            print()
+        else:
+            wrapped=textwrap.wrap(line, width=screenXY[0], replace_whitespace=False)
+            for wrappedLine in wrapped:
+                print(wrappedLine)    
+    exit(0)
+elif args.listSections:
+    sections=getSections(glob.glob(args.fileSpec))
     for section in sections:
         print(section)
     exit(0)
+elif args.printSysDetails:
+    systems=parseFileSpec(args.fileSpec)          # Build a list of systems from the matching files, and iterate through them
+    for system in systems:
+        print(system)
+    print('\nTotal systems: %d' % len(systems))
+    exit(0)
+elif args.regex:
 
-csvFile=''
+    config=argsToConfig()
+    config['systems']=parseFileSpec(config['fileSpec'])                                     # Convert fileSpec into systems
+    config.pop('fileSpec')                                                                  # Remove fileSpec from the dictionary as we don't need it now
 
-if args.csvFile:
-    # For now, the CSV file option only supports a file name -- no path names.  All results will be saved in the PWD/saved-csv/ directory
-    csvFile=args.csvFile
-    if csvFile.endswith('/'):
-        error('Paths not currently supported in CSV export.  Only specify a file name.  Results will be saved in the '+csvPath+' directory.')
-        print()
-        parser.print_usage()
-        exit(err_general)
+
+    # The following is for testing a regexc that couldn't be passed through the debugger and needs to be removed before going into production
+    # error('SPECIAL REGEX IN PLACE')
+    # config['regex'] = r'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
     
-    # Check if the file name ends with '.csv' and append if it does not
-    if not csvFile.endswith('.csv'):
-        csvFile+='.csv'
-    
-    # Finally, create the directory and assemble the full csvFile with path info
-    if not os.path.exists(csvPath):
-        os.makedirs(csvPath)
-
-    csvFile=csvPath+csvFile
-    if os.path.exists(csvPath):
-        error(csvFile,'file already exists.  File will be replaced.  Press CTRL-C within 5 seconds to abort...')
-        sleep(5)
-
-if not args.confFile:
-    config={
-        'files': files,
-        'regex': args.regex,
-        'maxResults': args.maxResults,
-        'csvFile': csvFile,
-        'onlyMatching': args.onlyMatching,
-        'unique': args.unique,
-        'groupList': args.groupList,
-        'truncate': args.truncate,
-        'screenXY': screenXY,
-        'quiet': args.quiet,
-        'fullScan': args.fullScan}
-    debug(config)
-    matchCount=printMatches(**config)
-            
-    if matchCount == 0:
-        error('No matching results found using pattern "', args.regex, '"')
-        exit(err_noresults)
+    search=Search(config)
+    search.findResults()
+    if search.results:
+        search.toScreen()
+        if args.outFile:
+            search.toExcel()
     else:
-        print('Matches found:',matchCount)
+        error('No results found')
+        exit(errorCodes['noFiles'])
+    
+    exit(0)
+elif args.confFile:
+    import yaml
+    configNames=set()                           # Using a global set to capture the unique names for each config
+    configs=yamlParse(args.confFile)
+
+    for config in configs:
+        search=Search(config)
+        search.findResults()
+        search.toScreen()
+        if search.results:
+            try:
+                if len(config['outFile']) > 0:
+                    search.toExcel()
+            except AttributeError:
+                if config['verbose']:
+                    error('Skipping Excel output')
+        
+
+    # # Clean up the directory if it already exists
+    # if os.path.exists(defaultPath):
+    #     error(defaultPath,' directory already exists.  Existing files will be replaced.  Press CTRL-C within 5 seconds to abort...')
+    #     sleep(5)
+
+    # # Check if the Excel output directory exists and create it if needed
+    # if not os.path.exists(defaultPath):
+    #     os.makedirs(defaultPath)
+
+    exit()
+else:
+    error('REGEX, CONFFILE or LISTSECTIONS is required.')
+    print()
+    parser.print_usage()
+    exit(errorCodes['generalError'])
+
+
+
 
 if args.confFile:
     import yaml
 
     confFile=args.confFile
 
-    #If the provided confFile does not include path-y characters, then prepend the conf.d directory to the overall path
-    if confFile.find('/') == -1 and confFile.find('\\') == -1:
-        # Split and rejoin the program's root path -- minus the program name
-        confPath='/'.join((sys.argv[0]).split('/')[:-1])
-        confFile=confPath+'/conf.d/'+confFile
 
-    # Clean up the directory if it already exists
-    if os.path.exists(csvPath):
-        error(csvPath,' directory already exists.  Existing files will be replaced.  Press CTRL-C within 5 seconds to abort...')
-        sleep(5)
-
-    # Check if the CSV output directory exists and create it if needed
-    if not os.path.exists(csvPath):
-        os.makedirs(csvPath)
-    
-    # Import and process the YAML configuration file
-    with open(confFile) as file:
-        configYAML=yaml.safe_load(file)
-
-    for configSection in configYAML.keys():
-        sectionStartTime=time.time()
-        fileSpec = args.fileSpec
-        print('\n', '=' * 50, sep='')
-
-        config={
-            'regex': args.regex,
-            'maxResults': args.maxResults,
-            'csvFile': csvPath+configSection+'.csv',
-            'onlyMatching': args.onlyMatching,
-            'unique': args.unique,
-            'groupList': args.groupList,
-            'truncate': args.truncate,
-            'screenXY': screenXY,
-            'quiet': args.quiet,
-            'fullScan': args.fullScan}
-        for key in configYAML[configSection]:
-            if key == 'fileSpec': 
-                fileSpec=configYAML[configSection][key]
-            else: 
-                config[key]=configYAML[configSection][key]
-
-        debug(config)
-
-        # Automatically enable onlyMatching if a groupList is used
-        if config['groupList'] != [0]:
-            config['onlyMatching'] = True
-
-        config['files']=glob.glob(fileSpec)
-        if not config['files']:
-            error('No files match the provided filespec ("', args.fileSpec, '").')
-            print()
-            parser.print_usage()
-            exit(err_nofiles)
-        print('Checking:', configSection)
-        matchCount=printMatches(**config)
-        # Remove the CSV file there weren't any matches written
-        print('Matches found:',matchCount)
-        print('Section time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - sectionStartTime))))
-        print('Elapsed time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))
-        if matchCount == 0:
-            error('Zero matches found. Removing ',config['csvFile'])
-            os.remove(config['csvFile'])
 
 print('Total time: %s' % (time.strftime('%H:%M:%S', time.gmtime(time.time() - startTime))))

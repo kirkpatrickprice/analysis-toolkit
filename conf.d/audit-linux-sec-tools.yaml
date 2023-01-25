@@ -1,0 +1,85 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+# We don't see these things very often, so not a lot of planning has gone into developing these checks.  We're mostly going to dump the sections as we collect them.
+05_security_01_system_crypto_policy:
+  regex: 'Security_SystemCryptoPolicy::(?P<policy>.*)'
+  onlyMatching: True
+  groupList:
+    - policy
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: kpnixversion
+      comp: ge
+      value: 0.6.17
+  comment: |-
+    System-wide crypto policies are used differently for Debian-based and RPM-based systems.  Refer to the links below for support documentation for each:
+        RPM-based: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening
+        Debian-based: https://manpages.ubuntu.com/manpages/focal/en/man7/crypto-policies.7.html
+    
+    Importantly, it covers OpenSSH, OpenSSL, IPSec (LibreSWAN), DNSSec (Bind) and OpenJDK.
+05_security_01_aide_status:
+  regex: 'Security_HidsAIDEConfig::Aide (?P<version>.*)'
+  onlyMatching: True
+  groupList: 
+    - version
+  comment: |-
+    AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the version of the AIDE software installed on the system.
+05_security_01_aide_config:
+  regex: 'Security_HidsAIDEConfig::.*conf.*?::(?!#)(?P<setting>.*)'
+  onlyMatching: True
+  groupList: 
+    - setting
+  comment: |-
+    AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the content of the aide.conf file(s).  You can use this to determine which files and directories are being monitored by AIDE.
+
+    Reference: https://linux.die.net/man/5/aide.conf if you need some help interpreting the config
+05_security_02_carbonblack_status:
+  regex: 'Security_HidsCarbonBlack::(?!UID)'
+  comment: |-
+    CarbonBlack is an increasinbly-popular Endpoint Detection and Response.  It's much more than AV, even though that's frequently where we first hear of it in a customer's environment.
+    It might also be the answer for FIM and a few other things.
+
+    The methods we used to try to collect some data are not fool-proof.  You might need to poke around in the Running_Processes file looking for "cbagent" or "cbdaemon".  See Confluence for links to CB documentation on process names: https://kirkpatrickprice.atlassian.net/l/cp/ydpx11eH
+05_security_03_ossec_status:
+  regex: 'Security_HidsOSSECConfig::'
+  comment: |-
+    Open Source Security (OSSEC) is a popular, FOSS HIDS for Linux and Windows.  The ossec.conf file is valid for both the OSSEC agent and the Wuzah agent.
+05_security_04_tripwire_status:
+  regex: 'Security_HidsTripwireConfig::'
+  comment: |-
+    TripWire used to be what AIDE has become -- freely available FIM for Linux.  But TW decided to go the all-commercial route, and AIDE is now the freely available one.
+
+    Anyway, some customers might be running actual TripWire, so we try to pull the configs for review.
+05_security_05_ipsec_config:
+  regex: 'Security_IPSecConfig::'
+  comment: |-
+    The Linux kernel supports IPSec connections, so we'll grab the configurations if it's enabled.  Check out our Confluence page for auditing Ciphersuites at: https://kirkpatrickprice.atlassian.net/l/c/4121Zw4B
+05_security_06_openldap_config:
+  regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
+  comment: |-
+    OpenLDAP is a directory server for Linux servers.  If being used, it's probably the central source of identity for all production Linux servers.  We're only grabbing the config file, so other checks such as password policy and group memberships will need to done elsewhere.
+05_security_07_openvpn_config:
+  regex: 'Security_OpenVPNConfig::'
+  comment: |-
+    OpenVPN might be the answer for remote access VPNs for administrator access, or it might be used in a site-to-site (Layer 3) VPN similar to IPSec.
+
+    Note: Our testing for OpenVPN is only known to work when OpenVPN is installed from OS packages.  OpenVPN Access Server is a distinct product from OpenVPN and these methods might not be accurate on that product.
+05_security_08_clamav:
+  regex: 'Security_AVClamAVInfo'
+  comment: |-
+    ClamAV for Linux.  Far from the best, but still we collect the configs in case that's the answer for "Linux AV".
+    If you see reference to it (e.g., in the Cron_Jobs results), FreshClam is the process that checks for AV signature updates.  You should see that this process runs at least daily to update the signature files.
+05_security_09_crowdstrike:
+  regex: 'Security_HidsCrowdStrike::(?!UID)'
+  comment: |-
+    CrowdStrike is a cloud-based HIDS agent from CrowdStrike.com.  The only check is to see that the service is running, but you should also check the running processes for something similar to "falcon"
+05_security_10_snort:
+  regex: 'Security_NIDSSnortConfig'
+  comment: |-
+    Snort used to be all the rage as a Network IDS back when data centers had everything.  It's use has dwindled, but we grab the configs if it's being used.

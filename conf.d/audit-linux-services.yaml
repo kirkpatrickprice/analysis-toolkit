@@ -1,0 +1,76 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+04_services_01_system_services:
+  regex: 'Network_ServiceInfo-systemctl::(?P<svc_name>.*?)\s(?P<status>enabled|disabled|generated|static|transient|masked|indirect).*'
+  groupList:
+    - 'svc_name'
+    - 'status'
+  comment: |-
+    A list of all of the configured system services and their current  status.  You can use this section to confirm if certain services are installed, enabled, or disabled.
+  onlyMatching: True
+04_services_02_file_server_staus:
+  regex: '(Network_SharesNFS:: .*_status: (?P<nfsStatus>.*))|(Network_SharesSamba:: .*_status: (?P<sambaStatus>.*))'
+  onlyMatching: True
+  fullScan: True
+  groupList:
+    - nfsStatus
+    - sambaStatus
+  combine: True
+  comment: |-
+    On Linux, there are two services that are commonly used to turn the server into a File Server: NFS and Samba
+        NFS -- Network File System -- usually used only in all-Linux environemnts or at least where the only systems that will be connecting to the system are other Linux devices
+        Samba -- An open-source implementation of the Service Message Block (SMB) protocol used by Windows systems.  SMB is a more-or-less complete implementation that is identical to a Windows-based server.  It can even provide Active Directory services.
+
+    If you find that either of these are enabled, you'll need to dig into the configuration script results (check the relevant Network_Shares* section)
+04_services_03_snmp_status:
+  regex: 'Network_SNMPInfo:: .*_status: (?P<snmpdStatus>.*)'
+  onlyMatching: True
+  groupList:
+    - snmpdStatus
+  comment: |-
+    This result shows the current status of the SNMP service on each system.  If it's enabled/active, you'll need to look at the other SNMP files to determine if there any issues in the config.
+04_services_03_snmpv2_communities:
+  regex: 'Network_SNMPInfo::/etc/snmp/snmpd.conf::(?P<snmpv2AccessType>r.community.?)\s+(?P<communityString>[-\w]+)\s+(?P<accessRestriction>.*)'
+  onlyMatching: True
+  groupList:
+    - snmpv2AccessType
+    - communityString
+    - accessRestriction
+  comment: |-
+    This list shows the currently configured SNMP communities for SNMPv1 and SNMPv2 implementations.  NOTE: SNMPv3 is not currently implemented in the Analysis Toolkit. If you should come across a set of SNMPv3 configurations, please send them to me and I'll work on pulling out some meaningful data.
+
+    SNMPv1 and SNMPv2 were both clear-text protocols, including for authentication which occurs by passing a simple string (the "community string").  The access model is also very simple with read-only and read-write community strings.
+    
+    SNMPv3 is strongly preferred as it can use key-based authentication to control access to SNMP info.
+04_services_04_time_peers:
+  regex: 'Network_NTP-(?P<ntp_type>ntpd|chronyd|timesyncd)::([*-+ ]|(Remote address\s+: )|(\s+Server: ))(?!(RTC|Next|Last|Packet|Network))(?P<peer>([-\w.]+))'
+  groupList:
+    - 'ntp_type'
+    - 'peer'
+  comment: |-
+    This list provides the NTP sources that each system is peered with to get its time.  For IP addresses, you can use "nslookup <IPAddress>" to try to get the DNS name.  Also be on the lookout "LOCAL" as this could mean the system is not acquiring time from anywhere.
+
+    Also, see the note in "04_services_04_time_config" about using *.pool.ntp.org.  This will show up here as inconsistent NTP sources from server to server as each system will receive a random set of pool member at start-up time.
+04_services_04_time_version:
+  regex: 'Network_NTP-.*version'
+  comment: |-
+    You'll need this for a PCI DSS assessment
+04_services_04_time_config:
+  regex: 'Network_NTP::.*?(?P<configFile>ntp.conf|xntp.conf|chrony.conf|timesyncd.conf)::(?!#).*?(?P<parameter>server|pool|restrict|peer|allow|deny|log|NTP)\s+(?P<value>.*)'
+  onlyMatching: True
+  groupList:
+    - configFile
+    - parameter
+    - value
+  comment: |-
+    This shows the current NTP configuration for the most popular NTP services -- ntpd, Chrony and timesyncd
+
+    Of special note:
+        - "restrict" / "allow" -- limit inbound connection to only these authorized sources (the different is that NTPd uses "restrict" and Chrony uses "allow", but they both accomplish the same thing)
+        - "server" / "pool" -- Sources from which to acquire time.  Note: *.pool.ntp.org is a community effort.  Anyone can "join" the pool and provide time to others.  This is a no-go for a PCI DSS assessment and you can determine if it's a problem in any other audit you might be working on.
+
+    Also note that timesyncd does not implement some necessary requirements for use in a PCI DSS cardholder data environment.  Specifically, it doesn't log changes to the clock with sufficient detail.

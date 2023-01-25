@@ -1,0 +1,108 @@
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+
+07_users_01_blank_passwd:
+  regex: 'Users_BlankPasswd::'
+  comment: |-
+    This check identifies any users with a blank password.
+07_users_02_default_passwd_hash:
+  regex: '(Users_DefaultSettings::/etc/login.defs::ENCRYPT_METHOD)|(Users_PAMConfig::/etc/pam.d/common-password::password.*pam_unix.so)'
+  comment: |-
+    The password hash that's used by Linux when using the "passwd" command to change a user's password.  The pam.d/* files control how Linux PAM (Pluggable Authentication Modules) are configured.  And the /etc/login.defs file controls how the "shadow suite" (standard Linux utilities for managing users and passwords) is configured.
+    
+    The most important thing is that these two things agree and that they're also using good hashes.  By default, all modern Linux distros use salted SHA-512, but you might still find some MD5 or other less-than-desirable hash in use if the system been upgraded from older versions.
+07_users_03_etc_passwd:
+  regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
+  groupList:
+    - 'username'
+    - 'uid'
+    - 'gid'
+    - 'default_group'
+    - 'home_path'
+    - 'shell'
+  onlyMatching: True
+  comment: |-
+    A list of all locally-defined users.  You can probably disregard any user with "/bin/false" or "/sbin/nologin" as they can't login.  Users with a shell of "sync", "shutdown" and "halt" are similarly restricted to safely shutting down the system (use "man <command>" to learn what each actually does).  
+    
+    But any user with "/bin/bash" is fair game.
+
+    These users are in addition to any that might be defined in Active Directory, OpenLDAP or other remote/network-based authentication sources.
+07_users_04_user_status:
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P.?)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)(?P<comment>.*)?' 
+  groupList:
+    - 'username'
+    - 'status'
+    - 'last_pw_change'
+    - 'min_age'
+    - 'max_age'
+    - 'warn_days'
+    - 'inactive_days'
+    - 'comment'
+  comment: |-
+    Provide the status of each user in /etc/passwd.  See https://man7.org/linux/man-pages/man1/passwd.1.html (check out the -S section about halfway down) for how to read this output.
+    
+    SPECIAL NOTE: "LOCKED" only means they can't use a passowrd to login.  SSH key-based authentication will still work if the user has a "~/.ssh/authorized_keys" file (check the "ssh_authorized_keys" file).
+07_users_05_etc_group:
+  regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)$'
+  groupList:
+    - 'groupname'
+    - 'gid'
+    - 'members'
+  onlyMatching: True
+  comment: |-
+    A list of local groups and their memberships.  This is in addition to any groups that might be defined in Active Directory, OpenLDAP, etc. and granted local permissions.
+    
+    Of special interest:
+      sudo (and frequently "wheel") -- Users who can issue commands as root (default /etc/sudoers configuration)
+      adm -- Users who might be able to issue commands as root (check the /etc/sudoers configuration)
+      Any other group listed in the /etc/sudoers config listed in the "07_users_11_sudoers_all_commands" results file
+07_users_09_login_history:
+  regex: 'Users_LoginHistory::(?!reboot)(?P<username>[-\w]+)\s+(?P<port>(pts/\d+)|(tty\d+))?\s+(?P<from>[\w.:]+)?\s+(?P<lastLogon>(\*\*.*|Mon|Tue|Wed|Thu|Fri|Sat|Sun).*)'
+  onlyMatching: True
+  groupList:
+    - username
+    - port
+    - from
+    - lastLogon
+  comment: |-
+    This report shows the last logon date for all current users defined in the system.  There is also a separate report that just shows users who haven't logged in more than 90 days.
+07_users_10_no_login_90_days:
+  regex: 'Users_LastLog90::(?!reboot)(?P<username>[-\w]+)\s+(?P<port>(pts/\d+)|(tty\d+))?\s+(?P<from>[\w.:]+)?\s+(?P<lastLogon>(\*\*.*|Mon|Tue|Wed|Thu|Fri|Sat|Sun).*)'
+  onlyMatching: True
+  groupList:
+    - username
+    - port
+    - from
+    - lastLogon
+  comment: |-
+    This report shows the last logon date for all current system users who have not logged in for at least 90 days.  There is also a separate report that just shows the last logon date for all current users.
+
+    You'll want to compare this against:
+        - "etc_passwd" file to determine which users have shells that permit login
+        - "user_status" file to determine which users have currently usable passwords (not "locked", "L" or "LK")
+        - "ssh_authorized_keys" file to determine which users can logon with SSH public keys regardless of thei password status
+07_users_11_sudoers_all_commands:
+  regex: 'Users_SudoersConfig::/etc/sudoers.*::(?!#).*ALL='
+  fullScan: True
+  comment: |-
+    The Sudoers config determines which users and groups can execute commands as ROOT by prefacing the command with "sudo <command".
+    See https://xkcd.com/149/ for a (lighthearted) visual reference of the effect that the SUDO command has and https://www.linux.com/training-tutorials/configuring-linux-sudoers-file/ for a more detailed explanation.
+
+    This report shows all of the sudoers config files that grant permissions to run all commands.  Names that are prefaced by a % are group names.  Reference "etc_group" file for group memberships.
+
+    NOTES:
+        - "%wheel" is default entry and the group is frequently empty.  It's a leftover of bygone time when the "wheel" group was used more frequently.
+        - (program_spec) the stuff between the parantheses is the programs that can be run.  "ALL" means the user can run anything as root.  Sometimes you'll see something else in there.  You'll need to look at the raw files themselves in "Sudoers" section to find the programs that can be used.
+07_users_12_ssh_authorized_keys:
+  regex: 'Users_AuthorizedKeys::/home/(?P<username>[-\w]+)/\.ssh/authorized_keys.*'
+  onlyMatching: True
+  fullScan: True
+  groupList:
+    - username
+  comment: |-
+    The presence of an "authorized_keys" file means that the user can authenticate through SSH using SSH public/private keys regardless of whether the user's password is disabled ("locked", see "user_status" file).
+
+    This report shows all users who have an "authorized_keys" file. Specifically, it looks for patterns matching "/home/<username>/.ssh/authorized_keys", which is the default location.  Although unlikely, it is possible that a system administrator could change this location.  Check the raw files for "Network_OpenSSHServerConfig::authorizedkeysfile" if you need to.
