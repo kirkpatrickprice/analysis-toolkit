@@ -39,23 +39,23 @@ With the `analysis-toolkit` in your path, you will be able to use these commands
 Now, you'll need to install the Python dependencies.  If you'll be using your Python install for more than just the analysis toolkit, you might want to create a `venv` to run it in.  Check out https://python.land/virtual-environments/virtualenv if you need a tutorial.  Then...
 ```
 cd ~/tools/analysis-tookit
-python3 -m pip install --upgrade pip        # Upgrade PIP if it's already up to date
+python3 -m pip install --upgrade pip        # Upgrade PIP if it's not already up to date
 python3 -m pip install -r requirements.txt  # Install the packages listed in the file
 ```
 
 ## Updating the toolkit ##
 Change to the analysis-toolkit directory
 
-`cd /mnt/c/Users/RandyBartels/Downloads/analysis-toolkit`
+`cd ~/tools/analysis-toolkit`
 
-And issue the following `git` commands.  All local changes will be overwritten.
+And issue the following `git` commands.  Any changes you might have made in this directory will be overwritten.
 ```
 git fetch
 git reset --hard HEAD
 git merge
 ```
 
-If you get any errors from Python about missing packages, re-run the PIP-related commands above to make sure you have all the dependencies installed.
+If you get any errors from Python about missing packages, re-run the PIP-related commands from the Installation section above to make sure you have all the dependencies installed.
 
 ## Using the toolkit scripts ##
 Each toolkit script includes a "help" function to explain the options.
