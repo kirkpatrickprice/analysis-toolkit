@@ -21,6 +21,12 @@ Version History:
             Fixed CSV export issue with non-printable characters in input files
     0.1.3   2022-11-11
             Added a short-circuit to stop processing files once we've moved beyond the interesting content.  Requires use of a "::" in the regex to identify the section we're looking for
+    0.2.0   Rewrite to use OOP -- eases managing data and passing info around
+            Export to Excel instad CSV files
+            Unique columns whenever groupLists are provided
+            Combine results from mulitple lines in the source files into a single row
+            Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version, osVersion, etc)
+    0.2.1   Fixed bug in short-circuit logic that was causing searches to bail out when a comment included the desired pattern
 '''
 
 import argparse                                                     # To handle command line arguments and usage
