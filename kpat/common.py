@@ -315,7 +315,7 @@ class Search:
             for line in open(system.getFilename()):
                 if limitToSection:                                                      # Are we supposed to take the short cut?
                     inDesiredSection=desiredSectionPattern.search(line)
-                    if inDesiredSection:
+                    if inDesiredSection and not isComment:
                         sectionFound=True
                 found = pattern.search(line)                                            # Perform the search for our regex pattern
                 isComment = commentsPattern.search(line)                                # Check if we're on a comment or blank line that also matched our search pattern
