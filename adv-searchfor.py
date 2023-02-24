@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.2.0"
+version="0.2.1"
 
 # Import what we need from the kpat package
 from kpat.common import errorCodes, System, Search, error, getLongest, getSections, getSysFilterAttrs, getSysFilterComps, getConfigOptions, getSysFilterKeys, getErrorCodes
@@ -26,6 +26,7 @@ Version History:
             Unique columns whenever groupLists are provided
             Combine results from mulitple lines in the source files into a single row
             Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version, osVersion, etc)
+    0.2.1   Fixed bug in short-circuit logic that was causing searches to bail out when a comment included the desired pattern
 '''
 
 import argparse                                                     # To handle command line arguments and usage
