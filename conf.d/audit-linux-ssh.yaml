@@ -42,12 +42,14 @@ global:
 
     From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
 03_ssh_02_crypto_weak_moduli:
-  regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535)'
+  regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535|2047)'
   groupList:
     - 'mod_size'
   unique: True
   comment: |-
-    If the "SSH Settings" file shows systems with KexAlgorithms which use "diffie-hellman-group-exchange" without specifying a group number (such as group14 or group21), then any moduli in this file can be used, including any that are less than 2,048 bits.  These results show if any such moduli are configured.
+    If the "SSH Settings" file shows systems with KexAlgorithms which use "diffie-hellman-group-exchange" without specifying a group number (such as group14 or group21), then any moduli in this file can be used, including any that are less than 3,072 bits.  These results show if any such moduli are configured.
+
+    On 3072- vs 2048-bit as the minimum size... I've found numerous reputable references online (e.g. Mozilla, Palo Alto, Proxmox, and others) that suggest that the minimum size should be 3072.
 03_ssh_07_subsystems:
   regex: 'Network_OpenSSHServerConfig::subsystem'
   comment: |-
