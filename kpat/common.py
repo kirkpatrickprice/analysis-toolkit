@@ -767,14 +767,26 @@ def getReportVersion(filename):
     #   Non-capturing:  ": " (so we can throw it away)
     #   version:        Version string consisting of 3 sets of one or more digits separated by periods
     pattern=re.compile(r'(?P<producer>KP\w{3}VERSION)(?:: )(?P<version>\d+.\d+.\d+)')
-    for line in open(filename):
-        match=pattern.search(line)
-        if match:
-            found=True
-            reportType=match.group('producer')
-            #Turn the version string into a list of integers instead of a list of strings consisting of numbers.
-            reportVersion=[int(i) for i in match.group('version').split('.')]
-            break
+    try:
+        for line in open(filename):
+            match=pattern.search(line)
+            if match:
+                found=True
+                reportType=match.group('producer')
+                #Turn the version string into a list of integers instead of a list of strings consisting of numbers.
+                reportVersion=[int(i) for i in match.group('version').split('.')]
+                break
+    except UnicodeDecodeError:
+        error('Filename: %s' % (filename))
+        error('File appears to be encoded with an unsupported Unicode format (likely UTF-16) and was probably created using')
+        error('an old version kpwinaudit.ps1.  Try opening the file in Notepad or VSCode and compare the KPWinVersion with the')
+        error('change history at https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1')
+        error('to see what you might be missing.')
+        print()
+        error('If you really want to proceed, use "dos2unix %s" Linux command to convert the file to a Unicode encoding that will work')
+        response=input('\n[C]ontinue to the next file, or [Q]uit? ')
+        if response.lower()=='q':
+            exit(errorCodes['generalError'])
 
     if not found:
         reportType='unknown'
