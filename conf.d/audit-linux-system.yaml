@@ -182,7 +182,7 @@ global:
         - 0 (SUID_DUMP_DISABLE) = SUID programs will not be dumped (preferred)
         - 1 (SUID_DUMP_USER) = SUID programs will be dumped (bad)
         - 2 (SUID_SAFE) = SUID programs will be dumped such that the core dump files are only readable by ROOT (OK)
-01_system_10_installed_packages_deb:
+01_system_10_installed_packages_deb_old:
   regex: 'System_PackageInstalledSoftware::(?P<pkg_name>\w+).*install'
   onlyMatching: True
   groupList:
@@ -194,9 +194,14 @@ global:
     - attr: distroFamily
       comp: eq
       value: deb
+    - attr: kpnixversion
+      comp: le
+      value: [0, 6, 18]
   comment: |-
+    For KPNIXAudit <= 0.6.18
+
     DPKG ("Debian package") is the package manager for Debian-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
-01_system_10_installed_packages_rpm:
+01_system_10_installed_packages_rpm_old:
   regex: 'System_PackageInstalledSoftware::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
   onlyMatching: True
   groupList:
@@ -209,11 +214,16 @@ global:
     - attr: distroFamily
       comp: eq
       value: rpm
+    - attr: kpnixversion
+      comp: le
+      value: [0, 6, 18]
   comment: |-
+    For KPNIXAudit <= 0.6.18
+
     RPM ("Redhat Package Manager") is the package manager for Redhat-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
 
     The list also includes the date when the package was last installed or updated.  This provides a rough approximation of patching history, but it becomes less granular as time goes by.  Specifically, if the same package is updated in March and again in September, only the September date will be retained.
-01_system_11_package_history_deb:
+01_system_11_package_history_deb_old:
   regex: 'System_PackageInstalledSoftware::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
   onlyMatching: True
   groupList:                                                                    # Print the package name first (G2), followed by the date (G1)
@@ -226,11 +236,16 @@ global:
     - attr: distroFamily
       comp: eq
       value: deb
+    - attr: kpnixversion
+      comp: le
+      value: [0, 6, 18]
   comment: |-
+    For KPNIXAudit <= 0.6.18
+
     Unlike RPM-based distros (see comment in "installed_packages_rpm"), Debian systems keep a log of all package manager activity.  By default, this log is retained on-system for 12 months.  Reference: https://linuxhint.com/see-dpkg-apt-history/
 
     This list shows the time-and-date of each package installation action.  Since "updating packages" means "installing the new version", this also can be used to show patching history.  However, know that "installing new packages" and "patching existing packages" look the same in these logs, so it's not 100% fool-proof.
-01_system_12_pending_package_updates_deb:
+01_system_12_pending_package_updates_deb_old:
   regex: 'System_PackageManagerUpdates::\s+(?P<pkg_name>((.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*)))\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
   onlyMatching: True
   groupList:
@@ -244,11 +259,16 @@ global:
     - attr: distroFamily
       comp: eq
       value: deb
+    - attr: kpnixversion
+      comp: le
+      value: [0, 6, 18]
   comment: |-
+    For KPNIXAudit <= 0.6.18
+
     This list uses an Debian-based distro's operating system tools to query its package manager repos for pending updates.  It's exactly the same function as Windows Update.  It reflects the current status of outstanding updates as of the moment the script was run on the system.
     
     The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
-01_system_12_pending_package_updates_labeled_rpm:
+01_system_12_pending_package_updates_labeled_rpm_old:
   regex: 'System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?!Get:)(?!Hit:)(?P<pkg_name>(.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*))\s+(?P<pend_version>[\w\-.:]+)'
   onlyMatching: True
   sysFilter:
@@ -258,13 +278,130 @@ global:
     - attr: distroFamily
       comp: eq
       value: rpm
+    - attr: kpnixversion
+      comp: le
+      value: [0, 6, 18]
   groupList:
     - 'pkg_name'
     - 'pend_version'
   comment: |-
+    For KPNIXAudit <= 0.6.18
+
     This list uses an RPM-based distro's operating system tools to query its package manager repos for pending updates.  It's exactly the same function as Windows Update.  It reflects the current status of outstanding updates as of the moment the script was run on the system.
     
     The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
+01_system_10_installed_packages_deb_new:
+  regex: 'System_PackageInstalledSoftware-dpkg::(?P<pkg_name>\w+).*install'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: distroFamily
+      comp: eq
+      value: deb
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 19]
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    DPKG ("Debian package") is the package manager for Debian-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+01_system_10_installed_packages_rpm_new:
+  regex: 'System_PackageInstalledSoftware-rpm::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+    - 'install_date'
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: distroFamily
+      comp: eq
+      value: rpm
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 19]
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    RPM ("Redhat Package Manager") is the package manager for Redhat-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+
+    The list also includes the date when the package was last installed or updated.  This provides a rough approximation of patching history, but it becomes less granular as time goes by.  Specifically, if the same package is updated in March and again in September, only the September date will be retained.
+01_system_11_package_history_deb_new:
+  regex: 'System_PackageInstalledSoftware-dpkg::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
+  onlyMatching: True
+  groupList:                                                                    # Print the package name first (G2), followed by the date (G1)
+    - 'pkg_name'
+    - 'install_date'
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: distroFamily
+      comp: eq
+      value: deb
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 19]
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    Unlike RPM-based distros (see comment in "installed_packages_rpm"), Debian systems keep a log of all package manager activity.  By default, this log is retained on-system for 12 months.  Reference: https://linuxhint.com/see-dpkg-apt-history/
+
+    This list shows the time-and-date of each package installation action.  Since "updating packages" means "installing the new version", this also can be used to show patching history.  However, know that "installing new packages" and "patching existing packages" look the same in these logs, so it's not 100% fool-proof.
+01_system_12_pending_package_updates_deb_new:
+  regex: 'System_PackageManagerUpdates-apt::\s+(?P<pkg_name>((.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*)))\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
+  onlyMatching: True
+  groupList:
+    - 'pkg_name'
+    - 'cur_version'
+    - 'pend_version'
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: distroFamily
+      comp: eq
+      value: deb
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 19]
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    This list uses an Debian-based distro's operating system tools to query its package manager repos for pending updates.  It's exactly the same function as Windows Update.  It reflects the current status of outstanding updates as of the moment the script was run on the system.
+    
+    The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
+01_system_12_pending_package_updates_labeled_rpm_new:
+  regex: (?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?!Get:)(?!Hit:)(?P<pkg_name>(.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*))\s+(?P<pend_version>[\w\-.:]+)'
+  onlyMatching: True
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: distroFamily
+      comp: eq
+      value: rpm
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 19]
+  fullScan: True
+  groupList:
+    - 'source'
+    - 'pkg_name'
+    - 'pend_version'
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    This list uses an RPM-based distro's operating system tools to query its package manager repos for pending updates.  It's exactly the same function as Windows Update.  It reflects the current status of outstanding updates as of the moment the script was run on the system.
+    
+    The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
+
+    The source column indicates whether the data came from "dnf" (preferred, modern tool for RPM-based distros) or "yum" (legacy tool).  Use the DNF data if it's there.
 01_system_13_running_processes:
   # Uses negative look-ahead '(?!...)' to ignore anything that ends with [.*] which are system process names and probably not useful
   regex: 'System_RunningProcesses::(?!.*\[\w.*?\]$)(?P<user>[\w+]+)\s+(?P<pid>[\d]+)\s+(?P<cpuPct>[\d.]+)\s+(?P<memPct>[\d.]+)\s+(?P<vsz>\d+)\s+(?P<rss>\d+)\s+(?P<tty>[?\w/]+)\s+(?P<stat>[\w><+]+)\s+(?P<start>[\w:]+)\s+(?P<time>[\d:]+)\s+(?P<command>.*)'
