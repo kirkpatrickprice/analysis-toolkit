@@ -377,7 +377,7 @@ global:
     
     The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
 01_system_12_pending_package_updates_labeled_rpm_new:
-  regex: (?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?!Get:)(?!Hit:)(?P<pkg_name>(.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*))\s+(?P<pend_version>[\w\-.:]+)'
+  regex: System_PackageManagerUpdates-dnf::(?!Last meta)(?!Available Upgrades)(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?!Get:)(?!Hit:)(?P<pkg_name>(.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*))\s+(?P<pend_version>[\w\-.:]+)'
   onlyMatching: True
   sysFilter:
     - attr: osFamily
@@ -391,7 +391,6 @@ global:
       value: [0, 6, 19]
   fullScan: True
   groupList:
-    - 'source'
     - 'pkg_name'
     - 'pend_version'
   comment: |-
