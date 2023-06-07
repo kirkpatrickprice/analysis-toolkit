@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 
-version="0.1.2"
+version="0.1.3"
 
 """Change History
-#0.1    Initial version
-#0.1.1  Typos and code clean-up, add more comments
-#0.1.2  Auto-select the file if only one CSV file is present in the present working directory / otherwise print appropriate messages
+0.1    Initial version
+0.1.1  Typos and code clean-up, add more comments
+0.1.2  Auto-select the file if only one CSV file is present in the present working directory / otherwise print appropriate messages
         Add try-except blocks to catch CTRL-C KeyboardInterrupt and for file selection errors
+0.1.3  Improve handling of CSV files with large fields
 """
 
 desc="""Process a Nipper CSV export to create one row for each device where each finding was observed.
@@ -19,6 +20,9 @@ import csv
 import argparse
 import sys
 import os
+
+print (sys.maxsize)
+csv.field_size_limit(sys.maxsize)
 
 parser = argparse.ArgumentParser(prog=sys.argv[0].split('/')[-1], description=desc)
 parser.add_argument('-i', '--infile', dest='infile', help="Nipper CSV filename")
