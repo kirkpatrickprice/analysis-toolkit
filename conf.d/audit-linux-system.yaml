@@ -24,6 +24,24 @@ global:
   comment: |-
     For non-RPM based distro's, this will have an accurate OS version name.  You can use this to check online if the version is still supported by the vendor.
     For RPM-based distros such as Amazon Linux, CentOS, Oracle Linux and Red Hat, check out the "01_system_02_os_version_rpm" file for more accurate version details.
+01_system_01_bios:
+  regex: 'System_BIOS::\s+(Vendor: (?P<vendorName>.*)|(Version: (?P<version>.*))|(Release Date: (?P<releaseDate>.*)))'
+  maxResults: 1
+  onlyMatching: True
+  combine: True
+  groupList:
+    - 'vendorName'
+    - 'version'
+    - 'releaseDate'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 21]
 01_system_02_linux_os_version_rpm:
   # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
   regex: 'System_VersionInformation::/etc/system-release::(?P<RPMVersion>.*)'
@@ -67,6 +85,26 @@ global:
   groupList:
     - filename
   unique: True
+01_system_03_user_crontabs:
+  regex: 'System_UserCrontab::/var/spool/cron/(crontabs)?/(?P<user>\w+)::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)(?P<command>.*)'
+  onlyMatching: True
+  groupList:
+    - user
+    - minute
+    - hour
+    - dayOfMonth
+    - month
+    - dayOfWeek
+    - command
+  comment: |-
+    Cron is the task scheduler.  This list includes all per-user cron jobs, which are separate from the system-level cron jobs listed in 01_system_03_cron_jobs.
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Linux
+    - attr: kpnixversion
+      comp: ge
+      value: [0, 6, 21]
 01_system_03_systemd_timers:
   regex: 'System_Timers::(?P<next>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s+[A-Z]{3,4})\s+(?P<timeLeft>[0-9].*?left)\s+(?P<last>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s[A-Z]{3,4})\s+(?P<passed>[0-9].*?ago)\s+(?P<unit>[A-Za-z].*?\.timer)\s+(?P<activates>[A-Za-z].*)'
   onlyMatching: True
