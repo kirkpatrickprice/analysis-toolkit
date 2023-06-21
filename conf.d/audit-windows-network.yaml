@@ -189,6 +189,37 @@ global:
     A list of the peers with which the system is connected for time.  Each of the fields should be self-explanatory.
 
     Only trusted, internal sources should be used for most devices.  These trusted time sources should query only trusted external time sources and should also peer with each other.
+02_network_16_winrm:
+  regex: '(Networking_WinRM-service::\s+(AllowRemoteAccess\s+=\s+(?P<allowRemoteAccess>.*))|(AllowUnencrypted\s+=\s+(?P<allowUnencrypted>.*))|(Negotiate\s+=\s+(?P<negotiateAuth>.*))|(Basic\s+=\s+(?P<basicAuth>.*))|(Kerberos\s+=\s+(?P<kerberosAuth>.*))|(Certificate\s+=\s+(?P<certAuth>.*))|(CredSSP\s+=\s+(?P<credSSPAuth>.*)))|(Networking_WinRM-winrs::\s+AllowRemoteShellAccess\s+=\s+(?P<allowRemoteShellAccess>.*))|(Networking_WinRM-listener::\s+(Transport\s+=\s+(?P<transport>.*))|(ListeningOn\s+=\s+(?P<listeningOn>.*)))'
+  groupList:
+    - allowRemoteAccess
+    - allowRemoteShellAccess
+    - transport
+    - listeningOn
+    - allowUnencrypted
+    - negotiateAuth
+    - basicAuth
+    - kerberosAuth
+    - certAuth
+    - credSSPAuth
+  onlyMatching: True
+  combine: True
+  sysFilter:
+    - attr: 'osFamily'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'kpwinversion'
+      comp: 'ge'
+      value: '0.4.7'
+  comment: |-
+    Windows Remote Monitoring (WinRM) provides remote management capabilities (reference: WS-MAN protocol) as well as PowerShell Remoting features
+    There a few settings that should be evaluated to ensure that remote access is properly secured and encrypted
+      - Transport: Can be HTTP or HTTPS, but regardless of the setting, WinRM performs encryption according to the 'AllowUnencrypted' setting below
+      - AllowUnuncrypted: This defaults to False, which ensures that message-level encryption is enforced for the WinRM protocol even if HTTP is used as the transport
+      - Auth methods: Various authentication methods enabled on the WinRM server
+      - ListeningOn: The IP addresses where the server is listening for WinRM connections
+      - AllowRemoteAccess: Pretty much what it says
+      - AllowRemoteShellAccess: Allows PowerShell remote shell connections
 02_network_18_w32time_log_sample:
   regex: 'Time_W32TimeLogs::'
   comment: |-
