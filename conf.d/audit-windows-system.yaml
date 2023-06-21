@@ -15,6 +15,25 @@ global:
       
       Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
       to determine if you're missing anything you find important.
+01_system_01_bios:
+  regex: 'System_BIOS::((SMBIOSBIOSVersion\s+:\s+(?P<SMBIOSVersion>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  maxResults: 1
+  onlyMatching: True
+  combine: True
+  groupList:
+    - 'SMBIOSVersion'
+    - 'manufacturer'
+    - 'name'
+    - 'version'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Windows
+    - attr: kpwinversion
+      comp: ge
+      value: [0, 4, 7]
 01_system_02_win_os_version:
   regex: 'System_OSInfo::(ProductName\s+:\s+(?P<productName>[\w ]+))|(ReleaseId\s+:\s+(?P<releaseId>\w+))|(CurrentBuild\s+:\s+(?P<currentBuild>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
   combine: True
