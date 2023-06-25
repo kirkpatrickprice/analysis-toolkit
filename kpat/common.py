@@ -313,7 +313,11 @@ class Search:
             groupResults=[]                                                                 # Create a blank list to hold our group results dictionaries as we complete each one
             systemResults=[]                                                                # Create a blank list to hold our system results that we'll append to the final results
             combined=False                                                                  # Have we successfully combined the results
-            for line in open(system.getFilename()):
+            
+            # We already checked earlier (in getReportVersion) if the file is of the wrong encoding, so we can now ignore individual byte errors.  These could occur
+            # for instance when specific Linux (and maybe Windows) utilities produce non-printable characters
+            for line in open(system.getFilename(),encoding='ascii',errors='ignore'):
+                line=makePrintable(line)
                 if limitToSection:                                                      # Are we supposed to take the short cut?
                     inDesiredSection=desiredSectionPattern.search(line)
                     if inDesiredSection and not isComment:
@@ -769,7 +773,7 @@ def getReportVersion(filename):
     #   version:        Version string consisting of 3 sets of one or more digits separated by periods
     pattern=re.compile(r'(?P<producer>KP\w{3}VERSION)(?:: )(?P<version>\d+.\d+.\d+)')
     try:
-        for line in open(filename):
+        for line in open(filename,encoding='ascii'):
             match=pattern.search(line)
             if match:
                 found=True

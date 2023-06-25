@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.2.3"
+version="0.2.4"
 
 # Import what we need from the kpat package
 from kpat.common import errorCodes, System, Search, error, getLongest, getSections, getSysFilterAttrs, getSysFilterComps, getConfigOptions, getSysFilterKeys, getErrorCodes
@@ -30,6 +30,7 @@ Version History:
     0.2.1   Fixed bug in short-circuit logic that was causing searches to bail out when a comment included the desired pattern
     0.2.2   Better error handling for UnicodeDecodeError message (e.g. when handling UTF-16 files)    
     0.2.3   Changes to support building with pyinstaller
+    0.2.4   2023-06-25: Fixed unprintable characters bug
 '''
 
 import argparse                                                     # To handle command line arguments and usage
