@@ -700,6 +700,25 @@ class System(object):
             osDetails.findResults()
             for key in osDetails.results[0]:
                 setattr(self, key, osDetails.results[0][key])
+        elif self.scriptDetails[0] == 'KPMACVERSION':
+            self.osFamily='Darwin'
+            self.producer='kpmacaudit'
+            osDetailsSearchConfig = {
+                'systems'   : self,
+                'regex'     : r'System_VersionInformation::((ProductName:\s+(?P<ProductName>\w+))|(ProductVersion+:\s+(?P<ProductVersion>[\w.]+))|(BuildVersion:\s+(?P<BuildVersion>\w+)))',
+                'groupList' : [
+                    'ProductName',
+                    'ProductVersion',
+                    'BuildVersion',
+                ],
+                'maxResults': 1,
+                'combine' : True,
+                'onlyMatching': True,
+            }
+            osDetails=Search(osDetailsSearchConfig)
+            osDetails.findResults()
+            for key in osDetails.results[0]:
+                setattr(self, key, osDetails.results[0][key])
         else: 
             self.osFamily = 'unknown'
             if verbose:
