@@ -113,7 +113,7 @@ global:
   comment: |-
     MacOS SMB configuration settings if the device is configured with File Sharing.  Also be sure to check if the device is listening on port 445/tcp to determine if the system is currently available as a Windows file share (Network_ListeningServices)
 02_network_08_smb_shares:
-  regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
+  regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_sealed:\s(?P<smbSealed>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
   onlyMatching: True
   combine: True
   groupList:
@@ -123,10 +123,12 @@ global:
     - smbShared
     - smbCreateMask
     - smbDirMask
+    - smbSealed
   comment: |-
-    These are the directories that are shared from the MacOS device.  The fields (afp_shared:
+    These are the directories that are shared from the MacOS device.  The fields:
       - prettyName: How the folder is displayed when browsing it on the Network
       - dirPath: The native file system folder that's being shared
       - afp/smbShared: Whether the folder is shared via Apple's own file server protocol and/or via SMB (MS-compatible)
       - smbCreateMask: The file system permissions to be applied to new files created on the share.  The default is 644 which provides owners with read/write access and limits others to read-only access to file contents.
       - smbDirMask: The file system permissions to be applied to directories shared through SMB.  The default is 755 which provides owners with full permissions and allows others to change into directores but not create or access any files specifically.
+      - smbSealed: Required encrypted SMB connections to acccess this share
