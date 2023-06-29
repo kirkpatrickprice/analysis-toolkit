@@ -3,6 +3,7 @@
 The analysis toolkit is a collection of scripts designed to assist auditors analyze the results of the KP system auditing scripts maintained at:
 * [Linux](https://github.com/kirkpatrickprice/linux-audit-scripts) 
 * [Windows](https://github.com/kirkpatrickprice/windows-audit-scripts)
+* [MacOS](https://github.com/kirkpatrickprice/macos-auditor)
 
 ## Critical dependencies ##
 * Shell: a recent version of `bash`

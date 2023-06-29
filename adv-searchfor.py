@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.2.4"
+version="0.3.0"
 
 # Import what we need from the kpat package
 from kpat.common import errorCodes, System, Search, error, getLongest, getSections, getSysFilterAttrs, getSysFilterComps, getConfigOptions, getSysFilterKeys, getErrorCodes
@@ -31,6 +31,7 @@ Version History:
     0.2.2   Better error handling for UnicodeDecodeError message (e.g. when handling UTF-16 files)    
     0.2.3   Changes to support building with pyinstaller
     0.2.4   2023-06-25: Fixed unprintable characters bug
+    0.3.0   2023-06-30: Added capabilities to process MacOS Auditor result files
 '''
 
 import argparse                                                     # To handle command line arguments and usage
