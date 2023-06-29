@@ -97,7 +97,6 @@ global:
   comment: |-
     Brew is a popular package management utility for MacOS systems to install 3rd-party software.  Specifically, it bypasses the Apple Store.  This list contains the available updates for Brew-installed software.
 01_system_12_running_processes:
-  # Uses negative look-ahead '(?!...)' to ignore anything that ends with [.*] which are system process names and probably not useful
   regex: 'System_RunningProcesses::\s+(?P<user>[\d+]+)\s+(?P<pid>\d+)\s+(?P<parentPid>\d+)\s+(?P<cpu>\d+)\s+(?P<startTime>.+?)\s+(?P<tty>.+?)\s+(?P<time>[\d:.]+)\s+(?P<command>.*)'
   onlyMatching: True
   groupList:
@@ -119,7 +118,7 @@ global:
 
       If you would like to learn more about the other fields, use "man ps" from your WSL prompt.  While the information is not identical to MacOS, it will be pretty close.
 01_system_13_system_services:
-  regex: 'System_ServiceInfo::(?P<pid>[\d-]+)\s+(?P<status>\d+)\s+(?P<label>.*)'
+  regex: 'System_ServiceInfo::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)'
   onlyMatching: True
   groupList:
     - pid
@@ -130,7 +129,7 @@ global:
     For network-accessible servers, see "Network_ListeningServices" below.
     In this list:
       - PID: If there's a number in the first field, it means the service is currently running.  
-      - Status: The second column displays the last exit status of the job (0 means that it exited normally).
+      - ExitStatus: The second column displays the last exit status of the job (0 means that it exited normally).
       - Label: The third column is the job's label.
 01_system_14_system_integrity_protection:
   regex: 'System_IntegrityProtection::System Integrity Protection status:\s(?P<status>\w+)'
