@@ -1,0 +1,69 @@
+---
+
+# Instructions for working in YAML mode:
+#   * Use an arbitary-but-descriptive name for the section
+#   * Config options use the same names as the argument parser variables in searchfor.py
+#   * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
+#   * List items are indented with a hyphen under the list variable's name
+#   * Booleans are set to either True or False (case sensitive)
+# Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
+
+# When using YAML mode, results will be displayed on the screen and written to Excel files.  These will be saved as 'saved/<check_name>.csv' 
+# under the currect directory.  The destinaton folder can be overridden with "--out-path" on the command line or "outPath: <folder_name>" in a YAML section
+
+# This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
+# Basically, anything that can run kpwinaudit.ps1
+
+# See "adv-searchfor.py --yaml-help" for the most recent list of paramters that can be used
+
+# ##################################################################
+# ######################## Global items ############################
+# ##################################################################
+# These items will apply to configs in this FILE and only for this file (not for includes).  If the same configurations options are included in any
+# specific checks below, these will be entirely overwritten (not additive)
+# NOTE: Despite the name, "global" does not apply to included files.  This prevents some headaches that could occur when inheriting conflicting "globals" across a set of files
+global:
+  sysFilter:
+    - attr: osFamily
+      comp: eq
+      value: Darwin
+
+##################################################################
+######################## System_* items ##########################
+##################################################################
+
+include_macos_system:
+  files:
+    - audit-macos-system.yaml
+
+###################################################################
+######################### Networking items ########################
+###################################################################
+
+include_macos_network:
+  files:
+    - audit-macos-network.yaml
+
+###################################################################
+########################## Logging Items ##########################
+###################################################################
+
+include_macos_logging:
+  files:
+    - audit-macos-logging.yaml
+
+###################################################################
+########################### Users Items ###########################
+###################################################################
+
+include_macos_users:
+  files:
+    - audit-macos-users.yaml
+
+###################################################################
+############### Interesting World Writeable Files #################
+###################################################################
+
+include_macos_worldfiles:
+  files:
+    - audit-macos-worldfiles.yaml

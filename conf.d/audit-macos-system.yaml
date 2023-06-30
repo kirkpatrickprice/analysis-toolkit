@@ -122,7 +122,7 @@ global:
   onlyMatching: True
   groupList:
     - pid
-    - status
+    - exitStatus
     - label
   comment: |-
     This section attempts to get the status of all of the running services on a system.  MacOS services are more OS feature-related (akin to Windows) than how we use the same term in Linux (network-accessible servers)
