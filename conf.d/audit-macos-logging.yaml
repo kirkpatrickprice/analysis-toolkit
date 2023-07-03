@@ -8,7 +8,6 @@ global:
   regex: 'Logging_AuditdStatus::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)|(Logging_AuditConfig::/etc/security/audit_control::(expire-after:(?P<expireAfter>.*)|flags:(?P<allUserFlags>.*)))'
   onlyMatching: True
   fullScan: True
-  combine: True
   groupList:
     - pid
     - exitStatus
