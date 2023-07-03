@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-version="0.3.0"
+version="0.3.1"
 
 # Import what we need from the kpat package
 from kpat.common import errorCodes, System, Search, error, getLongest, getSections, getSysFilterAttrs, getSysFilterComps, getConfigOptions, getSysFilterKeys, getErrorCodes
@@ -32,6 +32,8 @@ Version History:
     0.2.3   Changes to support building with pyinstaller
     0.2.4   2023-06-25: Fixed unprintable characters bug
     0.3.0   2023-06-30: Added capabilities to process MacOS Auditor result files
+    0.3.1   2023-07-03: Added rsDelimiter search config option to handle cases where OS tools don't always print blank values (e.g. MacOS dscl . -readall...)
+            See 'audit-macos-users.yaml' for example use case
 '''
 
 import argparse                                                     # To handle command line arguments and usage

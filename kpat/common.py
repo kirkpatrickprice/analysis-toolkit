@@ -99,6 +99,7 @@ class Search:
         # Set up a default configuration -- systems and regex must be provided so no defaults are set
         self.config = {
             'name': '',
+            'rsDelimiter': None,
             'maxResults': -1,
             'onlyMatching': False,
             'unique': False,
@@ -245,6 +246,12 @@ class Search:
         '''
         return self.config['regex']
 
+    def get_rsDelimiter(self):
+        '''
+        Returns the recordset delimiter regular expression in the Search.config dictionary.
+        '''
+        return self.config['rsDelimiter']
+    
     def getName(self):
         return self.config['name']
 
@@ -301,6 +308,15 @@ class Search:
             error('Provided regex: '+self.getRegex())
             exit(errorCodes['invalidConfig'])
 
+        try:
+            if self.get_rsDelimiter():
+                rsDelimiter=re.compile(self.get_rsDelimiter(), re.IGNORECASE)                          # Matches the provided pattern
+        except re.error as reError:
+            error('Regex error   : '+str(reError))
+            error('Search name:  '+self.getName())
+            error('Provided delimiter: '+self.getDelim())
+            exit(errorCodes['invalidConfig'])
+
         commentsPattern=re.compile(r'^###|^#\[.*\]:|:: ###')                            # Matches comment lines and [BEGIN], [CISReference], etc.
         blankLinePattern=re.compile(r'::\s*$')                                          # Matches lines that end in :: and zero or more white-space characters [ \t\r\n\f]
         finalResults=[]                                                                 # Set up a blank list to hold our results
@@ -318,13 +334,22 @@ class Search:
             # for instance when specific Linux (and maybe Windows) utilities produce non-printable characters
             for line in open(system.getFilename(),encoding='ascii',errors='ignore'):
                 line=makePrintable(line)
+                isDelimiter=None
                 if limitToSection:                                                      # Are we supposed to take the short cut?
                     inDesiredSection=desiredSectionPattern.search(line)
                     if inDesiredSection and not isComment:
                         sectionFound=True
                 found = pattern.search(line)                                            # Perform the search for our regex pattern
                 isComment = commentsPattern.search(line)                                # Check if we're on a comment or blank line that also matched our search pattern
-                isBlankLine = blankLinePattern.search(line)                             
+                isBlankLine = blankLinePattern.search(line)
+                if self.get_rsDelimiter():
+                    isDelimiter = rsDelimiter.search(line)
+                if isDelimiter and len(groupResults)>0:                                 # If we've stumbled on a delimiter line, combine and commit the results
+                    systemResults.append(combineResults(groupResults))
+                    combined=True
+                    groupResults=[]
+                    #break
+                
                 if found and not isComment and not isBlankLine:
                     if self.config['onlyMatching']:                                     # OnlyMatching is true when we're processing groups
                         groupDict={}
@@ -353,6 +378,7 @@ class Search:
                         if self.config['combine']:
                             foundGroups=[]
                             foundBool=[]
+                            combined=False
                             for result in groupResults:
                                 foundGroups+=list(result.keys())
 
@@ -363,6 +389,7 @@ class Search:
                             if all(foundBool):
                                 systemResults.append(combineResults(groupResults))
                                 combined=True
+                                groupResults=[]
                         else:
                             for result in groupResults:
                                 systemResults.append(result)
@@ -884,6 +911,7 @@ def getSections(files):
 
 def getConfigOptions():
         return {
+            'rsDelimiter': 'A regex pattern to identify a new recordset.  Only valid in use with \'combine\'',
             'name': 'A name for the search config.  Will be used to name the Excel table and worksheet.',
             'systems': 'Systems (Class: System) to apply the search to',
             'regex': 'Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html',
