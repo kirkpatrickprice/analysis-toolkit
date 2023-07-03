@@ -99,7 +99,6 @@ global:
   onlyMatching: True
   groupList:
     - nfsStatus
-  combine: True
   comment: |-
     The Network File System (NFS) is common in Unix/Linux-only environments where SMB compatability is not needed for access to/from Windows systems
     MacOS can run an NFS server as nfsd and the directories that will be shared are listed in /etc/exports
@@ -116,6 +115,7 @@ global:
   regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_sealed:\s(?P<smbSealed>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
   onlyMatching: True
   combine: True
+  rsDelimiter: '^Network_SharesSamba-SharedFolders::$'
   groupList:
     - prettyName
     - dirPath

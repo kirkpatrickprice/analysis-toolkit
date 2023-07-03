@@ -41,10 +41,11 @@ global:
     This is the local MacOS password policy for any locally-defined accounts.  Note: MacOS can also authenticate against Active Directory or Kerberos, in which case, those policies will apply to those accounts.
 
     For the record, 129,600 minutes is 90 days (1440 minutes per day)
-04_users_03_local_users:
+04_users_04_local_users:
   regex: 'Users_LocalUsers::((UniqueID:\s+(?P<uniqueID>([-\d]+)?))|(NFSHomeDirectory:\s+(?P<homeDir>.*))|(RecordName:\s+(?P<userName>.*))|(UserShell:\s+(?P<shell>.*)))'
   onlyMatching: True
   combine: True
+  rsDelimiter: '^Users_LocalUsers::-$'
   groupList:
     - userName
     - uniqueID
@@ -56,10 +57,13 @@ global:
     Pay special attention to users who have /bin/bash, /bin/zsh, /bin/sh and similar shells as these are users who can login interactively.
 
     Also, pay special attention to any user with uniqueID=0 as these are accounts with "root" permissions.
-04_users_04_local_groups:
+
+    NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Usernames affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
+04_users_05_local_groups:
   regex: 'Users_LocalGroups::((PrimaryGroupID:\s+(?P<primaryID>(\d+)?))|(RecordName:\s+(?P<groupName>.*))|(GroupMembership:\s+(?P<members>.*)))'
   onlyMatching: True
   combine: True
+  rsDelimiter: '^Users_LocalGroups::-$'
   groupList:
     - groupName
     - primaryID
@@ -71,7 +75,9 @@ global:
       - staff: A built-in group meant to capture all people who use this device.  This group is made the group-owner of various directories, including all user home folders.
       - wheel: A built-in group that is granted elevated access to parts of the operating system (could also include sudo access / check the sudoers file)
       - admin and/or sudo: A built-in group that is granted sudo access to run commands as root
-04_users_05_root_status:
+
+    NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Group names affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
+04_users_06_root_status:
   regex: 'Users_RootStatus::(?P<rootStatus>.*)'
   onlyMatching: True
   groupList:
@@ -80,7 +86,7 @@ global:
     The root user shouldn't be used directly and should be disabled.  This check determines if there are any authenticators configured for the root account.
     
     This should be 0.  A non-zero value indicates that it is possible to sign in as the root account.
-04_users_06_sudoers:
+04_users_07_sudoers:
   regex: 'Users_SudoersConfig::/etc/sudoers.*?::[\w%].*'
   comment: |-
     The sudoers file controls use of the "sudo" program.  Sudo is used to grant the ability to execute commands as the root user -- effectively making users with sudo access administrators on the system.
@@ -90,7 +96,7 @@ global:
       - %groupname  ALL=(ALL)ALL
 
     There are also a few CIS benchmark recommendations that look for specific Defaults to be configured.  Look at the CIS MacOS 13 Benchmark for more information.
-04_users_07_siri_status:
+04_users_08_siri_status:
   regex: 'Users_SiriStatus-(?P<username>.*?)-Enabled::\s+"Assistant Enabled"\s+=\s+(?P<siriStatus>\d+)'
   onlyMatching: True
   groupList:
@@ -98,7 +104,7 @@ global:
     - siriStatus
   comment: |-
     Siri can be enabled on a macOS device just like on an iPhone.  CIS Benchmark doesn't make any specific recommendations except that Siri usage should be consistent with organizational policy.
-04_users_08_screensaver:
+04_users_09_screensaver:
   regex: 'Users_ScreensaverStatus-(?P<username>.*?)::(?P<screensaverTimeout>.*)'
   onlyMatching: True
   groupList:
@@ -106,7 +112,7 @@ global:
     - screensaverTimeout
   comment: |-
     This is the screensaver timeout value.  For reference, 15 minutes is 900 seconds.
-04_users_09_password_hints:
+04_users_10_password_hints:
   regex: 'Users_PasswordHints::RetriesUntilHint=(?P<retriesUntilHint>.*)'
   onlyMatching: True
   groupList:
