@@ -429,7 +429,7 @@ global:
       value: [0, 6, 19]
   fullScan: True
   groupList:
-    - 'no_entitlement'
+    - 'entitlement_status'
     - 'pkg_name'
     - 'pend_version'
   comment: |-
