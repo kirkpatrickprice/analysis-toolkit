@@ -5,9 +5,7 @@ import sys
 import traceback
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).absolute().parent / "src"))
-
-from nipper.nipper_expander import main
+from adv_searchfor.adv_searchfor import main
 
 exitCode = 0
 
@@ -18,7 +16,7 @@ if __name__=='__main__':
         pass
     except Exception:
         exit_code = 1
-        errorFile='nipper_expander_error.log'
+        errorFile='adv_searchfor_error.log'
         print(f'An unknown error was encountered.  Detailed error information has been written to {errorFile}.')
         traceback.print_exception(file=errorFile)
     sys.exit(exitCode)

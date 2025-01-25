@@ -2,13 +2,16 @@
 
 import re
 import os
-import textwrap
-import sys
-from sys import exit
-from colorama import Fore
-import console
 import string
+import sys
+import textwrap
+
+from sys import exit
+
 import xlsxwriter
+from colorama import Fore
+
+import adv_searchfor.kpat.console
 
 def getErrorCodes():
     return {

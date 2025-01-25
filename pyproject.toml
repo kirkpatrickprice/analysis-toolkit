@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kp-analysis-toolkit"
+dynamic = ["version",]
+authors = [
+            {name="Randy Bartels", email="rjbartels@outlook.com"},
+    ]
+description = "Python program to parse results from the KirkpatrickPrice OS-speific auditing scripts."
+readme = "README.md"
+keywords = ["pii discovery", "data discovery", "credit card discovery"]
+requires-python = ">=3.9,<4"
+dependencies = ["colorama>=0.4.6",
+                "pandas>=1.5.1",
+                "pyyaml>=6.0",
+                "xlsxwriter>=3.0.3",
+    ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Security Auditors",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Utilities",
+    ]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4.4",]
+test = ["pytest>=7.4.4",]
+pypi = ["build>=1.2.1", "twine>=5.0.0",]
+
+[project.scripts]
+adv-searchfor = "adv_searchfor.adv_searchfor:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "adv_searchfor.__version__"}
+
+[project.urls]
+Homepage = "https://github.com/kirkpatrickprice/analysis-toolkit"
+Issues = "https://github.com/kirkpatrickprice/analysis-toolkit/issues"
+
+[tool.bandit]
+targets = ["."]
+exclude_dirs = ["tests"]
+#skips = ["B324"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = "src/"
+addopts = ["--import-mode=importlib",]
+markers = []
