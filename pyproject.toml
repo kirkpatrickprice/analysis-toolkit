@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kp-analysis-toolkit"
-dynamic = ["version",]
+version = "1.0.0"
 authors = [
             {name="Randy Bartels", email="rjbartels@outlook.com"},
     ]
-description = "Python program to parse results from the KirkpatrickPrice OS-speific auditing scripts."
+description = "Python utilities to parse technical information for security audits"
 readme = "README.md"
 keywords = ["pii discovery", "data discovery", "credit card discovery"]
 requires-python = ">=3.9,<4"
@@ -35,9 +35,6 @@ pypi = ["build>=1.2.1", "twine>=5.0.0",]
 
 [project.scripts]
 adv-searchfor = "adv_searchfor.adv_searchfor:main"
-
-[tool.setuptools.dynamic]
-version = {attr = "adv_searchfor.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/kirkpatrickprice/analysis-toolkit"
