@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kp-analysis-toolkit"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
             {name="Randy Bartels", email="rjbartels@outlook.com"},
     ]
@@ -34,6 +34,7 @@ pypi = ["build>=1.2.1", "twine>=5.0.0",]
 
 [project.scripts]
 adv-searchfor = "adv_searchfor.adv_searchfor:main"
+nipper-expander = "nipper_expander.nipper_expander:main"
 
 [project.urls]
 Homepage = "https://github.com/kirkpatrickprice/analysis-toolkit"
