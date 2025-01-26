@@ -16,10 +16,10 @@ if __name__=='__main__':
         main()
     except KeyboardInterrupt:
         pass
-    except Exception:
+    except Exception as exc:
         exit_code = 1
         errorFile='nipper_expander_error.log'
         print(f'An unknown error was encountered.  Detailed error information has been written to {errorFile}.')
-        traceback.print_exception(file=errorFile)
+        traceback.print_exception(exc,file=errorFile)
     sys.exit(exitCode)
     
