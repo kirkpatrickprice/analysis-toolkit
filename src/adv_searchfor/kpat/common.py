@@ -11,7 +11,7 @@ from sys import exit
 import xlsxwriter
 from colorama import Fore
 
-import adv_searchfor.kpat.console
+import adv_searchfor.kpat.console as console
 
 def getErrorCodes():
     return {

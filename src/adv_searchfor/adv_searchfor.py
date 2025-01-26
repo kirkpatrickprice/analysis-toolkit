@@ -4,10 +4,12 @@ import ast
 import argparse                                                     # To handle command line arguments and usage
 import copy
 import glob                                                         # Used to match filespec to current directory contents
+import importlib.resources as pkg_resources                         # To access the YAML configuration files
 import os
 import sys                                                          # Needed to test for basic pre-reqs like OS and Python version
 import textwrap                                                     # Text handling routines
 import time                                                         # To report run length for each check in YAML mode
+import yaml                                                         # To parse the YAML configuration files
 
 from sys import exit
 from time import sleep
@@ -228,11 +230,11 @@ miscOptions.add_argument(
     )
 
 class Systems(dict):
-    # def __init__(self):
-    #     return dict()
+    def setVerbose(self, verbose):
+        self.verbose=verbose
     
     def add(self, filename):
-        self[filename]=System(filename, args.verbose)
+        self[filename]=System(filename, self.verbose)
         return self[filename]
 
     def search(self, filename):
@@ -243,7 +245,7 @@ class Systems(dict):
         return res
 
 
-def argsToConfig():
+def argsToConfig(args):
     '''
     Convert the ArgParse args object to a Search config object.  Mostly, there are a few items that need to be removed as they only have context from the command line
     '''
@@ -274,7 +276,7 @@ def parseFileSpec(fileSpec):
     files=glob.glob(fileSpec)
 
     if not files:
-        error('No files match the provided filespec ("', args.fileSpec, '").')
+        error('No files match the provided filespec ("', fileSpec, '").')
         print()
         parser.print_usage()
         exit(errorCodes['noFiles'])
@@ -290,7 +292,7 @@ def parseFileSpec(fileSpec):
     return systems
 
 
-def yamlParse(confFile):
+def yamlParse(confFile, args=None):
     '''
     Receives a YAML configuration file and returns a list of configuration dictionaries.  The dictionaries will be ready to be passed to the Search object.
     '''
@@ -299,12 +301,14 @@ def yamlParse(confFile):
     globalConfig={}
     configs=[]
     dupesFound=False
-    #If the provided confFile doesn't exist in the current directory and does not include path-y characters, then prepend the kpat/conf.d directory to the overall path
+    #If the provided confFile doesn't exist in the current directory and does not include path-y characters, then get the confFile from the package resources
     if not os.path.exists(confFile) and confFile.find('/') == -1:
         # Split and rejoin the program's root path -- minus the program name
-        confPath='/'.join((sys.argv[0]).split('/')[:-1])
-        confFile=confPath+'/conf.d/'+confFile
+        confPath=pkg_resources.files('adv_searchfor').joinpath('conf.d')
+        confFile=os.path.join(confPath, confFile)
     
+    yamlDir=os.path.abspath(os.path.dirname(confFile))
+    print ('Parsing YAML file: ', confFile)
     # Import and process the YAML configuration file
     try:
         with open(confFile) as file:
@@ -323,9 +327,9 @@ def yamlParse(confFile):
                 globalConfig[key]=configYAML[configSection][key]
         elif configSection.startswith('include'):                       # If we've hit an include* section, process the additional files
             for file in configYAML[configSection]['files']:
-                configs+=yamlParse(file)                                # Append each file's configs to this one
+                configs+=yamlParse(os.path.join(yamlDir, file), args)         # Append each file's configs to this one
         else:
-            config=argsToConfig()                                       # Start with the command line options as defaults
+            config=argsToConfig(args)                                   # Start with the command line options as defaults
             config['name']=configSection
             config['outFile']=configSection
 
@@ -359,23 +363,29 @@ def yamlParse(confFile):
 ##################### Let's get started ######################
 ##############################################################
 
+# Create a couple of GLOBALs to store store some stuff in
+# Yes, it's sloppy to make this a global, but it's the easiest way to pass the systems around
+AllSystems=Systems()
+configNames=set()                           # Using a global set to capture the unique names for each config
+
 def main():
     '''
     Main function to handle command line arguments and start the search
     '''
+
+    global AllSystems
+
     # Capture the start time
     startTime=time.time()
 
     # Process command line arguments
     args=parser.parse_args()
+    AllSystems.setVerbose(args.verbose)
     if args.verbose:
         print(args)
 
     # Get the screen geometry for use throughout
     screenXY=console.getTerminalSize()
-
-    # Create a dictionary to store all previously discovered systems to minimize the time necessary to capture the system details (esp for YAML mode)
-    AllSystems=Systems()
 
     # Check if results will be output and warn if the folder already exists
     if args.outFile or args.confFile:
@@ -480,7 +490,7 @@ def main():
         exit(0)
     elif args.regex:
 
-        config=argsToConfig()
+        config=argsToConfig(args)
         config['systems']=parseFileSpec(config['fileSpec'])                                     # Convert fileSpec into systems
         config.pop('fileSpec')                                                                  # Remove fileSpec from the dictionary as we don't need it now
 
@@ -501,9 +511,7 @@ def main():
         
         exit(0)
     elif args.confFile:
-        import yaml
-        configNames=set()                           # Using a global set to capture the unique names for each config
-        configs=yamlParse(args.confFile)
+        configs=yamlParse(args.confFile, args)
 
         for config in configs:
             search=Search(config)
