@@ -688,7 +688,7 @@ class System(object):
             if len(osDetails.results) > 0:
                 self.osPrettyName=osDetails.results[0]['prettyName']
                 rpmPattern=r'Alma|Amazon|ClearOS|CentOS|Oracle|(Red Hat)|SUSE'
-                debPattern=r'Debian|Gentoo|Knoppix|Ubuntu'
+                debPattern=r'Debian|Gentoo|Knoppix|Mint|Ubuntu'
                 distroSearch=re.compile(r'(?P<debDistro>'+debPattern+')|(?P<rpmDistro>'+rpmPattern+')', re.IGNORECASE)
                 versionSearch=re.compile(r'(?P<osVersion>((\d+\.?)+))')
                 searchText=osDetails.results[0]['prettyName']

@@ -56,6 +56,7 @@ Version History:
     0.3.1   2023-07-03: Added rsDelimiter search config option to handle cases where OS tools don't always print blank values (e.g. MacOS dscl . -readall...)
             See 'audit-macos-users.yaml' for example use case
     0.3.2   2025-01-25: Make changes to support /src layout and Pypi distribution
+    0.3.3   2025-02-06: Add Mint as a detected debPattern (common.py)
 '''
 
 # Set up the arguments that can be set on the command line
