@@ -688,7 +688,7 @@ class System(object):
             if len(osDetails.results) > 0:
                 self.osPrettyName=osDetails.results[0]['prettyName']
                 rpmPattern=r'Alma|Amazon|ClearOS|CentOS|Oracle|(Red Hat)|SUSE'
-                debPattern=r'Debian|Gentoo|Knoppix|Mint|Ubuntu'
+                debPattern=r'Debian|Gentoo|Kali.*|Knoppix|Mint|Ubuntu'
                 distroSearch=re.compile(r'(?P<debDistro>'+debPattern+')|(?P<rpmDistro>'+rpmPattern+')', re.IGNORECASE)
                 versionSearch=re.compile(r'(?P<osVersion>((\d+\.?)+))')
                 searchText=osDetails.results[0]['prettyName']
@@ -697,16 +697,26 @@ class System(object):
                     self.rpmPrettyName=searchText
                 distro=distroSearch.search(searchText)
                 version=versionSearch.search(searchText)
-                if distro.group('debDistro') is not None:
-                    self.distroFamily='deb'
-                elif distro.group('rpmDistro') is not None:
-                    self.distroFamily='rpm'
-                else:
+                try:
+                    if distro.group('debDistro') is not None:
+                        self.distroFamily='deb'
+                    elif distro.group('rpmDistro') is not None:
+                        self.distroFamily='rpm'
+                    else:
+                        self.distroFamily='unknown'
+                    if version.group('osVersion'):
+                        self.osVersion = [int(x) for x in version.group('osVersion').split('.')]
+                    else:
+                        self.osVersion = 0
+                except AttributeError:
+                    error(f'Error parsing the OS Pretty Name ({filename}: {self.osPrettyName})')
                     self.distroFamily='unknown'
-                if version.group('osVersion'):
-                    self.osVersion = [int(x) for x in version.group('osVersion').split('.')]
-                else:
-                    self.osVersion = 0
+                    response = " "
+                    while response not in ['Y', 'N']:
+                        response = str(input('Do you want to continue? [Y]es or [N]o? '))[0].upper()
+                    if response == 'N':
+                        exit(errorCodes['generalError'])
+
             elif verbose:
                 error("File: %s\nCouldn't determine OS Pretty Name" % filename)
         elif self.scriptDetails[0] == 'KPWINVERSION':
