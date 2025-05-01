@@ -57,6 +57,7 @@ Version History:
             See 'audit-macos-users.yaml' for example use case
     0.3.2   2025-01-25: Make changes to support /src layout and Pypi distribution
     0.3.3   2025-02-06: Add Mint as a detected debPattern (common.py)
+    0.3.4   2025-02-07: Addressed issue with processing files from Oracle and Kali systems
 '''
 
 # Set up the arguments that can be set on the command line
@@ -101,6 +102,7 @@ inputControl.add_argument(
     help=textwrap.dedent('''
         Provide a YAML configuration file to specify the options.  If only a file name, assumes analysis-toolit/conf.d location.  Multiple 
         searches can be defined in a single file to create a scripted review.  Excel results will be written to '''+defaultPath+'''<check_name>.xlsx.
+        Also forces quiet mode.
     ''')
     )
 
@@ -512,6 +514,9 @@ def main():
         
         exit(0)
     elif args.confFile:
+        # Force quiet mode if a confFile is provided
+        error('Forcing quiet mode as a confFile was provided')
+        args.quiet=True
         configs=yamlParse(args.confFile, args)
 
         for config in configs:

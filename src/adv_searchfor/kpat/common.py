@@ -489,10 +489,10 @@ class Search:
                     for key in keys:
                         try:
                             value=result[key]
+                            if len(value) > colWidth[key]:
+                                value=value[:colWidth[key]-reduceBy-3]+'...'
                         except KeyError:                      # If the result set didn't find the matching group name, fill it with <None>
                             value='<None>'
-                        if len(value) > colWidth[key]:
-                            value=value[:colWidth[key]-reduceBy-3]+'...'
                         values+=[value]
                     try:
                         print(formatStr % tuple(values))
