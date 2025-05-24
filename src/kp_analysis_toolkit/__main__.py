@@ -1,7 +1,7 @@
 import click
 
 from kp_analysis_toolkit import __version__ as cli_version
-from kp_analysis_toolkit.process_scripts.commands import process_script_results
+from kp_analysis_toolkit.process_scripts.cli import process_script_results
 
 
 @click.group()
