@@ -164,8 +164,8 @@ function GetHelpText {
 }
 
 function VersionCheck {
-    # Function to compare the KPNIXVersion that used to create the sample file to a required version needed by the analysis script
-    #   $1  KPNIXVERSION used by the file
+    # Function to compare the kp_nix_version that used to create the sample file to a required version needed by the analysis script
+    #   $1  kp_nix_version used by the file
     #   $2  Required version
     # Returns the result as either 
     #   0 version requirements are NOT met

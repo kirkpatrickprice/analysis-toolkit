@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #   0.1.0 - Iniital release
-#   0.1.1 - Added ReleaseID and <blank> checking to keep the tables pretty(er, I hope)
+#   0.1.1 - Added release_id and <blank> checking to keep the tables pretty(er, I hope)
 
 VERSION="0.1.1"
 
@@ -9,7 +9,7 @@ MAX_WIDTH=$(file-width.sh)
 FORMAT_STRING="%-${MAX_WIDTH}s%-40s%-11s%-15s%-10s\n"
 
 #Print the header row
-printf "$FORMAT_STRING" "System Name" "Product Name" "ReleaseID" "Current Build" "UBR Code"
+printf "$FORMAT_STRING" "System Name" "Product Name" "release_id" "Current Build" "UBR Code"
 
 for FILE in $(ls -1 *.txt); do
     SYSTEM_NAME=${FILE/'.txt'/''}
@@ -17,13 +17,13 @@ for FILE in $(ls -1 *.txt); do
     IFS='%%%'
 
     # Get the necessary info from each file
-    PRODUCT_NAME=$(grep -i -m 1 '^System_OSInfo::ProductName' $FILE | awk -F ':' '{sub(/^ /,"",$4); print $4}')
-    RELEASE_ID=$(grep -i -m 1 '^System_OSInfo::ReleaseID' $FILE | awk '{print $NF}')
+    PRODUCT_NAME=$(grep -i -m 1 '^System_OSInfo::product_name' $FILE | awk -F ':' '{sub(/^ /,"",$4); print $4}')
+    RELEASE_ID=$(grep -i -m 1 '^System_OSInfo::release_id' $FILE | awk '{print $NF}')
     if [[ "${RELEASE_ID}" == ":" ]] || [[ "${RELEASE_ID}" == "" ]]; then
         RELEASE_ID="<Blank>"
     fi
     
-    CURRENT_BUILD=$(grep -i -m 1 '^System_OSInfo::CurrentBuild' $FILE | awk '{print $NF}')
+    CURRENT_BUILD=$(grep -i -m 1 '^System_OSInfo::current_build' $FILE | awk '{print $NF}')
     if [[ "${CURRENT_BUILD}" == ":" ]] || [[ "${CURRENT_BUILD}" == "" ]]; then
         CURRENT_BUILD="<Blank>"
     fi

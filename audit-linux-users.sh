@@ -34,7 +34,7 @@ SYNTAX_NOTES="
             (https://github.com/kirkpatrickprice/linux-audit-script)"
 
 function BlankPasswords {
-    local RESULT ITEM FILEOK KPNIXVERSION REQDVERSION SECTION_HEADER f SAVEIFS
+    local RESULT ITEM FILEOK kp_nix_version REQDVERSION SECTION_HEADER f SAVEIFS
 
     echo "Test for users with blank password"
 
@@ -42,15 +42,15 @@ function BlankPasswords {
     REQDVERSION="0.6.11"
 
     for f in $(ls -1); do
-        # Get the version KPNIXVERSION from the file | if Grep fails because it can't find the line (e.g. a REALLY old version was used), set the version to 0.0.0 so it fails the check.
-        KPNIXVERSION=$(grep "KPNIXVERSION" $f | awk -F ": " '{print $2}')
+        # Get the version kp_nix_version from the file | if Grep fails because it can't find the line (e.g. a REALLY old version was used), set the version to 0.0.0 so it fails the check.
+        kp_nix_version=$(grep "kp_nix_version" $f | awk -F ": " '{print $2}')
         
-        if [[ -z $KPNIXVERSION ]]; then
-            KPNIXVERSION="0.0.0"
+        if [[ -z $kp_nix_version ]]; then
+            kp_nix_version="0.0.0"
         fi
 
         # Check the version of the results file against the required version for this check.
-        FILEOK=$(VersionCheck "$KPNIXVERSION" "$REQDVERSION")
+        FILEOK=$(VersionCheck "$kp_nix_version" "$REQDVERSION")
 
         if [[ $FILEOK -eq 1 ]]; then
 
@@ -76,10 +76,10 @@ function BlankPasswords {
                 printf "\t\tNo blank passwords found\n"
             fi
         else    # FILEOK=0
-            if [[ "$KPNIXVERSION" = "0.0.0" ]]; then
+            if [[ "$kp_nix_version" = "0.0.0" ]]; then
                 printf "\t%s does not appear to be a kpnixaudit.sh result file or it was created by a truly ancient version.  Skipping file.\n" $f
             else
-                printf "\t%s was created by kpnixaudit.sh version %s.  Skipping file.\n" $f $KPNIXVERSION
+                printf "\t%s was created by kpnixaudit.sh version %s.  Skipping file.\n" $f $kp_nix_version
             fi    
         fi
     done
@@ -88,7 +88,7 @@ function BlankPasswords {
 }
 
 function UserStatus {
-    local NOT_LOGIN_SHELLS EXCLUDE_SHELLS REQDVERSION KPNIXVERSION SECTION_HEADER LONGEST_USER SHELL LONGEST_SHELL ITEM f FILEOK 
+    local NOT_LOGIN_SHELLS EXCLUDE_SHELLS REQDVERSION kp_nix_version SECTION_HEADER LONGEST_USER SHELL LONGEST_SHELL ITEM f FILEOK 
     local SECTION_HEADER SSH_KEY SAVEIFS SSH_WIDTH PASSWD_STATUS PASSWD_WIDTH PASSWD_CHANGED PASSWD_MAX_AGE
     
     # Define a lit of shells that don't result in an interactive login / these can be excluded from the check for inactive users)
@@ -107,15 +107,15 @@ function UserStatus {
     
     #Analyze and report the results one file at a time
     for f in $(ls -1); do
-        # Get the version KPNIXVERSION from the file | if Grep fails because it can't find the line (e.g. a REALLY old version was used), set the version to 0.0.0 so it fails the check.
-        KPNIXVERSION=$(grep "KPNIXVERSION" $f | awk -F ": " '{print $2}')
+        # Get the version kp_nix_version from the file | if Grep fails because it can't find the line (e.g. a REALLY old version was used), set the version to 0.0.0 so it fails the check.
+        kp_nix_version=$(grep "kp_nix_version" $f | awk -F ": " '{print $2}')
         
-        if [[ -z $KPNIXVERSION ]]; then
-            KPNIXVERSION="0.0.0"
+        if [[ -z $kp_nix_version ]]; then
+            kp_nix_version="0.0.0"
         fi
 
         # Check the version of the results file against the required version for this check.
-        FILEOK=$(VersionCheck "$KPNIXVERSION" "$REQDVERSION")
+        FILEOK=$(VersionCheck "$kp_nix_version" "$REQDVERSION")
 
         if [[ $FILEOK -eq 1 ]]; then
             SECTION_HEADER="Users_etcpasswd"
@@ -176,10 +176,10 @@ function UserStatus {
             done
             printf "\n"
         else    # FILEOK=0
-            if [[ "$KPNIXVERSION" = "0.0.0" ]]; then
+            if [[ "$kp_nix_version" = "0.0.0" ]]; then
                 printf "\t%s does not appear to be a kpnixaudit.sh result file or it was created by a truly ancient version.  Skipping file.\n" $f
             else
-                printf "\t%s was created by kpnixaudit.sh version %s.  Skipping file.\n" $f $KPNIXVERSION
+                printf "\t%s was created by kpnixaudit.sh version %s.  Skipping file.\n" $f $kp_nix_version
             fi
         fi
 
