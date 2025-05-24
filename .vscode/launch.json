@@ -22,6 +22,18 @@
             "args": [
                 "scripts",
             ]
-        }
+        },
+        {
+            "name": "Python Debugger: KPAT CLI (Scripts) Validation Error",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/__main__.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "args": [
+                "scripts",
+                "-c", "no-such-file.yaml"
+            ]
+        },
     ]
 }
