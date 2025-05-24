@@ -23,7 +23,7 @@ myfile.yaml
       ...more options
 ```
 
-This will bring in all of the checks in 'audit-windows.yaml' and the tool knows to look in it's conf.d folder if not path info is provided.  For anything not including the conf.d folder, you'll need to provide path info.  In fact, audit-windows.yaml and audit-linux.yaml both use this method to keep the configs easier to read and so that you can run just a subset of the checks if you'd like.
+This will bring in all of the checks in `audit-windows.yaml` and the tool knows to look in it's `conf.d` folder if no path info is provided.  For anything not including the `conf.d` folder, you'll need to provide path info.  In fact, `audit-windows.yaml` and `audit-linux.yaml` both use this method to keep the configs easier to read and so that you can run just a subset of the checks if you'd like.
 
 There are help sections at the top of each of the provided YAML files, but the most authoritative list of available options is provided here.
 
