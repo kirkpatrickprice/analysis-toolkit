@@ -14,7 +14,7 @@ global:
 04_users_02_home_folders:
   regex: 'Users_HomeFolders::(?!.*Shared)d(?P<permissions>[rwx-]+)\+\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - dir
     - permissions
     - owner
@@ -29,7 +29,7 @@ global:
   regex: 'Users_PasswordPolicy::((maxFailedLogins=(?P<maxFailedLogins>(\d+)?))|(LockoutDuration=(?P<lockoutDuration>(\d+)?))|(minLength=(?P<minLength>(\d+)?))|(requiresAlpha=(?P<requiresAlpha>(\d+)?))|(requiresNumeric=(?P<requiresNumeric>(\d+)?))|(requiresSymbol=(?P<requiresSymbol>(\d+)?))|(maxMinutesUntilChangePassword=(?P<maxPasswordAgeMins>(\d+)?)))'
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - maxFailedLogins
     - lockoutDuration
     - minLength
@@ -46,7 +46,7 @@ global:
   only_matching: True
   combine: True
   rs_delimiter: '^Users_LocalUsers::-$'
-  group_list:
+  field_list:
     - userName
     - uniqueID
     - homeDir
@@ -64,7 +64,7 @@ global:
   only_matching: True
   combine: True
   rs_delimiter: '^Users_LocalGroups::-$'
-  group_list:
+  field_list:
     - groupName
     - primaryID
     - members
@@ -80,7 +80,7 @@ global:
 04_users_06_root_status:
   regex: 'Users_RootStatus::(?P<rootStatus>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - rootStatus
   comment: |-
     The root user shouldn't be used directly and should be disabled.  This check determines if there are any authenticators configured for the root account.
@@ -99,7 +99,7 @@ global:
 04_users_08_siri_status:
   regex: 'Users_SiriStatus-(?P<username>.*?)-Enabled::\s+"Assistant Enabled"\s+=\s+(?P<siriStatus>\d+)'
   only_matching: True
-  group_list:
+  field_list:
     - username
     - siriStatus
   comment: |-
@@ -107,7 +107,7 @@ global:
 04_users_09_screensaver:
   regex: 'Users_ScreensaverStatus-(?P<username>.*?)::(?P<screensaverTimeout>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - username
     - screensaverTimeout
   comment: |-
@@ -115,7 +115,7 @@ global:
 04_users_10_password_hints:
   regex: 'Users_PasswordHints::RetriesUntilHint=(?P<retriesUntilHint>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - retriesUntilHint
   comment: |-
     Passowrd hints should not be used as they are often directly related to the user's password and even when they're not, they're still just another form of "someting you know" and do regularly meet the password complexity requirements.

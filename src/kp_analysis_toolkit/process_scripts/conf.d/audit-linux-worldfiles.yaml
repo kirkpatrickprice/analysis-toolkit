@@ -7,7 +7,7 @@ global:
 08_worldFiles_01_interesting_world_writable_files:
   regex: 'WorldFiles::.*?(?P<permissions>.[-rwx]{9}).*?(?P<path>(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin|/opt|/lib(?!/docker)|/mnt).*)'
   only_matching: True
-  group_list:
+  field_list:
     - permissions
     - path
   comment: |-

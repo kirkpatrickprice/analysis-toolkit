@@ -8,7 +8,7 @@ global:
 03_ssh_01_settings:
   regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
   only_matching: True
-  group_list:
+  field_list:
     - usePam
     - maxAuthTries
     - permitRootLogin
@@ -43,7 +43,7 @@ global:
     From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
 03_ssh_02_crypto_weak_moduli:
   regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535|2047)'
-  group_list:
+  field_list:
     - 'mod_size'
   unique: True
   comment: |-

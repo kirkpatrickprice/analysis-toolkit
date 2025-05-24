@@ -7,7 +7,7 @@ global:
 02_network_01_macos_ping_results:
   regex: 'Network_ConnectivityTest::(?P<xmitPackets>\d+) packets transmitted, (?P<recdPackets>\d+) packets received, (?P<pktLoss>[\d.%]+) packet loss'
   only_matching: True
-  group_list:
+  field_list:
     - xmitPackets
     - recdPackets
     - pktLoss
@@ -18,7 +18,7 @@ global:
 02_network_02_dns_nameserver:
   regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver (?P<nameServer>[\d.]+)'
   only_matching: True
-  group_list:
+  field_list:
     - nameServer
   comment: |-
     We collect the DNS resolver configuration.  Using an external resolver could open up some interesting attack vectors through DNS poisoning.  And in PCI DSS, DNS Servers are listed as a possible system component to include in scope (see page 10 of v3.2.1).
@@ -27,7 +27,7 @@ global:
   regex: 'Network_FirewallStatus::\s+(Mode:\s(?P<mode>.*)|Firewall Logging:\s(?P<logging>.*)|Stealth Mode:\s(?P<stealthMode>.*))'
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - mode
     - logging
     - stealthMode
@@ -36,7 +36,7 @@ global:
     We'll use the system_profiler command to get the data in a standard, and human-readble, format.
 02_network_05_listening_services:
   regex: 'Network_ListeningServices::(?P<processName>[\w-]+)\s+(?P<pid>\d+)\s+(?P<user>[\w\d]+)\s+([\d\w]+)\s+(?P<addrFamily>(IPv4|IPv6))\s(.*?)(?P<proto>(TCP|UDP))\s+(?P<addrPort>.*)\s\(LISTEN\)'
-  group_list:
+  field_list:
     - processName
     - pid
     - user
@@ -63,7 +63,7 @@ global:
 02_network_06_ssh_settings:
   regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
   only_matching: True
-  group_list:
+  field_list:
     - usePam
     - maxAuthTries
     - permitRootLogin
@@ -97,7 +97,7 @@ global:
 02_network_08_nfs:
   regex: 'Network_SharesNFS::nfsd is (?P<nfsStatus>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - nfsStatus
   comment: |-
     The Network File System (NFS) is common in Unix/Linux-only environments where SMB compatability is not needed for access to/from Windows systems
@@ -106,7 +106,7 @@ global:
   regex: 'Network_SharesSamba::\s+((NetBIOSName\s+=\s+(?P<netBiosName>.+);)|ServerDescription\s+=\s+(?P<serverDesc>.*))'
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - netBiosName
     - serverDesc
   comment: |-
@@ -116,7 +116,7 @@ global:
   only_matching: True
   combine: True
   rs_delimiter: '^Network_SharesSamba-SharedFolders::$'
-  group_list:
+  field_list:
     - prettyName
     - dirPath
     - afpShared

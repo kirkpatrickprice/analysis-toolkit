@@ -6,7 +6,7 @@ global:
 
 03_users_01_local_admin_user:
     regex: 'Users_LocalAdministrator::((Name[ ]+:[ ]+(?P<name>[\w ]+))|(Enabled[ ]+:[ ]+(?P<enabled>[\w ]+))|(LastLogon[ ]+:[ ]+(?P<lastLogon>[\w ]+))|(PasswordLastSet[ ]+:[ ]+(?P<passwordLastSet>[\w ]+))|(PasswordRequired[ ]+:[ ]+(?P<passwordReqd>[\w ]+))|(PasswordExpires[ ]+:[ ]+(?P<passwordExpires>[\w /-:]+)))'
-    group_list:
+    field_list:
       - name
       - enabled
       - lastLogon
@@ -22,7 +22,7 @@ global:
 03_users_03_local_password_policy:
   regex: 'Users_LocalPasswordPolicy::((Minimum password age \(days\):[ ]+)(?P<minAge>\d+)|(Maximum password age \(days\):[ ]+)(?P<maxAge>\d+)|(Minimum password length:[ ]+)(?P<minLength>\d+)|(Length of password history maintained:[ ]+)(?P<history>[\w\d]+)|(Lockout threshold:[ ]+)(?P<lockoutThreshold>[\w\d]+)|(Lockout duration \(minutes\):[ ]+)(?P<lockoutDuration>\d+)|(Lockout observation window \(minutes\):[ ]+)(?P<lockoutWindow>\d+))'
   only_matching: True
-  group_list:
+  field_list:
     - minAge
     - maxAge
     - minLength
@@ -33,10 +33,10 @@ global:
   combine: True
   comment: |-
     The local computer's password policy.  This may not be the same as the domain policy.  For the domain policy, you'll need to have your customer run the KPADAudit.ps1 script.
-  fullScan: True
+  full_scan: True
 03_users_04_local_users_labeled:
   regex: 'Users_LocalUsers::(?!Name)((?P<userName>[\w .$-]+?)(?P<enabled>(True|False))[ ]+(?P<lastLogon>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3}).*?(?P<userMayChangePassword>(True|False))[ ]+(?P<passwordExpires>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<passwordLastSet>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<sid>S-[\d-]+))'
-  group_list:
+  field_list:
     - userName
     - enabled
     - lastLogon
@@ -44,18 +44,18 @@ global:
     - passwordExpires
     - passwordLastSet
     - sid
-  fullScan: True
+  full_scan: True
   only_matching: True
   comment: |-
     The local computer's local user list.  All fields should be self-explanatory.  This was a particularly tricky regex pattern, so be sure to compare against the users_raw file or event the text files themselves to gain confidence.
 03_users_04_local_users_raw:
   regex: 'Users_LocalUsers::(?!Name\s+(Enabled|Disabled))(?!--)\w'
-  fullScan: True
+  full_scan: True
   comment: |-
     The local computer's localgroup memberships.
 03_users_05_local_groups_labeled:
   regex: 'Users_LocalGroups::(((?P<groupName>[\w $.-]+))( (?P<sid>S[-\d]+))[ ]+(?P<groupDesc>[\w ]+))'
-  group_list:
+  field_list:
     - groupName
     - sid
     - groupDesc

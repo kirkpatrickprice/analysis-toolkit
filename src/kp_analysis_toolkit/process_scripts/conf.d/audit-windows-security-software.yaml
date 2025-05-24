@@ -5,8 +5,8 @@ global:
       value: Windows
 
 04_secsoft_01_av_status_security_center:
-  regex: 'AntiVirus_AVStatus::((displayName[ ]+:[ ]+)(?P<displayName>.*)|(productState[ ]+:[ ]+(?P<productState>\d+))|(Enabled[ ]+:[ ]+(?P<avEnabled>.*))|(AntispywareEnabled[ ]+:[ ]+(?P<antispywareEnabled>.*))|(AntivirusEnabled[ ]+:[ ]+(?P<antivirusEnabled>.*))|(BehaviorMonitorEnabled[ ]+:[ ]+(?P<behaviorMonitorEnabled>.*))|(OnAccessProtectionEnabled[ ]+:[ ]+(?P<onAccessProtectionEnabled>.*))|(AntispywareSignatureAge[ ]+:[ ]+(?P<antispywareSignatureAge>\d+))|(LastFullScanAge[ ]+:[ ]+(?P<lastFullScanAge>\d+))|(LastQuickScanAge[ ]+:[ ]+(?P<lastQuickScanAge>\d+))|(ProductStatus[ ]+:[ ]+(?P<productStatus>\d+)))'
-  group_list:
+  regex: 'AntiVirus_AVStatus::((displayName[ ]+:[ ]+)(?P<displayName>.*)|(productState[ ]+:[ ]+(?P<productState>\d+))|(Enabled[ ]+:[ ]+(?P<avEnabled>.*))|(AntispywareEnabled[ ]+:[ ]+(?P<antispywareEnabled>.*))|(AntivirusEnabled[ ]+:[ ]+(?P<antivirusEnabled>.*))|(BehaviorMonitorEnabled[ ]+:[ ]+(?P<behaviorMonitorEnabled>.*))|(OnAccessProtectionEnabled[ ]+:[ ]+(?P<onAccessProtectionEnabled>.*))|(AntispywareSignatureAge[ ]+:[ ]+(?P<antispywareSignatureAge>\d+))|(Lastfull_scanAge[ ]+:[ ]+(?P<lastfull_scanAge>\d+))|(LastQuickScanAge[ ]+:[ ]+(?P<lastQuickScanAge>\d+))|(ProductStatus[ ]+:[ ]+(?P<productStatus>\d+)))'
+  field_list:
     - displayName
     - productState
     - avEnabled
@@ -15,7 +15,7 @@ global:
     - behaviorMonitorEnabled
     - onAccessProtectionEnabled
     - antispywareSignatureAge
-    - lastFullScanAge
+    - lastfull_scanAge
     - lastQuickScanAge
     - productStatus
   only_matching: True

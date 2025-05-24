@@ -113,7 +113,7 @@ class Search:
             "unique": False,
             "truncate": False,
             "quiet": False,
-            "fullScan": False,
+            "full_scan": False,
             "combine": False,
             "outPath": "saved",
             "verbose": False,
@@ -255,22 +255,22 @@ class Search:
             self.config["only_matching"] = True
             error("Unique was enabled.  Forcing only_matching...")
 
-        # If group_list contains any entries, force only_matching to be True
+        # If field_list contains any entries, force only_matching to be True
         try:
-            self.config["group_list"]
+            self.config["field_list"]
         except (
             KeyError
-        ):  # If group_list is not defined, but only_matching is defined...
+        ):  # If field_list is not defined, but only_matching is defined...
             if self.config["only_matching"]:
                 error(
-                    "Search config includes only_matching, but group_list is undefined",
+                    "Search config includes only_matching, but field_list is undefined",
                 )
                 exit(errorCodes["invalidConfig"])
-        else:  # If group_list is defined, then always set only_matching to true
+        else:  # If field_list is defined, then always set only_matching to true
             if not self.config["only_matching"]:
                 self.config["only_matching"] = True
                 if self.config["verbose"]:
-                    error("group_list was provided.  Forcing only_matching...")
+                    error("field_list was provided.  Forcing only_matching...")
 
     def printConfig(self):
         """
@@ -320,10 +320,10 @@ class Search:
         def combineResults(results):
             """
             Inputs:
-                results         List of results         List of one-item dictionaries for each group_list group
+                results         List of results         List of one-item dictionaries for each field_list group
 
             Outputs
-                combinedResults Dictionary of results   A dictionary of group_list items value
+                combinedResults Dictionary of results   A dictionary of field_list items value
             """
             combinedResults = {}
             for result in results:
@@ -336,7 +336,7 @@ class Search:
         desiredSectionPattern = None
         limitToSection = False
         if (
-            self.getRegex().find("::") > 0 and not self.config["fullScan"]
+            self.getRegex().find("::") > 0 and not self.config["full_scan"]
         ):  # and self.config['max_results'] == 0:
             desiredSectionRegex = self.getRegex().split("::")[0]
 
@@ -427,7 +427,7 @@ class Search:
                     ]:  # only_matching is true when we're processing groups
                         groupDict = {}
                         groupDict["systemName"] = system.getSystemName()
-                        for group in self.config["group_list"]:
+                        for group in self.config["field_list"]:
                             try:
                                 if found.group(group):
                                     groupDict[group] = makePrintable(
@@ -457,10 +457,10 @@ class Search:
                             for result in groupResults:
                                 foundGroups += list(result.keys())
 
-                            for reqdGroup in self.config["group_list"]:
+                            for reqdGroup in self.config["field_list"]:
                                 foundBool += [reqdGroup in foundGroups]
 
-                            # if (len(groupResults) == len(self.config['group_list'])):
+                            # if (len(groupResults) == len(self.config['field_list'])):
                             if all(foundBool):
                                 systemResults.append(combineResults(groupResults))
                                 combined = True
@@ -496,7 +496,7 @@ class Search:
             # If we finished the file, but we didn't find all of the groups we though we needed, go ahead and combine what we have
             if self.config["combine"] and not combined and len(groupResults) > 0:
                 for group in self.config[
-                    "group_list"
+                    "field_list"
                 ]:  # Add a blank result for any group name that wasn't found
                     if group not in foundGroups:
                         groupResults.append(
@@ -528,11 +528,11 @@ class Search:
             if len(results) > 0:
                 colWidth = getLongest(results, whiteSpace)
                 try:
-                    colWidth[self.config["group_list"][-1]] -= (
-                        whiteSpace  # Remove the pad from the last item in the group_list
+                    colWidth[self.config["field_list"][-1]] -= (
+                        whiteSpace  # Remove the pad from the last item in the field_list
                     )
                 except KeyError:
-                    colWidth["Results"] -= whiteSpace  # If group_list wasn't used...
+                    colWidth["Results"] -= whiteSpace  # If field_list wasn't used...
                 reduceBy = 1
                 firstPass = True
                 needShorter = False
@@ -578,8 +578,8 @@ class Search:
                     values = [result["systemName"]]
                     try:
                         keys = self.config[
-                            "group_list"
-                        ]  # Check if group_list was set in the config
+                            "field_list"
+                        ]  # Check if field_list was set in the config
                     except KeyError:
                         keys = list(
                             result.keys(),
@@ -788,7 +788,7 @@ class System:
             osDetailsSearchConfig = {
                 "systems": self,
                 "regex": r'(System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<prettyName>.*)"$)|(System_VersionInformation::/etc/redhat-release::(?P<rpm_pretty_name>.*))',
-                "group_list": [
+                "field_list": [
                     "prettyName",
                     "rpm_pretty_name",
                 ],
@@ -852,7 +852,7 @@ class System:
             osDetailsSearchConfig = {
                 "systems": self,
                 "regex": r"System_OSInfo::(product_name\s+:\s+(?P<product_name>[\w ]+))|(release_id\s+:\s+(?P<release_id>\w+))|(current_build\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))",
-                "group_list": [
+                "field_list": [
                     "product_name",
                     "release_id",
                     "current_build",
@@ -872,7 +872,7 @@ class System:
             osDetailsSearchConfig = {
                 "systems": self,
                 "regex": r"System_VersionInformation::((product_name:\s+(?P<product_name>\w+))|(ProductVersion+:\s+(?P<ProductVersion>[\w.]+))|(BuildVersion:\s+(?P<BuildVersion>\w+)))",
-                "group_list": [
+                "field_list": [
                     "product_name",
                     "ProductVersion",
                     "BuildVersion",
@@ -1100,7 +1100,7 @@ if __name__ == "__main__":
             "regex": r"System_Services::(?!DisplayName)(?!--)(?P<ServiceName>(\w+\s)+)\s+(?P<Status>Running|Stopped)\s+(?P<StartType>.*)",
             "max_results": 5,
             "only_matching": True,
-            "group_list": [
+            "field_list": [
                 "ServiceName",
                 "Status",
                 "StartType",
@@ -1124,7 +1124,7 @@ if __name__ == "__main__":
             "regex": r"System_PackageManagerUpdates::(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?P<pkg_name>[\w\-.]+)\s+(?P<pend_version>[\d\-.\w]+\s)",
             "max_results": 5,
             "only_matching": True,
-            "group_list": [
+            "field_list": [
                 "pkg_name",
                 "pend_version",
             ],

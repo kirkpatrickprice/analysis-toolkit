@@ -7,7 +7,7 @@ global:
 06_logging_01_auditd_status:
   regex: 'Logging_AuditdStatus:: auditd_status: (?P<status>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - status
   comment: |-
     AuditD performs kernel-level logging.  For instance, it's a common way to generate file system access logs and some FIM products (e.g. Rapid7) actually require it as they are only monitoring AuditD events.  It can generate a lot of data and requires special tools to make the most sense out of the output, so we only grab the configs and none of the events.  Some CIS benchmarks for both Linux and Docker (and probably others) are based on AuditD, so we also check to see if it's running at all.
@@ -20,7 +20,7 @@ global:
 06_logging_03_auditd_setuid:
   regex: 'Logging_AuditdSETUID::(?P<binary>[\w/]+):(?P<ruleCount>\d+)'
   only_matching: True
-  group_list: 
+  field_list: 
     - binary
     - ruleCount
   comment: |-
@@ -55,7 +55,7 @@ global:
     Files with an extension such as ".1.gz" identify logs that have been rotated (see "logrotate_config" file).
 06_logging_07_logging_samples:
   regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
-  group_list:
+  field_list:
     - 'logfile'
     - 'head_tail'
     - 'logentry'

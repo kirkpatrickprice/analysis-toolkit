@@ -8,7 +8,7 @@ global:
     regex: 'Logging_AuditEventsConfig::[ ]+'
 05_logging_01_auditpol_config_labeled:
     regex: 'Logging_AuditEventsConfig::[ ]+((Security System Extension[ ]+(?P<systemSecurityExtension>.*))|(System Integrity[ ]+(?P<systemIntegrity>.*))|(Security State Change[ ]+(?P<securityStateChange>.*))|(Logon[ ]+(?P<logon>.*))|(Logoff[ ]+(?P<logoff>.*))|(Sensitive Privilege Use[ ]+(?P<sensitivePrivUse>.*))|(Process Creation[ ]+(?P<processCreation>.*))|(Process Termination[ ]+(?P<processTermination>.*))|(File System[ ]+(?P<fileSystem>.*))|(Audit Policy Change[ ]+(?P<auditPolicyChange>.*))|(Directory Service Access[ ]+(?P<directoryServiceAccess>.*))|(Directory Service Changes[ ]+(?P<directoryServiceChanges>.*)))'
-    group_list:
+    field_list:
       - 'sensitivePrivUse'
       - 'directoryServiceAccess'
       - 'systemIntegrity'
@@ -29,7 +29,7 @@ global:
 05_logging_02_fs_audit_config:
   regex: 'Logging_FSAuditing-(?P<drive>[A-Za-z]):(?P<path>[\w\\. ]+?)::Audit[ ]+:(?P<auditConfig>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - 'drive'
     - 'path'
     - 'auditConfig'
@@ -48,7 +48,7 @@ global:
 05_logging_04_event_log_samples:
   regex: 'Logging_EventLogSamples(?P<eventLogSource>[A-Za-z]+)::(?!(Index[ ]+Time)|---)(?P<logMessage>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - eventLogSource
     - logMessage
   comment: |-

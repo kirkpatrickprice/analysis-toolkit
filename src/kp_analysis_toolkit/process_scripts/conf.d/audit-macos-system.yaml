@@ -8,7 +8,7 @@ global:
   regex: 'kp_mac_version: (?P<kp_mac_version>.*)'
   max_results: 1
   only_matching: True
-  group_list:
+  field_list:
     - 'kp_mac_version'
   comment: |-
     KPMacAudit version information.  Use this to confirm that all script results were produced with a recent version.
@@ -20,7 +20,7 @@ global:
   max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - 'product_name'
     - 'productVersion'
     - 'buildVersion'
@@ -31,7 +31,7 @@ global:
   regex: 'System_Periodic::/etc/periodic/(?P<frequency>(daily|weekly|monthly))/(?P<jobName>.*?)::'
   only_matching: True
   unique: True
-  group_list:
+  field_list:
     - frequency
     - jobName
   comment: |-
@@ -50,7 +50,7 @@ global:
     This file shows the results for APFS-based file systems, which is the system default on recent MacOS versions.
 
     Apple no longer recommends using institutional recovery keys, so ideally we would see that this is disabled (https://derflounder.wordpress.com/2021/10/29/use-of-filevault-institutional-recovery-keys-no-longer-recommended-by-apple/).
-  group_list:
+  field_list:
     - filevaultStatus
     - hasPersonalRecoveryKey
     - hasInstitutionalRecoveryKey
@@ -59,7 +59,7 @@ global:
 01_system_05_file_system_mounts:
   regex: 'System_FSMounts-mounts::(?P<device>.*?)\s+on\s+(?P<mountPoint>[\w/]+)\s+\((?P<options>.*)\)'
   only_matching: True
-  group_list:
+  field_list:
     - device
     - mountPoint
     - options
@@ -69,7 +69,7 @@ global:
   regex: 'System_InstalledApps-MacOS::((\s{4}(?P<appName>\w.*):)|(\s{6}Version:\s+(?P<version>.*)|(\s{6}Obtained from:\s+(?P<obtainedFrom>.*))|(\s{6}Last Modified:\s+(?P<lastModified>.*?),)|(\s{6}Kind:\s+(?P<kind>.*))|(\s{6}Signed by:\s+(?P<signedBy>.*))|(\s{6}Location:\s+(?P<location>.*))))'
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - appName
     - version
     - obtainedFrom
@@ -81,7 +81,7 @@ global:
 01_system_11_pending_updates_apple:
   regex: 'System_PendingUpdates-Apple::.+Title:\s(?P<title>.*?),\s+Version:\s(?P<version>[\d.]+?),.*Recommended:\s+(?P<recommended>.*?),'
   only_matching: True
-  group_list:
+  field_list:
     - title
     - version
     - recommended
@@ -90,7 +90,7 @@ global:
 01_system_11_pending_updates_brew:
   regex: 'System_PendingUpdates-Brew-(?P<user>\w+)::(?P<title>\w.*?)\s+(?P<currentVersion>[\w\.-]+?)\s->\s(?P<pendingVersion>[\w\.-]+)'
   only_matching: True
-  group_list:
+  field_list:
     - title
     - currentVersion
     - pendingVersion
@@ -99,7 +99,7 @@ global:
 01_system_12_running_processes:
   regex: 'System_RunningProcesses::\s+(?P<user>[\d+]+)\s+(?P<pid>\d+)\s+(?P<parentPid>\d+)\s+(?P<cpu>\d+)\s+(?P<startTime>.+?)\s+(?P<tty>.+?)\s+(?P<time>[\d:.]+)\s+(?P<command>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - user
     - pid
     - parentPid
@@ -120,7 +120,7 @@ global:
 01_system_13_system_services:
   regex: 'System_ServiceInfo::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - pid
     - exitStatus
     - label
@@ -134,14 +134,14 @@ global:
 01_system_14_system_integrity_protection:
   regex: 'System_IntegrityProtection::System Integrity Protection status:\s(?P<status>\w+)'
   only_matching: True
-  group_list:
+  field_list:
     - status
   comment: |-
     System Integrity Protection provides restrictions on interactions with system-level processes.
 01_system_15_amfi:
   regex: 'System_AMFI::(?P<disabled>\d+)'
   only_matching: True
-  group_list:
+  field_list:
     - disabled
   comment: |-
     Apple Mobile File Integrity (AMFI) is the macOS kernel module that enforces code-signing and library validation.  It's always enabled unless it's been specifically disabled.
@@ -150,14 +150,14 @@ global:
 01_system_16_ssv:
   regex: 'System_SSV::Authenticated Root status:\s+(?P<status>\w+)'
   only_matching: True
-  group_list:
+  field_list:
     - status
   comment: |-
     The Sealed System Volume (SSV) feature computes a SHA-256 hash of system files that should not change.  The hash is compared at boot time.
 01_system_17_system_prefs_locked:
   regex: 'System_SystemPrefsLocked::(?P<status>\d+)'
   only_matching: True
-  group_list:
+  field_list:
     - status
   comment: |-
     This setting determines whether a password is required to access system-wide preferences.  We're looking for "1" to show that the setting is enabled

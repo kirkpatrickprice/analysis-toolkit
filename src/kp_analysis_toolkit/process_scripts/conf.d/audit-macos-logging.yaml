@@ -7,8 +7,8 @@ global:
 03_logging_01_auditd_status:
   regex: 'Logging_AuditdStatus::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)|(Logging_AuditConfig::/etc/security/audit_control::(expire-after:(?P<expireAfter>.*)|flags:(?P<allUserFlags>.*)))'
   only_matching: True
-  fullScan: True
-  group_list:
+  full_scan: True
+  field_list:
     - pid
     - exitStatus
     - label
@@ -35,7 +35,7 @@ global:
 03_logging_01_auditd_user_logging:
   regex: 'Logging_AuditConfig::/etc/security/audit_user::(?P<user>\w+):(?P<alwaysAudit>[\w+,-^]+):(?P<neverAudit>[\w+,-^]+)'
   only_matching: True
-  group_list:
+  field_list:
     - user
     - alwaysAudit
     - neverAudit
@@ -53,7 +53,7 @@ global:
 03_logging_02_install_log_retention:
   regex: 'Logging_InstallLog::/etc/asl/com.apple.install::\*\s+file\s+(?P<destination>[/\w.]+)((.*?file_max=(?P<file_max>\w+).*?all_max=(?P<all_max>\w+))|(.*ttl=(?P<ttl>\d+)))'
   only_matching: True
-  group_list:
+  field_list:
     - destination
     - file_max
     - all_max
@@ -64,7 +64,7 @@ global:
 03_logging_04_logfile_permissions:
   regex: 'Logging_AuditPermissions::d(?P<permissions>[rwx-]+)\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>audit|log.?)'
   only_matching: True
-  group_list: 
+  field_list: 
     - dir
     - permissions
     - owner
@@ -72,7 +72,7 @@ global:
   comment: |-
     These results include the file system permissions for the the folders used to write logs (/var/audit and /var/log).  Permissions should be limited to only those with a need to read log files.  Compare the owner and group permissions to expectations (it may be necessary to review group memberships as well).  "Other" should have no permissions to these folders.
 
-    As with all Unix-line file system permissions, each permissions block is really three different group_list:
+    As with all Unix-line file system permissions, each permissions block is really three different field_list:
       Owner: The user-owner of the file/directory (rwx, as necessary)
       Group: The group-owner of the file/directory (rwx, as necessary / check system group memberships)
       Other: Anyone else on the system (--- to restrict all access)
@@ -97,7 +97,7 @@ global:
   regex: 'Logging_Firewall-firewall::(EnableLogging=(?P<fwEnableLogging>.*)|LoggingOption=(?P<fwLoggingOption>.*))|Logging_Firewall-alf::(loggingenabled=(?P<alfEnableLogging>.*)|loggingoption=(?P<alfLoggingOption>.*))'
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - fwEnableLogging
     - fwLoggingOption
     - alfEnableLogging
@@ -112,7 +112,7 @@ global:
       - alfLoggingOption: 4
 03_logging_07_logging_samples:
   regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
-  group_list:
+  field_list:
     - 'logfile'
     - 'head_tail'
     - 'logentry'

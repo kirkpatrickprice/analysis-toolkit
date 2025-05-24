@@ -16,7 +16,7 @@ global:
     The most important thing is that these two things agree and that they're also using good hashes.  By default, all modern Linux distros use salted SHA-512, but you might still find some MD5 or other less-than-desirable hash in use if the system been upgraded from older versions.
 07_users_03_etc_passwd:
   regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
-  group_list:
+  field_list:
     - 'username'
     - 'uid'
     - 'gid'
@@ -32,7 +32,7 @@ global:
     These users are in addition to any that might be defined in Active Directory, OpenLDAP or other remote/network-based authentication sources.
 07_users_04_user_status:
   regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P.?)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)(?P<comment>.*)?' 
-  group_list:
+  field_list:
     - 'username'
     - 'status'
     - 'last_pw_change'
@@ -47,7 +47,7 @@ global:
     SPECIAL NOTE: "LOCKED" only means they can't use a passowrd to login.  SSH key-based authentication will still work if the user has a "~/.ssh/authorized_keys" file (check the "ssh_authorized_keys" file).
 07_users_05_etc_group:
   regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)$'
-  group_list:
+  field_list:
     - 'groupname'
     - 'gid'
     - 'members'
@@ -62,7 +62,7 @@ global:
 07_users_09_login_history:
   regex: 'Users_LoginHistory::(?!reboot)(?P<username>[-\w]+)\s+(?P<port>(pts/\d+)|(tty\d+))?\s+(?P<from>[\w.:]+)?\s+(?P<lastLogon>(\*\*.*|Mon|Tue|Wed|Thu|Fri|Sat|Sun).*)'
   only_matching: True
-  group_list:
+  field_list:
     - username
     - port
     - from
@@ -72,7 +72,7 @@ global:
 07_users_10_no_login_90_days:
   regex: 'Users_LastLog90::(?!reboot)(?P<username>[-\w]+)\s+(?P<port>(pts/\d+)|(tty\d+))?\s+(?P<from>[\w.:]+)?\s+(?P<lastLogon>(\*\*.*|Mon|Tue|Wed|Thu|Fri|Sat|Sun).*)'
   only_matching: True
-  group_list:
+  field_list:
     - username
     - port
     - from
@@ -86,7 +86,7 @@ global:
         - "ssh_authorized_keys" file to determine which users can logon with SSH public keys regardless of thei password status
 07_users_11_sudoers_all_commands:
   regex: 'Users_SudoersConfig::/etc/sudoers.*::(?!#).*ALL='
-  fullScan: True
+  full_scan: True
   comment: |-
     The Sudoers config determines which users and groups can execute commands as ROOT by prefacing the command with "sudo <command".
     See https://xkcd.com/149/ for a (lighthearted) visual reference of the effect that the SUDO command has and https://www.linux.com/training-tutorials/configuring-linux-sudoers-file/ for a more detailed explanation.
@@ -99,8 +99,8 @@ global:
 07_users_12_ssh_authorized_keys:
   regex: 'Users_AuthorizedKeys::/home/(?P<username>[-\w]+)/\.ssh/authorized_keys.*'
   only_matching: True
-  fullScan: True
-  group_list:
+  full_scan: True
+  field_list:
     - username
   comment: |-
     The presence of an "authorized_keys" file means that the user can authenticate through SSH using SSH public/private keys regardless of whether the user's password is disabled ("locked", see "user_status" file).

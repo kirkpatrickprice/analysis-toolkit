@@ -8,7 +8,7 @@ global:
 05_security_01_system_crypto_policy:
   regex: 'Security_SystemCryptoPolicy::(?P<policy>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - policy
   sys_filter:
     - attr: osFamily
@@ -26,14 +26,14 @@ global:
 05_security_01_aide_status:
   regex: 'Security_HidsAIDEConfig::Aide (?P<version>.*)'
   only_matching: True
-  group_list: 
+  field_list: 
     - version
   comment: |-
     AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the version of the AIDE software installed on the system.
 05_security_01_aide_config:
   regex: 'Security_HidsAIDEConfig::.*conf.*?::(?!#)(?P<setting>.*)'
   only_matching: True
-  group_list: 
+  field_list: 
     - setting
   comment: |-
     AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the content of the aide.conf file(s).  You can use this to determine which files and directories are being monitored by AIDE.

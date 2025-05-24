@@ -8,7 +8,7 @@ global:
   regex: 'kp_nix_version: (?P<kp_nix_version>.*)'
   max_results: 1
   only_matching: True
-  group_list:
+  field_list:
     - 'kp_nix_version'
   comment: |-
     KPNixAudit version information.  Use this to confirm that all script results were produced with a recent version.
@@ -19,7 +19,7 @@ global:
   regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<os_version>.*)'  
   max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
   only_matching: True
-  group_list:
+  field_list:
     - 'os_version'
   comment: |-
     For non-RPM based distro's, this will have an accurate OS version name.  You can use this to check online if the version is still supported by the vendor.
@@ -29,7 +29,7 @@ global:
   max_results: 1
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - 'vendorName'
     - 'version'
     - 'releaseDate'
@@ -46,7 +46,7 @@ global:
   # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
   regex: 'System_VersionInformation::/etc/system-release::(?P<RPMVersion>.*)'
   max_results: 1
-  group_list:
+  field_list:
     - RPMVersion
   sys_filter:
     - attr: osFamily
@@ -58,7 +58,7 @@ global:
 01_system_03_cron_jobs:
   regex: 'System_CrontabConfig::/etc/crontab::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)\s+(?P<user>\w+)(?P<command>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - minute
     - hour
     - dayOfMonth
@@ -82,13 +82,13 @@ global:
 01_system_03_cron_files:
   regex: 'System_CrontabConfig::(?P<filename>[\w/\-.\d]+)::'
   only_matching: True
-  group_list:
+  field_list:
     - filename
   unique: True
 01_system_03_user_crontabs:
   regex: 'System_UserCrontab::/var/spool/cron/(crontabs)?/(?P<user>\w+)::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)(?P<command>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - user
     - minute
     - hour
@@ -108,7 +108,7 @@ global:
 01_system_03_systemd_timers:
   regex: 'System_Timers::(?P<next>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s+[A-Z]{3,4})\s+(?P<timeLeft>[0-9].*?left)\s+(?P<last>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s[A-Z]{3,4})\s+(?P<passed>[0-9].*?ago)\s+(?P<unit>[A-Za-z].*?\.timer)\s+(?P<activates>[A-Za-z].*)'
   only_matching: True
-  group_list:
+  field_list:
     - next
     - timeLeft
     - last
@@ -131,7 +131,7 @@ global:
 01_system_05_file_system_mounts:
   regex: 'System_FSMounts::(?P<unit>.\s[-\w.\d]+\.mount)\s+(?P<loadState>\w+)\s+(?P<status>\w+)\s+(?P<sub>\w+)\s+(?P<description>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - unit
     - loadState
     - status
@@ -155,7 +155,7 @@ global:
     - attr: distro_family
       comp: eq
       value: rpm
-  group_list:
+  field_list:
     - status
     - policyName
     - currentMode
@@ -182,7 +182,7 @@ global:
       value: deb
   only_matching: True
   combine: True
-  group_list:
+  field_list:
     - status
     - loadedProfiles
     - enforceProfiles
@@ -223,7 +223,7 @@ global:
 01_system_10_installed_packages_deb_old:
   regex: 'System_PackageInstalledSoftware::(?P<pkg_name>\w+).*install'
   only_matching: True
-  group_list:
+  field_list:
     - 'pkg_name'
   sys_filter:
     - attr: osFamily
@@ -242,7 +242,7 @@ global:
 01_system_10_installed_packages_rpm_old:
   regex: 'System_PackageInstalledSoftware::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - 'pkg_name'
     - 'install_date'
   sys_filter:
@@ -264,7 +264,7 @@ global:
 01_system_11_package_history_deb_old:
   regex: 'System_PackageInstalledSoftware::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
   only_matching: True
-  group_list:                                                                    # Print the package name first (G2), followed by the date (G1)
+  field_list:                                                                    # Print the package name first (G2), followed by the date (G1)
     - 'pkg_name'
     - 'install_date'
   sys_filter:
@@ -286,7 +286,7 @@ global:
 01_system_12_pending_package_updates_deb_old:
   regex: 'System_PackageManagerUpdates::\s+(?P<pkg_name>((.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*)))\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
   only_matching: True
-  group_list:
+  field_list:
     - 'pkg_name'
     - 'cur_version'
     - 'pend_version'
@@ -319,7 +319,7 @@ global:
     - attr: kp_nix_version
       comp: le
       value: [0, 6, 18]
-  group_list:
+  field_list:
     - 'pkg_name'
     - 'pend_version'
   comment: |-
@@ -331,7 +331,7 @@ global:
 01_system_10_installed_packages_deb:
   regex: 'System_PackageInstalledSoftware-dpkg::(?P<pkg_name>\w+).*install'
   only_matching: True
-  group_list:
+  field_list:
     - 'pkg_name'
   sys_filter:
     - attr: osFamily
@@ -350,7 +350,7 @@ global:
 01_system_10_installed_packages_rpm:
   regex: 'System_PackageInstalledSoftware-rpm::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - 'pkg_name'
     - 'install_date'
   sys_filter:
@@ -372,7 +372,7 @@ global:
 01_system_11_package_history_deb:
   regex: 'System_PackageInstalledSoftware-dpkg::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
   only_matching: True
-  group_list:                                                                    # Print the package name first (G2), followed by the date (G1)
+  field_list:                                                                    # Print the package name first (G2), followed by the date (G1)
     - 'pkg_name'
     - 'install_date'
   sys_filter:
@@ -394,7 +394,7 @@ global:
 01_system_12_pending_package_updates_deb:
   regex: 'System_PackageManagerUpdates-apt::\s+(?P<pkg_name>((.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*)))\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
   only_matching: True
-  group_list:
+  field_list:
     - 'pkg_name'
     - 'cur_version'
     - 'pend_version'
@@ -427,8 +427,8 @@ global:
     - attr: kp_nix_version
       comp: ge
       value: [0, 6, 19]
-  fullScan: True
-  group_list:
+  full_scan: True
+  field_list:
     - 'pkg_name'
     - 'pend_version'
   comment: |-
@@ -443,7 +443,7 @@ global:
   # Uses negative look-ahead '(?!...)' to ignore anything that ends with [.*] which are system process names and probably not useful
   regex: 'System_RunningProcesses::(?!.*\[\w.*?\]$)(?P<user>[\w+]+)\s+(?P<pid>[\d]+)\s+(?P<cpuPct>[\d.]+)\s+(?P<memPct>[\d.]+)\s+(?P<vsz>\d+)\s+(?P<rss>\d+)\s+(?P<tty>[?\w/]+)\s+(?P<stat>[\w><+]+)\s+(?P<start>[\w:]+)\s+(?P<time>[\d:]+)\s+(?P<command>.*)'
   only_matching: True
-  group_list:
+  field_list:
     - user
     - pid
     - cpuPct
