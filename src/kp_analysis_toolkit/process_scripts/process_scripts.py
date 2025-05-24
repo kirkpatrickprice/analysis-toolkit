@@ -1,12 +1,12 @@
 import sys  # To handle command line arguments and usage
-from enum import Enum  # To define enumerations
 from pathlib import Path  # To handle file paths
 
 import duckdb  # To handle DuckDB database operations
-from pydantic import BaseModel
 
-from kp_analysis_toolkit.process_scripts import (
-    GLOBALS,
+from kp_analysis_toolkit.process_scripts import GLOBALS
+from kp_analysis_toolkit.process_scripts.data_models import (
+    PathType,
+    ProgramConfig,
 )
 
 """
@@ -37,21 +37,6 @@ Version History:
 """
 
 
-class ProgramConfig(BaseModel):
-    """Class to hold the program configuration."""
-
-    audit_config_file: str
-    source_files: str
-    yaml_conf_file: str
-
-
-class PathType(str, Enum):
-    """Enum to define the type of path."""
-
-    RELATIVE = "relative"
-    ABSOLUTE = "absolute"
-
-
 def get_config_files(path_type: PathType = PathType.RELATIVE) -> list[Path]:
     """
     Get the list of available configuration files.
@@ -77,7 +62,7 @@ def get_config_files(path_type: PathType = PathType.RELATIVE) -> list[Path]:
     return config_files
 
 
-def get_source_files(start_path: str, file_spec: str) -> list[Path]:
+def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     """
     Get the list of source files to process.
 
