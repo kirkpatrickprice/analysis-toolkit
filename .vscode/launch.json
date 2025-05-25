@@ -19,8 +19,11 @@
             "program": "${workspaceFolder}/src/kp_analysis_toolkit/__main__.py",
             "console": "integratedTerminal",
             "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
             "args": [
                 "scripts",
+                "--verbose",
+                "-p", "testdata/"
             ]
         },
         {
