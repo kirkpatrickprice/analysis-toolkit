@@ -1,10 +1,9 @@
-import hashlib
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, computed_field, field_validator
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
 
@@ -15,9 +14,9 @@ class ProgramConfig(BaseModel):
     program_path: Path = Path(__file__).parent
     config_path: Path = program_path / GLOBALS["CONF_PATH"]
     audit_config_file: Optional[Path] = None
-    out_path: Optional[Path] = None
     source_files_path: Optional[Path] = None
     source_files_spec: str
+    out_path: str
     list_audit_configs: bool = False
     list_sections: bool = False
     list_source_files: bool = False
@@ -42,23 +41,34 @@ class ProgramConfig(BaseModel):
 
         return config_file.absolute()
 
-    @field_validator("out_path", "source_files_path")
-    @classmethod
-    def validate_path(cls, value: Optional[Path], values: dict) -> Path:
-        """Validate the path and convert it to an absolute path."""
-        if value is None:
-            return Path().cwd()
-
-        p = Path(value)
+    @computed_field
+    @property
+    def results_path(cls) -> Path:
+        """Convert it to a pathlib.Path object and return the absolute path."""
+        # print(f"Validating results path: {cls.results_path}")
+        p: Path = Path(cls.source_files_path) / cls.out_path
 
         return p.absolute()
 
+    @computed_field
+    @property
+    def database_path(cls) -> Path:
+        """Convert it to a pathlib.Path object and return the absolute path."""
+        # print(f"Validating database path: {cls.database_path}")
+        p: Path = cls.results_path / GLOBALS["DB_FILENAME"]
 
-class PathType(str, Enum):
-    """Enum to define the type of path."""
+        return p.absolute()
 
-    RELATIVE = "relative"
-    ABSOLUTE = "absolute"
+    @field_validator("source_files_path")
+    @classmethod
+    def validate_source_path(cls, value: str) -> Path:
+        """Convert it to a pathlib.Path object and return the absolute path."""
+        p = Path(value)
+
+        if not p.exists():
+            raise ValueError(f"Source files path {p} does not exist.")
+
+        return p.absolute()
 
 
 class ProducerType(str, Enum):
@@ -77,6 +87,7 @@ class SystemType(str, Enum):
     LINUX = "Linux"
     WINDOWS = "Windows"
     OTHER = "Other"
+    UNDEFINED = "Undefined"
 
 
 class Systems(BaseModel):
@@ -97,31 +108,10 @@ class Systems(BaseModel):
 
     system_id: UUID = uuid4()
     system_name: str
+    file_encoding: str | None = None
     system_type: SystemType
-    system_os: str
+    system_os: str | None = None
     producer: ProducerType
     producer_version: str
-    file_hash: Optional[str] = None
+    file_hash: str = None
     file: Path
-
-    @field_validator("file_hash")
-    @classmethod
-    def generate_file_hash(cls, value: Optional[str], values: dict) -> str:
-        """Generate the file hash if not provided."""
-        if value is not None:
-            return value
-
-        file_path: Path = values.get("file")
-        if file_path is None or not file_path.exists():
-            raise ValueError("File path is required to generate the hash.")
-
-        # Generate the hash (SHA256) of the file
-        sha256_hash: hashlib.HASH = hashlib.sha256()
-        try:
-            with open(file_path, "rb") as f:
-                # Read and update hash in chunks to handle large files
-                for byte_block in iter(lambda: f.read(4096), b""):
-                    sha256_hash.update(byte_block)
-            return sha256_hash.hexdigest()
-        except (IOError, PermissionError) as e:
-            raise ValueError(f"Error reading file {file_path}: {e}") from e
