@@ -1,7 +1,7 @@
 import click
 
 from kp_analysis_toolkit import __version__ as cli_version
-from kp_analysis_toolkit.process_scripts.cli import process_script_results
+from kp_analysis_toolkit.process_scripts.cli import process_command_line
 
 
 @click.group()
@@ -16,7 +16,7 @@ def cli() -> None:
 
 def main() -> None:
     """Main entry point for the kpat_cli command line interface."""
-    cli.add_command(process_script_results, name="scripts")
+    cli.add_command(process_command_line, name="scripts")
     cli()
 
 

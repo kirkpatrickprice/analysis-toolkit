@@ -1,12 +1,16 @@
+import hashlib
+import re  # To handle regular expressions
 import sys  # To handle command line arguments and usage
 from pathlib import Path  # To handle file paths
+from uuid import uuid4  # To generate unique identifiers
 
-import duckdb  # To handle DuckDB database operations
+from chardet import UniversalDetector  # To detect file encoding
 
-from kp_analysis_toolkit.process_scripts import GLOBALS
 from kp_analysis_toolkit.process_scripts.data_models import (
-    PathType,
+    ProducerType,
     ProgramConfig,
+    Systems,
+    SystemType,
 )
 
 """
@@ -37,7 +41,7 @@ Version History:
 """
 
 
-def get_config_files(path_type: PathType = PathType.RELATIVE) -> list[Path]:
+def get_config_files(config_path: Path) -> list[Path]:
     """
     Get the list of available configuration files.
 
@@ -50,14 +54,7 @@ def get_config_files(path_type: PathType = PathType.RELATIVE) -> list[Path]:
     """
     # This function should return a list of available configuration files
 
-    conf_d_path: Path = get_program_base_path() / GLOBALS["CONF_PATH"]
-    if path_type == PathType.RELATIVE:
-        config_files: Path = [
-            Path(conf_d_path / file).relative_to(conf_d_path)
-            for file in conf_d_path.glob("*.yaml")
-        ]
-    else:
-        config_files = [conf_d_path / file for file in conf_d_path.glob("*.yaml")]
+    config_files: list = [config_path / file for file in config_path.glob("*.yaml")]
 
     return config_files
 
@@ -78,14 +75,7 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     # For example, it will read the files in the specified directory
 
     p: Path = Path(start_path).absolute()
-    return [file.relative_to(p) for file in p.rglob(file_spec)]
-
-
-def get_program_base_path() -> Path:
-    """Get the base path for the application."""
-    # This function should return the base path for the application
-    # For example, it could return the path to the directory where the script is located
-    return Path(__file__).parent
+    return [file for file in p.rglob(file_spec)]
 
 
 def load_systems_into_duckdb(
@@ -117,32 +107,137 @@ def load_systems_into_duckdb(
     # For example, it will read the files in config.source_files
     # and load the systems into the DuckDB database
 
-    # Create the output directory if it does not exist
-    out_path: Path = Path(config.out_path)
-    out_path.mkdir(parents=True, exist_ok=True)
 
-    # DuckDB database file
-    duckdb_path: Path = out_path / "kpat.ddb"
+def enumerate_systems(
+    program_config: ProgramConfig,
+) -> list[Systems]:
+    """
+    Process the text files to enumerate the systems.
 
-    # DuckDB table name
-    duckdb_table: str = "systems"
+    Args:
+        config (ProgramConfig): The program configuration.
 
-    # DuckDB connection
-    duckdb_conn = duckdb.connect(duckdb_path)
+    Returns:
+        list[Systems]: A list of Systems objects.
 
-    # Create the table if it does not exist
-    duckdb_conn.execute(
-        f"""
-        CREATE TABLE IF NOT EXISTS {duckdb_table} (
-            system_id INTEGER PRIMARY KEY,
-            system_name TEXT,
-            system_type TEXT,
-            system_os TEXT,
-            producer TEXT,
-            producer_version TEXT
+    """
+    # This function should enumerate the files to process
+    # For example, it will read the files in config.source_files
+    # and return a list of files to process list of SystemType objects
+
+    results: list[Systems] = []
+    for file in get_source_files(
+        program_config.source_files_path,
+        program_config.source_files_spec,
+    ):
+        # Process each file and add the results to the list
+
+        encoding: str = get_file_encoding(file)
+        producer, producer_version = get_producer_type(file, encoding)
+        match producer:
+            case ProducerType.KPNIXAUDIT:
+                system_type: SystemType = SystemType.LINUX
+            case ProducerType.KPWINAUDIT:
+                system_type: SystemType = SystemType.WINDOWS
+            case ProducerType.KPMACAUDIT:
+                system_type: SystemType = SystemType.DARWIN
+            case _:
+                system_type: SystemType = SystemType.UNDEFINED
+        system = Systems(
+            system_id=uuid4().hex,
+            system_name=file.name,
+            file_encoding=encoding,
+            system_type=system_type,
+            system_os=None,
+            producer=producer,
+            producer_version=producer_version,
+            file_hash=generate_file_hash(file),
+            file=file.absolute(),
         )
-        """,
-    )
+        results.append(system)
+
+    return results
+
+
+def get_file_encoding(file_path: Path) -> str:
+    """
+    Get the file encoding using chardet.
+
+    Args:
+        file_path (Path): The path to the file.
+
+    Returns:
+        str: The detected file encoding.
+
+    """
+    # This function should detect the file encoding
+    # For example, you can use chardet or other libraries to detect the encoding
+
+    detector = UniversalDetector()
+    with open(file_path, "rb") as f:
+        for line in f:
+            detector.feed(line)
+            if detector.done:
+                break
+        detector.close()
+    return detector.result["encoding"] if detector.result else "unknown"
+
+
+def get_producer_type(file_path: Path, encoding: str) -> tuple[ProducerType, str]:
+    """
+    Get the producer type based on the file path.  Uses regular expressions to identify the producer.
+
+    Args:
+        file_path (Path): The path to the file.
+
+    Returns:
+        ProducerType: The producer type.
+
+    """
+    # This function should determine the producer type based on the file path
+    # For example, you can use regex or string matching to identify the producer
+
+    """
+    Windows: System_PSDetails::KPWINVERSION: 0.4.8
+    Linux  : KPNIXVERSION: 0.6.22
+    MacOS  : KPMACVERSION: 0.1.0
+    """
+
+    regex_patterns: dict[str, str] = {
+        "KPNIXAUDIT": r"^(?P<producer_type>KPNIXVERSION): (?P<producer_version>[0-9.]+)",
+        "KPWINAUDIT": r"^System_PSDetails::(?P<producer_type>KPWINVERSION): (?P<producer_version>[0-9.]+)",
+        "KPMACAUDIT": r"^(?P<producer_type>KPMACVERSION): (?P<producer_version>[0-9.]+)",
+    }
+    with file_path.open("r", encoding=encoding) as f:
+        for line in f:
+            for producer, pattern in regex_patterns.items():
+                regex_result = re.search(pattern, line, re.IGNORECASE)
+                if regex_result:
+                    # If a match is found, return the corresponding details
+                    return (
+                        ProducerType(producer),
+                        regex_result.group("producer_version"),
+                    )
+    # If no match is found, return OTHER
+    return ProducerType.OTHER
+
+
+def generate_file_hash(file_path: Path) -> str:
+    """Generate the file hash if not provided."""
+
+    if file_path is None or not file_path.exists():
+        raise ValueError(f"File path is required to generate the hash {file_path}.")
+
+    # Generate the hash (SHA256) of the file
+    sha256_hash: hashlib.HASH = hashlib.sha256()
+    try:
+        with open(file_path, "rb") as f:
+            # Read and update hash in chunks to handle large files
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
+    except (IOError, PermissionError) as e:
+        raise ValueError(f"Error reading file {file_path}: {e}") from e
 
 
 if __name__ == "__main__":
