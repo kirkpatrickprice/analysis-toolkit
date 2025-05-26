@@ -8,6 +8,15 @@ from pydantic import BaseModel, computed_field, field_validator
 from kp_analysis_toolkit.process_scripts import GLOBALS
 
 
+class LinuxFamilyType(str, Enum):
+    """Enum to define the types of Linux families."""
+
+    DEB = "deb"
+    RPM = "rpm"
+    APK = "apk"
+    OTHER = "Other"
+
+
 class ProgramConfig(BaseModel):
     """Class to hold the program configuration."""
 
@@ -110,6 +119,7 @@ class Systems(BaseModel):
     system_name: str
     file_encoding: str | None = None
     system_type: SystemType
+    linux_family: LinuxFamilyType | None = None
     system_os: str | None = None
     producer: ProducerType
     producer_version: str

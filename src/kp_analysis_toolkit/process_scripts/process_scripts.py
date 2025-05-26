@@ -7,6 +7,7 @@ from uuid import uuid4  # To generate unique identifiers
 from chardet import UniversalDetector  # To detect file encoding
 
 from kp_analysis_toolkit.process_scripts.data_models import (
+    LinuxFamilyType,
     ProducerType,
     ProgramConfig,
     Systems,
@@ -134,21 +135,32 @@ def enumerate_systems(
 
         encoding: str = get_file_encoding(file)
         producer, producer_version = get_producer_type(file, encoding)
+        linux_family: LinuxFamilyType | None = None
         match producer:
             case ProducerType.KPNIXAUDIT:
                 system_type: SystemType = SystemType.LINUX
+                linux_family = get_linux_family(
+                    file_path=file,
+                    encoding=encoding,
+                )
             case ProducerType.KPWINAUDIT:
                 system_type: SystemType = SystemType.WINDOWS
             case ProducerType.KPMACAUDIT:
                 system_type: SystemType = SystemType.DARWIN
             case _:
                 system_type: SystemType = SystemType.UNDEFINED
+        system_os: str = get_system_os(
+            file_path=file,
+            encoding=encoding,
+            producer=producer,
+        )
         system = Systems(
             system_id=uuid4().hex,
             system_name=file.name,
             file_encoding=encoding,
             system_type=system_type,
-            system_os=None,
+            system_os=system_os,
+            linux_family=linux_family,
             producer=producer,
             producer_version=producer_version,
             file_hash=generate_file_hash(file),
@@ -183,6 +195,151 @@ def get_file_encoding(file_path: Path) -> str:
     return detector.result["encoding"] if detector.result else "unknown"
 
 
+def get_linux_family(file_path: Path, encoding: str) -> LinuxFamilyType | None:
+    """
+    Get the Linux family type based on the source file.
+
+    Args:
+        file (Path): The Path object of the file.
+        encoding (str): The file encoding.
+
+    Returns:
+        LinuxFamilyType: The Linux family type (e.g. Debian, Redhat, Alpine, etc.) or None if it couldn't be determined.
+
+    """
+    # This function should determine the Linux family based on the regular expressions provided below
+    # For example, you can use regex or string matching to identify the family
+
+    regex_patterns: dict[str, str] = {
+        "deb": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Debian|Gentoo|Kali.*|Knoppix|Mint|Raspbian|PopOS|Ubuntu)',
+        "rpm": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Alma|Amazon|CentOS|ClearOS|Fedora|Mandriva|Oracle|(Red Hat)|Redhat|Rocky|SUSE|openSUSE)',
+        "apk": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Alpine)',
+    }
+
+    with file_path.open("r", encoding=encoding) as f:
+        for line in f:
+            for family, pattern in regex_patterns.items():
+                regex_result: re.Match[str] | None = re.search(
+                    pattern, line, re.IGNORECASE
+                )
+                if regex_result:
+                    # If a match is found, return the corresponding details
+                    return LinuxFamilyType(family)
+    # If no match is found, return OTHER
+    return LinuxFamilyType.OTHER
+
+
+def get_system_os(
+    file_path: Path,
+    encoding: str,
+    producer: ProducerType,
+) -> str | None:
+    """
+    Get the system OS based from the source file.
+
+    Args:
+        file (Path): The Path object of the file.
+        encoding (str): The file encoding.
+        producer (ProducerType): The producer (e.g. KPNIXAudit, KPWinAudit, etc) of the file.
+        linux_family (LinuxFamilyType): The Linux family type, if applicable.
+
+    Returns:
+        str: The system OS (e.g. Windows 11, Ubuntu 22.04, Redhat 8.6, MacOS 13.4.1) or None if it couldn't be determined.
+
+    """
+    # This function should determine the system OS based on the file path and producer type
+    # For example, you can use regex or string matching to identify the OS
+
+    match producer:
+        case ProducerType.KPWINAUDIT:
+            # For Windows systems, extract detailed OS information
+            product_name = None
+            current_build = None
+            ubr = None
+
+            # Define patterns for extracting Windows information
+            product_name_pattern = (
+                r"^System_OSInfo::ProductName\s*:\s*(?P<product_name>.*)"
+            )
+            current_build_pattern = r"^System_OSInfo::CurrentBuild\s*:\s*(?P<build>\d+)"
+            ubr_pattern = r"^System_OSInfo::UBR\s*:\s*(?P<ubr>\d+)"
+
+            with file_path.open("r", encoding=encoding) as f:
+                for line in f:
+                    if not product_name:
+                        regex_result = re.search(product_name_pattern, line)
+                        if regex_result:
+                            product_name = regex_result.group("product_name").strip()
+
+                    if not current_build:
+                        regex_result = re.search(current_build_pattern, line)
+                        if regex_result:
+                            current_build = regex_result.group("build")
+
+                    if not ubr:
+                        regex_result = re.search(ubr_pattern, line)
+                        if regex_result:
+                            ubr = regex_result.group("ubr")
+
+                    # If we have all information, format and return the result
+                    if product_name and current_build and ubr:
+                        return f"{product_name} (Build {current_build}.{ubr})"
+            return None  # If no match is found, return None
+
+        case ProducerType.KPNIXAUDIT:
+            # For Linux systems, we can use the /etc/os-release file to determine the OS
+            regex_pattern: str = r'^System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<system_os>.*)"'
+            with file_path.open("r", encoding=encoding) as f:
+                for line in f:
+                    regex_result: re.Match[str] | None = re.search(
+                        regex_pattern, line, re.IGNORECASE
+                    )
+                    if regex_result:
+                        return regex_result.group("system_os")
+            return None
+
+        case ProducerType.KPMACAUDIT:
+            # For MacOS systems, extract detailed OS information
+            product_name: str | None = None
+            product_version: str | None = None
+            build_version: str | None = None
+
+            # Define patterns for extracting Windows information
+            product_name_pattern = (
+                r"^System_VersionInformation::ProductName\s*:\s*(?P<product_name>.*)"
+            )
+            product_version_pattern = r"^System_VersionInformation::ProductVersion\s*:\s*(?P<product_version>[\d.]+)"
+            build_version_pattern = r"^System_VersionInformation::BuildVersion\s*:\s*(?P<build_version>[A-Za-z0-9]+)"
+
+            with file_path.open("r", encoding=encoding) as f:
+                for line in f:
+                    if not product_name:
+                        regex_result = re.search(product_name_pattern, line)
+                        if regex_result:
+                            product_name = regex_result.group("product_name").strip()
+
+                    if not product_version:
+                        regex_result = re.search(product_version_pattern, line)
+                        if regex_result:
+                            product_version = regex_result.group(
+                                "product_version"
+                            ).strip()
+
+                    if not build_version:
+                        regex_result = re.search(build_version_pattern, line)
+                        if regex_result:
+                            build_version = regex_result.group("build_version").strip()
+
+                    # If we have all information, format and return the result
+                    if product_name and product_version and build_version:
+                        return (
+                            f"{product_name} {product_version} (Build {build_version})"
+                        )
+            return None  # If no match is found, return None
+
+    return None  # If we find an unknown or unmatched producer type
+
+
 def get_producer_type(file_path: Path, encoding: str) -> tuple[ProducerType, str]:
     """
     Get the producer type based on the file path.  Uses regular expressions to identify the producer.
@@ -211,7 +368,9 @@ def get_producer_type(file_path: Path, encoding: str) -> tuple[ProducerType, str
     with file_path.open("r", encoding=encoding) as f:
         for line in f:
             for producer, pattern in regex_patterns.items():
-                regex_result = re.search(pattern, line, re.IGNORECASE)
+                regex_result: re.Match[str] | None = re.search(
+                    pattern, line, re.IGNORECASE
+                )
                 if regex_result:
                     # If a match is found, return the corresponding details
                     return (
