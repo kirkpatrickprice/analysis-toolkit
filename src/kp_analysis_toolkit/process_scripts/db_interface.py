@@ -156,3 +156,50 @@ class DuckDBConnection:
         if params:
             return self.connection.execute(query, params)
         return self.connection.execute(query)
+
+
+def _get_db_schema_from_model(model_class) -> Dict[str, str]:
+    """
+    Generate a DuckDB schema dictionary from a Pydantic model.
+
+    Args:
+        model_class: The Pydantic model class
+
+    Returns:
+        Dictionary with column names as keys and SQL types as values
+    """
+    # Get JSON schema from Pydantic model
+    json_schema = model_class.model_json_schema()
+    properties = json_schema.get("properties", {})
+
+    # Map Python/JSON types to SQL types
+    type_mapping: Dict[str, str] = {
+        "string": "VARCHAR",
+        "integer": "INTEGER",
+        "number": "DOUBLE",
+        "boolean": "BOOLEAN",
+        "UUID": "UUID",
+        "path": "VARCHAR",  # Path objects become strings
+    }
+
+    schema: dict = {}
+    for field_name, field_info in properties.items():
+        field_type = field_info.get("type", "string")
+
+        # Handle special cases
+        if field_name == "system_id":
+            schema[field_name] = "UUID PRIMARY KEY"
+        elif field_name == "file":
+            schema["file"] = "VARCHAR"
+        else:
+            # Get SQL type from mapping, default to VARCHAR
+            if field_type == "string" and "format" in field_info:
+                # Handle special formats like UUID
+                format_type = field_info["format"].upper()
+                sql_type = type_mapping.get(format_type, "VARCHAR")
+            else:
+                sql_type = type_mapping.get(field_type, "VARCHAR")
+
+            schema[field_name] = sql_type
+
+    return schema

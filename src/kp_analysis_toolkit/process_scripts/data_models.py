@@ -1,11 +1,13 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import ClassVar, Optional, TypeVar
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, computed_field, field_validator
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class LinuxFamilyType(str, Enum):
@@ -115,6 +117,7 @@ class Systems(BaseModel):
 
     """
 
+    db_table_name: ClassVar[str] = "systems"
     system_id: UUID = uuid4()
     system_name: str
     file_encoding: str | None = None

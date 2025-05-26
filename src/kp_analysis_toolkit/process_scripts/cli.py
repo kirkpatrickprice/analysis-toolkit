@@ -185,3 +185,12 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
             click.echo(f" - {system.system_name} (SHA256: {system.file_hash})")
             for key, value in system.model_dump().items():
                 click.echo(f"\t- {key}: {value}")
+
+    # Commit the systems to the database
+    if systems:
+        records_inserted: int = process_scripts.commit_to_database(
+            records=systems,
+            model_class=Systems,
+            program_config=program_config,
+        )
+        click.echo(f"Systems committed to database: {records_inserted}")

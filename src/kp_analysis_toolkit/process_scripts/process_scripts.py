@@ -2,6 +2,7 @@ import hashlib
 import re  # To handle regular expressions
 import sys  # To handle command line arguments and usage
 from pathlib import Path  # To handle file paths
+from typing import Dict, List, Type  # To handle type hints and generics
 from uuid import uuid4  # To generate unique identifiers
 
 from chardet import UniversalDetector  # To detect file encoding
@@ -12,6 +13,11 @@ from kp_analysis_toolkit.process_scripts.data_models import (
     ProgramConfig,
     Systems,
     SystemType,
+    T,
+)
+from kp_analysis_toolkit.process_scripts.db_interface import (
+    DuckDBConnection,
+    _get_db_schema_from_model,
 )
 
 """
@@ -40,6 +46,60 @@ Version History:
     0.3.4   2025-02-07: Addressed issue with processing files from Oracle and Kali systems
     0.4.0   2025-05-19: Rewritten as part of the unified kpat CLI
 """
+
+
+def commit_to_database(
+    records: List[T],
+    model_class: Type[T],
+    program_config: ProgramConfig,
+) -> str:
+    """
+    Generic function to commit any type of Pydantic model records to a DuckDB database.
+
+    Args:
+        records: List of Pydantic model instances to commit
+        model_class: The Pydantic model class (used for schema generation)
+        table_name: Name of the table to create/update
+        db_path: Path to the database file
+        add_timestamp: Whether to add a discovery_time timestamp field
+        verbose: Whether to print verbose output
+
+    Returns:
+        Number of records committed as an integer.
+    """
+    records_committed: int = 0
+
+    # Use our DuckDBConnection context manager
+    with DuckDBConnection(program_config.database_path) as db:
+        # Generate schema from Pydantic model
+        schema: Dict[str, str] = _get_db_schema_from_model(model_class)
+
+        # Create the table
+        db.create_table(model_class.db_table_name, schema)
+
+        # Convert Pydantic models to dictionaries for database insertion
+        records_dicts = []
+        for record in records:
+            record_dict = record.model_dump()
+
+            # Handle Path objects (convert to strings)
+            for key, value in record_dict.items():
+                if isinstance(value, Path):
+                    record_dict[key] = str(value)
+
+            records_dicts.append(record_dict)
+
+        # Insert the records
+        if records_dicts:
+            db.insert_records(model_class.db_table_name, records_dicts)
+
+            records_committed = int(
+                db.execute(
+                    f"SELECT COUNT(*) FROM {model_class.db_table_name}"
+                ).fetchone()[0]
+            )
+
+    return records_committed
 
 
 def get_config_files(config_path: Path) -> list[Path]:
@@ -79,36 +139,6 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     return [file for file in p.rglob(file_spec)]
 
 
-def load_systems_into_duckdb(
-    config: ProgramConfig,
-) -> None:
-    """
-    Load the systems from the configuration file.  Places all results in the DuckDB database located in the root of the out-path directory.
-
-    The database is named 'kpat.ddb' and the table is named 'systems'.
-    The table is created if it does not exist.  The table is dropped and recreated if it does exist.
-    The table is created with the following columns:
-        - system_id: INTEGER PRIMARY KEY
-        - system_name: TEXT (derived from the file name)
-        - system_type: TEXT (Darwin, Linux, Windows, etc.)
-        - system_os: TEXT
-        - producer: TEXT (KPNIXAUDIT, KPWINAUDIT, etc.)
-        - producer_version: TEXT (Version of the producer)
-        - file_hash: TEXT (SHA256 hash of the source file)
-        - file: TEXT (Absolute path to the source file)
-
-    Args:
-        config (ProgramConfig): The program configuration.
-
-    Returns:
-        None
-
-    """
-    # This function should load the systems from the configuration file
-    # For example, it will read the files in config.source_files
-    # and load the systems into the DuckDB database
-
-
 def enumerate_systems(
     program_config: ProgramConfig,
 ) -> list[Systems]:
@@ -140,7 +170,7 @@ def enumerate_systems(
             case ProducerType.KPNIXAUDIT:
                 system_type: SystemType = SystemType.LINUX
                 linux_family = get_linux_family(
-                    file_path=file,
+                    file=file,
                     encoding=encoding,
                 )
             case ProducerType.KPWINAUDIT:
@@ -150,7 +180,7 @@ def enumerate_systems(
             case _:
                 system_type: SystemType = SystemType.UNDEFINED
         system_os: str = get_system_os(
-            file_path=file,
+            file=file,
             encoding=encoding,
             producer=producer,
         )
@@ -171,12 +201,12 @@ def enumerate_systems(
     return results
 
 
-def get_file_encoding(file_path: Path) -> str:
+def get_file_encoding(file: Path) -> str:
     """
     Get the file encoding using chardet.
 
     Args:
-        file_path (Path): The path to the file.
+        file (Path): The path to the file.
 
     Returns:
         str: The detected file encoding.
@@ -186,7 +216,7 @@ def get_file_encoding(file_path: Path) -> str:
     # For example, you can use chardet or other libraries to detect the encoding
 
     detector = UniversalDetector()
-    with open(file_path, "rb") as f:
+    with open(file, "rb") as f:
         for line in f:
             detector.feed(line)
             if detector.done:
@@ -195,7 +225,7 @@ def get_file_encoding(file_path: Path) -> str:
     return detector.result["encoding"] if detector.result else "unknown"
 
 
-def get_linux_family(file_path: Path, encoding: str) -> LinuxFamilyType | None:
+def get_linux_family(file: Path, encoding: str) -> LinuxFamilyType | None:
     """
     Get the Linux family type based on the source file.
 
@@ -216,7 +246,7 @@ def get_linux_family(file_path: Path, encoding: str) -> LinuxFamilyType | None:
         "apk": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Alpine)',
     }
 
-    with file_path.open("r", encoding=encoding) as f:
+    with file.open("r", encoding=encoding) as f:
         for line in f:
             for family, pattern in regex_patterns.items():
                 regex_result: re.Match[str] | None = re.search(
@@ -230,7 +260,7 @@ def get_linux_family(file_path: Path, encoding: str) -> LinuxFamilyType | None:
 
 
 def get_system_os(
-    file_path: Path,
+    file: Path,
     encoding: str,
     producer: ProducerType,
 ) -> str | None:
@@ -264,7 +294,7 @@ def get_system_os(
             current_build_pattern = r"^System_OSInfo::CurrentBuild\s*:\s*(?P<build>\d+)"
             ubr_pattern = r"^System_OSInfo::UBR\s*:\s*(?P<ubr>\d+)"
 
-            with file_path.open("r", encoding=encoding) as f:
+            with file.open("r", encoding=encoding) as f:
                 for line in f:
                     if not product_name:
                         regex_result = re.search(product_name_pattern, line)
@@ -289,7 +319,7 @@ def get_system_os(
         case ProducerType.KPNIXAUDIT:
             # For Linux systems, we can use the /etc/os-release file to determine the OS
             regex_pattern: str = r'^System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<system_os>.*)"'
-            with file_path.open("r", encoding=encoding) as f:
+            with file.open("r", encoding=encoding) as f:
                 for line in f:
                     regex_result: re.Match[str] | None = re.search(
                         regex_pattern, line, re.IGNORECASE
@@ -311,7 +341,7 @@ def get_system_os(
             product_version_pattern = r"^System_VersionInformation::ProductVersion\s*:\s*(?P<product_version>[\d.]+)"
             build_version_pattern = r"^System_VersionInformation::BuildVersion\s*:\s*(?P<build_version>[A-Za-z0-9]+)"
 
-            with file_path.open("r", encoding=encoding) as f:
+            with file.open("r", encoding=encoding) as f:
                 for line in f:
                     if not product_name:
                         regex_result = re.search(product_name_pattern, line)
@@ -340,12 +370,12 @@ def get_system_os(
     return None  # If we find an unknown or unmatched producer type
 
 
-def get_producer_type(file_path: Path, encoding: str) -> tuple[ProducerType, str]:
+def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
     """
     Get the producer type based on the file path.  Uses regular expressions to identify the producer.
 
     Args:
-        file_path (Path): The path to the file.
+        file (Path): The path to the file.
 
     Returns:
         ProducerType: The producer type.
@@ -365,7 +395,7 @@ def get_producer_type(file_path: Path, encoding: str) -> tuple[ProducerType, str
         "KPWINAUDIT": r"^System_PSDetails::(?P<producer_type>KPWINVERSION): (?P<producer_version>[0-9.]+)",
         "KPMACAUDIT": r"^(?P<producer_type>KPMACVERSION): (?P<producer_version>[0-9.]+)",
     }
-    with file_path.open("r", encoding=encoding) as f:
+    with file.open("r", encoding=encoding) as f:
         for line in f:
             for producer, pattern in regex_patterns.items():
                 regex_result: re.Match[str] | None = re.search(
@@ -381,22 +411,22 @@ def get_producer_type(file_path: Path, encoding: str) -> tuple[ProducerType, str
     return ProducerType.OTHER
 
 
-def generate_file_hash(file_path: Path) -> str:
+def generate_file_hash(file: Path) -> str:
     """Generate the file hash if not provided."""
 
-    if file_path is None or not file_path.exists():
-        raise ValueError(f"File path is required to generate the hash {file_path}.")
+    if file is None or not file.exists():
+        raise ValueError(f"File path is required to generate the hash {file}.")
 
     # Generate the hash (SHA256) of the file
     sha256_hash: hashlib.HASH = hashlib.sha256()
     try:
-        with open(file_path, "rb") as f:
+        with open(file, "rb") as f:
             # Read and update hash in chunks to handle large files
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     except (IOError, PermissionError) as e:
-        raise ValueError(f"Error reading file {file_path}: {e}") from e
+        raise ValueError(f"Error reading file {file}: {e}") from e
 
 
 if __name__ == "__main__":
