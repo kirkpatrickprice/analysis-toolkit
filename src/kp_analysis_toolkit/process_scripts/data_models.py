@@ -91,6 +91,24 @@ class ProducerType(str, Enum):
     OTHER = "Other"
 
 
+class RawData(BaseModel):
+    """Class to hold the raw data from the source file."""
+
+    db_table_name: ClassVar[str] = "raw_data"
+    system_id: UUID
+    section: str
+    section_heading: str
+    raw_data: str
+
+    @field_validator("raw_data")
+    @classmethod
+    def validate_section_data(cls, value: str) -> str:
+        """Ensure section data is not empty."""
+        if not value.strip():
+            raise ValueError("Section data cannot be empty.")
+        return value.strip()
+
+
 class SystemType(str, Enum):
     """Enum to define the types of systems."""
 

@@ -11,13 +11,14 @@ from kp_analysis_toolkit.process_scripts.data_models import (
     LinuxFamilyType,
     ProducerType,
     ProgramConfig,
+    RawData,
     Systems,
     SystemType,
     T,
 )
 from kp_analysis_toolkit.process_scripts.db_interface import (
     DuckDBConnection,
-    _get_db_schema_from_model,
+    get_db_schema_from_model,
 )
 
 """
@@ -48,11 +49,60 @@ Version History:
 """
 
 
+def commit_raw_data_to_database(system: Systems, program_config: ProgramConfig) -> int:
+    """
+    Commit raw data to the database.
+
+    Args:
+        system (Systems): The Systems object containing the raw data.
+
+    Returns:
+        int: The number of records committed to the database.
+
+    """
+    # This function should commit the raw data to the database
+    # For example, it will insert the raw data into the database
+
+    if not system.file.exists():
+        raise ValueError(f"File {system.file} does not exist.")
+
+    # Create a RawData object for each section in the file
+    raw_data_records: List[T] = []
+    regex_pattern: str = r"^(?P<section>[A-Za-z0-9-]+)_(?P<section_heading>[A-Za-z0-9_-]+)::(?P<raw_data>.*)$"
+    with system.file.open("r", encoding=system.file_encoding) as f:
+        for line in f:
+            # Process each line and create a RawData object
+            # Here we assume that each line is a section
+            regex_result: re.Match[str] | None = re.search(
+                regex_pattern, line, re.IGNORECASE
+            )
+            if regex_result:
+                section: str = regex_result.group("section").strip()
+                section_heading: str = regex_result.group("section_heading").strip()
+                raw_data: str = regex_result.group("raw_data").strip()
+                try:
+                    raw_data_record = RawData(
+                        system_id=system.system_id,
+                        section=section,
+                        section_heading=section_heading,
+                        raw_data=raw_data,
+                    )
+                except ValueError:
+                    continue  # Skip invalid records
+                raw_data_records.append(raw_data_record)
+
+    records_committed: int = commit_to_database(
+        records=raw_data_records, model_class=RawData, program_config=program_config
+    )
+
+    return records_committed
+
+
 def commit_to_database(
     records: List[T],
     model_class: Type[T],
     program_config: ProgramConfig,
-) -> str:
+) -> int:
     """
     Generic function to commit any type of Pydantic model records to a DuckDB database.
 
@@ -72,7 +122,7 @@ def commit_to_database(
     # Use our DuckDBConnection context manager
     with DuckDBConnection(program_config.database_path) as db:
         # Generate schema from Pydantic model
-        schema: Dict[str, str] = _get_db_schema_from_model(model_class)
+        schema: Dict[str, str] = get_db_schema_from_model(model_class)
 
         # Create the table
         db.create_table(model_class.db_table_name, schema)
@@ -100,43 +150,6 @@ def commit_to_database(
             )
 
     return records_committed
-
-
-def get_config_files(config_path: Path) -> list[Path]:
-    """
-    Get the list of available configuration files.
-
-    Args:
-        path_type (PathType): The type of path to return (relative or absolute).
-
-    Returns:
-        list[Path]: A list of available configuration files as Path objects.
-
-    """
-    # This function should return a list of available configuration files
-
-    config_files: list = [config_path / file for file in config_path.glob("*.yaml")]
-
-    return config_files
-
-
-def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
-    """
-    Get the list of source files to process.
-
-    Args:
-        start_path (str): The starting path to search for files.
-        file_spec (str): The file specification to match (e.g. *.txt).
-
-    Returns:
-        list[Path]: A list of source files as Path objects.
-
-    """
-    # This function should return a list of source files to process
-    # For example, it will read the files in the specified directory
-
-    p: Path = Path(start_path).absolute()
-    return [file for file in p.rglob(file_spec)]
 
 
 def enumerate_systems(
@@ -186,7 +199,7 @@ def enumerate_systems(
         )
         system = Systems(
             system_id=uuid4().hex,
-            system_name=file.name,
+            system_name=file.stem,  # Use the file name (without the extension) as the system name
             file_encoding=encoding,
             system_type=system_type,
             system_os=system_os,
@@ -199,6 +212,43 @@ def enumerate_systems(
         results.append(system)
 
     return results
+
+
+def get_config_files(config_path: Path) -> list[Path]:
+    """
+    Get the list of available configuration files.
+
+    Args:
+        path_type (PathType): The type of path to return (relative or absolute).
+
+    Returns:
+        list[Path]: A list of available configuration files as Path objects.
+
+    """
+    # This function should return a list of available configuration files
+
+    config_files: list = [config_path / file for file in config_path.glob("*.yaml")]
+
+    return config_files
+
+
+def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
+    """
+    Get the list of source files to process.
+
+    Args:
+        start_path (str): The starting path to search for files.
+        file_spec (str): The file specification to match (e.g. *.txt).
+
+    Returns:
+        list[Path]: A list of source files as Path objects.
+
+    """
+    # This function should return a list of source files to process
+    # For example, it will read the files in the specified directory
+
+    p: Path = Path(start_path).absolute()
+    return [file for file in p.rglob(file_spec)]
 
 
 def get_file_encoding(file: Path) -> str:

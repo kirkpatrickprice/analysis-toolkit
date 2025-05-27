@@ -158,7 +158,7 @@ class DuckDBConnection:
         return self.connection.execute(query)
 
 
-def _get_db_schema_from_model(model_class) -> Dict[str, str]:
+def get_db_schema_from_model(model_class) -> Dict[str, str]:
     """
     Generate a DuckDB schema dictionary from a Pydantic model.
 
@@ -187,7 +187,7 @@ def _get_db_schema_from_model(model_class) -> Dict[str, str]:
         field_type = field_info.get("type", "string")
 
         # Handle special cases
-        if field_name == "system_id":
+        if field_name == "system_id" and model_class.__name__ == "Systems":
             schema[field_name] = "UUID PRIMARY KEY"
         elif field_name == "file":
             schema["file"] = "VARCHAR"

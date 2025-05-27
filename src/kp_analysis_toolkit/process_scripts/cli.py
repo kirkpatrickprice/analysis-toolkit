@@ -194,3 +194,14 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
             program_config=program_config,
         )
         click.echo(f"Systems committed to database: {records_inserted}")
+
+        for system in systems:
+            # Commit the raw data to the database
+            click.echo(f"Processing raw data for system: {system.system_name}")
+            records_inserted = process_scripts.commit_raw_data_to_database(
+                system=system,
+                program_config=program_config,
+            )
+            click.echo(
+                f"Raw data committed to database for system {system.system_name}: {records_inserted}"
+            )
