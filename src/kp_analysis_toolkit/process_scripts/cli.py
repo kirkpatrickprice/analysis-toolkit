@@ -1,12 +1,12 @@
-from typing import Any
-
 import click
 
 from kp_analysis_toolkit.process_scripts import (
     __version__ as process_scripts_version,
 )
-from kp_analysis_toolkit.process_scripts import process_scripts
-from kp_analysis_toolkit.process_scripts.data_models import ProgramConfig, Systems
+from kp_analysis_toolkit.process_scripts import (
+    cli_functions as cli_funcs,
+)
+from kp_analysis_toolkit.process_scripts.data_models import ProgramConfig
 
 
 @click.command(name="scripts")
@@ -85,123 +85,28 @@ def process_command_line(**cli_config: dict) -> None:
 
     # Echo the program configuration to the screen
     if program_config.verbose:
-        click.echo("Program configuration:")
-        # Iterate over the fields in the ProgramConfig object and print both the original and converted values
-        for field_name, field_value in program_config.model_dump().items():
-            click.echo(f" - {field_name}:")
-            try:
-                click.echo(f"\t- Original : {cli_config[field_name]}")
-            except KeyError:
-                click.echo("\t- Original : <Computed Value>")
-            click.echo(f"\t- Effective: {field_value}")
+        cli_funcs.print_verbose_config(cli_config, program_config)
 
     # List available audit configuration files
     if program_config.list_audit_configs:
         # List all available configuration files
-        click.echo("Listing available audit configuration files...")
-        for config_file in process_scripts.get_config_files(program_config.config_path):
-            if program_config.verbose:
-                click.echo(f" - {config_file.absolute()}")
-            else:
-                click.echo(f" - {config_file.relative_to(program_config.config_path)}")
+        cli_funcs.list_audit_configs(program_config)
         return
 
     # List all discovered source file section headings
     if program_config.list_sections:
-        click.echo("Listing sections...")
+        cli_funcs.list_sections()
         return
 
     # List all discovered source files
     if program_config.list_source_files:
-        click.echo(f"Listing source files in {program_config.source_files_path}...")
-        for source_file in process_scripts.get_source_files(
-            program_config.source_files_path,
-            program_config.source_files_spec,
-        ):
-            click.echo(
-                f" - {source_file.relative_to(program_config.source_files_path)}"
-            )
+        cli_funcs.list_source_files(program_config)
         return
 
     # List all discovered systems
     if program_config.list_systems:
-        click.echo("Printing system details...")
+        cli_funcs.list_systems(program_config)
         return
 
     # Start the main processing
-    process_scipts_results(program_config)
-
-
-def create_results_path(program_config: ProgramConfig) -> None:
-    """Create the results path if it does not exist."""
-
-    if not program_config.results_path.exists():
-        if program_config.verbose:
-            click.echo(f"Creating results path: {program_config.results_path}")
-        program_config.results_path.mkdir(parents=True, exist_ok=True)
-    else:
-        click.echo(f" Output path {program_config.results_path.absolute()} exists.")
-        click.echo(click.style("Results will be overwritten if they exist.", fg="red"))
-        click.echo(
-            click.style(
-                "Or use --out-path to specify a different output path.", fg="red"
-            )
-        )
-        _: Any = input("Press Enter to continue or Ctrl-C to cancel...")
-        # Recursively delete the results path
-        for item in program_config.results_path.iterdir():
-            if item.is_dir():
-                if program_config.verbose:
-                    click.echo(f"Deleting directory: {item}")
-                item.rmdir()
-            else:
-                if program_config.verbose:
-                    click.echo(f"Deleting file: {item}")
-                item.unlink(missing_ok=True)
-        if program_config.verbose:
-            click.echo(f"Deleting directory: {program_config.results_path}")
-        program_config.results_path.rmdir()
-        if program_config.verbose:
-            click.echo(f"Creating directory: {program_config.results_path}")
-        program_config.results_path.mkdir(parents=True, exist_ok=True)
-
-
-def process_scipts_results(program_config: ProgramConfig) -> None:
-    """Process the source files and load the results into DuckDB."""
-
-    click.echo("Processing source files...")
-
-    # Check if the results_path exists
-    create_results_path(program_config)
-    systems: list[Systems] = process_scripts.enumerate_systems(program_config)
-    if not systems:
-        click.echo("No systems found.")
-        return
-
-    click.echo(f"Found {len(systems)} systems to process.")
-    if program_config.verbose:
-        click.echo("Systems:")
-        for system in systems:
-            click.echo(f" - {system.system_name} (SHA256: {system.file_hash})")
-            for key, value in system.model_dump().items():
-                click.echo(f"\t- {key}: {value}")
-
-    # Commit the systems to the database
-    if systems:
-        records_inserted: int = process_scripts.commit_to_database(
-            records=systems,
-            model_class=Systems,
-            program_config=program_config,
-        )
-        click.echo(f"Systems committed to database: {records_inserted}")
-
-        for system in systems:
-            # Commit the raw data to the database
-            click.echo(f"Processing raw data for system: {system.system_name}")
-            records_inserted = process_scripts.commit_raw_data_to_database(
-                system=system,
-                program_config=program_config,
-            )
-            click.echo(
-                f"Raw data committed to database for system {system.system_name}: {records_inserted}"
-            )
+    cli_funcs.process_scipts_results(program_config)
