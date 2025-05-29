@@ -1,6 +1,7 @@
 import hashlib
 import re  # To handle regular expressions
 import sys  # To handle command line arguments and usage
+from collections.abc import Generator  # For type hinting
 from pathlib import Path  # To handle file paths
 from uuid import uuid4  # To generate unique identifiers
 
@@ -157,7 +158,7 @@ def commit_to_database(
 
 def enumerate_systems_from_source_files(
     program_config: ProgramConfig,
-) -> list[Systems]:
+) -> Generator[Systems, None, None]:
     """
     Process the text files to enumerate the systems.
 
@@ -172,7 +173,6 @@ def enumerate_systems_from_source_files(
     # For example, it will read the files in config.source_files
     # and return a list of files to process list of SystemType objects
 
-    results: list[Systems] = []
     for file in get_source_files(
         program_config.source_files_path,
         program_config.source_files_spec,
@@ -212,9 +212,7 @@ def enumerate_systems_from_source_files(
             file_hash=generate_file_hash(file),
             file=file.absolute(),
         )
-        results.append(system)
-
-    return results
+        yield system
 
 
 def get_config_files(config_path: Path) -> list[Path]:

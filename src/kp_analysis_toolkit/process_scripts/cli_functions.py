@@ -55,34 +55,29 @@ def list_sections() -> None:
 def list_source_files(program_config: ProgramConfig) -> None:
     """List all source files found in the specified path."""
     click.echo("Listing source files...")
-    source_files = process_scripts.get_source_files(
+    i: int = 0
+
+    for file in process_scripts.get_source_files(
         start_path=program_config.source_files_path,
         file_spec=program_config.source_files_spec,
-    )
-    if not source_files:
-        click.echo("No source files found.")
-        return
-
-    click.echo(f"Found {len(source_files)} source files:")
-    for file in source_files:
+    ):
+        i += 1
         click.echo(f" - {file}")
+
+    click.echo(f"Total source files found: {i}")
 
 
 def list_systems(program_config: ProgramConfig) -> None:
     """List all systems found in the specified source files."""
     click.echo("Listing systems...")
-    systems: list[Systems] = process_scripts.enumerate_systems(program_config)
+    i: int = 0
 
-    if not systems:
-        click.echo("No systems found.")
-        return
-
-    click.echo(f"Found {len(systems)} systems")
-    click.echo("Systems:")
-    for system in systems:
+    for system in process_scripts.enumerate_systems_from_source_files(program_config):
         click.echo(f" - {system.system_name} (SHA256: {system.file_hash})")
+        i += 1
         for key, value in system.model_dump().items():
             click.echo(f"\t- {key}: {value}")
+    click.echo(f"Total systems found: {i}")
 
 
 def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> None:
@@ -105,7 +100,7 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     # Check if the results_path exists
     create_results_path(program_config)
     systems: list[Systems] = process_scripts.enumerate_systems_from_source_files(
-        program_config
+        program_config,
     )
     if not systems:
         click.echo("No systems found.")
