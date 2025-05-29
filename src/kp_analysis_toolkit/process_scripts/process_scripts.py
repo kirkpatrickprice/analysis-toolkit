@@ -2,7 +2,6 @@ import hashlib
 import re  # To handle regular expressions
 import sys  # To handle command line arguments and usage
 from pathlib import Path  # To handle file paths
-from typing import Dict, List, Type  # To handle type hints and generics
 from uuid import uuid4  # To generate unique identifiers
 
 from chardet import UniversalDetector  # To detect file encoding
@@ -55,6 +54,7 @@ def commit_raw_data_to_database(system: Systems, program_config: ProgramConfig) 
 
     Args:
         system (Systems): The Systems object containing the raw data.
+        program_config (ProgramConfig): The program configuration object.
 
     Returns:
         int: The number of records committed to the database.
@@ -64,17 +64,20 @@ def commit_raw_data_to_database(system: Systems, program_config: ProgramConfig) 
     # For example, it will insert the raw data into the database
 
     if not system.file.exists():
-        raise ValueError(f"File {system.file} does not exist.")
+        message: str = f"File {system.file} does not exist. Skipping raw data commit."
+        raise ValueError(message)
 
     # Create a RawData object for each section in the file
-    raw_data_records: List[T] = []
+    raw_data_records: list[T] = []
     regex_pattern: str = r"^(?P<section>[A-Za-z0-9-]+)_(?P<section_heading>[A-Za-z0-9_-]+)::(?P<raw_data>.*)$"
     with system.file.open("r", encoding=system.file_encoding) as f:
         for line in f:
             # Process each line and create a RawData object
             # Here we assume that each line is a section
             regex_result: re.Match[str] | None = re.search(
-                regex_pattern, line, re.IGNORECASE
+                regex_pattern,
+                line,
+                re.IGNORECASE,
             )
             if regex_result:
                 section: str = regex_result.group("section").strip()
@@ -92,15 +95,17 @@ def commit_raw_data_to_database(system: Systems, program_config: ProgramConfig) 
                 raw_data_records.append(raw_data_record)
 
     records_committed: int = commit_to_database(
-        records=raw_data_records, model_class=RawData, program_config=program_config
+        records=raw_data_records,
+        model_class=RawData,
+        program_config=program_config,
     )
 
     return records_committed
 
 
 def commit_to_database(
-    records: List[T],
-    model_class: Type[T],
+    records: list[T],
+    model_class: type[T],
     program_config: ProgramConfig,
 ) -> int:
     """
@@ -109,20 +114,18 @@ def commit_to_database(
     Args:
         records: List of Pydantic model instances to commit
         model_class: The Pydantic model class (used for schema generation)
-        table_name: Name of the table to create/update
-        db_path: Path to the database file
-        add_timestamp: Whether to add a discovery_time timestamp field
-        verbose: Whether to print verbose output
+        program_config: The program configuration object containing database path.
 
     Returns:
         Number of records committed as an integer.
+
     """
     records_committed: int = 0
 
     # Use our DuckDBConnection context manager
     with DuckDBConnection(program_config.database_path) as db:
         # Generate schema from Pydantic model
-        schema: Dict[str, str] = get_db_schema_from_model(model_class)
+        schema: dict[str, str] = get_db_schema_from_model(model_class)
 
         # Create the table
         db.create_table(model_class.db_table_name, schema)
@@ -145,21 +148,21 @@ def commit_to_database(
 
             records_committed = int(
                 db.execute(
-                    f"SELECT COUNT(*) FROM {model_class.db_table_name}"
-                ).fetchone()[0]
+                    f"SELECT COUNT(*) FROM {model_class.db_table_name}",
+                ).fetchone()[0],
             )
 
     return records_committed
 
 
-def enumerate_systems(
+def enumerate_systems_from_source_files(
     program_config: ProgramConfig,
 ) -> list[Systems]:
     """
     Process the text files to enumerate the systems.
 
     Args:
-        config (ProgramConfig): The program configuration.
+        program_config (ProgramConfig): The program configuration object.
 
     Returns:
         list[Systems]: A list of Systems objects.
@@ -219,7 +222,7 @@ def get_config_files(config_path: Path) -> list[Path]:
     Get the list of available configuration files.
 
     Args:
-        path_type (PathType): The type of path to return (relative or absolute).
+        config_path (Path): The path to the directory containing configuration files.
 
     Returns:
         list[Path]: A list of available configuration files as Path objects.
@@ -248,7 +251,7 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     # For example, it will read the files in the specified directory
 
     p: Path = Path(start_path).absolute()
-    return [file for file in p.rglob(file_spec)]
+    return list(p.rglob(file_spec))
 
 
 def get_file_encoding(file: Path) -> str:
@@ -266,7 +269,7 @@ def get_file_encoding(file: Path) -> str:
     # For example, you can use chardet or other libraries to detect the encoding
 
     detector = UniversalDetector()
-    with open(file, "rb") as f:
+    with file.open("rb") as f:
         for line in f:
             detector.feed(line)
             if detector.done:
@@ -300,7 +303,9 @@ def get_linux_family(file: Path, encoding: str) -> LinuxFamilyType | None:
         for line in f:
             for family, pattern in regex_patterns.items():
                 regex_result: re.Match[str] | None = re.search(
-                    pattern, line, re.IGNORECASE
+                    pattern,
+                    line,
+                    re.IGNORECASE,
                 )
                 if regex_result:
                     # If a match is found, return the corresponding details
@@ -372,7 +377,9 @@ def get_system_os(
             with file.open("r", encoding=encoding) as f:
                 for line in f:
                     regex_result: re.Match[str] | None = re.search(
-                        regex_pattern, line, re.IGNORECASE
+                        regex_pattern,
+                        line,
+                        re.IGNORECASE,
                     )
                     if regex_result:
                         return regex_result.group("system_os")
@@ -402,7 +409,7 @@ def get_system_os(
                         regex_result = re.search(product_version_pattern, line)
                         if regex_result:
                             product_version = regex_result.group(
-                                "product_version"
+                                "product_version",
                             ).strip()
 
                     if not build_version:
@@ -449,7 +456,9 @@ def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
         for line in f:
             for producer, pattern in regex_patterns.items():
                 regex_result: re.Match[str] | None = re.search(
-                    pattern, line, re.IGNORECASE
+                    pattern,
+                    line,
+                    re.IGNORECASE,
                 )
                 if regex_result:
                     # If a match is found, return the corresponding details
@@ -463,7 +472,6 @@ def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
 
 def generate_file_hash(file: Path) -> str:
     """Generate the file hash if not provided."""
-
     if file is None or not file.exists():
         raise ValueError(f"File path is required to generate the hash {file}.")
 
@@ -475,7 +483,7 @@ def generate_file_hash(file: Path) -> str:
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
-    except (IOError, PermissionError) as e:
+    except (OSError, PermissionError) as e:
         raise ValueError(f"Error reading file {file}: {e}") from e
 
 
