@@ -11,6 +11,7 @@ from kp_analysis_toolkit.process_scripts.data_models import (
     LinuxFamilyType,
     ProducerType,
     ProgramConfig,
+    RegexPatterns,
     Systems,
     SystemType,
 )
@@ -211,105 +212,90 @@ def get_system_os(
         file (Path): The Path object of the file.
         encoding (str): The file encoding.
         producer (ProducerType): The producer (e.g. KPNIXAudit, KPWinAudit, etc) of the file.
-        linux_family (LinuxFamilyType): The Linux family type, if applicable.
 
     Returns:
         str: The system OS (e.g. Windows 11, Ubuntu 22.04, Redhat 8.6, MacOS 13.4.1) or None if it couldn't be determined.
 
     """
-    # This function should determine the system OS based on the file path and producer type
-    # For example, you can use regex or string matching to identify the OS
+    # Configuration for each producer type using Pydantic models
+    os_patterns: dict[ProducerType, RegexPatterns] = {
+        ProducerType.KPWINAUDIT: RegexPatterns(
+            patterns={
+                "product_name": r"^System_OSInfo::ProductName\s*:\s*(?P<product_name>.*)",
+                "current_build": r"^System_OSInfo::CurrentBuild\s*:\s*(?P<current_build>\d+)",
+                "ubr": r"^System_OSInfo::UBR\s*:\s*(?P<ubr>\d+)",
+            },
+            formatter=lambda data: f"{data['product_name']} (Build {data['current_build']}.{data['ubr']})",
+        ),
+        ProducerType.KPNIXAUDIT: RegexPatterns(
+            patterns={
+                "system_os": r'^System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<system_os>.*)"',
+            },
+            formatter=lambda data: data["system_os"],
+        ),
+        ProducerType.KPMACAUDIT: RegexPatterns(
+            patterns={
+                "product_name": r"^System_VersionInformation::ProductName\s*:\s*(?P<product_name>.*)",
+                "product_version": r"^System_VersionInformation::ProductVersion\s*:\s*(?P<product_version>[\d.]+)",
+                "build_version": r"^System_VersionInformation::BuildVersion\s*:\s*(?P<build_version>[A-Za-z0-9]+)",
+            },
+            formatter=lambda data: f"{data['product_name']} {data['product_version']} (Build {data['build_version']})",
+        ),
+    }
 
-    match producer:
-        case ProducerType.KPWINAUDIT:
-            # For Windows systems, extract detailed OS information
-            product_name = None
-            current_build = None
-            ubr = None
+    pattern: RegexPatterns | None = os_patterns.get(producer)
+    if not pattern:
+        return None
 
-            # Define patterns for extracting Windows information
-            product_name_pattern = (
-                r"^System_OSInfo::ProductName\s*:\s*(?P<product_name>.*)"
-            )
-            current_build_pattern = r"^System_OSInfo::CurrentBuild\s*:\s*(?P<build>\d+)"
-            ubr_pattern = r"^System_OSInfo::UBR\s*:\s*(?P<ubr>\d+)"
+    return _extract_regex_data(file, encoding, pattern)
 
-            with file.open("r", encoding=encoding) as f:
-                for line in f:
-                    if not product_name:
-                        regex_result = re.search(product_name_pattern, line)
-                        if regex_result:
-                            product_name = regex_result.group("product_name").strip()
 
-                    if not current_build:
-                        regex_result = re.search(current_build_pattern, line)
-                        if regex_result:
-                            current_build = regex_result.group("build")
+def _extract_regex_data(
+    file: Path,
+    encoding: str,
+    patterns: RegexPatterns,
+) -> str | None:
+    """
+    Extract data using regex patterns and return formatted result.
 
-                    if not ubr:
-                        regex_result = re.search(ubr_pattern, line)
-                        if regex_result:
-                            ubr = regex_result.group("ubr")
+    Args:
+        file: Path to the file to process
+        encoding: File encoding
+        patterns: Regex extraction configuration
 
-                    # If we have all information, format and return the result
-                    if product_name and current_build and ubr:
-                        return f"{product_name} (Build {current_build}.{ubr})"
-            return None  # If no match is found, return None
+    Returns:
+        Formatted string or None if extraction fails
 
-        case ProducerType.KPNIXAUDIT:
-            # For Linux systems, we can use the /etc/os-release file to determine the OS
-            regex_pattern: str = r'^System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<system_os>.*)"'
-            with file.open("r", encoding=encoding) as f:
-                for line in f:
-                    regex_result: re.Match[str] | None = re.search(
-                        regex_pattern,
-                        line,
-                        re.IGNORECASE,
-                    )
-                    if regex_result:
-                        return regex_result.group("system_os")
-            return None
+    """
+    extracted_data: dict[str, str] = {}
+    required_keys = set(patterns.patterns.keys())
 
-        case ProducerType.KPMACAUDIT:
-            # For MacOS systems, extract detailed OS information
-            product_name: str | None = None
-            product_version: str | None = None
-            build_version: str | None = None
+    try:
+        with file.open("r", encoding=encoding) as f:
+            for line in f:
+                usable_text = line.strip()
+                if not usable_text:
+                    continue
 
-            # Define patterns for extracting Windows information
-            product_name_pattern = (
-                r"^System_VersionInformation::ProductName\s*:\s*(?P<product_name>.*)"
-            )
-            product_version_pattern = r"^System_VersionInformation::ProductVersion\s*:\s*(?P<product_version>[\d.]+)"
-            build_version_pattern = r"^System_VersionInformation::BuildVersion\s*:\s*(?P<build_version>[A-Za-z0-9]+)"
+                # Check each pattern that hasn't been matched yet
+                for key, pattern in patterns.patterns.items():
+                    if key not in extracted_data:  # Skip if already found
+                        match = re.search(pattern, usable_text, re.IGNORECASE)
+                        if match:
+                            extracted_data[key] = match.group(key).strip()
 
-            with file.open("r", encoding=encoding) as f:
-                for line in f:
-                    if not product_name:
-                        regex_result = re.search(product_name_pattern, line)
-                        if regex_result:
-                            product_name = regex_result.group("product_name").strip()
+                            # Early exit if we have all required data
+                            if len(extracted_data) == len(required_keys):
+                                return patterns.formatter(extracted_data)
 
-                    if not product_version:
-                        regex_result = re.search(product_version_pattern, line)
-                        if regex_result:
-                            product_version = regex_result.group(
-                                "product_version",
-                            ).strip()
+    except (OSError, UnicodeDecodeError):
+        return None
 
-                    if not build_version:
-                        regex_result = re.search(build_version_pattern, line)
-                        if regex_result:
-                            build_version = regex_result.group("build_version").strip()
+    # Return formatted result if we have all required data
+    if len(extracted_data) == len(required_keys):
+        return patterns.formatter(extracted_data)
 
-                    # If we have all information, format and return the result
-                    if product_name and product_version and build_version:
-                        return (
-                            f"{product_name} {product_version} (Build {build_version})"
-                        )
-            return None  # If no match is found, return None
-
-    return None  # If we find an unknown or unmatched producer type
+    return None
 
 
 def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
