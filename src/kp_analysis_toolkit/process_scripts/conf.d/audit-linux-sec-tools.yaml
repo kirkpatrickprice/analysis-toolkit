@@ -1,6 +1,6 @@
 global:
   sys_filter:
-    - attr: osFamily
+    - attr: os_family
       comp: eq
       value: Linux
 
@@ -11,7 +11,7 @@ global:
   field_list:
     - policy
   sys_filter:
-    - attr: osFamily
+    - attr: os_family
       comp: eq
       value: Linux
     - attr: kp_nix_version

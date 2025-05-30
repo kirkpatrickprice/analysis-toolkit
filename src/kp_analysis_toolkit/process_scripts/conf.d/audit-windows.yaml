@@ -25,7 +25,7 @@
 # NOTE: Despite the name, "global" does not apply to included files.  This prevents some headaches that could occur when inheriting conflicting "globals" across a set of files
 global:
   sys_filter:
-    - attr: osFamily
+    - attr: os_family
       comp: eq
       value: Windows
 

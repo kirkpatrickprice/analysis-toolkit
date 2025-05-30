@@ -58,7 +58,7 @@ sys_filter:
 ### sys_filter Attributes
 | Attribute         | Description |
 -------------------------------
-| `osFamily`        | OS Family such as `Windows`, `Linux` or `Darwin` (MacOS). |
+| `os_family`        | OS Family such as `Windows`, `Linux` or `Darwin` (MacOS). |
 | `producer`        | Script that produced the file such as `kpnixaudit.sh` or `kpwinaudit.ps1`. |
 | `kp_mac_version`  | `kpmacaudit.ps1` script version that produced the results |
 | `kp_nix_version`  | `kpnixaudit.ps1` script version that produced the results |

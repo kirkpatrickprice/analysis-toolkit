@@ -1,6 +1,6 @@
 global:
   sys_filter:
-    - attr: osFamily
+    - attr: os_family
       comp: eq
       value: Windows
 
@@ -28,7 +28,7 @@ global:
   comment: |-
     Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
   sys_filter:
-    - attr: osFamily
+    - attr: os_family
       comp: eq
       value: Windows
     - attr: kp_win_version
@@ -141,7 +141,7 @@ global:
   only_matching: True
   combine: True
   sys_filter:
-    - attr: 'osFamily'
+    - attr: 'os_family'
       comp: 'eq'
       value: 'Windows'
     - attr: 'kp_win_version'
@@ -162,7 +162,7 @@ global:
   only_matching: True
   combine: True
   sys_filter:
-    - attr: 'osFamily'
+    - attr: 'os_family'
       comp: 'eq'
       value: 'Windows'
     - attr: 'kp_win_version'

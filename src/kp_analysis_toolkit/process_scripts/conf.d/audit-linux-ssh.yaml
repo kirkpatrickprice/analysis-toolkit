@@ -1,6 +1,6 @@
 global:
   sys_filter:
-    - attr: osFamily
+    - attr: os_family
       comp: eq
       value: Linux
 
