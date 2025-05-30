@@ -1,13 +1,10 @@
+import uuid
 from enum import Enum
 from pathlib import Path
-from typing import ClassVar, TypeVar
-from uuid import UUID, uuid4
 
 from pydantic import BaseModel, computed_field, field_validator
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
-
-T = TypeVar("T", bound=BaseModel)
 
 
 class LinuxFamilyType(str, Enum):
@@ -95,25 +92,6 @@ class ProducerType(str, Enum):
     OTHER = "Other"
 
 
-class RawData(BaseModel):
-    """Class to hold the raw data from the source file."""
-
-    db_table_name: ClassVar[str] = "raw_data"
-    system_id: UUID
-    section: str
-    section_heading: str
-    raw_data: str
-
-    @field_validator("raw_data")
-    @classmethod
-    def validate_section_data(cls, value: str) -> str:
-        """Ensure section data is not empty."""
-        if not value.strip():
-            message: str = "Section data cannot be empty."
-            raise ValueError(message)
-        return value.strip()
-
-
 class SystemType(str, Enum):
     """Enum to define the types of systems."""
 
@@ -140,8 +118,8 @@ class Systems(BaseModel):
 
     """
 
-    db_table_name: ClassVar[str] = "systems"
-    system_id: UUID = uuid4()
+    __tablename__ = "systems"
+    system_id: uuid.UUID
     system_name: str
     file_encoding: str | None = None
     system_type: SystemType
@@ -151,3 +129,24 @@ class Systems(BaseModel):
     producer_version: str
     file_hash: str = None
     file: Path
+
+
+class RawData(BaseModel):
+    """Class to hold the raw data from the source file."""
+
+    __tablename__ = "raw_data"
+    raw_data_id: uuid.UUID
+    section: str
+    section_heading: str
+    raw_data: str
+    system_id: uuid.UUID
+    # system: Systems = Relationship(back_populates="systems")
+
+    @field_validator("raw_data")
+    @classmethod
+    def validate_section_data(cls, value: str) -> str:
+        """Ensure section data is not empty."""
+        if not value.strip():
+            message: str = "Section data cannot be empty."
+            raise ValueError(message)
+        return value.strip()

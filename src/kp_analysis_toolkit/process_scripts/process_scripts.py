@@ -11,14 +11,8 @@ from kp_analysis_toolkit.process_scripts.data_models import (
     LinuxFamilyType,
     ProducerType,
     ProgramConfig,
-    RawData,
     Systems,
     SystemType,
-    T,
-)
-from kp_analysis_toolkit.process_scripts.db_interface import (
-    DuckDBConnection,
-    get_db_schema_from_model,
 )
 
 """
@@ -47,113 +41,6 @@ Version History:
     0.3.4   2025-02-07: Addressed issue with processing files from Oracle and Kali systems
     0.4.0   2025-05-19: Rewritten as part of the unified kpat CLI
 """
-
-
-def commit_raw_data_to_database(system: Systems, program_config: ProgramConfig) -> int:
-    """
-    Commit raw data to the database.
-
-    Args:
-        system (Systems): The Systems object containing the raw data.
-        program_config (ProgramConfig): The program configuration object.
-
-    Returns:
-        int: The number of records committed to the database.
-
-    """
-    # This function should commit the raw data to the database
-    # For example, it will insert the raw data into the database
-
-    if not system.file.exists():
-        message: str = f"File {system.file} does not exist. Skipping raw data commit."
-        raise ValueError(message)
-
-    # Create a RawData object for each section in the file
-    raw_data_records: list[T] = []
-    regex_pattern: str = r"^(?P<section>[A-Za-z0-9-]+)_(?P<section_heading>[A-Za-z0-9_-]+)::(?P<raw_data>.*)$"
-    with system.file.open("r", encoding=system.file_encoding) as f:
-        for line in f:
-            # Process each line and create a RawData object
-            # Here we assume that each line is a section
-            regex_result: re.Match[str] | None = re.search(
-                regex_pattern,
-                line,
-                re.IGNORECASE,
-            )
-            if regex_result:
-                section: str = regex_result.group("section").strip()
-                section_heading: str = regex_result.group("section_heading").strip()
-                raw_data: str = regex_result.group("raw_data").strip()
-                try:
-                    raw_data_record = RawData(
-                        system_id=system.system_id,
-                        section=section,
-                        section_heading=section_heading,
-                        raw_data=raw_data,
-                    )
-                except ValueError:
-                    continue  # Skip invalid records
-                raw_data_records.append(raw_data_record)
-
-    records_committed: int = commit_to_database(
-        records=raw_data_records,
-        model_class=RawData,
-        program_config=program_config,
-    )
-
-    return records_committed
-
-
-def commit_to_database(
-    records: list[T],
-    model_class: type[T],
-    program_config: ProgramConfig,
-) -> int:
-    """
-    Generic function to commit any type of Pydantic model records to a DuckDB database.
-
-    Args:
-        records: List of Pydantic model instances to commit
-        model_class: The Pydantic model class (used for schema generation)
-        program_config: The program configuration object containing database path.
-
-    Returns:
-        Number of records committed as an integer.
-
-    """
-    records_committed: int = 0
-
-    # Use our DuckDBConnection context manager
-    with DuckDBConnection(program_config.database_path) as db:
-        # Generate schema from Pydantic model
-        schema: dict[str, str] = get_db_schema_from_model(model_class)
-
-        # Create the table
-        db.create_table(model_class.db_table_name, schema)
-
-        # Convert Pydantic models to dictionaries for database insertion
-        records_dicts = []
-        for record in records:
-            record_dict = record.model_dump()
-
-            # Handle Path objects (convert to strings)
-            for key, value in record_dict.items():
-                if isinstance(value, Path):
-                    record_dict[key] = str(value)
-
-            records_dicts.append(record_dict)
-
-        # Insert the records
-        if records_dicts:
-            db.insert_records(model_class.db_table_name, records_dicts)
-
-            records_committed = int(
-                db.execute(
-                    f"SELECT COUNT(*) FROM {model_class.db_table_name}",
-                ).fetchone()[0],
-            )
-
-    return records_committed
 
 
 def enumerate_systems_from_source_files(
@@ -431,6 +318,7 @@ def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
 
     Args:
         file (Path): The path to the file.
+        encoding (str): The file encoding.
 
     Returns:
         ProducerType: The producer type.
@@ -471,18 +359,20 @@ def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
 def generate_file_hash(file: Path) -> str:
     """Generate the file hash if not provided."""
     if file is None or not file.exists():
-        raise ValueError(f"File path is required to generate the hash {file}.")
+        message: str = f"File path is required to generate the hash {file}."
+        raise ValueError(message)
 
     # Generate the hash (SHA256) of the file
     sha256_hash: hashlib.HASH = hashlib.sha256()
     try:
-        with open(file, "rb") as f:
+        with file.open("rb") as f:
             # Read and update hash in chunks to handle large files
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     except (OSError, PermissionError) as e:
-        raise ValueError(f"Error reading file {file}: {e}") from e
+        message: str = f"Error reading file {file}: {e}"
+        raise ValueError(message) from e
 
 
 if __name__ == "__main__":

@@ -1,9 +1,12 @@
+import sys
 from typing import Any
 
 import click
 
 from kp_analysis_toolkit.process_scripts import process_scripts
-from kp_analysis_toolkit.process_scripts.data_models import ProgramConfig, Systems
+from kp_analysis_toolkit.process_scripts.data_models import (
+    ProgramConfig,
+)
 
 
 def create_results_path(program_config: ProgramConfig) -> None:
@@ -38,6 +41,27 @@ def create_results_path(program_config: ProgramConfig) -> None:
         if program_config.verbose:
             click.echo(f"Creating directory: {program_config.results_path}")
         program_config.results_path.mkdir(parents=True, exist_ok=True)
+
+
+def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
+    """Recursively find the size of an object and its contents in bytes."""
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Mark object as seen
+    seen.add(obj_id)
+    size = sys.getsizeof(obj)
+
+    # Handle iterables
+    if isinstance(obj, (list, tuple, set, dict)):
+        if isinstance(obj, (list, tuple, set)):
+            size += sum(get_size(i, seen) for i in obj)
+        else:  # dict
+            size += sum(get_size(k, seen) + get_size(v, seen) for k, v in obj.items())
+
+    return size
 
 
 def list_audit_configs(program_config: ProgramConfig) -> None:
@@ -99,37 +123,20 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
 
     # Check if the results_path exists
     create_results_path(program_config)
-    systems: list[Systems] = process_scripts.enumerate_systems_from_source_files(
-        program_config,
-    )
-    if not systems:
-        click.echo("No systems found.")
-        return
 
-    click.echo(f"Found {len(systems)} systems to process.")
-    if program_config.verbose:
-        click.echo("Systems:")
-        for system in systems:
+    for system in process_scripts.enumerate_systems_from_source_files(
+        program_config,
+    ):
+        if program_config.verbose:
             click.echo(f" - {system.system_name} (SHA256: {system.file_hash})")
             for key, value in system.model_dump().items():
                 click.echo(f"\t- {key}: {value}")
 
-    # Commit the systems to the database
-    if systems:
-        records_inserted: int = process_scripts.commit_to_database(
-            records=systems,
-            model_class=Systems,
-            program_config=program_config,
-        )
-        click.echo(f"Systems committed to database: {records_inserted}")
+        # Load the raw data into memory
+        with system.file.open("r", encoding=system.file_encoding) as file:
+            raw_data: list[str] = file.readlines()
 
-        for system in systems:
-            # Commit the raw data to the database
-            click.echo(f"Processing raw data for system: {system.system_name}")
-            records_inserted = process_scripts.commit_raw_data_to_database(
-                system=system,
-                program_config=program_config,
-            )
-            click.echo(
-                f"Raw data committed to database for system {system.system_name}: {records_inserted}",
-            )
+        click.secho(
+            f"{system.file.relative_to(program_config.source_files_path)}: {len(raw_data)} lines  (memory size: {get_size(raw_data) / 1024:.2f} KB)",
+            fg="green",
+        )
