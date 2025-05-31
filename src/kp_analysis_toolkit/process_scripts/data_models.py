@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, computed_field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
 
@@ -105,7 +105,6 @@ class SearchConfig(BaseModel):
     """Configuration for a single search operation."""
 
     name: str  # The YAML section name
-    systems: list[str] | None = None
     regex: str
     comment: str | None = None
     max_results: int = -1
@@ -128,27 +127,42 @@ class SearchConfig(BaseModel):
 
     @field_validator("only_matching")
     @classmethod
-    def validate_field_list_with_only_matching(cls, value: bool, info: dict) -> bool:
+    def validate_field_list_with_only_matching(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
         """Validate that field_list is only used with only_matching=True."""
-        if value is False and not info.data.get("only_matching", None):
+        if info.data.get("field_list") and not value:
             # Override only_matching to True if field_list is specified
             return True
         return value
 
     @field_validator("combine")
     @classmethod
-    def validate_combine_with_field_list(cls, value, info):
+    def validate_combine_with_field_list(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
         """Validate that combine is only used when field_list is specified."""
         if value and not info.data.get("field_list"):
-            raise ValueError("combine can only be used when field_list is specified")
+            message: str = "combine can only be used when field_list is specified"
+            raise ValueError(message)
         return value
 
     @field_validator("rs_delimiter")
     @classmethod
-    def validate_rs_delimiter_with_combine(cls, value, info):
+    def validate_rs_delimiter_with_field_list(
+        cls,
+        value: str | None,
+        info: dict,
+    ) -> str | None:
+        """Validate that rs_delimiter is only used when field_list is specified."""
+        if value is not None and not info.data.get("field_list"):
+            message: str = "rs_delimiter can only be used when field_list is specified"
+            raise ValueError(message)
+        return value
+
+    @field_validator("combine")
+    @classmethod
+    def validate_combine_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
         """Validate that rs_delimiter is only used with combine=True."""
-        if value is not None and not info.data.get("combine", False):
-            raise ValueError("rs_delimiter can only be used with combine=True")
+        if info.data.get("rs_delimiter") and not value:
+            message = "rs_delimiter can only be used with combine=True"
+            raise ValueError(message)
         return value
 
     def merge_global_config(self, global_config: GlobalConfig) -> "SearchConfig":
@@ -223,13 +237,7 @@ class SearchResult(BaseModel):
     matched_text: str
     extracted_fields: dict[str, str] | None = None
 
-    @field_validator("line_number")
-    @classmethod
-    def validate_line_number(cls, value):
-        """Ensure line number is positive."""
-        if value <= 0:
-            raise ValueError("line_number must be a positive integer")
-        return value
+    line_number: int = Field(gt=0, description="Line number must be a positive integer")
 
 
 class SearchResults(BaseModel):
@@ -248,7 +256,7 @@ class SearchResults(BaseModel):
     @property
     def unique_systems(self) -> int:
         """Return the number of unique systems that had matches."""
-        return len(set(result.system_name for result in self.results))
+        return len({result.system_name for result in self.results})
 
     @computed_field
     @property
@@ -263,7 +271,7 @@ class LinuxFamilyType(str, Enum):
     DEB = "deb"
     RPM = "rpm"
     APK = "apk"
-    OTHER = "Other"
+    OTHER = "other"
 
 
 class ProgramConfig(BaseModel):
