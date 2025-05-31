@@ -12,18 +12,20 @@ import click
 import yaml
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
-from kp_analysis_toolkit.process_scripts.data_models import (
-    ProgramConfig,
+from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
+from kp_analysis_toolkit.process_scripts.models.search.search import (
     SearchConfig,
     SearchResult,
     SearchResults,
+)
+from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
     SysFilterAttr,
     SysFilterComparisonOperators,
-    SysFilterValueType,
     SystemFilter,
-    Systems,
-    YamlConfig,
 )
+from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.types import SysFilterValueType
 
 
 def load_yaml_config(config_file: Path) -> YamlConfig:

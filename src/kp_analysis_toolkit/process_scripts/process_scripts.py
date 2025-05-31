@@ -5,16 +5,15 @@ from collections.abc import Generator  # For type hinting
 from pathlib import Path  # To handle file paths
 from uuid import uuid4  # To generate unique identifiers
 
-from chardet import UniversalDetector  # To detect file encoding
-
-from kp_analysis_toolkit.process_scripts.data_models import (
+from kp_analysis_toolkit.process_scripts.models.base import RegexPatterns
+from kp_analysis_toolkit.process_scripts.models.enums import (
     LinuxFamilyType,
     ProducerType,
-    ProgramConfig,
-    RegexPatterns,
-    Systems,
     SystemType,
 )
+from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 
 """
 Version History:
@@ -67,7 +66,7 @@ def enumerate_systems_from_source_files(
     ):
         # Process each file and add the results to the list
 
-        encoding: str = get_file_encoding(file)
+        encoding: str = detect_encoding(file)
         producer, producer_version = get_producer_type(file, encoding)
         linux_family: LinuxFamilyType | None = None
         match producer:
@@ -138,30 +137,6 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
 
     p: Path = Path(start_path).absolute()
     return list(p.rglob(file_spec))
-
-
-def get_file_encoding(file: Path) -> str:
-    """
-    Get the file encoding using chardet.
-
-    Args:
-        file (Path): The path to the file.
-
-    Returns:
-        str: The detected file encoding.
-
-    """
-    # This function should detect the file encoding
-    # For example, you can use chardet or other libraries to detect the encoding
-
-    detector = UniversalDetector()
-    with file.open("rb") as f:
-        for line in f:
-            detector.feed(line)
-            if detector.done:
-                break
-        detector.close()
-    return detector.result["encoding"] if detector.result else "unknown"
 
 
 def get_linux_family(file: Path, encoding: str) -> LinuxFamilyType | None:

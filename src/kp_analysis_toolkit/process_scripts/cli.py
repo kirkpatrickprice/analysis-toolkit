@@ -6,7 +6,7 @@ from kp_analysis_toolkit.process_scripts import (
 from kp_analysis_toolkit.process_scripts import (
     cli_functions as cli_funcs,
 )
-from kp_analysis_toolkit.process_scripts.data_models import ProgramConfig
+from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 
 
 @click.command(name="scripts")

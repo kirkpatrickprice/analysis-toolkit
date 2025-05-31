@@ -4,11 +4,11 @@ from typing import Any
 import click
 
 from kp_analysis_toolkit.process_scripts import process_scripts
-from kp_analysis_toolkit.process_scripts.data_models import (
-    ProgramConfig,
-)
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_search_results_to_excel,
+)
+from kp_analysis_toolkit.process_scripts.models.program_config import (
+    ProgramConfig,
 )
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
@@ -115,7 +115,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
     """Print the program configuration in verbose mode."""
     click.echo("Program configuration:")
     # Iterate over the fields in the ProgramConfig object and print both the original and converted values
-    for field_name, field_value in program_config.model_dump().items():
+    for field_name, field_value in program_config.get_config_summary().items():
         click.echo(f" - {field_name}:")
         try:
             click.echo(f"\t- Original : {cli_config[field_name]}")
