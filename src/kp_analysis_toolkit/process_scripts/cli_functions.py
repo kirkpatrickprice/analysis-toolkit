@@ -7,6 +7,13 @@ from kp_analysis_toolkit.process_scripts import process_scripts
 from kp_analysis_toolkit.process_scripts.data_models import (
     ProgramConfig,
 )
+from kp_analysis_toolkit.process_scripts.excel_exporter import (
+    export_search_results_to_excel,
+)
+from kp_analysis_toolkit.process_scripts.search_engine import (
+    execute_search,
+    load_search_configs,
+)
 
 
 def create_results_path(program_config: ProgramConfig) -> None:
@@ -118,25 +125,33 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
 
 
 def process_scipts_results(program_config: ProgramConfig) -> None:
-    """Process the source files and load the results into DuckDB."""
+    """Process the source files and execute searches."""
     click.echo("Processing source files...")
 
-    # Check if the results_path exists
+    # Create results path
     create_results_path(program_config)
 
-    for system in process_scripts.enumerate_systems_from_source_files(
-        program_config,
-    ):
+    # Load systems
+    systems = list(process_scripts.enumerate_systems_from_source_files(program_config))
+    click.echo(f"Found {len(systems)} systems to process")
+
+    # Load search configurations
+    search_configs = load_search_configs(program_config.audit_config_file)
+    click.echo(f"Loaded {len(search_configs)} search configurations")
+
+    # Execute searches
+    all_results = []
+    for config in search_configs:
         if program_config.verbose:
-            click.echo(f" - {system.system_name} (SHA256: {system.file_hash})")
-            for key, value in system.model_dump().items():
-                click.echo(f"\t- {key}: {value}")
+            click.echo(f"Executing search: {config.name}")
 
-        # Load the raw data into memory
-        with system.file.open("r", encoding=system.file_encoding) as file:
-            raw_data: list[str] = file.readlines()
+        results = execute_search(config, systems)
+        all_results.append(results)
 
-        click.secho(
-            f"{system.file.relative_to(program_config.source_files_path)}: {len(raw_data)} lines  (memory size: {get_size(raw_data) / 1024:.2f} KB)",
-            fg="green",
-        )
+        if program_config.verbose:
+            click.echo(f"  Found {results.result_count} matches")
+
+    # Export to Excel
+    output_file = program_config.results_path / "search_results.xlsx"
+    export_search_results_to_excel(all_results, output_file)
+    click.echo(f"Search results exported to {output_file.absolute()}")
