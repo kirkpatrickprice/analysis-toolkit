@@ -44,7 +44,7 @@ class SysFilterAttr(str, Enum):
     OS_VERSION = "os_version"
 
 
-class SysFilterComp(str, Enum):
+class SysFilterComparisonOperators(str, Enum):
     """Enum for sys_filter comparison operators."""
 
     EQUALS = "eq"  # Equals -- an exact comparison
@@ -59,7 +59,7 @@ class SystemFilter(BaseModel):
     """System filter configuration for limiting search applicability."""
 
     attr: SysFilterAttr
-    comp: SysFilterComp
+    comp: SysFilterComparisonOperators
     value: SysFilterValueType
 
     @field_validator("value")
@@ -72,15 +72,15 @@ class SystemFilter(BaseModel):
         """Validate that the value type is appropriate for the comparison operator."""
         comp: str = info.data.get("comp")
 
-        if comp == SysFilterComp.IN:
+        if comp == SysFilterComparisonOperators.IN:
             if not isinstance(value, list | set):
                 message: str = "'in' operator requires a list or set value"
                 raise ValueError(message)
         elif comp in [
-            SysFilterComp.GREATER_THAN,
-            SysFilterComp.LESS_THAN,
-            SysFilterComp.GREATER_EQUAL,
-            SysFilterComp.LESS_EQUAL,
+            SysFilterComparisonOperators.GREATER_THAN,
+            SysFilterComparisonOperators.LESS_THAN,
+            SysFilterComparisonOperators.GREATER_EQUAL,
+            SysFilterComparisonOperators.LESS_EQUAL,
         ] and isinstance(value, list | set):
             message: str = f"'{comp}' operator cannot be used with list or set values"
             raise ValueError(message)
@@ -240,7 +240,7 @@ class SearchResult(BaseModel):
 class SearchResults(BaseModel):
     """Collection of results for a search configuration."""
 
-    config: SearchConfig
+    search_config: SearchConfig
     results: list[SearchResult]
 
     @computed_field

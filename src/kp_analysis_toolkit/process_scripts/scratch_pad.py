@@ -69,7 +69,7 @@ class SysFilterAttr(str, Enum):
     OS_VERSION = "os_version"
 
 
-class SysFilterComp(str, Enum):
+class SysFilterComparisonOperators(str, Enum):
     """Enum for sys_filter comparison operators."""
 
     EQUALS = "eq"  # Equals -- an exact comparison
@@ -84,7 +84,7 @@ class SystemFilter(BaseModel):
     """System filter configuration for limiting search applicability."""
 
     attr: SysFilterAttr
-    comp: SysFilterComp
+    comp: SysFilterComparisonOperators
     value: str | int | float | list[str] | list[int] | list[float]
 
     @field_validator("value")
@@ -93,14 +93,14 @@ class SystemFilter(BaseModel):
         """Validate that the value type is appropriate for the comparison operator."""
         comp = info.data.get("comp")
 
-        if comp == SysFilterComp.IN:
+        if comp == SysFilterComparisonOperators.IN:
             if not isinstance(value, list):
                 raise ValueError("'in' operator requires a list value")
         elif comp in [
-            SysFilterComp.GREATER_THAN,
-            SysFilterComp.LESS_THAN,
-            SysFilterComp.GREATER_EQUAL,
-            SysFilterComp.LESS_EQUAL,
+            SysFilterComparisonOperators.GREATER_THAN,
+            SysFilterComparisonOperators.LESS_THAN,
+            SysFilterComparisonOperators.GREATER_EQUAL,
+            SysFilterComparisonOperators.LESS_EQUAL,
         ]:
             if isinstance(value, list):
                 raise ValueError(f"'{comp}' operator cannot be used with list values")
@@ -185,7 +185,7 @@ class SearchConfig(BaseModel):
         elif global_config.sys_filter and merged_data.get("sys_filter"):
             # Combine global and local sys_filters
             merged_data["sys_filter"] = list(global_config.sys_filter) + list(
-                merged_data["sys_filter"]
+                merged_data["sys_filter"],
             )
 
         if global_config.max_results is not None and merged_data["max_results"] == -1:
@@ -362,7 +362,7 @@ class ProgramConfig(BaseModel):
 
     program_path: Path = Path(__file__).parent
     config_path: Path = Field(
-        default_factory=lambda: Path(__file__).parent / GLOBALS["CONF_PATH"]
+        default_factory=lambda: Path(__file__).parent / GLOBALS["CONF_PATH"],
     )
     audit_config_file: Path | None = None
     source_files_path: Path | None = None
