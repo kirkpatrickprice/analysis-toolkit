@@ -30,7 +30,6 @@ There are help sections at the top of each of the provided YAML files, but the m
 ### Configuration sections
 | Option        | Description |
 -------------------------------
-| `systems`       | Systems to apply the search to. |
 | `regex`         | Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html. |
 | `comment`       | A helpful comment that will be added to the output file to describe how to use this particular set of search results. |
 | `max_results`   | Maximum number of results to return per System (default: -1 - unlimited). |
@@ -54,6 +53,20 @@ sys_filter:
   value: <value_to_match>
 ```
 
+### Global Section
+You can also create a `global` section at the top of your file to define some parameters that will apply to the rest of the search configurations.  This is especially useful when applying `sys_filter`s for types of operating systems, like we see in each of `audit-linux*.yaml`, `audit-macos*.yaml` and `audit-windows*.yaml`.
+
+Here's the example from `audit-windows-system.yaml`:
+
+```yaml
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+```
+
+NOTE: The `global` section to all searches *in the current file*.  `global` sections do not inherit across files, event if `include`d as described above.  This helps avoid code complexity in the program related to some weird headaches where conflicting settings are defined.
 
 ### sys_filter Attributes
 | Attribute         | Description |
