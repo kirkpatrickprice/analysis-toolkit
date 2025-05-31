@@ -6,18 +6,19 @@ Handles YAML configuration loading, system filtering, and search execution.
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 import click
 import yaml
 
-from .data_models import (
+from kp_analysis_toolkit.process_scripts import GLOBALS
+from kp_analysis_toolkit.process_scripts.data_models import (
     ProgramConfig,
     SearchConfig,
     SearchResult,
     SearchResults,
     SysFilterAttr,
-    SysFilterComp,
+    SysFilterComparisonOperators,
     SysFilterValueType,
     SystemFilter,
     Systems,
@@ -72,13 +73,13 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
     all_configs: list[YamlConfig] = []
 
     # Add configs from current file
-    for _config in yaml_config.search_configs.values():
-        # Apply global config if it exists
+    for _search_config in yaml_config.search_configs.values():
+        # Apply global search_config if it exists
         if yaml_config.global_config:
-            config: SearchConfig = _config.merge_global_config(
+            search_config: SearchConfig = _search_config.merge_global_config(
                 yaml_config.global_config,
             )
-        all_configs.append(config)
+        all_configs.append(search_config)
 
     # Process includes
     for _include_config in yaml_config.include_configs.values():
@@ -190,7 +191,7 @@ def get_system_attribute_value(
 
 def compare_values(  # noqa: PLR0911
     system_value: str | float,
-    operator: SysFilterComp,
+    operator: SysFilterComparisonOperators,
     filter_value: SysFilterValueType,
 ) -> bool:
     """
@@ -210,38 +211,38 @@ def compare_values(  # noqa: PLR0911
 
     try:
         match operator:
-            case SysFilterComp.EQUALS:
+            case SysFilterComparisonOperators.EQUALS:
                 return str(system_value).lower() == str(filter_value).lower()
 
-            case SysFilterComp.GREATER_THAN:
+            case SysFilterComparisonOperators.GREATER_THAN:
                 return _numeric_or_string_comparison(
                     system_value,
                     filter_value,
                     lambda x, y: x > y,
                 )
 
-            case SysFilterComp.LESS_THAN:
+            case SysFilterComparisonOperators.LESS_THAN:
                 return _numeric_or_string_comparison(
                     system_value,
                     filter_value,
                     lambda x, y: x < y,
                 )
 
-            case SysFilterComp.GREATER_EQUAL:
+            case SysFilterComparisonOperators.GREATER_EQUAL:
                 return _numeric_or_string_comparison(
                     system_value,
                     filter_value,
                     lambda x, y: x >= y,
                 )
 
-            case SysFilterComp.LESS_EQUAL:
+            case SysFilterComparisonOperators.LESS_EQUAL:
                 return _numeric_or_string_comparison(
                     system_value,
                     filter_value,
                     lambda x, y: x <= y,
                 )
 
-            case SysFilterComp.IN:
+            case SysFilterComparisonOperators.IN:
                 # Convert filter_value to list if it isn't already
                 if not isinstance(filter_value, list):
                     filter_value = [filter_value]
@@ -260,9 +261,9 @@ def compare_values(  # noqa: PLR0911
 
 
 def _numeric_or_string_comparison(
-    system_value: Any,
-    filter_value: Any,
-    comparison_func,
+    system_value: str | float,
+    filter_value: SysFilterValueType,
+    comparison_func: callable,
 ) -> bool:
     """
     Try numeric comparison first, fall back to string comparison.
@@ -282,12 +283,15 @@ def _numeric_or_string_comparison(
         return comparison_func(str(system_value), str(filter_value))
 
 
-def execute_search(config: SearchConfig, systems: list[Systems]) -> SearchResults:
+def execute_search(
+    search_config: SearchConfig,
+    systems: list[Systems],
+) -> SearchResults:
     """
     Execute a search configuration against available systems.
 
     Args:
-        config: Search configuration to execute
+        search_config: Search configuration to execute
         systems: List of systems to search
 
     Returns:
@@ -295,36 +299,42 @@ def execute_search(config: SearchConfig, systems: list[Systems]) -> SearchResult
 
     """
     # Filter systems based on sys_filter
-    filtered_systems = filter_systems_by_criteria(systems, config.sys_filter)
+    filtered_systems = filter_systems_by_criteria(systems, search_config.sys_filter)
 
     all_results = []
 
     for system in filtered_systems:
-        system_results = search_single_system(config, system)
+        system_results = search_single_system(search_config, system)
         all_results.extend(system_results)
 
         # Apply max_results limit if specified (per system)
-        if config.max_results > 0 and len(system_results) >= config.max_results:
+        if (
+            search_config.max_results > 0
+            and len(system_results) >= search_config.max_results
+        ):
             # Truncate this system's results if needed
-            system_results = system_results[: config.max_results]
+            system_results = system_results[: search_config.max_results]
 
     # Apply unique filter if specified
-    if config.unique:
+    if search_config.unique:
         all_results = deduplicate_results(all_results)
 
     # Apply global max_results if specified
-    if config.max_results > 0:
-        all_results = all_results[: config.max_results]
+    if search_config.max_results > 0:
+        all_results = all_results[: search_config.max_results]
 
-    return SearchResults(config=config, results=all_results)
+    return SearchResults(search_config=search_config, results=all_results)
 
 
-def search_single_system(config: SearchConfig, system: Systems) -> list[SearchResult]:
+def search_single_system(
+    search_config: SearchConfig,
+    system: Systems,
+) -> list[SearchResult]:
     """
     Search a single system file for matches.
 
     Args:
-        config: Search configuration
+        search_config: Search configuration
         system: System to search
 
     Returns:
@@ -334,9 +344,9 @@ def search_single_system(config: SearchConfig, system: Systems) -> list[SearchRe
     results = []
 
     try:
-        pattern = re.compile(config.regex, re.IGNORECASE)
+        pattern = re.compile(search_config.regex, re.IGNORECASE)
     except re.error as e:
-        click.echo(f"Error: Invalid regex pattern in {config.name}: {e}")
+        click.echo(f"Error: Invalid regex pattern in {search_config.name}: {e}")
         return results
 
     try:
@@ -344,10 +354,15 @@ def search_single_system(config: SearchConfig, system: Systems) -> list[SearchRe
         encoding = system.file_encoding or "utf-8"
 
         with system.file.open("r", encoding=encoding, errors="replace") as f:
-            if config.combine and config.rs_delimiter:
-                results = search_with_recordset_delimiter(config, system, f, pattern)
+            if search_config.combine and search_config.rs_delimiter:
+                results = search_with_recordset_delimiter(
+                    search_config,
+                    system,
+                    f,
+                    pattern,
+                )
             else:
-                results = search_line_by_line(config, system, f, pattern)
+                results = search_line_by_line(search_config, system, f, pattern)
 
     except (OSError, UnicodeDecodeError) as e:
         click.echo(f"Error processing {system.file}: {e}")
@@ -356,18 +371,18 @@ def search_single_system(config: SearchConfig, system: Systems) -> list[SearchRe
 
 
 def search_line_by_line(
-    config: SearchConfig,
+    search_config: SearchConfig,
     system: Systems,
-    file_handle,
+    file_handle: IO[str],
     pattern: re.Pattern,
 ) -> list[SearchResult]:
     """
     Search file line by line for matches.
 
     Args:
-        config: Search configuration
+        search_config: Search configuration
         system: System being searched
-        file_handle: Open file handle
+        file_handle: IO[str]
         pattern: Compiled regex pattern
 
     Returns:
@@ -376,36 +391,45 @@ def search_line_by_line(
     """
     results = []
 
-    for line_num, line in enumerate(file_handle, 1):
-        line = line.strip()
+    for line_num, _line in enumerate(file_handle, 1):
+        line: str = _line.strip()
 
         # Skip empty lines unless full_scan is enabled
-        if not line and not config.full_scan:
+        if not line and not search_config.full_scan:
             continue
 
-        match = pattern.search(line)
+        match: re.Match[str] | None = pattern.search(line)
         if match:
-            result = create_search_result(config, system, line, line_num, match)
+            result: SearchResult = create_search_result(
+                search_config,
+                system,
+                line,
+                line_num,
+                match,
+            )
             results.append(result)
 
             # Check max_results per system
-            if config.max_results > 0 and len(results) >= config.max_results:
+            if (
+                search_config.max_results > 0
+                and len(results) >= search_config.max_results
+            ):
                 break
 
     return results
 
 
 def search_with_recordset_delimiter(
-    config: SearchConfig,
+    search_config: SearchConfig,
     system: Systems,
-    file_handle,
+    file_handle: IO[str],
     pattern: re.Pattern,
 ) -> list[SearchResult]:
     """
     Search file using recordset delimiter for multi-line records.
 
     Args:
-        config: Search configuration with recordset delimiter
+        search_config: Search configuration with recordset delimiter
         system: System being searched
         file_handle: Open file handle
         pattern: Compiled regex pattern for matching
@@ -417,26 +441,28 @@ def search_with_recordset_delimiter(
     results = []
 
     try:
-        rs_pattern = re.compile(config.rs_delimiter, re.IGNORECASE)
+        rs_pattern = re.compile(search_config.rs_delimiter, re.IGNORECASE)
     except re.error as e:
-        click.echo(f"Error: Invalid recordset delimiter pattern in {config.name}: {e}")
+        click.echo(
+            f"Error: Invalid recordset delimiter pattern in {search_config.name}: {e}",
+        )
         return results
 
     current_record = []
     record_start_line = 1
 
-    for line_num, line in enumerate(file_handle, 1):
-        line = line.strip()
+    for _line_num, _line in enumerate(file_handle, 1):
+        line = _line.strip()
 
         # Check if this line starts a new record
         if rs_pattern.search(line):
             # Process the previous record if it exists
-            if current_record and config.combine:
+            if current_record and search_config.combine:
                 combined_text = "\n".join(current_record)
-                match = pattern.search(combined_text)
+                match: re.Match[str] | None = pattern.search(combined_text)
                 if match:
-                    result = create_search_result(
-                        config,
+                    result: SearchResult = create_search_result(
+                        search_config,
                         system,
                         combined_text,
                         record_start_line,
@@ -446,21 +472,21 @@ def search_with_recordset_delimiter(
 
             # Start new record
             current_record = [line]
-            record_start_line = line_num
+            record_start_line = _line_num
         else:
             current_record.append(line)
 
         # Check max_results per system
-        if config.max_results > 0 and len(results) >= config.max_results:
+        if search_config.max_results > 0 and len(results) >= search_config.max_results:
             break
 
     # Process the last record
-    if current_record and config.combine:
+    if current_record and search_config.combine:
         combined_text = "\n".join(current_record)
         match = pattern.search(combined_text)
         if match:
             result = create_search_result(
-                config,
+                search_config,
                 system,
                 combined_text,
                 record_start_line,
@@ -472,7 +498,7 @@ def search_with_recordset_delimiter(
 
 
 def create_search_result(
-    config: SearchConfig,
+    search_config: SearchConfig,
     system: Systems,
     text: str,
     line_num: int,
@@ -482,7 +508,7 @@ def create_search_result(
     Create a SearchResult object from a regex match.
 
     Args:
-        config: Search configuration
+        search_config: Search configuration
         system: System that was searched
         text: Full text that was matched against
         line_num: Line number where match occurred
@@ -494,12 +520,12 @@ def create_search_result(
     """
     # Extract fields if field_list is specified
     extracted_fields = None
-    if config.field_list:
+    if search_config.field_list:
         extracted_fields = {}
-        for field in config.field_list:
+        for field in search_config.field_list:
             try:
                 extracted_fields[field] = match.group(field)
-            except IndexError:
+            except IndexError:  # noqa: PERF203
                 # Field not found in match groups, add as empty string
                 extracted_fields[field] = ""
 
@@ -508,7 +534,7 @@ def create_search_result(
             extracted_fields["raw_data"] = match.group(0)
 
     # Use only matching text if specified
-    matched_text = match.group(0) if config.only_matching else text
+    matched_text = match.group(0) if search_config.only_matching else text
 
     return SearchResult(
         system_name=system.system_name,
@@ -558,25 +584,28 @@ def execute_all_searches(
         List of SearchResults for all executed searches
 
     Raises:
-        ValueError: If no audit config file is specified
+        ValueError: If no audit search_config file is specified
 
     """
     if not program_config.audit_config_file:
-        raise ValueError("No audit config file specified")
+        message = "No audit search_config file specified in program configuration"
+        raise ValueError(message)
 
     # Load search configurations
-    search_configs = load_search_configs(program_config.audit_config_file)
+    search_configs: list[SearchConfig] = load_search_configs(
+        program_config.audit_config_file,
+    )
 
     if program_config.verbose:
         click.echo(f"Loaded {len(search_configs)} search configurations")
 
     # Execute searches
     all_results = []
-    for config in search_configs:
+    for search_config in search_configs:
         if program_config.verbose:
-            click.echo(f"Executing search: {config.name}")
+            click.echo(f"Executing search: {search_config.name}")
 
-        results = execute_search(config, systems)
+        results = execute_search(search_config, systems)
         all_results.append(results)
 
         if program_config.verbose:
@@ -620,7 +649,7 @@ def get_search_statistics(search_results: list[SearchResults]) -> dict[str, Any]
 
     # Top searches by result count
     top_searches = sorted(
-        [(result.config.name, result.result_count) for result in search_results],
+        [(result.search_config.name, result.result_count) for result in search_results],
         key=lambda x: x[1],
         reverse=True,
     )[:10]
@@ -654,8 +683,8 @@ def validate_search_configs(search_configs: list[SearchConfig]) -> list[str]:
     validation_messages = []
 
     # Check for duplicate search names
-    names = [config.name for config in search_configs]
-    duplicates = set([name for name in names if names.count(name) > 1])
+    names = [search_config.name for search_config in search_configs]
+    duplicates: set[str] = {name for name in names if names.count(name) > 1}
 
     if duplicates:
         validation_messages.append(
@@ -663,28 +692,28 @@ def validate_search_configs(search_configs: list[SearchConfig]) -> list[str]:
         )
 
     # Validate regex patterns
-    for config in search_configs:
+    for search_config in search_configs:
         try:
-            re.compile(config.regex)
+            re.compile(search_config.regex)
         except re.error as e:
-            validation_messages.append(f"Invalid regex in '{config.name}': {e}")
+            validation_messages.append(f"Invalid regex in '{search_config.name}': {e}")
 
         # Check for field_list without only_matching
-        if config.field_list and not config.only_matching:
+        if search_config.field_list and not search_config.only_matching:
             validation_messages.append(
-                f"Search '{config.name}' has field_list but only_matching is False",
+                f"Search '{search_config.name}' has field_list but only_matching is False",
             )
 
         # Check for combine without field_list
-        if config.combine and not config.field_list:
+        if search_config.combine and not search_config.field_list:
             validation_messages.append(
-                f"Search '{config.name}' has combine=True but no field_list specified",
+                f"Search '{search_config.name}' has combine=True but no field_list specified",
             )
 
         # Check for rs_delimiter without combine
-        if config.rs_delimiter and not config.combine:
+        if search_config.rs_delimiter and not search_config.combine:
             validation_messages.append(
-                f"Search '{config.name}' has rs_delimiter but combine=False",
+                f"Search '{search_config.name}' has rs_delimiter but combine=False",
             )
 
     return validation_messages
@@ -729,13 +758,14 @@ def create_search_summary_report(
         f.write("\n\nDETAILED SEARCH RESULTS:\n")
         f.write("-" * 30 + "\n")
         for search_result in search_results:
-            f.write(f"\nSearch: {search_result.config.name}\n")
+            f.write(f"\nSearch: {search_result.search_config.name}\n")
             f.write(f"  Results: {search_result.result_count}\n")
             f.write(f"  Unique Systems: {search_result.unique_systems}\n")
             f.write(f"  Has Extracted Fields: {search_result.has_extracted_fields}\n")
-            if search_result.config.comment:
+            if search_result.search_config.comment:
+                max_results = GLOBALS.get("MAX_SUMMARY_REPORT_RESULTS", 100)
                 f.write(
-                    f"  Comment: {search_result.config.comment[:100]}{'...' if len(search_result.config.comment) > 100 else ''}\n",
+                    f"  Comment: {search_result.search_config.comment[:max_results]}{'...' if len(search_result.search_config.comment) > max_results else ''}\n",
                 )
 
 
