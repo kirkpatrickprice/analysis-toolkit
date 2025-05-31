@@ -1,12 +1,14 @@
+"""
+Search engine functionality for executing regex-based searches against system files.
+Handles YAML configuration loading, system filtering, and search execution.
+"""
+
 import re
 from pathlib import Path
 from typing import Any
 
 import click
-import pandas as pd
 import yaml
-from openpyxl.styles import Alignment, Font
-from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from .data_models import (
     ProgramConfig,
@@ -22,7 +24,19 @@ from .data_models import (
 
 
 def load_yaml_config(config_file: Path) -> YamlConfig:
-    """Load and parse YAML configuration file into structured data models."""
+    """
+    Load and parse YAML configuration file into structured data models.
+
+    Args:
+        config_file: Path to the YAML configuration file
+
+    Returns:
+        YamlConfig object containing parsed configuration
+
+    Raises:
+        ValueError: If file cannot be loaded or parsed
+
+    """
     try:
         with config_file.open("r", encoding="utf-8") as f:
             yaml_data = yaml.safe_load(f)
@@ -39,7 +53,17 @@ def load_yaml_config(config_file: Path) -> YamlConfig:
 
 
 def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchConfig]:
-    """Process include configurations and recursively load included files."""
+    """
+    Process include configurations and recursively load included files.
+
+    Args:
+        yaml_config: The main YAML configuration
+        base_path: Base directory for resolving include paths
+
+    Returns:
+        List of all search configurations including those from included files
+
+    """
     all_configs = []
 
     # Add configs from current file
@@ -71,7 +95,16 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
 
 
 def load_search_configs(config_file: Path) -> list[SearchConfig]:
-    """Load and parse search configurations from YAML file, handling includes."""
+    """
+    Load and parse search configurations from YAML file, handling includes.
+
+    Args:
+        config_file: Path to the main YAML configuration file
+
+    Returns:
+        List of SearchConfig objects ready for execution
+
+    """
     yaml_config = load_yaml_config(config_file)
     return process_includes(yaml_config, config_file.parent)
 
@@ -79,7 +112,17 @@ def load_search_configs(config_file: Path) -> list[SearchConfig]:
 def filter_systems_by_criteria(
     systems: list[Systems], filters: list[SystemFilter] | None
 ) -> list[Systems]:
-    """Filter systems based on system filter criteria."""
+    """
+    Filter systems based on system filter criteria.
+
+    Args:
+        systems: List of systems to filter
+        filters: List of system filters to apply
+
+    Returns:
+        Filtered list of systems that match all criteria
+
+    """
     if not filters:
         return systems
 
@@ -92,7 +135,17 @@ def filter_systems_by_criteria(
 
 
 def system_matches_all_filters(system: Systems, filters: list[SystemFilter]) -> bool:
-    """Check if a system matches all filter criteria."""
+    """
+    Check if a system matches all filter criteria.
+
+    Args:
+        system: System to check
+        filters: List of filters that must all match
+
+    Returns:
+        True if system matches all filters, False otherwise
+
+    """
     for filter_config in filters:
         system_value = get_system_attribute_value(system, filter_config.attr)
         if not compare_values(system_value, filter_config.comp, filter_config.value):
@@ -101,7 +154,17 @@ def system_matches_all_filters(system: Systems, filters: list[SystemFilter]) -> 
 
 
 def get_system_attribute_value(system: Systems, attr: SysFilterAttr) -> Any:
-    """Get the appropriate system attribute value for filtering."""
+    """
+    Get the appropriate system attribute value for filtering.
+
+    Args:
+        system: System object to extract attribute from
+        attr: Attribute to extract
+
+    Returns:
+        Value of the specified attribute
+
+    """
     match attr:
         case SysFilterAttr.OS_FAMILY:
             return system.os_family_computed
@@ -117,7 +180,18 @@ def get_system_attribute_value(system: Systems, attr: SysFilterAttr) -> Any:
 def compare_values(
     system_value: Any, operator: SysFilterComp, filter_value: Any
 ) -> bool:
-    """Compare system attribute value against filter value using specified operator."""
+    """
+    Compare system attribute value against filter value using specified operator.
+
+    Args:
+        system_value: Value from the system
+        operator: Comparison operator to use
+        filter_value: Value to compare against
+
+    Returns:
+        True if comparison matches, False otherwise
+
+    """
     if system_value is None:
         return False
 
@@ -167,7 +241,18 @@ def compare_values(
 def _numeric_or_string_comparison(
     system_value: Any, filter_value: Any, comparison_func
 ) -> bool:
-    """Try numeric comparison first, fall back to string comparison."""
+    """
+    Try numeric comparison first, fall back to string comparison.
+
+    Args:
+        system_value: Value from system
+        filter_value: Value to compare against
+        comparison_func: Function to perform comparison
+
+    Returns:
+        Result of comparison
+
+    """
     try:
         return comparison_func(float(system_value), float(filter_value))
     except (ValueError, TypeError):
@@ -175,7 +260,17 @@ def _numeric_or_string_comparison(
 
 
 def execute_search(config: SearchConfig, systems: list[Systems]) -> SearchResults:
-    """Execute a search configuration against available systems."""
+    """
+    Execute a search configuration against available systems.
+
+    Args:
+        config: Search configuration to execute
+        systems: List of systems to search
+
+    Returns:
+        SearchResults containing all matches found
+
+    """
     # Filter systems based on sys_filter
     filtered_systems = filter_systems_by_criteria(systems, config.sys_filter)
 
@@ -202,7 +297,17 @@ def execute_search(config: SearchConfig, systems: list[Systems]) -> SearchResult
 
 
 def search_single_system(config: SearchConfig, system: Systems) -> list[SearchResult]:
-    """Search a single system file for matches."""
+    """
+    Search a single system file for matches.
+
+    Args:
+        config: Search configuration
+        system: System to search
+
+    Returns:
+        List of search results for this system
+
+    """
     results = []
 
     try:
@@ -230,7 +335,19 @@ def search_single_system(config: SearchConfig, system: Systems) -> list[SearchRe
 def search_line_by_line(
     config: SearchConfig, system: Systems, file_handle, pattern: re.Pattern
 ) -> list[SearchResult]:
-    """Search file line by line for matches."""
+    """
+    Search file line by line for matches.
+
+    Args:
+        config: Search configuration
+        system: System being searched
+        file_handle: Open file handle
+        pattern: Compiled regex pattern
+
+    Returns:
+        List of search results
+
+    """
     results = []
 
     for line_num, line in enumerate(file_handle, 1):
@@ -255,7 +372,19 @@ def search_line_by_line(
 def search_with_recordset_delimiter(
     config: SearchConfig, system: Systems, file_handle, pattern: re.Pattern
 ) -> list[SearchResult]:
-    """Search file using recordset delimiter for multi-line records."""
+    """
+    Search file using recordset delimiter for multi-line records.
+
+    Args:
+        config: Search configuration with recordset delimiter
+        system: System being searched
+        file_handle: Open file handle
+        pattern: Compiled regex pattern for matching
+
+    Returns:
+        List of search results from combined records
+
+    """
     results = []
 
     try:
@@ -308,7 +437,20 @@ def search_with_recordset_delimiter(
 def create_search_result(
     config: SearchConfig, system: Systems, text: str, line_num: int, match: re.Match
 ) -> SearchResult:
-    """Create a SearchResult object from a regex match."""
+    """
+    Create a SearchResult object from a regex match.
+
+    Args:
+        config: Search configuration
+        system: System that was searched
+        text: Full text that was matched against
+        line_num: Line number where match occurred
+        match: Regex match object
+
+    Returns:
+        SearchResult object
+
+    """
     # Extract fields if field_list is specified
     extracted_fields = None
     if config.field_list:
@@ -336,7 +478,16 @@ def create_search_result(
 
 
 def deduplicate_results(results: list[SearchResult]) -> list[SearchResult]:
-    """Remove duplicate results based on matched_text."""
+    """
+    Remove duplicate results based on matched_text.
+
+    Args:
+        results: List of search results that may contain duplicates
+
+    Returns:
+        List of unique search results
+
+    """
     seen = set()
     unique_results = []
 
@@ -351,134 +502,23 @@ def deduplicate_results(results: list[SearchResult]) -> list[SearchResult]:
     return unique_results
 
 
-def export_search_results_to_excel(
-    search_results: list[SearchResults], output_path: Path
-) -> None:
-    """Export search results to Excel with each search as a separate worksheet."""
-    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-        for search_result in search_results:
-            if not search_result.results:
-                # Still create a sheet for searches with no results
-                sheet_name = sanitize_sheet_name(search_result.config.name)
-                empty_df = pd.DataFrame({"No Results": ["No matches found"]})
-                empty_df.to_excel(
-                    writer, sheet_name=sheet_name, index=False, startrow=2
-                )
-
-                # Add comment
-                worksheet = writer.sheets[sheet_name]
-                if search_result.config.comment:
-                    worksheet["A1"] = search_result.config.comment
-                continue
-
-            # Create DataFrame from results
-            df = create_dataframe_from_results(search_result)
-
-            # Write to Excel with search name as sheet name
-            sheet_name = sanitize_sheet_name(search_result.config.name)
-            df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=2)
-
-            # Get the worksheet and format it
-            worksheet = writer.sheets[sheet_name]
-
-            # Add comment at the top
-            if search_result.config.comment:
-                worksheet["A1"] = search_result.config.comment
-                # Style the comment cell
-                worksheet["A1"].font = Font(bold=True, size=12)
-                worksheet["A1"].alignment = Alignment(wrap_text=True)
-
-            # Format as Excel table
-            if not df.empty:
-                format_as_excel_table(worksheet, df, startrow=3)
-
-
-def create_dataframe_from_results(search_results: SearchResults) -> pd.DataFrame:
-    """Convert search results to pandas DataFrame."""
-    if not search_results.results:
-        return pd.DataFrame()
-
-    # Start with basic columns
-    data = []
-
-    for result in search_results.results:
-        row = {
-            "System Name": result.system_name,
-            "Line Number": result.line_number,
-            "Matched Text": result.matched_text,
-        }
-
-        # Add extracted fields if they exist
-        if result.extracted_fields:
-            row.update(result.extracted_fields)
-
-        data.append(row)
-
-    return pd.DataFrame(data)
-
-
-def sanitize_sheet_name(name: str) -> str:
-    """Sanitize sheet name for Excel compatibility."""
-    # Excel sheet names can't contain: / \ ? * [ ] :
-    # Also limit to 31 characters
-    invalid_chars = ["/", "\\", "?", "*", "[", "]", ":"]
-
-    sanitized = name
-    for char in invalid_chars:
-        sanitized = sanitized.replace(char, "_")
-
-    # Limit to 31 characters
-    if len(sanitized) > 31:
-        sanitized = sanitized[:28] + "..."
-
-    return sanitized
-
-
-def format_as_excel_table(worksheet, df: pd.DataFrame, startrow: int = 1) -> None:
-    """Format DataFrame as an Excel table with proper styling."""
-    if df.empty:
-        return
-
-    # Calculate table range
-    end_row = startrow + len(df)
-    end_col_letter = chr(ord("A") + len(df.columns) - 1)
-    table_range = f"A{startrow}:{end_col_letter}{end_row}"
-
-    # Create table
-    table = Table(displayName=f"Table{startrow}", ref=table_range)
-
-    # Add style
-    style = TableStyleInfo(
-        name="TableStyleMedium9",
-        showFirstColumn=False,
-        showLastColumn=False,
-        showRowStripes=True,
-        showColumnStripes=True,
-    )
-    table.tableStyleInfo = style
-
-    # Add table to worksheet
-    worksheet.add_table(table)
-
-    # Auto-adjust column widths
-    for column in worksheet.columns:
-        max_length = 0
-        column_letter = column[0].column_letter
-
-        for cell in column:
-            try:
-                max_length = max(max_length, len(str(cell.value)))
-            except:
-                pass
-
-        adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters
-        worksheet.column_dimensions[column_letter].width = adjusted_width
-
-
 def execute_all_searches(
     program_config: ProgramConfig, systems: list[Systems]
 ) -> list[SearchResults]:
-    """Execute all search configurations against all systems."""
+    """
+    Execute all search configurations against all systems.
+
+    Args:
+        program_config: Program configuration containing search settings
+        systems: List of systems to search
+
+    Returns:
+        List of SearchResults for all executed searches
+
+    Raises:
+        ValueError: If no audit config file is specified
+
+    """
     if not program_config.audit_config_file:
         raise ValueError("No audit config file specified")
 
@@ -505,11 +545,172 @@ def execute_all_searches(
     return all_results
 
 
+def get_search_statistics(search_results: list[SearchResults]) -> dict[str, Any]:
+    """
+    Generate statistics about search execution.
+
+    Args:
+        search_results: List of search results to analyze
+
+    Returns:
+        Dictionary containing search statistics
+
+    """
+    total_searches = len(search_results)
+    total_matches = sum(result.result_count for result in search_results)
+    searches_with_results = sum(
+        1 for result in search_results if result.result_count > 0
+    )
+
+    # System coverage analysis
+    all_systems = set()
+    systems_with_matches = set()
+
+    for search_result in search_results:
+        for result in search_result.results:
+            all_systems.add(result.system_name)
+            systems_with_matches.add(result.system_name)
+
+    # Search type analysis
+    searches_with_extracted_fields = sum(
+        1 for result in search_results if result.has_extracted_fields
+    )
+
+    # Top searches by result count
+    top_searches = sorted(
+        [(result.config.name, result.result_count) for result in search_results],
+        key=lambda x: x[1],
+        reverse=True,
+    )[:10]
+
+    return {
+        "total_searches": total_searches,
+        "searches_with_results": searches_with_results,
+        "searches_without_results": total_searches - searches_with_results,
+        "total_matches": total_matches,
+        "average_matches_per_search": total_matches / total_searches
+        if total_searches > 0
+        else 0,
+        "unique_systems_found": len(all_systems),
+        "systems_with_matches": len(systems_with_matches),
+        "searches_with_extracted_fields": searches_with_extracted_fields,
+        "top_searches_by_results": top_searches,
+    }
+
+
+def validate_search_configs(search_configs: list[SearchConfig]) -> list[str]:
+    """
+    Validate search configurations and return list of warnings/errors.
+
+    Args:
+        search_configs: List of search configurations to validate
+
+    Returns:
+        List of validation messages (warnings and errors)
+
+    """
+    validation_messages = []
+
+    # Check for duplicate search names
+    names = [config.name for config in search_configs]
+    duplicates = set([name for name in names if names.count(name) > 1])
+
+    if duplicates:
+        validation_messages.append(
+            f"Duplicate search names found: {', '.join(duplicates)}"
+        )
+
+    # Validate regex patterns
+    for config in search_configs:
+        try:
+            re.compile(config.regex)
+        except re.error as e:
+            validation_messages.append(f"Invalid regex in '{config.name}': {e}")
+
+        # Check for field_list without only_matching
+        if config.field_list and not config.only_matching:
+            validation_messages.append(
+                f"Search '{config.name}' has field_list but only_matching is False",
+            )
+
+        # Check for combine without field_list
+        if config.combine and not config.field_list:
+            validation_messages.append(
+                f"Search '{config.name}' has combine=True but no field_list specified",
+            )
+
+        # Check for rs_delimiter without combine
+        if config.rs_delimiter and not config.combine:
+            validation_messages.append(
+                f"Search '{config.name}' has rs_delimiter but combine=False",
+            )
+
+    return validation_messages
+
+
+def create_search_summary_report(
+    search_results: list[SearchResults], output_path: Path
+) -> None:
+    """
+    Create a text summary report of search execution.
+
+    Args:
+        search_results: List of search results
+        output_path: Path where to save the summary report
+
+    """
+    stats = get_search_statistics(search_results)
+
+    with output_path.open("w", encoding="utf-8") as f:
+        f.write("SEARCH EXECUTION SUMMARY REPORT\n")
+        f.write("=" * 50 + "\n\n")
+
+        f.write(f"Total Searches Executed: {stats['total_searches']}\n")
+        f.write(f"Searches with Results: {stats['searches_with_results']}\n")
+        f.write(f"Searches without Results: {stats['searches_without_results']}\n")
+        f.write(f"Total Matches Found: {stats['total_matches']}\n")
+        f.write(
+            f"Average Matches per Search: {stats['average_matches_per_search']:.2f}\n"
+        )
+        f.write(f"Unique Systems Processed: {stats['unique_systems_found']}\n")
+        f.write(f"Systems with Matches: {stats['systems_with_matches']}\n")
+        f.write(
+            f"Searches with Extracted Fields: {stats['searches_with_extracted_fields']}\n\n"
+        )
+
+        f.write("TOP SEARCHES BY RESULT COUNT:\n")
+        f.write("-" * 30 + "\n")
+        for search_name, count in stats["top_searches_by_results"]:
+            f.write(f"{search_name}: {count} matches\n")
+
+        f.write("\n\nDETAILED SEARCH RESULTS:\n")
+        f.write("-" * 30 + "\n")
+        for search_result in search_results:
+            f.write(f"\nSearch: {search_result.config.name}\n")
+            f.write(f"  Results: {search_result.result_count}\n")
+            f.write(f"  Unique Systems: {search_result.unique_systems}\n")
+            f.write(f"  Has Extracted Fields: {search_result.has_extracted_fields}\n")
+            if search_result.config.comment:
+                f.write(
+                    f"  Comment: {search_result.config.comment[:100]}{'...' if len(search_result.config.comment) > 100 else ''}\n"
+                )
+
+
 def process_search_workflow(program_config: ProgramConfig) -> None:
-    """Main workflow function to process searches and export results."""
+    """
+    Main workflow function to process searches and export results.
+
+    Args:
+        program_config: Program configuration object
+
+    Raises:
+        Exception: If search processing fails
+
+    """
     try:
         # Import here to avoid circular dependencies
         from . import process_scripts
+        from .excel_exporter import export_search_results_to_excel
 
         click.echo("Processing source files...")
 
@@ -528,21 +729,32 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
         # Execute all searches
         all_results = execute_all_searches(program_config, systems)
 
+        # Validate search configurations
+        search_configs = load_search_configs(program_config.audit_config_file)
+        validation_messages = validate_search_configs(search_configs)
+
+        if validation_messages:
+            click.echo("\nValidation Warnings:")
+            for message in validation_messages:
+                click.echo(f"  - {message}")
+
         # Export to Excel
         output_file = program_config.results_path / "search_results.xlsx"
         export_search_results_to_excel(all_results, output_file)
 
-        # Summary
-        total_matches = sum(result.result_count for result in all_results)
-        searches_with_results = sum(
-            1 for result in all_results if result.result_count > 0
-        )
+        # Create summary report
+        summary_file = program_config.results_path / "search_summary.txt"
+        create_search_summary_report(all_results, summary_file)
+
+        # Display summary
+        stats = get_search_statistics(all_results)
 
         click.echo("\nSearch Summary:")
-        click.echo(f"  Total searches executed: {len(all_results)}")
-        click.echo(f"  Searches with results: {searches_with_results}")
-        click.echo(f"  Total matches found: {total_matches}")
+        click.echo(f"  Total searches executed: {stats['total_searches']}")
+        click.echo(f"  Searches with results: {stats['searches_with_results']}")
+        click.echo(f"  Total matches found: {stats['total_matches']}")
         click.echo(f"  Results exported to: {output_file}")
+        click.echo(f"  Summary report: {summary_file}")
 
     except Exception as e:
         click.echo(f"Error during search processing: {e}")
