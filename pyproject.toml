@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kp-analysis-toolkit"
-version = "1.0.5"
+version = "2.0.0"
 authors = [
             {name="Randy Bartels", email="rjbartels@outlook.com"},
     ]
@@ -20,7 +20,6 @@ dependencies = [
     "pandas>=1.5.1",
     "pydantic>=2.11.5",
     "pyyaml>=6.0",
-    "xlsxwriter>=3.0.3",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -35,11 +34,10 @@ classifiers = [
 [project.optional-dependencies]
 dev = ["pytest>=7.4.4",]
 test = ["pytest>=7.4.4",]
-pypi = ["build>=1.2.1", "twine>=5.0.0",]
 
 [project.scripts]
-adv-searchfor = "adv_searchfor.adv_searchfor:main"
-nipper-expander = "nipper_expander.nipper_expander:main"
+kpat = "kp_analysis_toolkit.cli:main"
+kpat-cli = "kp_analysis_toolkit.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/kirkpatrickprice/analysis-toolkit"
