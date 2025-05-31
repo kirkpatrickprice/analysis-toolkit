@@ -5,4 +5,5 @@ GLOBALS: dict = {
     "DATA_PATH": "results/",
     "DB_PATH": "results/",
     "DB_FILENAME": "kpat.ddb",
+    "MAX_SUMMARY_REPORT_RESULTS": 100,
 }
