@@ -1,8 +1,14 @@
-import uuid
+"""
+Data models for the analysis toolkit using Pydantic for validation and type safety.
+Contains all the data structures needed for search configurations, system information,
+and search results.
+"""
+
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
 from typing import Any
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
@@ -16,7 +22,33 @@ class RegexPatterns(BaseModel):
     formatter: Callable[[dict[str, str]], str] | None = None
 
     class Config:
-        arbitrary_types_allowed = True  # Allow Callable type
+        arbitrary_types_allowed = True
+
+
+class LinuxFamilyType(str, Enum):
+    """Enum to define the types of Linux families."""
+
+    DEB = "deb"
+    RPM = "rpm"
+    APK = "apk"
+    OTHER = "other"
+    UNKNOWN = "unknown"
+
+
+class ProducerType(str, Enum):
+    """Enum to define the types of producers/audit scripts."""
+
+    KPNIXAUDIT = "KPNIXAUDIT"
+    KPWINAUDIT = "KPWINAUDIT"
+    KPMACAUDIT = "KPMACAUDIT"
+
+
+class SystemType(str, Enum):
+    """Enum to define the types of operating systems."""
+
+    WINDOWS = "Windows"
+    LINUX = "Linux"
+    DARWIN = "Darwin"  # MacOS
 
 
 class SysFilterAttr(str, Enum):
@@ -53,40 +85,25 @@ class SystemFilter(BaseModel):
 
     attr: SysFilterAttr
     comp: SysFilterComp
-    value: (
-        str
-        | int
-        | float
-        | list[str]
-        | list[int]
-        | list[float]
-        | set[str]
-        | set[int]
-        | set[float]
-    )
+    value: str | int | float | list[str] | list[int] | list[float]
 
     @field_validator("value")
     @classmethod
-    def validate_value_for_operator(
-        cls,
-        value: list | set | float | str,
-        info: dict,
-    ) -> list | set | int | float | str:
+    def validate_value_for_operator(cls, value, info):
         """Validate that the value type is appropriate for the comparison operator."""
-        comp: str = info.data.get("comp")
+        comp = info.data.get("comp")
 
         if comp == SysFilterComp.IN:
-            if not isinstance(value, list | set):
-                message: str = "'in' operator requires a list or set value"
-                raise ValueError(message)
+            if not isinstance(value, list):
+                raise ValueError("'in' operator requires a list value")
         elif comp in [
             SysFilterComp.GREATER_THAN,
             SysFilterComp.LESS_THAN,
             SysFilterComp.GREATER_EQUAL,
             SysFilterComp.LESS_EQUAL,
-        ] and isinstance(value, list | set):
-            message: str = f"'{comp}' operator cannot be used with list or set values"
-            raise ValueError(message)
+        ]:
+            if isinstance(value, list):
+                raise ValueError(f"'{comp}' operator cannot be used with list values")
 
         return value
 
@@ -105,6 +122,7 @@ class SearchConfig(BaseModel):
     """Configuration for a single search operation."""
 
     name: str  # The YAML section name
+    systems: list[str] | None = None
     regex: str
     comment: str | None = None
     max_results: int = -1
@@ -118,55 +136,47 @@ class SearchConfig(BaseModel):
 
     @field_validator("max_results")
     @classmethod
-    def validate_max_results(cls, value: int) -> int:
+    def validate_max_results(cls, value):
         """Validate max_results is -1 (unlimited) or positive integer."""
         if value != -1 and value <= 0:
-            message: str = "max_results must be -1 (unlimited) or a positive integer"
-            raise ValueError(message)
+            raise ValueError("max_results must be -1 (unlimited) or a positive integer")
         return value
 
-    @field_validator("only_matching")
+    @field_validator("field_list")
     @classmethod
-    def validate_field_list_with_only_matching(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+    def validate_field_list_with_only_matching(cls, value, info):
         """Validate that field_list is only used with only_matching=True."""
-        if info.data.get("field_list") and not value:
-            # Override only_matching to True if field_list is specified
-            return True
+        if value is not None and not info.data.get("only_matching", False):
+            raise ValueError("field_list can only be used with only_matching=True")
         return value
 
     @field_validator("combine")
     @classmethod
-    def validate_combine_with_field_list(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+    def validate_combine_with_field_list(cls, value, info):
         """Validate that combine is only used when field_list is specified."""
         if value and not info.data.get("field_list"):
-            message: str = "combine can only be used when field_list is specified"
-            raise ValueError(message)
+            raise ValueError("combine can only be used when field_list is specified")
         return value
 
     @field_validator("rs_delimiter")
     @classmethod
-    def validate_rs_delimiter_with_field_list(
-        cls,
-        value: str | None,
-        info: dict,
-    ) -> str | None:
-        """Validate that rs_delimiter is only used when field_list is specified."""
-        if value is not None and not info.data.get("field_list"):
-            message: str = "rs_delimiter can only be used when field_list is specified"
-            raise ValueError(message)
-        return value
-
-    @field_validator("combine")
-    @classmethod
-    def validate_combine_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+    def validate_rs_delimiter_with_combine(cls, value, info):
         """Validate that rs_delimiter is only used with combine=True."""
-        if info.data.get("rs_delimiter") and not value:
-            message = "rs_delimiter can only be used with combine=True"
-            raise ValueError(message)
+        if value is not None and not info.data.get("combine", False):
+            raise ValueError("rs_delimiter can only be used with combine=True")
         return value
 
     def merge_global_config(self, global_config: GlobalConfig) -> "SearchConfig":
-        """Merge global configuration into this search config, with local config taking precedence."""
+        """
+        Merge global configuration into this search config, with local config taking precedence.
+
+        Args:
+            global_config: Global configuration to merge
+
+        Returns:
+            New SearchConfig with merged settings
+
+        """
         merged_data = self.model_dump()
 
         # Apply global settings only if not already set locally
@@ -175,7 +185,7 @@ class SearchConfig(BaseModel):
         elif global_config.sys_filter and merged_data.get("sys_filter"):
             # Combine global and local sys_filters
             merged_data["sys_filter"] = list(global_config.sys_filter) + list(
-                merged_data["sys_filter"],
+                merged_data["sys_filter"]
             )
 
         if global_config.max_results is not None and merged_data["max_results"] == -1:
@@ -203,12 +213,21 @@ class YamlConfig(BaseModel):
     """Complete YAML configuration file structure."""
 
     global_config: GlobalConfig | None = None
-    search_configs: dict[str, SearchConfig] = {}
-    include_configs: dict[str, IncludeConfig] = {}
+    search_configs: dict[str, SearchConfig] = Field(default_factory=dict)
+    include_configs: dict[str, IncludeConfig] = Field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "YamlConfig":
-        """Create YamlConfig from parsed YAML dictionary."""
+        """
+        Create YamlConfig from parsed YAML dictionary.
+
+        Args:
+            data: Dictionary from parsed YAML file
+
+        Returns:
+            YamlConfig object with structured data
+
+        """
         global_config = None
         search_configs = {}
         include_configs = {}
@@ -237,7 +256,13 @@ class SearchResult(BaseModel):
     matched_text: str
     extracted_fields: dict[str, str] | None = None
 
-    line_number: int = Field(gt=0, description="Line number must be a positive integer")
+    @field_validator("line_number")
+    @classmethod
+    def validate_line_number(cls, value):
+        """Ensure line number is positive."""
+        if value <= 0:
+            raise ValueError("line_number must be a positive integer")
+        return value
 
 
 class SearchResults(BaseModel):
@@ -256,7 +281,7 @@ class SearchResults(BaseModel):
     @property
     def unique_systems(self) -> int:
         """Return the number of unique systems that had matches."""
-        return len({result.system_name for result in self.results})
+        return len(set(result.system_name for result in self.results))
 
     @computed_field
     @property
@@ -265,111 +290,15 @@ class SearchResults(BaseModel):
         return any(result.extracted_fields for result in self.results)
 
 
-class LinuxFamilyType(str, Enum):
-    """Enum to define the types of Linux families."""
-
-    DEB = "deb"
-    RPM = "rpm"
-    APK = "apk"
-    OTHER = "other"
-
-
-class ProgramConfig(BaseModel):
-    """Class to hold the program configuration."""
-
-    program_path: Path = Path(__file__).parent
-    config_path: Path = program_path / GLOBALS["CONF_PATH"]
-    audit_config_file: Path | None = None
-    source_files_path: Path | None = None
-    source_files_spec: str
-    out_path: str
-    list_audit_configs: bool = False
-    list_sections: bool = False
-    list_source_files: bool = False
-    list_systems: bool = False
-    verbose: bool = False
-
-    @field_validator("audit_config_file")
-    @classmethod
-    def validate_audit_config_file(cls, value: Path | None, values: dict) -> Path:
-        """Validate the audit configuration file path."""
-        if value is None:
-            message: str = "Audit configuration file is required."
-            raise ValueError(message)
-
-        if not values.data.get("config_path").exists():
-            message: str = (
-                f"Configuration path {values.data.get('config_path')} does not exist."
-            )
-            raise ValueError(message)
-
-        config_file: Path = values.data.get("config_path") / value
-        if not config_file.exists():
-            message: str = f"Audit configuration file {config_file} does not exist."
-            raise ValueError(message)
-
-        return config_file.absolute()
-
-    @computed_field
-    @property
-    def results_path(self) -> Path:
-        """Convert it to a pathlib.Path object and return the absolute path."""
-        # print(f"Validating results path: {cls.results_path}")
-        p: Path = Path(self.source_files_path) / self.out_path
-
-        return p.absolute()
-
-    @computed_field
-    @property
-    def database_path(self) -> Path:
-        """Convert it to a pathlib.Path object and return the absolute path."""
-        # print(f"Validating database path: {cls.database_path}")
-        p: Path = self.results_path / GLOBALS["DB_FILENAME"]
-
-        return p.absolute()
-
-    @field_validator("source_files_path")
-    @classmethod
-    def validate_source_path(cls, value: str) -> Path:
-        """Convert it to a pathlib.Path object and return the absolute path."""
-        p = Path(value)
-
-        if not p.exists():
-            message: str = f"Source files path {p} does not exist."
-            raise ValueError(message)
-
-        return p.absolute()
-
-
-class ProducerType(str, Enum):
-    """Enum to define the types of producers."""
-
-    KPNIXAUDIT = "KPNIXAUDIT"
-    KPWINAUDIT = "KPWINAUDIT"
-    KPMACAUDIT = "KPMACAUDIT"
-    OTHER = "Other"
-
-
-class SystemType(str, Enum):
-    """Enum to define the types of systems."""
-
-    DARWIN = "Darwin"
-    LINUX = "Linux"
-    WINDOWS = "Windows"
-    OTHER = "Other"
-    UNDEFINED = "Undefined"
-
-
 class Systems(BaseModel):
     """
     Class to hold the systems configuration.
-
     Updated to include all the sys_filter attributes for proper filtering.
     """
 
     __tablename__ = "systems"
 
-    system_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    system_id: UUID = Field(default_factory=uuid4)
     system_name: str
     file_encoding: str | None = None
     system_type: SystemType
@@ -428,6 +357,57 @@ class RawData(BaseModel):
         arbitrary_types_allowed = True
 
 
+class ProgramConfig(BaseModel):
+    """Class to hold the program configuration."""
+
+    program_path: Path = Path(__file__).parent
+    config_path: Path = Field(
+        default_factory=lambda: Path(__file__).parent / GLOBALS["CONF_PATH"]
+    )
+    audit_config_file: Path | None = None
+    source_files_path: Path | None = None
+    source_files_spec: str = "**/*"
+    out_path: str = "./results"
+    list_audit_configs: bool = False
+    list_sections: bool = False
+    list_source_files: bool = False
+    list_systems: bool = False
+    verbose: bool = False
+
+    @field_validator("audit_config_file")
+    @classmethod
+    def validate_audit_config_file(cls, value):
+        """Validate that the audit config file exists if provided."""
+        if value is not None and not value.exists():
+            raise ValueError(f"Audit config file does not exist: {value}")
+        return value
+
+    @field_validator("source_files_path")
+    @classmethod
+    def validate_source_files_path(cls, value):
+        """Validate that the source files path exists if provided."""
+        if value is not None and not value.exists():
+            raise ValueError(f"Source files path does not exist: {value}")
+        return value
+
+    @computed_field
+    @property
+    def results_path(self) -> Path:
+        """Compute the results path based on out_path."""
+        return Path(self.out_path)
+
+    @computed_field
+    @property
+    def source_files_path_computed(self) -> Path:
+        """Compute source files path with fallback to program path."""
+        if self.source_files_path:
+            return self.source_files_path
+        return self.program_path / "testdata"
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class SearchStatistics(BaseModel):
     """Statistics about search execution."""
 
@@ -462,3 +442,65 @@ class ConfigValidationResult(BaseModel):
     messages: list[ValidationMessage]
     error_count: int = 0
     warning_count: int = 0
+
+    def __post_init__(self):
+        """Count errors and warnings after initialization."""
+        self.error_count = sum(1 for msg in self.messages if msg.level == "ERROR")
+        self.warning_count = sum(1 for msg in self.messages if msg.level == "WARNING")
+        self.is_valid = self.error_count == 0
+
+
+class ProcessingReport(BaseModel):
+    """Comprehensive report of processing execution."""
+
+    program_config: ProgramConfig
+    systems_found: int
+    search_configs_loaded: int
+    search_results: list[SearchResults]
+    statistics: SearchStatistics
+    validation_result: ConfigValidationResult | None = None
+    processing_time_seconds: float | None = None
+    output_files: dict[str, Path] = Field(default_factory=dict)
+
+    @computed_field
+    @property
+    def success(self) -> bool:
+        """Determine if processing was successful."""
+        return (
+            self.systems_found > 0
+            and self.search_configs_loaded > 0
+            and (self.validation_result is None or self.validation_result.is_valid)
+        )
+
+
+class ExportOptions(BaseModel):
+    """Options for exporting search results."""
+
+    include_summary_sheet: bool = True
+    include_metadata: bool = True
+    create_detailed_report: bool = False
+    auto_adjust_columns: bool = True
+    max_column_width: int = 80
+    include_empty_searches: bool = True
+    table_style: str = "TableStyleMedium9"
+
+
+class SystemSummary(BaseModel):
+    """Summary information about a system."""
+
+    system_name: str
+    system_type: str
+    producer: str
+    producer_version: str
+    file_path: str
+    file_size_bytes: int | None = None
+    search_matches: int = 0
+    unique_searches_matched: int = 0
+
+    @computed_field
+    @property
+    def file_size_mb(self) -> float | None:
+        """Return file size in megabytes."""
+        if self.file_size_bytes is not None:
+            return round(self.file_size_bytes / (1024 * 1024), 2)
+        return None
