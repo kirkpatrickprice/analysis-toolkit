@@ -1,5 +1,6 @@
 """
 Search engine functionality for executing regex-based searches against system files.
+
 Handles YAML configuration loading, system filtering, and search execution.
 """
 
@@ -17,6 +18,7 @@ from .data_models import (
     SearchResults,
     SysFilterAttr,
     SysFilterComp,
+    SysFilterValueType,
     SystemFilter,
     Systems,
     YamlConfig,
@@ -42,14 +44,17 @@ def load_yaml_config(config_file: Path) -> YamlConfig:
             yaml_data = yaml.safe_load(f)
 
         if not yaml_data:
-            raise ValueError(f"Empty YAML file: {config_file}")
+            message = f"Empty YAML file: {config_file}"
+            raise ValueError(message)  # noqa: TRY301
 
         return YamlConfig.from_dict(yaml_data)
 
     except yaml.YAMLError as e:
-        raise ValueError(f"Invalid YAML syntax in {config_file}: {e}")
+        message = f"Invalid YAML syntax in {config_file}: {e}"
+        raise ValueError(message) from e
     except Exception as e:
-        raise ValueError(f"Error loading {config_file}: {e}")
+        message = f"Error loading {config_file}: {e}"
+        raise ValueError(message) from e
 
 
 def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchConfig]:
@@ -64,33 +69,35 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
         List of all search configurations including those from included files
 
     """
-    all_configs = []
+    all_configs: list[YamlConfig] = []
 
     # Add configs from current file
-    for config in yaml_config.search_configs.values():
+    for _config in yaml_config.search_configs.values():
         # Apply global config if it exists
         if yaml_config.global_config:
-            config = config.merge_global_config(yaml_config.global_config)
+            config: SearchConfig = _config.merge_global_config(
+                yaml_config.global_config,
+            )
         all_configs.append(config)
 
     # Process includes
-    for include_name, include_config in yaml_config.include_configs.items():
-        for include_file in include_config.files:
+    for _include_config in yaml_config.include_configs.values():
+        for include_file in _include_config.files:
             include_path = base_path / include_file
             if include_path.exists():
                 try:
                     included_yaml = load_yaml_config(include_path)
                     included_configs = process_includes(
-                        included_yaml, include_path.parent
+                        included_yaml,
+                        include_path.parent,
                     )
                     all_configs.extend(included_configs)
                 except Exception as e:
-                    click.echo(
-                        f"Warning: Failed to load include file {include_path}: {e}"
-                    )
+                    message = f"Error loading include file {include_path}: {e}"
+                    raise ValueError(message) from e
             else:
-                click.echo(f"Warning: Include file not found: {include_path}")
-
+                message = f"Include file not found: {include_path}"
+                raise FileNotFoundError(message)
     return all_configs
 
 
@@ -110,7 +117,8 @@ def load_search_configs(config_file: Path) -> list[SearchConfig]:
 
 
 def filter_systems_by_criteria(
-    systems: list[Systems], filters: list[SystemFilter] | None
+    systems: list[Systems],
+    filters: list[SystemFilter] | None,
 ) -> list[Systems]:
     """
     Filter systems based on system filter criteria.
@@ -153,7 +161,10 @@ def system_matches_all_filters(system: Systems, filters: list[SystemFilter]) -> 
     return True
 
 
-def get_system_attribute_value(system: Systems, attr: SysFilterAttr) -> Any:
+def get_system_attribute_value(
+    system: Systems,
+    attr: SysFilterAttr,
+) -> SysFilterValueType:
     """
     Get the appropriate system attribute value for filtering.
 
@@ -177,8 +188,10 @@ def get_system_attribute_value(system: Systems, attr: SysFilterAttr) -> Any:
             return getattr(system, attr.value, None)
 
 
-def compare_values(
-    system_value: Any, operator: SysFilterComp, filter_value: Any
+def compare_values(  # noqa: PLR0911
+    system_value: str | float,
+    operator: SysFilterComp,
+    filter_value: SysFilterValueType,
 ) -> bool:
     """
     Compare system attribute value against filter value using specified operator.
@@ -202,22 +215,30 @@ def compare_values(
 
             case SysFilterComp.GREATER_THAN:
                 return _numeric_or_string_comparison(
-                    system_value, filter_value, lambda x, y: x > y
+                    system_value,
+                    filter_value,
+                    lambda x, y: x > y,
                 )
 
             case SysFilterComp.LESS_THAN:
                 return _numeric_or_string_comparison(
-                    system_value, filter_value, lambda x, y: x < y
+                    system_value,
+                    filter_value,
+                    lambda x, y: x < y,
                 )
 
             case SysFilterComp.GREATER_EQUAL:
                 return _numeric_or_string_comparison(
-                    system_value, filter_value, lambda x, y: x >= y
+                    system_value,
+                    filter_value,
+                    lambda x, y: x >= y,
                 )
 
             case SysFilterComp.LESS_EQUAL:
                 return _numeric_or_string_comparison(
-                    system_value, filter_value, lambda x, y: x <= y
+                    system_value,
+                    filter_value,
+                    lambda x, y: x <= y,
                 )
 
             case SysFilterComp.IN:
@@ -233,13 +254,15 @@ def compare_values(
             case _:
                 return False
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         # If any comparison fails, return False
         return False
 
 
 def _numeric_or_string_comparison(
-    system_value: Any, filter_value: Any, comparison_func
+    system_value: Any,
+    filter_value: Any,
+    comparison_func,
 ) -> bool:
     """
     Try numeric comparison first, fall back to string comparison.
@@ -333,7 +356,10 @@ def search_single_system(config: SearchConfig, system: Systems) -> list[SearchRe
 
 
 def search_line_by_line(
-    config: SearchConfig, system: Systems, file_handle, pattern: re.Pattern
+    config: SearchConfig,
+    system: Systems,
+    file_handle,
+    pattern: re.Pattern,
 ) -> list[SearchResult]:
     """
     Search file line by line for matches.
@@ -370,7 +396,10 @@ def search_line_by_line(
 
 
 def search_with_recordset_delimiter(
-    config: SearchConfig, system: Systems, file_handle, pattern: re.Pattern
+    config: SearchConfig,
+    system: Systems,
+    file_handle,
+    pattern: re.Pattern,
 ) -> list[SearchResult]:
     """
     Search file using recordset delimiter for multi-line records.
@@ -407,7 +436,11 @@ def search_with_recordset_delimiter(
                 match = pattern.search(combined_text)
                 if match:
                     result = create_search_result(
-                        config, system, combined_text, record_start_line, match
+                        config,
+                        system,
+                        combined_text,
+                        record_start_line,
+                        match,
                     )
                     results.append(result)
 
@@ -427,7 +460,11 @@ def search_with_recordset_delimiter(
         match = pattern.search(combined_text)
         if match:
             result = create_search_result(
-                config, system, combined_text, record_start_line, match
+                config,
+                system,
+                combined_text,
+                record_start_line,
+                match,
             )
             results.append(result)
 
@@ -435,7 +472,11 @@ def search_with_recordset_delimiter(
 
 
 def create_search_result(
-    config: SearchConfig, system: Systems, text: str, line_num: int, match: re.Match
+    config: SearchConfig,
+    system: Systems,
+    text: str,
+    line_num: int,
+    match: re.Match,
 ) -> SearchResult:
     """
     Create a SearchResult object from a regex match.
@@ -503,7 +544,8 @@ def deduplicate_results(results: list[SearchResult]) -> list[SearchResult]:
 
 
 def execute_all_searches(
-    program_config: ProgramConfig, systems: list[Systems]
+    program_config: ProgramConfig,
+    systems: list[Systems],
 ) -> list[SearchResults]:
     """
     Execute all search configurations against all systems.
@@ -539,7 +581,7 @@ def execute_all_searches(
 
         if program_config.verbose:
             click.echo(
-                f"  Found {results.result_count} matches across {results.unique_systems} systems"
+                f"  Found {results.result_count} matches across {results.unique_systems} systems",
             )
 
     return all_results
@@ -617,7 +659,7 @@ def validate_search_configs(search_configs: list[SearchConfig]) -> list[str]:
 
     if duplicates:
         validation_messages.append(
-            f"Duplicate search names found: {', '.join(duplicates)}"
+            f"Duplicate search names found: {', '.join(duplicates)}",
         )
 
     # Validate regex patterns
@@ -649,7 +691,8 @@ def validate_search_configs(search_configs: list[SearchConfig]) -> list[str]:
 
 
 def create_search_summary_report(
-    search_results: list[SearchResults], output_path: Path
+    search_results: list[SearchResults],
+    output_path: Path,
 ) -> None:
     """
     Create a text summary report of search execution.
@@ -670,12 +713,12 @@ def create_search_summary_report(
         f.write(f"Searches without Results: {stats['searches_without_results']}\n")
         f.write(f"Total Matches Found: {stats['total_matches']}\n")
         f.write(
-            f"Average Matches per Search: {stats['average_matches_per_search']:.2f}\n"
+            f"Average Matches per Search: {stats['average_matches_per_search']:.2f}\n",
         )
         f.write(f"Unique Systems Processed: {stats['unique_systems_found']}\n")
         f.write(f"Systems with Matches: {stats['systems_with_matches']}\n")
         f.write(
-            f"Searches with Extracted Fields: {stats['searches_with_extracted_fields']}\n\n"
+            f"Searches with Extracted Fields: {stats['searches_with_extracted_fields']}\n\n",
         )
 
         f.write("TOP SEARCHES BY RESULT COUNT:\n")
@@ -692,7 +735,7 @@ def create_search_summary_report(
             f.write(f"  Has Extracted Fields: {search_result.has_extracted_fields}\n")
             if search_result.config.comment:
                 f.write(
-                    f"  Comment: {search_result.config.comment[:100]}{'...' if len(search_result.config.comment) > 100 else ''}\n"
+                    f"  Comment: {search_result.config.comment[:100]}{'...' if len(search_result.config.comment) > 100 else ''}\n",
                 )
 
 
@@ -716,13 +759,13 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
 
         # Load systems
         systems = list(
-            process_scripts.enumerate_systems_from_source_files(program_config)
+            process_scripts.enumerate_systems_from_source_files(program_config),
         )
         click.echo(f"Found {len(systems)} systems to process")
 
         if not systems:
             click.echo(
-                "No systems found to process. Check source files path and specification."
+                "No systems found to process. Check source files path and specification.",
             )
             return
 

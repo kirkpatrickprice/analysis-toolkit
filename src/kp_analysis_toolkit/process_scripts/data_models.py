@@ -2,11 +2,18 @@ import uuid
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
+
+# Define type aliases for primitive and collection types to imrove reusability and readability
+PrimitiveType: TypeAlias = str | int | float
+CollectionType: TypeAlias = (
+    list[str] | list[int] | list[float] | set[str] | set[int] | set[float]
+)
+SysFilterValueType: TypeAlias = PrimitiveType | CollectionType
 
 
 class RegexPatterns(BaseModel):
@@ -53,25 +60,15 @@ class SystemFilter(BaseModel):
 
     attr: SysFilterAttr
     comp: SysFilterComp
-    value: (
-        str
-        | int
-        | float
-        | list[str]
-        | list[int]
-        | list[float]
-        | set[str]
-        | set[int]
-        | set[float]
-    )
+    value: SysFilterValueType
 
     @field_validator("value")
     @classmethod
     def validate_value_for_operator(
         cls,
-        value: list | set | float | str,
+        value: SysFilterValueType,
         info: dict,
-    ) -> list | set | int | float | str:
+    ) -> SysFilterValueType:
         """Validate that the value type is appropriate for the comparison operator."""
         comp: str = info.data.get("comp")
 
