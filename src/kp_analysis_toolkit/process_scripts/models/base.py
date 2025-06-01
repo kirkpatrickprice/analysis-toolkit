@@ -174,7 +174,7 @@ class EnumStrMixin:
         return str(self.value)
 
 
-class RegexPatterns:
+class RegexPatterns(KPATBaseModel):
     """Generic configuration for regex-based data extraction and formatting."""
 
     patterns: dict[str, str]
