@@ -1,7 +1,7 @@
 from typing import Any
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.models.search.search import (
+from kp_analysis_toolkit.process_scripts.models.search.base import (
     GlobalConfig,
     SearchConfig,
 )

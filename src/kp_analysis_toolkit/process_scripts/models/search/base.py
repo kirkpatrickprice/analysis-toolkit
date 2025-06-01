@@ -1,4 +1,4 @@
-from pydantic import Field, computed_field, field_validator
+from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
@@ -104,53 +104,3 @@ class SearchConfig(KPATBaseModel):
             merged_data["full_scan"] = global_config.full_scan
 
         return SearchConfig(**merged_data)
-
-
-class SearchResult(KPATBaseModel):
-    """Individual search result."""
-
-    system_name: str
-    line_number: int
-    matched_text: str
-    extracted_fields: dict[str, str] | None = None
-
-    line_number: int = Field(gt=0, description="Line number must be a positive integer")
-
-
-class SearchResults(KPATBaseModel):
-    """Collection of results for a search configuration."""
-
-    search_config: SearchConfig
-    results: list[SearchResult]
-
-    @computed_field
-    @property
-    def result_count(self) -> int:
-        """Return the number of results."""
-        return len(self.results)
-
-    @computed_field
-    @property
-    def unique_systems(self) -> int:
-        """Return the number of unique systems that had matches."""
-        return len({result.system_name for result in self.results})
-
-    @computed_field
-    @property
-    def has_extracted_fields(self) -> bool:
-        """Check if any results have extracted fields."""
-        return any(result.extracted_fields for result in self.results)
-
-
-class SearchStatistics(KPATBaseModel):
-    """Statistics about search execution."""
-
-    total_searches: int
-    searches_with_results: int
-    searches_without_results: int
-    total_matches: int
-    average_matches_per_search: float
-    unique_systems_found: int
-    systems_with_matches: int
-    searches_with_extracted_fields: int
-    top_searches_by_results: list[tuple[str, int]]

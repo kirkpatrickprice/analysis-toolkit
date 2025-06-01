@@ -13,10 +13,12 @@ import yaml
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
-from kp_analysis_toolkit.process_scripts.models.search.search import (
-    SearchConfig,
+from kp_analysis_toolkit.process_scripts.models.results.base import (
     SearchResult,
     SearchResults,
+)
+from kp_analysis_toolkit.process_scripts.models.search.base import (
+    SearchConfig,
 )
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
     SysFilterAttr,

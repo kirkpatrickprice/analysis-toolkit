@@ -11,7 +11,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
-from kp_analysis_toolkit.process_scripts.models.search.search import SearchResults
+from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
 
 
 def export_search_results_to_excel(
