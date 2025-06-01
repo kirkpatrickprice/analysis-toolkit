@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File",
+            "name": "Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
@@ -13,10 +13,10 @@
             "preLaunchTask": "uv_sync"
         },
         {
-            "name": "Python Debugger: KPAT CLI (Scripts)",
+            "name": "KPAT CLI (Scripts)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/kp_analysis_toolkit/__main__.py",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
             "console": "integratedTerminal",
             "preLaunchTask": "uv_sync",
             "cwd": "${workspaceFolder}",
@@ -27,10 +27,25 @@
             ]
         },
         {
-            "name": "Python Debugger: KPAT CLI (Scripts) Validation Error",
+            "name": "KPAT CLI (Scripts) List Systems",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/kp_analysis_toolkit/__main__.py",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "scripts",
+                "-p", "testdata/",
+                "--verbose",
+                "--list-systems"
+            ]
+        },
+        {
+            "name": "KPAT CLI (Scripts) Validation Error",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
             "console": "integratedTerminal",
             "preLaunchTask": "uv_sync",
             "args": [
