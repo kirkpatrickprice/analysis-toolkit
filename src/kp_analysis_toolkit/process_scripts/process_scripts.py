@@ -15,33 +15,6 @@ from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_file
 
-"""
-Version History:
-    0.1.0   Initial release
-    0.1.1   Colorized the "no results found... deleting file" message in CSV mode
-            Corrected the CSV file header line
-    0.1.2   2022-11-04
-            Fixed CSV export issue with non-printable characters in input files
-    0.1.3   2022-11-11
-            Added a short-circuit to stop processing files once we've moved beyond the interesting content.  Requires use of a "::" in the regex to identify the section we're looking for
-    0.2.0   Rewrite to use OOP -- eases managing data and passing info around
-            Export to Excel instad CSV files
-            Unique columns whenever field_lists are provided
-            Combine results from mulitple lines in the source files into a single row
-            Apply filters to exclude systems by specific attributes (e.g. Windows vs Linux, Debian vs RPM, script version, os_version, etc)
-    0.2.1   Fixed bug in short-circuit logic that was causing searches to bail out when a comment included the desired pattern
-    0.2.2   Better error handling for UnicodeDecodeError message (e.g. when handling UTF-16 files)
-    0.2.3   Changes to support building with pyinstaller
-    0.2.4   2023-06-25: Fixed unprintable characters bug
-    0.3.0   2023-06-30: Added capabilities to process MacOS Auditor result files
-    0.3.1   2023-07-03: Added rs_delimiter search config option to handle cases where OS tools don't always print blank values (e.g. MacOS dscl . -readall...)
-            See 'audit-macos-users.yaml' for example use case
-    0.3.2   2025-01-25: Make changes to support /src layout and Pypi distribution
-    0.3.3   2025-02-06: Add Mint as a detected debPattern (common.py)
-    0.3.4   2025-02-07: Addressed issue with processing files from Oracle and Kali systems
-    0.4.0   2025-05-19: Rewritten as part of the unified kpat CLI
-"""
-
 
 def enumerate_systems_from_source_files(
     program_config: ProgramConfig,
