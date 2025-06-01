@@ -31,9 +31,12 @@ global:
     - attr: os_family
       comp: eq
       value: Windows
-    - attr: kp_win_version
+    - attr: producer
+      comp: eq
+      value: KPWINAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 4, 7]
+      value: "0.4.7"
 01_system_02_win_os_version:
   regex: 'System_OSInfo::(product_name\s+:\s+(?P<product_name>[\w ]+))|(release_id\s+:\s+(?P<release_id>\w+))|(current_build\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
   combine: True

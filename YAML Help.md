@@ -69,22 +69,18 @@ global:
 NOTE: The `global` section to all searches *in the current file*.  `global` sections do not inherit across files, event if `include`d as described above.  This helps avoid code complexity in the program related to some weird headaches where conflicting settings are defined.
 
 ### sys_filter Attributes
-| Attribute         | Description |
--------------------------------
-| `os_family`        | OS Family such as `Windows`, `Linux` or `Darwin` (MacOS). |
-| `producer`        | Script that produced the file such as `kpnixaudit.sh` or `kpwinaudit.ps1`. |
-| `kp_mac_version`  | `kpmacaudit.ps1` script version that produced the results |
-| `kp_nix_version`  | `kpnixaudit.ps1` script version that produced the results |
-| `kp_win_version`  | `kpwinaudit.ps1` script version that produced the results |
-| `product_name`    | Windows Product Name such as `Windows 10 Professional` |
-| `release_id`      | Windows Release ID as captured from the registry -- e.g. `2009` or `2H21` |
-| `current_build`   | Windows current_build as captured from the registry |
-| `ubr`             | Windows UBR Code (mapped to a specific hotfix version) |
-| `kp_nix_version`  | kpnixaudit.sh script that produced the results |
-| `distro_family`   | Linux distribution family such as `rpm`, `deb` or `unknown` |
-| `os_pretty_name`  | Directly from /etc/os-release - e.g. `Ununtu 22.04.1 LTS` |
-| `rpm_pretty_name` | For RPM-based distros, os_pretty_name will be non-descript, but rpm_pretty_name will be more specific |
-| `os_version`      | Exactly as it appears in PrettyName or rpm_pretty_name -- e.g. 22.04.1 or 8.7 |
+| Attribute         | Description | Aplicable OS | Data Type |
+|-------------------|-------------|--------------|-----------|
+| `os_family`       | OS Family such as `Windows`, `Linux` or `Darwin` (MacOS). | All | OSFamilyType |
+| `producer`        | Script that produced the file such as `kpnixaudit.sh` or `kpwinaudit.ps1`. | All | ProducerType |
+| `producer_version`| Version of the audit script that produced the results | All | string | 
+| `product_name`    | Windows Product Name such as `Windows 10 Professional` | Windows | string |
+| `release_id`      | Windows Release ID as captured from the registry -- e.g. `2009` or `2H21` | Windows | string |
+| `current_build`   | Windows current_build as captured from the registry | Windows | string |
+| `ubr`             | Windows UBR Code (mapped to a specific hotfix version) | Windows | string
+| `distro_family`   | Linux distribution family such as `rpm`, `deb` or `unknown` | Linux | DistroFamilyType |
+| `os_pretty_name`  | Directly from /etc/os-release - e.g. `Ubuntu 22.04.1 LTS` | Linux | string |
+| `os_version`      | Exactly as it appears in PrettyName -- e.g. 22.04.1 or 8.7 | Linux | string |
 
 
 ### sys_filter Comparison Operators
@@ -94,3 +90,53 @@ NOTE: The `global` section to all searches *in the current file*.  `global` sect
 | `ge`    | Greater than or equals |
 | `le`    | Less than or equals |
 | `in`    | Tests set membership |
+
+## Data Types 
+
+### [OSFamilyType](src/kp_analysis_toolkit/process_scripts/models/enums.py)
+- `Windows` - Windows operating system
+- `Linux` - Linux operating system
+- `Darwin` - macOS operating system
+- `Undefined` - Unknown operating system
+
+### [DistroFamilyType](src/kp_analysis_toolkit/process_scripts/models/enums.py)
+- `rpm` - RPM-based Linux distributions (RHEL, CentOS, Fedora, etc.)
+- `deb` - Debian-based Linux distributions (Debian, Ubuntu, etc.)
+- `unknown` - Other Linux distributions
+
+### [ProducerType](src/kp_analysis_toolkit/process_scripts/models/enums.py)
+- `KPNIXAUDIT` - Linux audit script
+- `KPWINAUDIT` - Windows audit script
+- `KPMACAUDIT` - macOS audit script
+- `OTHER` - Other producer
+
+## Filter examples
+### Filter by OS Family
+```yaml
+sys_filter:
+  - attr: os_family
+    comp: eq
+    value: Windows
+```
+
+### Filter by Producer and Version
+```yaml
+sys_filter:
+  - attr: producer
+    comp: eq
+    value: KPNIXAUDIT
+  - attr: producer_version
+    comp: ge
+    value: "0.6.19"
+```
+
+### OS-Specific Filters
+```yaml
+sys_filter:
+  - attr: os_family
+    comp: eq
+    value: Windows
+  - attr: product_name
+    comp: contains
+    value: "Windows 10"
+```

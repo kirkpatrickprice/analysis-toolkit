@@ -6,9 +6,9 @@ from uuid import uuid4  # To generate unique identifiers
 
 from kp_analysis_toolkit.process_scripts.models.base import RegexPatterns
 from kp_analysis_toolkit.process_scripts.models.enums import (
-    LinuxFamilyType,
+    DistroFamilyType,
+    OSFamilyType,
     ProducerType,
-    SystemType,
 )
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
@@ -31,7 +31,7 @@ def enumerate_systems_from_source_files(
     """
     # This function should enumerate the files to process
     # For example, it will read the files in config.source_files
-    # and return a list of files to process list of SystemType objects
+    # and return a list of files to process list of OSFamilyType objects
 
     for file in get_source_files(
         program_config.source_files_path,
@@ -41,20 +41,20 @@ def enumerate_systems_from_source_files(
 
         encoding: str = detect_encoding(file)
         producer, producer_version = get_producer_type(file, encoding)
-        linux_family: LinuxFamilyType | None = None
+        linux_family: DistroFamilyType | None = None
         match producer:
             case ProducerType.KPNIXAUDIT:
-                system_type: SystemType = SystemType.LINUX
+                system_type: OSFamilyType = OSFamilyType.LINUX
                 linux_family = get_linux_family(
                     file=file,
                     encoding=encoding,
                 )
             case ProducerType.KPWINAUDIT:
-                system_type: SystemType = SystemType.WINDOWS
+                system_type: OSFamilyType = OSFamilyType.WINDOWS
             case ProducerType.KPMACAUDIT:
-                system_type: SystemType = SystemType.DARWIN
+                system_type: OSFamilyType = OSFamilyType.DARWIN
             case _:
-                system_type: SystemType = SystemType.UNDEFINED
+                system_type: OSFamilyType = OSFamilyType.UNDEFINED
         system_os: str = get_system_os(
             file=file,
             encoding=encoding,
@@ -64,7 +64,7 @@ def enumerate_systems_from_source_files(
             system_id=uuid4().hex,
             system_name=file.stem,  # Use the file name (without the extension) as the system name
             file_encoding=encoding,
-            system_type=system_type,
+            os_family=system_type,
             system_os=system_os,
             linux_family=linux_family,
             producer=producer,
@@ -112,7 +112,7 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     return list(p.rglob(file_spec))
 
 
-def get_linux_family(file: Path, encoding: str) -> LinuxFamilyType | None:
+def get_linux_family(file: Path, encoding: str) -> DistroFamilyType | None:
     """
     Get the Linux family type based on the source file.
 
@@ -121,7 +121,7 @@ def get_linux_family(file: Path, encoding: str) -> LinuxFamilyType | None:
         encoding (str): The file encoding.
 
     Returns:
-        LinuxFamilyType: The Linux family type (e.g. Debian, Redhat, Alpine, etc.) or None if it couldn't be determined.
+        DistroFamilyType: The Linux family type (e.g. Debian, Redhat, Alpine, etc.) or None if it couldn't be determined.
 
     """
     # This function should determine the Linux family based on the regular expressions provided below
@@ -143,9 +143,9 @@ def get_linux_family(file: Path, encoding: str) -> LinuxFamilyType | None:
                 )
                 if regex_result:
                     # If a match is found, return the corresponding details
-                    return LinuxFamilyType(family)
+                    return DistroFamilyType(family)
     # If no match is found, return OTHER
-    return LinuxFamilyType.OTHER
+    return DistroFamilyType.OTHER
 
 
 def get_system_os(

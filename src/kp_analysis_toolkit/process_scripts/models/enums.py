@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class LinuxFamilyType(str, Enum):
+class DistroFamilyType(str, Enum):
     """Enum to define the types of Linux families."""
 
     DEB = "deb"
@@ -20,20 +20,19 @@ class ProducerType(str, Enum):
 
 
 class SysFilterAttr(str, Enum):
-    """Enum for sys_filter attribute names."""
+    """System attributes that can be used in filters."""
 
-    OS_FAMILY = "os_family"
-    PRODUCER = "producer"
-    KP_MAC_VERSION = "kp_mac_version"
-    KP_NIX_VERSION = "kp_nix_version"
-    KP_WIN_VERSION = "kp_win_version"
+    OS_FAMILY = "os_family"  # Matches OSFamilyType
+    DISTRO_FAMILY = "distro_family"  # Matches DistroFamilyType
+    PRODUCER = "producer"  # Matches ProducerType
+    PRODUCER_VERSION = "producer_version"
+
+    # OS-specific attributes
     PRODUCT_NAME = "product_name"
     RELEASE_ID = "release_id"
     CURRENT_BUILD = "current_build"
     UBR = "ubr"
-    DISTRO_FAMILY = "distro_family"
     OS_PRETTY_NAME = "os_pretty_name"
-    RPM_PRETTY_NAME = "rpm_pretty_name"
     OS_VERSION = "os_version"
 
 
@@ -48,7 +47,7 @@ class SysFilterComparisonOperators(str, Enum):
     IN = "in"  # Tests set membership
 
 
-class SystemType(str, Enum):
+class OSFamilyType(str, Enum):
     """Enum to define the types of systems."""
 
     DARWIN = "Darwin"

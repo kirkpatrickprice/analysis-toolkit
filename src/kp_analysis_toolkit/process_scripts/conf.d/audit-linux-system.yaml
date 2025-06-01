@@ -39,9 +39,12 @@ global:
     - attr: os_family
       comp: eq
       value: Linux
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 21]
+      value: "0.6.21"
 01_system_02_linux_os_version_rpm:
   # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
   regex: 'System_VersionInformation::/etc/system-release::(?P<RPMVersion>.*)'
@@ -102,9 +105,12 @@ global:
     - attr: os_family
       comp: eq
       value: Linux
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 21]
+      value: "0.6.21"
 01_system_03_systemd_timers:
   regex: 'System_Timers::(?P<next>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s+[A-Z]{3,4})\s+(?P<timeLeft>[0-9].*?left)\s+(?P<last>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s[A-Z]{3,4})\s+(?P<passed>[0-9].*?ago)\s+(?P<unit>[A-Za-z].*?\.timer)\s+(?P<activates>[A-Za-z].*)'
   only_matching: True
@@ -119,9 +125,12 @@ global:
     - attr: os_family
       comp: eq
       value: Linux
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 18]
+      value: "0.6.18"
   comment: |-
     In addition to the cron system, which has been around for decades, SystemD also has "timers" to schedule system jobs and other activities.  This list shows all of the currently active timers on the system.  Reference the raw results files for additional details on specific timers.
 01_system_04_file_system_encryption:
@@ -232,9 +241,12 @@ global:
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: le
-      value: [0, 6, 18]
+      value: "0.6.18"
   comment: |-
     For KPNIXAudit <= 0.6.18
 
@@ -252,9 +264,12 @@ global:
     - attr: distro_family
       comp: eq
       value: rpm
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: le
-      value: [0, 6, 18]
+      value: "0.6.18"
   comment: |-
     For KPNIXAudit <= 0.6.18
 
@@ -274,9 +289,12 @@ global:
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: le
-      value: [0, 6, 18]
+      value: "0.6.18"
   comment: |-
     For KPNIXAudit <= 0.6.18
 
@@ -297,9 +315,12 @@ global:
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: le
-      value: [0, 6, 18]
+      value: "0.6.18"
   comment: |-
     For KPNIXAudit <= 0.6.18
 
@@ -316,9 +337,12 @@ global:
     - attr: distro_family
       comp: eq
       value: rpm
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: le
-      value: [0, 6, 18]
+      value: "0.6.18"
   field_list:
     - 'pkg_name'
     - 'pend_version'
@@ -340,9 +364,12 @@ global:
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 19]
+      value: "0.6.19"
   comment: |-
     For KPNIXAudit >= 0.6.19
 
@@ -360,9 +387,12 @@ global:
     - attr: distro_family
       comp: eq
       value: rpm
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 19]
+      value: "0.6.19"
   comment: |-
     For KPNIXAudit >= 0.6.19
 
@@ -382,9 +412,12 @@ global:
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 19]
+      value: "0.6.19"
   comment: |-
     For KPNIXAudit >= 0.6.19
 
@@ -405,9 +438,12 @@ global:
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 19]
+      value: "0.6.19"
   comment: |-
     For KPNIXAudit >= 0.6.19
 
@@ -424,9 +460,12 @@ global:
     - attr: distro_family
       comp: eq
       value: rpm
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
-      value: [0, 6, 19]
+      value: "0.6.19"
   full_scan: True
   field_list:
     - 'pkg_name'

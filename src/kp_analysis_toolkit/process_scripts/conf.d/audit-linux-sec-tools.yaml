@@ -14,7 +14,10 @@ global:
     - attr: os_family
       comp: eq
       value: Linux
-    - attr: kp_nix_version
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
       comp: ge
       value: 0.6.17
   comment: |-
