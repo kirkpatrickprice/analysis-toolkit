@@ -29,9 +29,9 @@ class PathValidationMixin:
         return path.absolute()
 
     @classmethod
-    def validate_file_exists(cls, file_path: Path | str) -> Path:
+    def validate_file_exists(cls, file: Path | str) -> Path:
         """Validate that a file exists and return its absolute path."""
-        path: Path = cls.validate_path_exists(file_path)
+        path: Path = cls.validate_path_exists(file)
         if not path.is_file():
             message: str = f"Path {path} is not a file"
             raise ValueError(message)
@@ -108,11 +108,15 @@ class HashableModel(KPATBaseModel):
 class FileModel(PathValidationMixin):
     """Base model for working with file data."""
 
-    file_path: Path
+    file: Path
     encoding: str | None = None
     file_hash: str | None = None
 
-    @field_validator("file_path")
+    # Enable arbitrary types to handle Path objects and callables
+    class Config:
+        arbitrary_types_allowed = True
+
+    @field_validator("file")
     @classmethod
     def validate_file(cls, value: Path) -> Path:
         """Validate that the file exists."""
@@ -133,7 +137,7 @@ class FileModel(PathValidationMixin):
 
         """
         encoding = self.encoding or self.detect_encoding()
-        with self.file_path.open("r", encoding=encoding) as f:
+        with self.file.open("r", encoding=encoding) as f:
             for line in f.readlines():
                 yield line.strip()
 
@@ -142,7 +146,7 @@ class FileModel(PathValidationMixin):
         import hashlib
 
         hasher: HASH = hashlib.sha256()
-        with self.file_path.open("rb") as f:
+        with self.file.open("rb") as f:
             while chunk := f.read(8192):
                 hasher.update(chunk)
         self.file_hash = hasher.hexdigest()
