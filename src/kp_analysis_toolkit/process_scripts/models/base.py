@@ -8,6 +8,7 @@ from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.types import SysFilterValueType
+from kp_analysis_toolkit.utils.hash_generator import hash_string
 
 if TYPE_CHECKING:
     from _hashlib import HASH
@@ -100,10 +101,8 @@ class HashableModel(KPATBaseModel):
         """Generate a hash identifier for this model based on its content."""
         # Using the pydantic model_dump_json ensures consistent serialization
         # which can then be hashed for a unique representation
-        import hashlib
-
         model_json: str = self.model_dump_json(exclude={"system_id"})
-        return hashlib.sha256(model_json.encode()).hexdigest()
+        return hash_string(model_json)
 
 
 class FileModel(PathValidationMixin):

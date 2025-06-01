@@ -1,4 +1,3 @@
-import hashlib
 import re  # To handle regular expressions
 import sys  # To handle command line arguments and usage
 from collections.abc import Generator  # For type hinting
@@ -14,6 +13,7 @@ from kp_analysis_toolkit.process_scripts.models.enums import (
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
+from kp_analysis_toolkit.utils.hash_generator import hash_file
 
 """
 Version History:
@@ -324,15 +324,10 @@ def generate_file_hash(file: Path) -> str:
         raise ValueError(message)
 
     # Generate the hash (SHA256) of the file
-    sha256_hash: hashlib.HASH = hashlib.sha256()
     try:
-        with file.open("rb") as f:
-            # Read and update hash in chunks to handle large files
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
-    except (OSError, PermissionError) as e:
-        message: str = f"Error reading file {file}: {e}"
+        return hash_file(file)
+    except ValueError as e:
+        message: str = f"Error generating hash for file {file}: {e}"
         raise ValueError(message) from e
 
 
