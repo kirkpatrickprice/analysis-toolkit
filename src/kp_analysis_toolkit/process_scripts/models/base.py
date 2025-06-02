@@ -1,17 +1,51 @@
 """Base classes and utilities for the KPAT Process Scripts models."""
 
 from collections.abc import Callable, Generator
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.types import SysFilterValueType
+from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 from kp_analysis_toolkit.utils.hash_generator import hash_string
 
 if TYPE_CHECKING:
     from _hashlib import HASH
+
+
+class EnumStrMixin:
+    """Mixin to add case-insensitive string matching to Enum classes."""
+
+    @classmethod
+    def _missing_(cls, value: str) -> Enum:
+        """
+        Handle case when a value doesn't match any enum member.
+
+        This allows for case-insensitive matching when creating enum values from strings.
+        Example: MyEnum("windows") will match MyEnum.WINDOWS even though the case differs.
+
+        Args:
+            value: The value that didn't match any enum member
+
+        Returns:
+            The matching enum value (case-insensitive)
+
+        Raises:
+            ValueError: If no case-insensitive match is found
+
+        """
+        if isinstance(value, str):
+            # Try case-insensitive matching
+            for enum_value in cls:
+                if value.lower() == enum_value.value.lower():
+                    return enum_value
+
+        # If no match was found
+        valid_values: str = ", ".join(str(e.value) for e in cls)
+        message: str = f"Invalid value '{value}'. Valid values are: {valid_values}"
+        raise ValueError(message)
 
 
 class PathValidationMixin:
@@ -94,17 +128,6 @@ class ValidationMixin:
         return value
 
 
-class HashableModel(KPATBaseModel):
-    """Base model for objects that can be hashed/uniquely identified."""
-
-    def get_hash_identifier(self) -> str:
-        """Generate a hash identifier for this model based on its content."""
-        # Using the pydantic model_dump_json ensures consistent serialization
-        # which can then be hashed for a unique representation
-        model_json: str = self.model_dump_json(exclude={"system_id"})
-        return hash_string(model_json)
-
-
 class FileModel(PathValidationMixin):
     """Base model for working with file data."""
 
@@ -153,29 +176,15 @@ class FileModel(PathValidationMixin):
         return self.file_hash
 
 
-class EnumStrMixin:
-    """Mixin to add string representation methods to Enum classes."""
+class HashableModel(KPATBaseModel):
+    """Base model for objects that can be hashed/uniquely identified."""
 
-    @classmethod
-    def from_string(cls, value: str) -> "EnumStrMixin":
-        """Create an enum value from a string, handling case-insensitive matching."""
-        try:
-            # First try direct mapping
-            return cls(value)
-        except ValueError as e:
-            # Try case-insensitive matching
-            for enum_value in cls:
-                if value.lower() == enum_value.value.lower():
-                    return enum_value
-
-            # If we get here, no match was found
-            valid_values = ", ".join(str(e.value) for e in cls)
-            message: str = f"Invalid value '{value}'. Valid values are: {valid_values}"
-            raise ValueError(message) from e
-
-    def __str__(self) -> str:
-        """String representation is the enum value."""
-        return str(self.value)
+    def get_hash_identifier(self) -> str:
+        """Generate a hash identifier for this model based on its content."""
+        # Using the pydantic model_dump_json ensures consistent serialization
+        # which can then be hashed for a unique representation
+        model_json: str = self.model_dump_json(exclude={"system_id"})
+        return hash_string(model_json)
 
 
 class RegexPatterns(KPATBaseModel):
