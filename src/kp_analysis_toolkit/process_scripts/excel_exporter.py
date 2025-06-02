@@ -1,5 +1,6 @@
 """
 Excel export functionality for search results.
+
 Provides comprehensive Excel output with proper formatting, tables, and comments.
 """
 
@@ -373,11 +374,11 @@ def export_systems_summary_to_excel(systems: list, output_path: Path) -> None:
                 "OS Family": system.os_family.value if system.os_family else "Unknown",
                 "Producer": system.producer.value if system.producer else "Unknown",
                 "Producer Version": system.producer_version,
-                "Linux Family": system.linux_family.value
+                "Linux Family": system.distro_family.value
                 if system.distro_family
                 else "N/A",
                 "File Path": str(system.file),
-                "File Encoding": system.file_encoding or "Unknown",
+                "File Encoding": system.encoding or "Unknown",
             },
         )
 

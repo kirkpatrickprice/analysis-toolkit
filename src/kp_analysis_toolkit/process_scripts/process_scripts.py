@@ -41,20 +41,20 @@ def enumerate_systems_from_source_files(
 
         encoding: str = detect_encoding(file)
         producer, producer_version = get_producer_type(file, encoding)
-        linux_family: DistroFamilyType | None = None
+        distro_family: DistroFamilyType | None = None
         match producer:
             case ProducerType.KPNIXAUDIT:
-                system_type: OSFamilyType = OSFamilyType.LINUX
-                linux_family = get_linux_family(
+                os_family: OSFamilyType = OSFamilyType.LINUX
+                distro_family = get_distro_family(
                     file=file,
                     encoding=encoding,
                 )
             case ProducerType.KPWINAUDIT:
-                system_type: OSFamilyType = OSFamilyType.WINDOWS
+                os_family: OSFamilyType = OSFamilyType.WINDOWS
             case ProducerType.KPMACAUDIT:
-                system_type: OSFamilyType = OSFamilyType.DARWIN
+                os_family: OSFamilyType = OSFamilyType.DARWIN
             case _:
-                system_type: OSFamilyType = OSFamilyType.UNDEFINED
+                os_family: OSFamilyType = OSFamilyType.UNDEFINED
         system_os: str = get_system_os(
             file=file,
             encoding=encoding,
@@ -63,10 +63,10 @@ def enumerate_systems_from_source_files(
         system = Systems(
             system_id=uuid4().hex,
             system_name=file.stem,  # Use the file name (without the extension) as the system name
-            file_encoding=encoding,
-            os_family=system_type,
+            encoding=encoding,
+            os_family=os_family,
             system_os=system_os,
-            linux_family=linux_family,
+            distro_family=distro_family,
             producer=producer,
             producer_version=producer_version,
             file_hash=generate_file_hash(file),
@@ -112,7 +112,7 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     return list(p.rglob(file_spec))
 
 
-def get_linux_family(file: Path, encoding: str) -> DistroFamilyType | None:
+def get_distro_family(file: Path, encoding: str) -> DistroFamilyType | None:
     """
     Get the Linux family type based on the source file.
 

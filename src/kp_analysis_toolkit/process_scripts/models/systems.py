@@ -45,7 +45,7 @@ class Systems(KPATBaseModel, FileModel):
     os_version: str | None = None
 
     @property
-    def version_components(self) -> list[str]:
+    def version_components(self) -> list[int]:
         """Parse producer_version into components for comparison."""
         if not self.producer_version:
             return [0, 0, 0]
