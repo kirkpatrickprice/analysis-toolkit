@@ -3,7 +3,7 @@ from enum import StrEnum
 from kp_analysis_toolkit.process_scripts.models.base import EnumStrMixin
 
 
-class DistroFamilyType(str, StrEnum, EnumStrMixin):
+class DistroFamilyType(EnumStrMixin, StrEnum):
     """Enum to define the types of Linux families."""
 
     DEB = "deb"
@@ -12,7 +12,7 @@ class DistroFamilyType(str, StrEnum, EnumStrMixin):
     OTHER = "other"
 
 
-class ProducerType(str, StrEnum, EnumStrMixin):
+class ProducerType(EnumStrMixin, StrEnum):
     """Enum to define the types of producers."""
 
     KPNIXAUDIT = "KPNIXAUDIT"
@@ -21,7 +21,7 @@ class ProducerType(str, StrEnum, EnumStrMixin):
     OTHER = "Other"
 
 
-class SysFilterAttr(str, StrEnum, EnumStrMixin):
+class SysFilterAttr(EnumStrMixin, StrEnum):
     """System attributes that can be used in filters."""
 
     OS_FAMILY = "os_family"  # Matches OSFamilyType
@@ -38,7 +38,7 @@ class SysFilterAttr(str, StrEnum, EnumStrMixin):
     OS_VERSION = "os_version"
 
 
-class SysFilterComparisonOperators(str, StrEnum, EnumStrMixin):
+class SysFilterComparisonOperators(EnumStrMixin, StrEnum):
     """Enum for sys_filter comparison operators."""
 
     EQUALS = "eq"  # Equals -- an exact comparison
@@ -49,7 +49,7 @@ class SysFilterComparisonOperators(str, StrEnum, EnumStrMixin):
     IN = "in"  # Tests set membership
 
 
-class OSFamilyType(str, StrEnum, EnumStrMixin):
+class OSFamilyType(EnumStrMixin, StrEnum):
     """Enum to define the types of systems."""
 
     DARWIN = "Darwin"
