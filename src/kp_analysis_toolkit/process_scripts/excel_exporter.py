@@ -370,18 +370,14 @@ def export_systems_summary_to_excel(systems: list, output_path: Path) -> None:
         systems_data.append(
             {
                 "System Name": system.system_name,
-                "System Type": system.system_type.value
-                if system.system_type
-                else "Unknown",
+                "OS Family": system.os_family.value if system.os_family else "Unknown",
                 "Producer": system.producer.value if system.producer else "Unknown",
                 "Producer Version": system.producer_version,
                 "Linux Family": system.linux_family.value
-                if system.linux_family
+                if system.distro_family
                 else "N/A",
                 "File Path": str(system.file),
                 "File Encoding": system.file_encoding or "Unknown",
-                "OS Family": system.os_family_computed,
-                "Distro Family": system.distro_family_computed,
             },
         )
 
