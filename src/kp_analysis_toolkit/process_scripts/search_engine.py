@@ -27,7 +27,7 @@ from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
 )
 from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
-from kp_analysis_toolkit.process_scripts.types import SysFilterValueType
+from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 
 
 def load_yaml_config(config_file: Path) -> YamlConfig:

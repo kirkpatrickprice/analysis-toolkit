@@ -5,7 +5,7 @@ from kp_analysis_toolkit.process_scripts.models.enums import (
     SysFilterAttr,
     SysFilterComparisonOperators,
 )
-from kp_analysis_toolkit.process_scripts.types import SysFilterValueType
+from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 
 
 class SystemFilter(KPATBaseModel):
