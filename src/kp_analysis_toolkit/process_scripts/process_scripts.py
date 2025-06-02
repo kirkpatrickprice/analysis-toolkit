@@ -1,6 +1,7 @@
 import re  # To handle regular expressions
 import sys  # To handle command line arguments and usage
 from collections.abc import Generator  # For type hinting
+from enum import Enum  # To handle enumerations
 from pathlib import Path  # To handle file paths
 from uuid import uuid4  # To generate unique identifiers
 
@@ -14,6 +15,133 @@ from kp_analysis_toolkit.process_scripts.models.program_config import ProgramCon
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_file
+
+from .models.search.sys_filters import SysFilter, SysFilterAttr, SysFilterComp
+
+
+def convert_to_enum_if_needed(value: str | Enum, enum_class: Enum) -> Enum:
+    """Convert string value to enum if needed."""
+    if isinstance(value, str):
+        try:
+            return enum_class(value)
+        except ValueError:
+            return value
+    return value
+
+
+def compare_version(
+    system_version: str | None,
+    comp: SysFilterComp,
+    filter_version: str,
+) -> bool:
+    """Compare version strings using component-wise comparison."""
+    if not system_version:
+        system_components = [0, 0, 0]
+    else:
+        system_components = [int(x) for x in system_version.split(".")]
+
+    value_components = [int(x) for x in filter_version.split(".")]
+
+    if comp == SysFilterComp.EQ:
+        return system_components == value_components
+    if comp == SysFilterComp.GE:
+        return system_components >= value_components
+    if comp == SysFilterComp.GT:
+        return system_components > value_components
+    if comp == SysFilterComp.LE:
+        return system_components <= value_components
+    if comp == SysFilterComp.LT:
+        return system_components < value_components
+    return False
+
+
+def evaluate_system_filters(system: Systems, filters: list[SysFilter]) -> bool:
+    """Evaluate system filters against a system."""
+    # If no filters, return True
+    if not filters:
+        return True
+
+    for filter_item in filters:
+        attr = filter_item.attr
+        comp = filter_item.comp
+        value = filter_item.value
+
+        # Skip evaluation if the attribute isn't applicable to this OS
+        if (
+            attr
+            in [
+                SysFilterAttr.PRODUCT_NAME,
+                SysFilterAttr.RELEASE_ID,
+                SysFilterAttr.CURRENT_BUILD,
+                SysFilterAttr.UBR,
+            ]
+            and system.os_family != OSFamilyType.WINDOWS
+        ) or (
+            attr in [SysFilterAttr.DISTRO_FAMILY, SysFilterAttr.OS_PRETTY_NAME]
+            and system.os_family != OSFamilyType.LINUX
+        ):
+            return False
+
+        # Get system value and convert filter value if needed
+        if attr == SysFilterAttr.OS_FAMILY:
+            system_value: OSFamilyType | None = system.os_family
+            value = convert_to_enum_if_needed(value, OSFamilyType)
+        elif attr == SysFilterAttr.DISTRO_FAMILY:
+            system_value = system.distro_family
+            value = convert_to_enum_if_needed(value, DistroFamilyType)
+        elif attr == SysFilterAttr.PRODUCER:
+            system_value = system.producer
+            value = convert_to_enum_if_needed(value, ProducerType)
+        elif attr == SysFilterAttr.PRODUCER_VERSION:
+            # Special handling for version comparison
+            if isinstance(value, str) and comp in [
+                SysFilterComp.EQ,
+                SysFilterComp.GE,
+                SysFilterComp.GT,
+                SysFilterComp.LE,
+                SysFilterComp.LT,
+            ]:
+                return compare_version(system.producer_version, comp, value)
+            system_value = system.producer_version
+        else:
+            # All other attributes are accessed directly from the system object
+            system_value = getattr(system, attr.value, None)
+
+        # Perform comparison
+        if comp == SysFilterComp.EQ:
+            if system_value != value:
+                return False
+        elif comp == SysFilterComp.NE:
+            if system_value == value:
+                return False
+        elif comp == SysFilterComp.GT:
+            if not system_value or not system_value > value:
+                return False
+        elif comp == SysFilterComp.GE:
+            if not system_value or not system_value >= value:
+                return False
+        elif comp == SysFilterComp.LT:
+            if not system_value or not system_value < value:
+                return False
+        elif comp == SysFilterComp.LE:
+            if not system_value or not system_value <= value:
+                return False
+        elif comp == SysFilterComp.IN:
+            if not system_value or system_value not in value:
+                return False
+        elif comp == SysFilterComp.CONTAINS:
+            if (
+                not system_value
+                or not isinstance(system_value, str)
+                or value not in system_value
+            ):
+                return False
+        else:
+            # Unknown comparison operator
+            return False
+
+    # All filters passed
+    return True
 
 
 def enumerate_systems_from_source_files(
