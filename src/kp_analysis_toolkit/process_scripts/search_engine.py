@@ -5,6 +5,7 @@ Handles YAML configuration loading, system filtering, and search execution.
 """
 
 import re
+from enum import Enum
 from pathlib import Path
 from typing import IO, Any
 
@@ -12,6 +13,11 @@ import click
 import yaml
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
+from kp_analysis_toolkit.process_scripts.models.enums import (
+    DistroFamilyType,
+    OSFamilyType,
+    ProducerType,
+)
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 from kp_analysis_toolkit.process_scripts.models.results.base import (
     SearchResult,
@@ -28,6 +34,131 @@ from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
 from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
+
+
+def compare_version(
+    system_version: str | None,
+    comp: SysFilterComparisonOperators,
+    filter_version: str,
+) -> bool:
+    """Compare version strings using component-wise comparison."""
+    if not system_version:
+        system_components = [0, 0, 0]
+    else:
+        system_components = [int(x) for x in system_version.split(".")]
+
+    value_components = [int(x) for x in filter_version.split(".")]
+
+    if comp == SysFilterComparisonOperators.EQ:
+        return system_components == value_components
+    if comp == SysFilterComparisonOperators.GE:
+        return system_components >= value_components
+    if comp == SysFilterComparisonOperators.GT:
+        return system_components > value_components
+    if comp == SysFilterComparisonOperators.LE:
+        return system_components <= value_components
+    if comp == SysFilterComparisonOperators.LT:
+        return system_components < value_components
+    return False
+
+
+def convert_to_enum_if_needed(value: str | Enum, enum_class: Enum) -> Enum:
+    """Convert string value to enum if needed."""
+    if isinstance(value, str):
+        try:
+            return enum_class(value)
+        except ValueError:
+            return value
+    return value
+
+
+def evaluate_system_filters(system: Systems, filters: list[SystemFilter]) -> bool:
+    """Evaluate system filters against a system."""
+    # If no filters, return True
+    if not filters:
+        return True
+
+    for filter_item in filters:
+        attr = filter_item.attr
+        comp = filter_item.comp
+        value = filter_item.value
+
+        # Skip evaluation if the attribute isn't applicable to this OS
+        if (
+            attr
+            in [
+                SysFilterAttr.PRODUCT_NAME,
+                SysFilterAttr.RELEASE_ID,
+                SysFilterAttr.CURRENT_BUILD,
+                SysFilterAttr.UBR,
+            ]
+            and system.os_family != OSFamilyType.WINDOWS
+        ) or (
+            attr in [SysFilterAttr.DISTRO_FAMILY, SysFilterAttr.OS_PRETTY_NAME]
+            and system.os_family != OSFamilyType.LINUX
+        ):
+            return False
+
+        # Get system value and convert filter value if needed
+        if attr == SysFilterAttr.OS_FAMILY:
+            system_value: OSFamilyType | None = system.os_family
+            value = convert_to_enum_if_needed(value, OSFamilyType)
+        elif attr == SysFilterAttr.DISTRO_FAMILY:
+            system_value = system.distro_family
+            value = convert_to_enum_if_needed(value, DistroFamilyType)
+        elif attr == SysFilterAttr.PRODUCER:
+            system_value = system.producer
+            value = convert_to_enum_if_needed(value, ProducerType)
+        elif attr == SysFilterAttr.PRODUCER_VERSION:
+            # Special handling for version comparison
+            if isinstance(value, str) and comp in [
+                SysFilterComparisonOperators.EQ,
+                SysFilterComparisonOperators.GE,
+                SysFilterComparisonOperators.GT,
+                SysFilterComparisonOperators.LE,
+                SysFilterComparisonOperators.LT,
+            ]:
+                return compare_version(system.producer_version, comp, value)
+            system_value = system.producer_version
+        else:
+            # All other attributes are accessed directly from the system object
+            system_value = getattr(system, attr.value, None)
+
+        # Perform comparison
+        if comp == SysFilterComparisonOperators.EQ:
+            if system_value != value:
+                return False
+        elif comp == SysFilterComparisonOperators.NE:
+            if system_value == value:
+                return False
+        elif comp == SysFilterComparisonOperators.GT:
+            if not system_value or not system_value > value:
+                return False
+        elif comp == SysFilterComparisonOperators.GE:
+            if not system_value or not system_value >= value:
+                return False
+        elif comp == SysFilterComparisonOperators.LT:
+            if not system_value or not system_value < value:
+                return False
+        elif comp == SysFilterComparisonOperators.LE:
+            if not system_value or not system_value <= value:
+                return False
+        elif comp == SysFilterComparisonOperators.IN:
+            if not system_value or system_value not in value:
+                return False
+        elif comp == SysFilterComparisonOperators.CONTAINS:
+            if (
+                not system_value
+                or not isinstance(system_value, str)
+                or value not in system_value
+            ):
+                return False
+        else:
+            # Unknown comparison operator
+            return False
+
+    # All filters passed
+    return True
 
 
 def load_yaml_config(config_file: Path) -> YamlConfig:
@@ -786,14 +917,14 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
     """
     try:
         # Import here to avoid circular dependencies
-        from . import process_scripts
+        from . import process_systems
         from .excel_exporter import export_search_results_to_excel
 
         click.echo("Processing source files...")
 
         # Load systems
         systems = list(
-            process_scripts.enumerate_systems_from_source_files(program_config),
+            process_systems.enumerate_systems_from_source_files(program_config),
         )
         click.echo(f"Found {len(systems)} systems to process")
 
