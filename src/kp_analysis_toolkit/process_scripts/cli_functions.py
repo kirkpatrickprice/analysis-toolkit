@@ -1,5 +1,5 @@
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
 import pandas as pd
@@ -15,6 +15,10 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
     load_search_configs,
 )
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.process_scripts.models.results.base import SearchResult
+    from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
 
 
 def create_results_path(program_config: ProgramConfig) -> None:
@@ -75,8 +79,11 @@ def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
 def list_audit_configs(program_config: ProgramConfig) -> None:
     """List all available audit configuration files."""
     click.echo("Listing available audit configuration files...")
+    terminal_width: int = pd.get_option("display.width")
     for config_file in process_systems.get_config_files(program_config.config_path):
-        click.echo(f" - {config_file.absolute()}")
+        click.echo(
+            f" - {summarize_text(str(config_file.file.relative_to(program_config.config_path)), max_length=terminal_width - 3)}",
+        )
 
 
 def list_sections() -> None:
@@ -87,16 +94,11 @@ def list_sections() -> None:
 def list_source_files(program_config: ProgramConfig) -> None:
     """List all source files found in the specified path."""
     click.echo("Listing source files...")
-    i: int = 0
 
-    for file in process_systems.get_source_files(
-        start_path=program_config.source_files_path,
-        file_spec=program_config.source_files_spec,
-    ):
-        i += 1
+    for i, file in enumerate(process_systems.get_source_files(program_config)):  # noqa: B007
         click.echo(f" - {file}")
 
-    click.echo(f"Total source files found: {i}")
+    click.echo(f"Total source files found: {i + 1}")
 
 
 def list_systems(program_config: ProgramConfig) -> None:
@@ -214,11 +216,13 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     click.echo(f"Found {len(systems)} systems to process")
 
     # Load search configurations
-    search_configs = load_search_configs(program_config.audit_config_file)
+    search_configs: list[SearchConfig] = load_search_configs(
+        program_config.audit_config_file,
+    )
     click.echo(f"Loaded {len(search_configs)} search configurations")
 
     # Execute searches
-    all_results = []
+    all_results: list[SearchResult] = []
     for config in search_configs:
         if program_config.verbose:
             click.echo(f"Executing search: {config.name}")
