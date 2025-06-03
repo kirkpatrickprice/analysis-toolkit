@@ -11,18 +11,19 @@ from kp_analysis_toolkit.process_scripts.models.enums import (
     ProducerType,
 )
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
+from kp_analysis_toolkit.process_scripts.models.search.yaml import ConfigFiles
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_file
 
 
-def _extract_regex_data(
+def _extract_regex_data_with_raw(
     file: Path,
     encoding: str,
     patterns: RegexPatterns,
-) -> str | None:
+) -> tuple[str | None, dict[str, str] | None]:
     """
-    Extract data using regex patterns and return formatted result.
+    Extract data using regex patterns and return both the formatted result and the raw matching data.
 
     Args:
         file: Path to the file to process
@@ -39,27 +40,32 @@ def _extract_regex_data(
     try:
         with file.open("r", encoding=encoding) as f:
             for line in f:
-                usable_text = line.strip()
+                usable_text: str = line.strip()
                 if not usable_text:
                     continue
 
                 # Check each pattern that hasn't been matched yet
                 for key, pattern in patterns.patterns.items():
                     if key not in extracted_data:  # Skip if already found
-                        match = re.search(pattern, usable_text, re.IGNORECASE)
+                        match: re.Match[str] | None = re.search(
+                            pattern,
+                            usable_text,
+                            re.IGNORECASE,
+                        )
                         if match:
                             extracted_data[key] = match.group(key).strip()
 
                             # Early exit if we have all required data
                             if len(extracted_data) == len(required_keys):
-                                return patterns.formatter(extracted_data)
-
+                                return patterns.formatter(
+                                    extracted_data,
+                                ), extracted_data
     except (OSError, UnicodeDecodeError):
         return None
 
     # Return formatted result if we have all required data
     if len(extracted_data) == len(required_keys):
-        return patterns.formatter(extracted_data)
+        return patterns.formatter(extracted_data), extracted_data
 
     return None
 
@@ -81,10 +87,7 @@ def enumerate_systems_from_source_files(
     # For example, it will read the files in config.source_files
     # and return a list of files to process list of OSFamilyType objects
 
-    for file in get_source_files(
-        program_config.source_files_path,
-        program_config.source_files_spec,
-    ):
+    for file in get_source_files(program_config):
         # Process each file and add the results to the list
 
         encoding: str = detect_encoding(file)
@@ -103,23 +106,27 @@ def enumerate_systems_from_source_files(
                 os_family: OSFamilyType = OSFamilyType.DARWIN
             case _:
                 os_family: OSFamilyType = OSFamilyType.UNDEFINED
-        system_os: str = get_system_os(
+        system_os, os_details = get_system_details(
             file=file,
             encoding=encoding,
             producer=producer,
         )
-        system = Systems(
-            system_id=uuid4().hex,
-            system_name=file.stem,  # Use the file name (without the extension) as the system name
-            encoding=encoding,
-            os_family=os_family,
-            system_os=system_os,
-            distro_family=distro_family,
-            producer=producer,
-            producer_version=producer_version,
-            file_hash=generate_file_hash(file),
-            file=file.absolute(),
-        )
+        system_dict: dict[str, str | Path, OSFamilyType | DistroFamilyType | None] = {
+            "system_id": uuid4().hex,  # Generate a unique system ID
+            "system_name": file.stem,  # Use the file name (without the extension) as the system name
+            "file_hash": generate_file_hash(file),
+            "file": file.absolute(),
+            "system_os": system_os,
+            "os_details": os_details,
+            "encoding": encoding,
+            "os_family": os_family,
+            "distro_family": distro_family,
+            "producer": producer,
+            "producer_version": producer_version,
+        }
+        if os_details:
+            system_dict.update(os_details)
+        system = Systems(**system_dict)
         yield system
 
 
@@ -137,7 +144,7 @@ def generate_file_hash(file: Path) -> str:
         raise ValueError(message) from e
 
 
-def get_config_files(config_path: Path) -> list[Path]:
+def get_config_files(config_path: Path) -> list[ConfigFiles]:
     """
     Get the list of available configuration files.
 
@@ -145,23 +152,24 @@ def get_config_files(config_path: Path) -> list[Path]:
         config_path (Path): The path to the directory containing configuration files.
 
     Returns:
-        list[Path]: A list of available configuration files as Path objects.
+        list[ConfigFiles]: A list of available configuration files as Path objects.
 
     """
     # This function should return a list of available configuration files
 
-    config_files: list = [config_path / file for file in config_path.glob("*.yaml")]
+    config_files: list[ConfigFiles] = [
+        ConfigFiles(file=config_path / f) for f in config_path.glob("*.yaml")
+    ]
 
     return config_files
 
 
-def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
+def get_source_files(program_config: ProgramConfig) -> list[Path]:
     """
     Get the list of source files to process.
 
     Args:
-        start_path (str): The starting path to search for files.
-        file_spec (str): The file specification to match (e.g. *.txt).
+        program_config (ProgramConfig): The program configuration object.
 
     Returns:
         list[Path]: A list of source files as Path objects.
@@ -170,8 +178,8 @@ def get_source_files(start_path: Path, file_spec: str) -> list[Path]:
     # This function should return a list of source files to process
     # For example, it will read the files in the specified directory
 
-    p: Path = Path(start_path).absolute()
-    return list(p.rglob(file_spec))
+    p: Path = program_config.source_files_path.absolute()
+    return list(p.rglob(program_config.source_files_spec))
 
 
 def get_distro_family(file: Path, encoding: str) -> DistroFamilyType | None:
@@ -254,11 +262,11 @@ def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
     return ProducerType.OTHER
 
 
-def get_system_os(
+def get_system_details(
     file: Path,
     encoding: str,
     producer: ProducerType,
-) -> str | None:
+) -> tuple[str | None, dict[str, str] | None]:
     """
     Get the system OS based from the source file.
 
@@ -268,7 +276,9 @@ def get_system_os(
         producer (ProducerType): The producer (e.g. KPNIXAudit, KPWinAudit, etc) of the file.
 
     Returns:
-        str: The system OS (e.g. Windows 11, Ubuntu 22.04, Redhat 8.6, MacOS 13.4.1) or None if it couldn't be determined.
+        tuple[str | None, dict[str, str] | None]: A tuple containing:
+            - The formatted system OS (e.g. Windows 11, Ubuntu 22.04, Redhat 8.6, MacOS 13.4.1) or None
+            - A dictionary of OS-specific variables or None if they couldn't be determined.
 
     """
     # Configuration for each producer type using Pydantic models
@@ -276,6 +286,7 @@ def get_system_os(
         ProducerType.KPWINAUDIT: RegexPatterns(
             patterns={
                 "product_name": r"^System_OSInfo::ProductName\s*:\s*(?P<product_name>.*)",
+                "release_id": r"^System_OSInfo::ReleaseId\s*:\s*(?P<release_id>.*)",
                 "current_build": r"^System_OSInfo::CurrentBuild\s*:\s*(?P<current_build>\d+)",
                 "ubr": r"^System_OSInfo::UBR\s*:\s*(?P<ubr>\d+)",
             },
@@ -284,6 +295,7 @@ def get_system_os(
         ProducerType.KPNIXAUDIT: RegexPatterns(
             patterns={
                 "system_os": r'^System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<system_os>.*)"',
+                "os_pretty_name": r'^System_VersionInformation::/etc/os-release::PRETTY_NAME="(?P<os_pretty_name>.*)"',
             },
             formatter=lambda data: data["system_os"],
         ),
@@ -297,11 +309,20 @@ def get_system_os(
         ),
     }
 
-    pattern: RegexPatterns | None = os_patterns.get(producer)
-    if not pattern:
+    patterns: RegexPatterns | None = os_patterns.get(producer)
+    if not patterns:
         return None
 
-    return _extract_regex_data(file, encoding, pattern)
+    extracted_data: tuple[str, dict[str, str]] = _extract_regex_data_with_raw(
+        file=file,
+        encoding=encoding,
+        patterns=patterns,
+    )
+    if extracted_data:
+        formatted_string, raw_data = extracted_data
+        return formatted_string, raw_data
+
+    return None, None
 
 
 if __name__ == "__main__":

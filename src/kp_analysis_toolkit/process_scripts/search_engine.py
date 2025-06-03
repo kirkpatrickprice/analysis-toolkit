@@ -31,7 +31,10 @@ from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
     SysFilterComparisonOperators,
     SystemFilter,
 )
-from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
+from kp_analysis_toolkit.process_scripts.models.search.yaml import (
+    ConfigFiles,
+    YamlConfig,
+)
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 
@@ -161,7 +164,7 @@ def evaluate_system_filters(system: Systems, filters: list[SystemFilter]) -> boo
     return True
 
 
-def load_yaml_config(config_file: Path) -> YamlConfig:
+def load_yaml_config(config_file: ConfigFiles) -> YamlConfig:
     """
     Load and parse YAML configuration file into structured data models.
 
@@ -176,11 +179,11 @@ def load_yaml_config(config_file: Path) -> YamlConfig:
 
     """
     try:
-        with config_file.open("r", encoding="utf-8") as f:
-            yaml_data = yaml.safe_load(f)
+        with config_file.open("r", encoding=config_file.encoding) as f:
+            yaml_data: dict = yaml.safe_load(f)
 
         if not yaml_data:
-            message = f"Empty YAML file: {config_file}"
+            message: str = f"Empty YAML file: {config_file}"
             raise ValueError(message)  # noqa: TRY301
 
         return YamlConfig.from_dict(yaml_data)

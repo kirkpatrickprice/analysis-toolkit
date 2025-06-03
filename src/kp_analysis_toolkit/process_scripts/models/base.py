@@ -9,6 +9,7 @@ from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
+from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_string
 
 if TYPE_CHECKING:
@@ -159,10 +160,11 @@ class FileModel(PathValidationMixin):
             line: Yields each line of the file as a string.
 
         """
-        encoding = self.encoding or self.detect_encoding()
+        if not self.encoding:
+            self.encoding = detect_encoding(self.file)
+        encoding: str = self.encoding
         with self.file.open("r", encoding=encoding) as f:
-            for line in f.readlines():
-                yield line.strip()
+            yield from f.readlines()
 
     def generate_file_hash(self) -> str:
         """Generate a SHA-256 hash of the file content."""
