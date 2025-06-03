@@ -27,6 +27,20 @@
             ]
         },
         {
+            "name": "KPAT CLI (Scripts) List Config Files",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "scripts",
+                "--verbose",
+                "--list-audit-configs"
+            ]
+        },
+        {
             "name": "KPAT CLI (Scripts) List Systems",
             "type": "debugpy",
             "request": "launch",
