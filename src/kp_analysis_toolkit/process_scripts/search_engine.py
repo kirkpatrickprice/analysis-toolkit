@@ -169,7 +169,7 @@ def load_yaml_config(config_file: ConfigFiles) -> YamlConfig:
     Load and parse YAML configuration file into structured data models.
 
     Args:
-        config_file: Path to the YAML configuration file
+        config_file: ConfigFile object of YAML configuration file
 
     Returns:
         YamlConfig object containing parsed configuration
@@ -179,7 +179,7 @@ def load_yaml_config(config_file: ConfigFiles) -> YamlConfig:
 
     """
     try:
-        with config_file.open("r", encoding=config_file.encoding) as f:
+        with config_file.file.open("r", encoding=config_file.encoding) as f:
             yaml_data: dict = yaml.safe_load(f)
 
         if not yaml_data:

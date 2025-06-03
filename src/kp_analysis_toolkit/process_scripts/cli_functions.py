@@ -14,6 +14,7 @@ from kp_analysis_toolkit.process_scripts.models.program_config import (
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
     load_search_configs,
+    load_yaml_config,
 )
 
 if TYPE_CHECKING:
@@ -81,8 +82,9 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
     click.echo("Listing available audit configuration files...")
     terminal_width: int = pd.get_option("display.width")
     for config_file in process_systems.get_config_files(program_config.config_path):
+        yaml_data: dict[str, Any] = load_yaml_config(config_file)
         click.echo(
-            f" - {summarize_text(str(config_file.file.relative_to(program_config.config_path)), max_length=terminal_width - 3)}",
+            f" - {summarize_text(str(config_file.file.relative_to(program_config.config_path)), max_length=terminal_width - 3)}\n{yaml_data!s}",
         )
 
 
