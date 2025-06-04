@@ -24,36 +24,12 @@ if TYPE_CHECKING:
 
 def create_results_path(program_config: ProgramConfig) -> None:
     """Create the results path if it does not exist."""
-    if not program_config.results_path.exists():
-        if program_config.verbose:
-            click.echo(f"Creating results path: {program_config.results_path}")
-        program_config.results_path.mkdir(parents=True, exist_ok=True)
-    else:
-        click.echo(f" Output path {program_config.results_path.absolute()} exists.")
-        click.echo(click.style("Results will be overwritten if they exist.", fg="red"))
-        click.echo(
-            click.style(
-                "Or use --out-path to specify a different output path.",
-                fg="red",
-            ),
-        )
-        _: Any = input("Press Enter to continue or Ctrl-C to cancel...")
-        # Recursively delete the results path
-        for item in program_config.results_path.iterdir():
-            if item.is_dir():
-                if program_config.verbose:
-                    click.echo(f"Deleting directory: {item}")
-                item.rmdir()
-            else:
-                if program_config.verbose:
-                    click.echo(f"Deleting file: {item}")
-                item.unlink(missing_ok=True)
-        if program_config.verbose:
-            click.echo(f"Deleting directory: {program_config.results_path}")
-        program_config.results_path.rmdir()
-        if program_config.verbose:
-            click.echo(f"Creating directory: {program_config.results_path}")
-        program_config.results_path.mkdir(parents=True, exist_ok=True)
+    if program_config.results_path.exists():
+        click.echo(f"Reusing results path: {program_config.results_path}")
+        return
+    if program_config.verbose:
+        click.echo(f"Creating results path: {program_config.results_path}")
+    program_config.results_path.mkdir(parents=True, exist_ok=False)
 
 
 def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
@@ -84,8 +60,13 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
     for config_file in process_systems.get_config_files(program_config.config_path):
         yaml_data: dict[str, Any] = load_yaml_config(config_file)
         click.echo(
-            f" - {summarize_text(str(config_file.file.relative_to(program_config.config_path)), max_length=terminal_width - 3)}\n{yaml_data!s}",
+            f" - {summarize_text(str(config_file.relative_to(program_config.config_path)), max_length=terminal_width - 3)}",
         )
+        if program_config.verbose:
+            terminal_width: int = pd.get_option("display.width")
+            for key, value in yaml_data.to_dict().items():
+                text: str = summarize_text(str(value), max_length=terminal_width - 3)
+                click.echo(f"\t- {key}: {text}")
 
 
 def list_sections() -> None:
@@ -147,7 +128,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
 
     # Prepare the configuration data for Pandas DataFrame
     config_data: list[dict[str, str]] = []
-    for field_name, field_value in program_config.get_config_summary().items():
+    for field_name, field_value in program_config.to_dict().items():
         try:
             original_str: str = summarize_text(
                 str(cli_config[field_name]),
@@ -223,6 +204,7 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     )
     click.echo(f"Loaded {len(search_configs)} search configurations")
 
+    return
     # Execute searches
     all_results: list[SearchResult] = []
     for config in search_configs:

@@ -178,6 +178,17 @@ class FileModel(PathValidationMixin):
         return self.file_hash
 
 
+class ConfigModel:
+    """Base model for configuration objects."""
+
+    def to_dict(self) -> dict[str, str]:
+        """Return a dictionary of the configuration for logging/debugging."""
+        return {
+            field_name: str(value) if value is not None else "None"
+            for field_name, value in self.model_dump().items()
+        }
+
+
 class HashableModel(KPATBaseModel):
     """Base model for objects that can be hashed/uniquely identified."""
 

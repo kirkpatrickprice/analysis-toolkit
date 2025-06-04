@@ -5,17 +5,18 @@ from pydantic import computed_field, field_validator
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts import GLOBALS
 from kp_analysis_toolkit.process_scripts.models.base import (
+    ConfigModel,
     PathValidationMixin,
     ValidationMixin,
 )
 
 
-class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin):
+class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin, ConfigModel):
     """Class to hold the program configuration."""
 
     program_path: Path = Path(__file__).parent.parent
     config_path: Path = program_path / GLOBALS["CONF_PATH"]
-    audit_config_file: Path | None = None
+    audit_config_file: Path | str | None = None
     source_files_path: Path | None = None
     source_files_spec: str
     out_path: str
@@ -53,15 +54,6 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin):
 
         return p.absolute()
 
-    @computed_field
-    @property
-    def database_path(self) -> Path:
-        """Convert it to a pathlib.Path object and return the absolute path."""
-        # print(f"Validating database path: {cls.database_path}")
-        p: Path = self.results_path / GLOBALS["DB_FILENAME"]
-
-        return p.absolute()
-
     @field_validator("source_files_path")
     @classmethod
     def validate_source_path(cls, value: str) -> Path:
@@ -91,10 +83,3 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin):
         results_path: Path = self.results_path
         if not results_path.exists():
             results_path.mkdir(parents=True, exist_ok=True)
-
-    def get_config_summary(self) -> dict[str, str]:
-        """Return a summary of the configuration for logging/debugging."""
-        return {
-            field_name: str(value) if value is not None else "None"
-            for field_name, value in self.model_dump().items()
-        }

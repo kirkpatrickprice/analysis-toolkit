@@ -1,15 +1,11 @@
 from typing import Any
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.models.base import FileModel
+from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
 from kp_analysis_toolkit.process_scripts.models.search.base import (
     GlobalConfig,
     SearchConfig,
 )
-
-
-class ConfigFiles(KPATBaseModel, FileModel):
-    """Configuration file for KPAT search engine."""
 
 
 class IncludeConfig(KPATBaseModel):
@@ -18,7 +14,7 @@ class IncludeConfig(KPATBaseModel):
     files: list[str]
 
 
-class YamlConfig(KPATBaseModel):
+class YamlConfig(KPATBaseModel, ConfigModel):
     """Complete YAML configuration file structure."""
 
     global_config: GlobalConfig | None = None

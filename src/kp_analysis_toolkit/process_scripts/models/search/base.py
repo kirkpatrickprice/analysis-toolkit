@@ -1,10 +1,11 @@
 from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
+from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
 
 
-class GlobalConfig(KPATBaseModel):
+class GlobalConfig(KPATBaseModel, ConfigModel):
     """Global configuration that can be applied to all search sections."""
 
     sys_filter: list[SystemFilter] | None = None
@@ -14,7 +15,7 @@ class GlobalConfig(KPATBaseModel):
     full_scan: bool | None = None
 
 
-class SearchConfig(KPATBaseModel):
+class SearchConfig(KPATBaseModel, ConfigModel):
     """Configuration for a single search operation."""
 
     name: str  # The YAML section name

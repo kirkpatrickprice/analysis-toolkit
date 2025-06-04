@@ -11,7 +11,6 @@ from kp_analysis_toolkit.process_scripts.models.enums import (
     ProducerType,
 )
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
-from kp_analysis_toolkit.process_scripts.models.search.yaml import ConfigFiles
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_file
@@ -144,7 +143,7 @@ def generate_file_hash(file: Path) -> str:
         raise ValueError(message) from e
 
 
-def get_config_files(config_path: Path) -> list[ConfigFiles]:
+def get_config_files(config_path: Path) -> list[Path]:
     """
     Get the list of available configuration files.
 
@@ -152,13 +151,13 @@ def get_config_files(config_path: Path) -> list[ConfigFiles]:
         config_path (Path): The path to the directory containing configuration files.
 
     Returns:
-        list[ConfigFiles]: A list of available configuration files as Path objects.
+        list[ConfigFile]: A list of available configuration files as Path objects.
 
     """
     # This function should return a list of available configuration files
 
-    config_files: list[ConfigFiles] = [
-        ConfigFiles(file=config_path / f) for f in config_path.glob("*.yaml")
+    config_files: list[Path] = [
+        Path(config_path / f) for f in config_path.glob("*.yaml")
     ]
 
     return config_files

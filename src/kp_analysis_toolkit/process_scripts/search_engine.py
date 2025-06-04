@@ -31,10 +31,7 @@ from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
     SysFilterComparisonOperators,
     SystemFilter,
 )
-from kp_analysis_toolkit.process_scripts.models.search.yaml import (
-    ConfigFiles,
-    YamlConfig,
-)
+from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 
@@ -164,7 +161,7 @@ def evaluate_system_filters(system: Systems, filters: list[SystemFilter]) -> boo
     return True
 
 
-def load_yaml_config(config_file: ConfigFiles) -> YamlConfig:
+def load_yaml_config(config_file: Path) -> YamlConfig:
     """
     Load and parse YAML configuration file into structured data models.
 
@@ -179,7 +176,7 @@ def load_yaml_config(config_file: ConfigFiles) -> YamlConfig:
 
     """
     try:
-        with config_file.file.open("r", encoding=config_file.encoding) as f:
+        with config_file.open("r") as f:
             yaml_data: dict = yaml.safe_load(f)
 
         if not yaml_data:
@@ -225,8 +222,8 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
             include_path = base_path / include_file
             if include_path.exists():
                 try:
-                    included_yaml = load_yaml_config(include_path)
-                    included_configs = process_includes(
+                    included_yaml: YamlConfig = load_yaml_config(include_path)
+                    included_configs: list[SearchConfig] = process_includes(
                         included_yaml,
                         include_path.parent,
                     )
@@ -251,7 +248,7 @@ def load_search_configs(config_file: Path) -> list[SearchConfig]:
         List of SearchConfig objects ready for execution
 
     """
-    yaml_config = load_yaml_config(config_file)
+    yaml_config: YamlConfig = load_yaml_config(config_file)
     return process_includes(yaml_config, config_file.parent)
 
 
