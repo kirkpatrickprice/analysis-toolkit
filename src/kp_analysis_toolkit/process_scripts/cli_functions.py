@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import click
@@ -8,9 +9,11 @@ from kp_analysis_toolkit.process_scripts import process_systems
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_search_results_to_excel,
 )
+from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, SysFilterAttr
 from kp_analysis_toolkit.process_scripts.models.program_config import (
     ProgramConfig,
 )
+from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
     load_search_configs,
@@ -18,8 +21,12 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
 )
 
 if TYPE_CHECKING:
-    from kp_analysis_toolkit.process_scripts.models.results.base import SearchResult
-    from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+    from pathlib import Path
+
+    from kp_analysis_toolkit.process_scripts.models.results.base import (
+        SearchResult,
+        SearchResults,
+    )
 
 
 def create_results_path(program_config: ProgramConfig) -> None:
@@ -189,6 +196,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
 
 def process_scipts_results(program_config: ProgramConfig) -> None:
     """Process the source files and execute searches."""
+    time_stamp: str = datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
     click.echo("Processing source files...")
 
     # Create results path
@@ -204,19 +212,63 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     )
     click.echo(f"Loaded {len(search_configs)} search configurations")
 
-    # Execute searches
-    all_results: list[SearchResult] = []
-    for config in search_configs:
-        if program_config.verbose:
-            click.echo(f"Executing search: {config.name}")
+    # Initialize dictionary with all OSFamilyType values using a dictionary comprehension
+    os_results: dict[str, list[SearchResult]] = {
+        os_type.value: [] for os_type in OSFamilyType
+    }
 
-        results = execute_search(config, systems)
-        all_results.append(results)
+    # Execute searches
+    for config in search_configs:
+        os_type: str = _get_sysfilter_os_type(config)
+        if program_config.verbose:
+            click.echo(
+                f"Executing search: ({os_type}) {config.name}",
+            )
+
+        results: SearchResults = execute_search(config, systems)
+
+        # Find the matching OS type or default to UNDEFINED
+        matching_os: OSFamilyType = OSFamilyType.UNDEFINED
+        for enum_os in OSFamilyType:
+            if enum_os.value == os_type:
+                matching_os = enum_os.value
+                break
+
+        # Append results to the corresponding OS type list
+        os_results[matching_os].append(results)
 
         if program_config.verbose:
             click.echo(f"  Found {results.result_count} matches")
 
-    # Export to Excel
-    output_file = program_config.results_path / "search_results.xlsx"
-    export_search_results_to_excel(all_results, output_file)
-    click.echo(f"Search results exported to {output_file.absolute()}")
+    # Export results to separate Excel files based on OS type
+    files_created: list[str] = []
+    for os_type, results in os_results.items():
+        if not results:
+            continue
+
+        output_file: Path = (
+            program_config.results_path / f"{os_type}_search_results-{time_stamp}.xlsx"
+        )
+        export_search_results_to_excel(results, output_file)
+        files_created.append(str(output_file.relative_to(program_config.results_path)))
+        if program_config.verbose:
+            click.echo(
+                f"Exported {len(results)} results for {os_type} to {output_file.relative_to(program_config.results_path)}",
+            )
+
+    if not files_created:
+        click.echo("No results found to export.")
+    else:
+        click.echo(
+            f"{len(files_created)} results files created: {', '.join(files_created)}",
+        )
+
+
+def _get_sysfilter_os_type(config: SearchConfig) -> str:
+    """Get the OS type from the search configuration."""
+    # Iterate through the sys_filter list to find the first one with an os_family
+    for sysfilter in config.sys_filter:
+        if sysfilter.attr == SysFilterAttr.OS_FAMILY:
+            return sysfilter.value
+
+    return "Unknown"

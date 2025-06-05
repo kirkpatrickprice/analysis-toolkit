@@ -5,11 +5,13 @@ Provides comprehensive Excel output with proper formatting, tables, and comments
 """
 
 import datetime
+import random
 from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
 from openpyxl.styles import Alignment, Font
+from openpyxl.utils.exceptions import IllegalCharacterError
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -146,7 +148,15 @@ def _create_results_sheet(
     data_frame = create_dataframe_from_results(search_result)
 
     # Write to Excel starting at row 3 to leave room for comment
-    data_frame.to_excel(writer, sheet_name=sheet_name, index=False, startrow=2)
+    try:
+        data_frame.to_excel(writer, sheet_name=sheet_name, index=False, startrow=2)
+    except IllegalCharacterError as e:
+        message = f"""
+            Error writing to Excel: {e}. Ensure no illegal characters in search results.
+            Search name: {search_result.search_config.name}
+            Sheet name: {sheet_name}
+            Offending record: {data_frame.head(1).to_dict(orient="records")}"""
+        raise ValueError(message) from e
 
     # Get the worksheet for formatting
     worksheet = writer.sheets[sheet_name]
@@ -377,7 +387,11 @@ def _format_as_excel_table(
     table_range = f"A{startrow}:{end_col_letter}{end_row}"
 
     # Create unique table name
-    table_name = f"Table_{worksheet.title}_{startrow}".replace(" ", "_").replace(
+    random_suffix = random.randint(1000, 9999)
+    table_name = f"Table_{worksheet.title}_{random_suffix}".replace(
+        " ",
+        "_",
+    ).replace(
         "-",
         "_",
     )
@@ -400,7 +414,11 @@ def _format_as_excel_table(
     table.tableStyleInfo = style
 
     # Add table to worksheet
-    worksheet.add_table(table)
+    try:
+        worksheet.add_table(table)
+    except ValueError as e:
+        message: str = f"Error adding table to worksheet '{worksheet.title}': {e}. "
+        raise ValueError(message) from e
 
     # Auto-adjust column widths
     _auto_adjust_column_widths(worksheet, df)

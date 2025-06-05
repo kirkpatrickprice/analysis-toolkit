@@ -509,7 +509,7 @@ def search_line_by_line(
     results = []
 
     for line_num, _line in enumerate(file_handle, 1):
-        line: str = _line.strip()
+        line: str = _filter_excel_illegal_chars(_line.strip())
 
         # Skip empty lines unless full_scan is enabled
         if not line and not search_config.full_scan:
@@ -534,6 +534,30 @@ def search_line_by_line(
                 break
 
     return results
+
+
+def _filter_excel_illegal_chars(text: str) -> str:
+    """
+    Remove characters that are illegal in Excel spreadsheets.
+
+    Excel cannot handle control characters (ASCII 0-31) except for:
+    - Tab (ASCII 9)
+    - Line feed (ASCII 10)
+    - Carriage return (ASCII 13)
+
+    Args:
+        text: String that may contain illegal Excel characters
+
+    Returns:
+        String with illegal characters removed
+
+    """
+    # Create a translation table that maps illegal characters to None
+    illegal_chars: list[str] = [chr(i) for i in range(32) if i not in (9, 10, 13)]
+    trans_table: dict[int, Any | None] = str.maketrans(dict.fromkeys(illegal_chars))
+
+    # Apply the translation table to remove illegal characters
+    return text.translate(trans_table)
 
 
 def search_with_recordset_delimiter(
