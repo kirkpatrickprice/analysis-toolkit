@@ -6,6 +6,7 @@ global:
 
 05_worldFiles_01_interesting_world_writable_files:
   regex: 'WorldFiles-(?P<location>.*?)::(?!.*(Cache|Preferences/Audio/Data)).*?(?P<permissions>.[-rwx]+)\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+).*?(?P<path>/\w+/.*)'
+  excel_sheet_name: World-Writable Files
   only_matching: True
   field_list:
     - location

@@ -21,6 +21,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     name: str  # The YAML section name
     regex: str
     comment: str | None = None
+    excel_sheet_name: str | None = None
     max_results: int = -1
     only_matching: bool = False
     unique: bool = False

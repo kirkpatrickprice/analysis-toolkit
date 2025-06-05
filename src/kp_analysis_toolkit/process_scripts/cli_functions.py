@@ -204,7 +204,6 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     )
     click.echo(f"Loaded {len(search_configs)} search configurations")
 
-    return
     # Execute searches
     all_results: list[SearchResult] = []
     for config in search_configs:

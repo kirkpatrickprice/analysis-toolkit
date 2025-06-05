@@ -6,6 +6,7 @@ global:
 
 04_users_01_auth_config:
   regex: 'Users_AuthConfig'
+  excel_sheet_name: Authentication Config
   comment: |-
     This list shows the authentication systems that the device is configured for.  Examples include:
       Active Directory - self-explanatory
@@ -13,6 +14,7 @@ global:
       shadowhash - local authentication source
 04_users_02_home_folders:
   regex: 'Users_HomeFolders::(?!.*Shared)d(?P<permissions>[rwx-]+)\+\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>.*)'
+  excel_sheet_name: Home Folder Permissions
   only_matching: True
   field_list:
     - dir
@@ -27,6 +29,7 @@ global:
     Ideally, we would see that home folder permissions are set to [rwx------] or [rwx--x--x].
 04_users_03_password_policy:
   regex: 'Users_PasswordPolicy::((maxFailedLogins=(?P<maxFailedLogins>(\d+)?))|(LockoutDuration=(?P<lockoutDuration>(\d+)?))|(minLength=(?P<minLength>(\d+)?))|(requiresAlpha=(?P<requiresAlpha>(\d+)?))|(requiresNumeric=(?P<requiresNumeric>(\d+)?))|(requiresSymbol=(?P<requiresSymbol>(\d+)?))|(maxMinutesUntilChangePassword=(?P<maxPasswordAgeMins>(\d+)?)))'
+  excel_sheet_name: Password Policy
   only_matching: True
   combine: True
   field_list:
@@ -43,6 +46,7 @@ global:
     For the record, 129,600 minutes is 90 days (1440 minutes per day)
 04_users_04_local_users:
   regex: 'Users_LocalUsers::((UniqueID:\s+(?P<uniqueID>([-\d]+)?))|(NFSHomeDirectory:\s+(?P<homeDir>.*))|(RecordName:\s+(?P<userName>.*))|(UserShell:\s+(?P<shell>.*)))'
+  excel_sheet_name: Local Users
   only_matching: True
   combine: True
   rs_delimiter: '^Users_LocalUsers::-$'
@@ -61,6 +65,7 @@ global:
     NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Usernames affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
 04_users_05_local_groups:
   regex: 'Users_LocalGroups::((PrimaryGroupID:\s+(?P<primaryID>(\d+)?))|(RecordName:\s+(?P<groupName>.*))|(GroupMembership:\s+(?P<members>.*)))'
+  excel_sheet_name: Local Groups
   only_matching: True
   combine: True
   rs_delimiter: '^Users_LocalGroups::-$'
@@ -79,6 +84,7 @@ global:
     NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Group names affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
 04_users_06_root_status:
   regex: 'Users_RootStatus::(?P<rootStatus>.*)'
+  excel_sheet_name: Root User Status
   only_matching: True
   field_list:
     - rootStatus
@@ -88,6 +94,7 @@ global:
     This should be 0.  A non-zero value indicates that it is possible to sign in as the root account.
 04_users_07_sudoers:
   regex: 'Users_SudoersConfig::/etc/sudoers.*?::[\w%].*'
+  excel_sheet_name: Sudoers File
   comment: |-
     The sudoers file controls use of the "sudo" program.  Sudo is used to grant the ability to execute commands as the root user -- effectively making users with sudo access administrators on the system.
 
@@ -98,6 +105,7 @@ global:
     There are also a few CIS benchmark recommendations that look for specific Defaults to be configured.  Look at the CIS MacOS 13 Benchmark for more information.
 04_users_08_siri_status:
   regex: 'Users_SiriStatus-(?P<username>.*?)-Enabled::\s+"Assistant Enabled"\s+=\s+(?P<siriStatus>\d+)'
+  excel_sheet_name: Siri Status
   only_matching: True
   field_list:
     - username
@@ -106,6 +114,7 @@ global:
     Siri can be enabled on a macOS device just like on an iPhone.  CIS Benchmark doesn't make any specific recommendations except that Siri usage should be consistent with organizational policy.
 04_users_09_screensaver:
   regex: 'Users_ScreensaverStatus-(?P<username>.*?)::(?P<screensaverTimeout>.*)'
+  excel_sheet_name: Screensaver Timeout
   only_matching: True
   field_list:
     - username
@@ -114,6 +123,7 @@ global:
     This is the screensaver timeout value.  For reference, 15 minutes is 900 seconds.
 04_users_10_password_hints:
   regex: 'Users_PasswordHints::RetriesUntilHint=(?P<retriesUntilHint>.*)'
+  excel_sheet_name: Password Hints
   only_matching: True
   field_list:
     - retriesUntilHint

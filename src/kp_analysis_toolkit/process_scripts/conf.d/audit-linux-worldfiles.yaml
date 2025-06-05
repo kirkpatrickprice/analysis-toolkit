@@ -6,6 +6,7 @@ global:
 
 08_worldFiles_01_interesting_world_writable_files:
   regex: 'WorldFiles::.*?(?P<permissions>.[-rwx]{9}).*?(?P<path>(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin|/opt|/lib(?!/docker)|/mnt).*)'
+  excel_sheet_name: World-Writable Files
   only_matching: True
   field_list:
     - permissions

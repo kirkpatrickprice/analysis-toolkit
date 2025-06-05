@@ -6,8 +6,10 @@ global:
 
 05_logging_01_auditpol_config_raw:
     regex: 'Logging_AuditEventsConfig::[ ]+'
+    excel_sheet_name: Audit Policy Config (Raw)
 05_logging_01_auditpol_config_labeled:
     regex: 'Logging_AuditEventsConfig::[ ]+((Security System Extension[ ]+(?P<systemSecurityExtension>.*))|(System Integrity[ ]+(?P<systemIntegrity>.*))|(Security State Change[ ]+(?P<securityStateChange>.*))|(Logon[ ]+(?P<logon>.*))|(Logoff[ ]+(?P<logoff>.*))|(Sensitive Privilege Use[ ]+(?P<sensitivePrivUse>.*))|(Process Creation[ ]+(?P<processCreation>.*))|(Process Termination[ ]+(?P<processTermination>.*))|(File System[ ]+(?P<fileSystem>.*))|(Audit Policy Change[ ]+(?P<auditPolicyChange>.*))|(Directory Service Access[ ]+(?P<directoryServiceAccess>.*))|(Directory Service Changes[ ]+(?P<directoryServiceChanges>.*)))'
+    excel_sheet_name: Audit Policy Config (Labeled)
     field_list:
       - 'sensitivePrivUse'
       - 'directoryServiceAccess'
@@ -28,6 +30,7 @@ global:
       Reference: https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/advanced-security-auditing-faq
 05_logging_02_fs_audit_config:
   regex: 'Logging_FSAuditing-(?P<drive>[A-Za-z]):(?P<path>[\w\\. ]+?)::Audit[ ]+:(?P<auditConfig>.*)'
+  excel_sheet_name: File System Audit Config
   only_matching: True
   field_list:
     - 'drive'
@@ -41,12 +44,14 @@ global:
     NOTE: Some "light-weight" FIM tools such as those included with Log Event collector tools, rely on Windows Event Log events for file system events.  If this isn't configured per the vendor's manuals, then events are likely not being captured.  You may need to test for this separately if there's any doubt.
 05_logging_03_event_log_config:
   regex: 'Logging_AuditLogConfig::(?!PrimaryModule)(?!--)\w'
+  excel_sheet_name: Event Log Config
   comment: |-
     If logs are being pulled off in real-time by some collector agent (e.g. Splunk, FluentD, etc), then these configs should have no bearing.  If they are not, then that's a worthy recommendation.
 
     Reference: See https://docs.microsoft.com/en-us/windows/win32/eventlog/eventlog-key for details about what each item means.
 05_logging_04_event_log_samples:
   regex: 'Logging_EventLogSamples(?P<eventLogSource>[A-Za-z]+)::(?!(Index[ ]+Time)|---)(?P<logMessage>.*)'
+  excel_sheet_name: Event Log Samples
   only_matching: True
   field_list:
     - eventLogSource

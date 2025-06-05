@@ -6,6 +6,7 @@ global:
 
 02_network_01_macos_ping_results:
   regex: 'Network_ConnectivityTest::(?P<xmitPackets>\d+) packets transmitted, (?P<recdPackets>\d+) packets received, (?P<pktLoss>[\d.%]+) packet loss'
+  excel_sheet_name: Ping Results
   only_matching: True
   field_list:
     - xmitPackets
@@ -17,6 +18,7 @@ global:
     If you're not working on a PCI audit, you can decide if this is helpful to you.
 02_network_02_dns_nameserver:
   regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver (?P<nameServer>[\d.]+)'
+  excel_sheet_name: DNS Nameserver
   only_matching: True
   field_list:
     - nameServer
@@ -25,6 +27,7 @@ global:
     It's also interesting to note if there are any differences across the sample population as differences could be indicative of systems under differing levels of management.
 02_network_04_firewall_status:
   regex: 'Network_FirewallStatus::\s+(Mode:\s(?P<mode>.*)|Firewall Logging:\s(?P<logging>.*)|Stealth Mode:\s(?P<stealthMode>.*))'
+  excel_sheet_name: Firewall Status
   only_matching: True
   combine: True
   field_list:
@@ -36,6 +39,7 @@ global:
     We'll use the system_profiler command to get the data in a standard, and human-readble, format.
 02_network_05_listening_services:
   regex: 'Network_ListeningServices::(?P<processName>[\w-]+)\s+(?P<pid>\d+)\s+(?P<user>[\w\d]+)\s+([\d\w]+)\s+(?P<addrFamily>(IPv4|IPv6))\s(.*?)(?P<proto>(TCP|UDP))\s+(?P<addrPort>.*)\s\(LISTEN\)'
+  excel_sheet_name: Listening Services
   field_list:
     - processName
     - pid
@@ -62,6 +66,7 @@ global:
     These are just a few of the highlights you're likely to stumble on.  Check out https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers or other Internet sources for more.
 02_network_06_ssh_settings:
   regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
+  excel_sheet_name: SSH Server Settings
   only_matching: True
   field_list:
     - usePam
@@ -96,6 +101,7 @@ global:
     From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
 02_network_08_nfs:
   regex: 'Network_SharesNFS::nfsd is (?P<nfsStatus>.*)'
+  excel_sheet_name: NFS Status
   only_matching: True
   field_list:
     - nfsStatus
@@ -104,6 +110,7 @@ global:
     MacOS can run an NFS server as nfsd and the directories that will be shared are listed in /etc/exports
 02_network_08_smb_status:
   regex: 'Network_SharesSamba::\s+((NetBIOSName\s+=\s+(?P<netBiosName>.+);)|ServerDescription\s+=\s+(?P<serverDesc>.*))'
+  excel_sheet_name: SMB Status
   only_matching: True
   combine: True
   field_list:
@@ -113,6 +120,7 @@ global:
     MacOS SMB configuration settings if the device is configured with File Sharing.  Also be sure to check if the device is listening on port 445/tcp to determine if the system is currently available as a Windows file share (Network_ListeningServices)
 02_network_08_smb_shares:
   regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_sealed:\s(?P<smbSealed>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
+  excel_sheet_name: SMB Shares
   only_matching: True
   combine: True
   rs_delimiter: '^Network_SharesSamba-SharedFolders::$'

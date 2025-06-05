@@ -6,6 +6,7 @@ global:
 
 01_system_01_kp_win_version:
     regex: 'kp_win_version: (?P<kp_win_version>.*)'
+    excel_sheet_name: KPWINAUDIT Version
     max_results: 1
     only_matching: True
     field_list:
@@ -17,6 +18,7 @@ global:
       to determine if you're missing anything you find important.
 01_system_01_bios:
   regex: 'System_BIOS::((SMBIOSBIos_version\s+:\s+(?P<SMBIos_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  excel_sheet_name: BIOS Information
   max_results: 1
   only_matching: True
   combine: True
@@ -39,6 +41,7 @@ global:
       value: "0.4.7"
 01_system_02_win_os_version:
   regex: 'System_OSInfo::(product_name\s+:\s+(?P<product_name>[\w ]+))|(release_id\s+:\s+(?P<release_id>\w+))|(current_build\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
+  excel_sheet_name: Windows OS Version
   combine: True
   max_results: 1
   field_list:
@@ -56,6 +59,7 @@ global:
     Visit https://kirkpatrickprice.atlassian.net/l/cp/7E9b522s for links to MS documentation that can be used to help interpret the results.
 01_system_03_bitlocker_status:
   regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
+  excel_sheet_name: BitLocker Status
   field_list:
     - 'MountPoint'
     - 'EncryptionMethod'
@@ -67,21 +71,25 @@ global:
     Capture the BitLocker status of each disk drive attached to the system.  This can be used to confirm statements such as 'All drives are encrypted with BitLocker.'
 01_system_04_gpo_summary:
   regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
+  excel_sheet_name: Group Policy Summary
   comment: |-
     This section includes a summary of how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides some of the specific policy items that have been applied.
 
     This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
 01_system_05_installed_capabilities:
   regex: 'System_InstalledCapabilities::.*Installed'
+  excel_sheet_name: Installed Capabilities
   comment: |-
     Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
     Windows Capabilities include such things as an OpenSSH client, Notepad and Internet Explorer.
 01_system_06_installed_features:
   regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
+  excel_sheet_name: Installed Features
   comment: |-
     Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
 01_system_07_patching:
   regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+\s+(AM|PM)\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
+  excel_sheet_name: Update and Hotfix History
   field_list:
     - hfDate
     - hfDescription
@@ -104,12 +112,15 @@ global:
     Consider combining the results from the second set of columns into the first so you can sort-and-filter on just one set of dates.
 01_system_08_installed_software:
   regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
+  excel_sheet_name: Installed Software
   full_scan: True
 01_system_09_pending_updates:
   regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
+  excel_sheet_name: Pending Updates
   full_scan: True
 01_system_10_windows_update_config:
   regex: '(System_WindowsUpdateConfig::\s*UseWUServer\s+:\s+(?P<useWUServer>\d+))|(System_WindowsUpdateConfig::\s*WUServer\s+:\s+(?P<wuServer>.*))|(System_WindowsUpdateConfig::\s*ElevateNonAdmins\s+:\s+(?P<elevateNonAdmins>\d+))|(System_WindowsUpdateConfig::\s*DisableWindowsUpdateAccess\s+:\s+(?P<disableWUAccess>\d+))|(System_WindowsUpdateConfig::\s*NoAutoUpdate\s+:\s+(?P<noAutoUpdate>\s*\d+))|(System_WindowsUpdateConfig::\s*AUOptions\s+:\s+(?P<auOptions>\d+))'
+  excel_sheet_name: Windows Update Config
   field_list:
     - useWUServer
     - wuServer
@@ -134,31 +145,9 @@ global:
       - ScheduledInstallDay: 1 = Sunday, 7 = Saturday, 0 = Any day
       - ScheduledInstallTime: 1 to 24 to indicate the hour in which updates should be installed
     If these following registry paths are not found, then system updates are managed through another method (e.g. MDM)
-01_system_11_running_processes_old:
-  regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*)))'
-  field_list:
-    - 'processName'
-    - 'path'
-    - 'company'
-    - 'product'
-  only_matching: True
-  combine: True
-  sys_filter:
-    - attr: 'os_family'
-      comp: 'eq'
-      value: 'Windows'
-    - attr: 'producer'
-      comp: 'eq'
-      value: 'KPWINAUDIT'
-    - attr: 'producer_version'
-      comp: 'lt'
-      value: '0.4.6'  
-  comment: |-
-    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit prior to 0.4.5.
-
-    Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
 01_system_11_running_processes:
   regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*))|(UserName\s+:(?P<userName>.*)))'
+  excel_sheet_name: Running Processes
   field_list:
     - 'processName'
     - 'path'
@@ -183,10 +172,12 @@ global:
     Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
 01_system_12_system_services_raw:
   regex: 'System_Services::(?!DisplayName)(?!--)'
+  excel_sheet_name: System Services (Raw)
   comment: |-
     A list of system services and their current statusk.  This file shows the lines exactly as they appear in the text file (without too much processing).  Another file includes the results in columnar listing for easier sort/filter.
 01_system_12_system_services_labeled:
   regex: 'System_Services::(?!DisplayName)(?!--)(?P<serviceName>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startupType>.*)'
+  excel_sheet_name: System Services (Labeled)
   field_list:
     - 'serviceName'
     - 'status'
@@ -196,6 +187,7 @@ global:
     A list of system services and their current status.  This file includes the results in columnar listing for easier sort/filter.  Another file shows the lines exactly as they appear in the text file (without too much processing).
 01_system_14_rdp_config:
   regex: 'System_RDPEncryption::((SecurityLayer\s*:\s*(?P<securityLayer>\d+))|(MinEncryptionLevel\s*:\s*(?P<minEncryptionLevel>\d+)))'
+  excel_sheet_name: RDP Encryption Config
   comment: |-
     This section pulls together a couple of settings for how Windows handles RDP encryption.
     First, we collect the GPO setting from the registry for the source of RDP's encryption.  https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-terminalservices-rdp-winstationextensions-securitylayer
@@ -215,6 +207,7 @@ global:
   combine: True
 01_system_15_screensaver_gpo:
   regex: '(System_ScreenSaverConfigGPO::(ScreenSaveActive\s*:\s*(?P<gpoScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<gpoScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<gpoScreenSaverIsSecure>\d+)))|(System_ScreenSaverConfigRunning::(ScreenSaveActive\s*:\s*(?P<localScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<localScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<localScreenSaverIsSecure>\d+)))'
+  excel_sheet_name: Screensaver Config (GPO)
   field_list:
     - gpoScreenSaveActive
     - gpoScreenSaverIsSecure
@@ -235,8 +228,10 @@ global:
     There are also "local" variants (not enforced by GPO) for each.01_system_16_screensaver_registry
 01_system_17_snmp:
   regex: 'System_SNMPConfig::'
+  excel_sheet_name: SNMP Config
 01_system_18_scheduled_tasks:
   regex: 'System_ScheduledTaskInfo::\s*((Taskname\s*:\s*(?P<taskName>.+))|(LastRunTime\s*:\s*(?P<lastRunTime>[\d: /AMP]+))|(LastTaskResult\s*:\s*(?P<lastTaskResult>\d+))|(NextRunTime\s*:\s*(?P<nextRunTime>[\d: /AMP]+)))'
+  excel_sheet_name: Scheduled Tasks
   field_list:
     - 'taskName'
     - 'lastRunTime'

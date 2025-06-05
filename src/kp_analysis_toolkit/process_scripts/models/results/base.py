@@ -10,7 +10,7 @@ class SearchResult(KPATBaseModel):
     system_name: str
     line_number: int
     matched_text: str
-    extracted_fields: dict[str, str] | None = None
+    extracted_fields: dict[str, str | None | float] | None = None
 
     line_number: int = Field(gt=0, description="Line number must be a positive integer")
 

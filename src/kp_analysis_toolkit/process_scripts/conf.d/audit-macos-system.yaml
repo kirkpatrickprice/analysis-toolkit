@@ -6,6 +6,7 @@ global:
 
 01_system_01_kp_mac_version:
   regex: 'kp_mac_version: (?P<kp_mac_version>.*)'
+  excel_sheet_name: KPMACAUDIT Version
   max_results: 1
   only_matching: True
   field_list:
@@ -16,7 +17,8 @@ global:
     Check the version history comments in https://github.com/kirkpatrickprice/macos-auditor/blob/main/kpmacaudit.sh
     to determine if you're missing anything you find important.
 01_system_02_macos_version:                                                     # Debian uses the PRETTY_NAME consistently
-  regex: 'System_VersionInformation::((product_name:\s+(?P<product_name>\w+))|(ProductVersion+:\s+(?P<productVersion>[\w.]+))|(BuildVersion:\s+(?P<buildVersion>\w+)))'  
+  regex: 'System_VersionInformation::((product_name:\s+(?P<product_name>\w+))|(ProductVersion+:\s+(?P<productVersion>[\w.]+))|(BuildVersion:\s+(?P<buildVersion>\w+)))'
+  excel_sheet_name: MacOS Version
   max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
   only_matching: True
   combine: True
@@ -29,6 +31,7 @@ global:
     Check out Confluence (https://kirkpatrickprice.atlassian.net/l/cp/PL1PAm9Y) for some resources on where to confirm the end-of-life status.
 01_system_03_periodic:
   regex: 'System_Periodic::/etc/periodic/(?P<frequency>(daily|weekly|monthly))/(?P<jobName>.*?)::'
+  excel_sheet_name: MacOS Scheduled Jobs
   only_matching: True
   unique: True
   field_list:
@@ -42,6 +45,7 @@ global:
     NOTE: On a typical user system, all of the jobs could be only those which are included by default and probably won't be very interesting.
 01_system_04_file_system_encryption_apfs:
   regex: 'System_FSEncryption-APFS-(status::FileVault is (?P<filevaultStatus>\w+)|haspersonalrecoverykey::(?P<hasPersonalRecoveryKey>.*)|hasinstitutionalrecoverykey::(?P<hasInstitutionalRecoveryKey>.*))'
+  excel_sheet_name: File System Crypto (APFS)
   comment: |-
     File system encryption on MacOS is provided by FileVault.  The exact implementation depends on the file system type -- APFS or CoreStorage.
     APFS uses the 'fdesetup' and 'diskutil ap' command sets, while CoreStorage status can be seen with the 'diskutil cs list' command.
@@ -58,6 +62,7 @@ global:
   combine: True
 01_system_05_file_system_mounts:
   regex: 'System_FSMounts-mounts::(?P<device>.*?)\s+on\s+(?P<mountPoint>[\w/]+)\s+\((?P<options>.*)\)'
+  excel_sheet_name: File System Mounts
   only_matching: True
   field_list:
     - device
@@ -67,6 +72,7 @@ global:
     A list of all active file system mounts on the system.  Useful for all kinds of things including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
 01_system_10_installed_apps_macos:
   regex: 'System_InstalledApps-MacOS::((\s{4}(?P<appName>\w.*):)|(\s{6}Version:\s+(?P<version>.*)|(\s{6}Obtained from:\s+(?P<obtainedFrom>.*))|(\s{6}Last Modified:\s+(?P<lastModified>.*?),)|(\s{6}Kind:\s+(?P<kind>.*))|(\s{6}Signed by:\s+(?P<signedBy>.*))|(\s{6}Location:\s+(?P<location>.*))))'
+  excel_sheet_name: Installed Applications (MacOS)
   only_matching: True
   combine: True
   field_list:
@@ -80,6 +86,7 @@ global:
     A list of all applications registered with the operating system.  Use this information to identify unexpected software as well as to confirm if the currently installed versions have any vulnerabilities.
 01_system_11_pending_updates_apple:
   regex: 'System_PendingUpdates-Apple::.+Title:\s(?P<title>.*?),\s+Version:\s(?P<version>[\d.]+?),.*Recommended:\s+(?P<recommended>.*?),'
+  excel_sheet_name: Pending Updates (Apple)
   only_matching: True
   field_list:
     - title
@@ -89,6 +96,7 @@ global:
     This list contains the available updates from Apple for the operation system and other Apple-provided software.
 01_system_11_pending_updates_brew:
   regex: 'System_PendingUpdates-Brew-(?P<user>\w+)::(?P<title>\w.*?)\s+(?P<currentVersion>[\w\.-]+?)\s->\s(?P<pendingVersion>[\w\.-]+)'
+  excel_sheet_name: Pending Updates (Brew)
   only_matching: True
   field_list:
     - title
@@ -98,6 +106,7 @@ global:
     Brew is a popular package management utility for MacOS systems to install 3rd-party software.  Specifically, it bypasses the Apple Store.  This list contains the available updates for Brew-installed software.
 01_system_12_running_processes:
   regex: 'System_RunningProcesses::\s+(?P<user>[\d+]+)\s+(?P<pid>\d+)\s+(?P<parentPid>\d+)\s+(?P<cpu>\d+)\s+(?P<startTime>.+?)\s+(?P<tty>.+?)\s+(?P<time>[\d:.]+)\s+(?P<command>.*)'
+  excel_sheet_name: Running Processes
   only_matching: True
   field_list:
     - user
@@ -119,6 +128,7 @@ global:
       If you would like to learn more about the other fields, use "man ps" from your WSL prompt.  While the information is not identical to MacOS, it will be pretty close.
 01_system_13_system_services:
   regex: 'System_ServiceInfo::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)'
+  excel_sheet_name: System Services
   only_matching: True
   field_list:
     - pid
@@ -133,6 +143,7 @@ global:
       - Label: The third column is the job's label.
 01_system_14_system_integrity_protection:
   regex: 'System_IntegrityProtection::System Integrity Protection status:\s(?P<status>\w+)'
+  excel_sheet_name: System Integrity Protection
   only_matching: True
   field_list:
     - status
@@ -140,6 +151,7 @@ global:
     System Integrity Protection provides restrictions on interactions with system-level processes.
 01_system_15_amfi:
   regex: 'System_AMFI::(?P<disabled>\d+)'
+  excel_sheet_name: Apple Mobile File Integrity
   only_matching: True
   field_list:
     - disabled
@@ -149,6 +161,7 @@ global:
     This check should report as '0' meaning that the service has NOT been disabled.
 01_system_16_ssv:
   regex: 'System_SSV::Authenticated Root status:\s+(?P<status>\w+)'
+  excel_sheet_name: Sealed System Volume
   only_matching: True
   field_list:
     - status
@@ -156,6 +169,7 @@ global:
     The Sealed System Volume (SSV) feature computes a SHA-256 hash of system files that should not change.  The hash is compared at boot time.
 01_system_17_system_prefs_locked:
   regex: 'System_SystemPrefsLocked::(?P<status>\d+)'
+  excel_sheet_name: System Preferences Locked
   only_matching: True
   field_list:
     - status

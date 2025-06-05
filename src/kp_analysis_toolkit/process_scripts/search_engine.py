@@ -7,16 +7,14 @@ Handles YAML configuration loading, system filtering, and search execution.
 import re
 from enum import Enum
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, Any, LiteralString
 
 import click
 import yaml
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
 from kp_analysis_toolkit.process_scripts.models.enums import (
-    DistroFamilyType,
     OSFamilyType,
-    ProducerType,
 )
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 from kp_analysis_toolkit.process_scripts.models.results.base import (
@@ -79,86 +77,70 @@ def evaluate_system_filters(system: Systems, filters: list[SystemFilter]) -> boo
         return True
 
     for filter_item in filters:
-        attr = filter_item.attr
-        comp = filter_item.comp
-        value = filter_item.value
-
-        # Skip evaluation if the attribute isn't applicable to this OS
-        if (
-            attr
-            in [
-                SysFilterAttr.PRODUCT_NAME,
-                SysFilterAttr.RELEASE_ID,
-                SysFilterAttr.CURRENT_BUILD,
-                SysFilterAttr.UBR,
-            ]
-            and system.os_family != OSFamilyType.WINDOWS
-        ) or (
-            attr in [SysFilterAttr.DISTRO_FAMILY, SysFilterAttr.OS_PRETTY_NAME]
-            and system.os_family != OSFamilyType.LINUX
-        ):
+        # Check if attribute is applicable to this OS
+        if not is_attribute_applicable(system, filter_item.attr):
             return False
 
-        # Get system value and convert filter value if needed
-        if attr == SysFilterAttr.OS_FAMILY:
-            system_value: OSFamilyType | None = system.os_family
-            value = convert_to_enum_if_needed(value, OSFamilyType)
-        elif attr == SysFilterAttr.DISTRO_FAMILY:
-            system_value = system.distro_family
-            value = convert_to_enum_if_needed(value, DistroFamilyType)
-        elif attr == SysFilterAttr.PRODUCER:
-            system_value = system.producer
-            value = convert_to_enum_if_needed(value, ProducerType)
-        elif attr == SysFilterAttr.PRODUCER_VERSION:
-            # Special handling for version comparison
-            if isinstance(value, str) and comp in [
+        # Get system value for the attribute
+        system_value = get_system_attribute_value(system, filter_item.attr)
+
+        # For producer version, handle with special comparison
+        if filter_item.attr == SysFilterAttr.PRODUCER_VERSION and isinstance(
+            filter_item.value,
+            str,
+        ):
+            version_operators = [
                 SysFilterComparisonOperators.EQ,
                 SysFilterComparisonOperators.GE,
                 SysFilterComparisonOperators.GT,
                 SysFilterComparisonOperators.LE,
                 SysFilterComparisonOperators.LT,
-            ]:
-                return compare_version(system.producer_version, comp, value)
-            system_value = system.producer_version
-        else:
-            # All other attributes are accessed directly from the system object
-            system_value = getattr(system, attr.value, None)
+            ]
+            if filter_item.comp in version_operators:
+                if not compare_version(
+                    system.producer_version,
+                    filter_item.comp,
+                    filter_item.value,
+                ):
+                    return False
+                continue
 
-        # Perform comparison
-        if comp == SysFilterComparisonOperators.EQ:
-            if system_value != value:
-                return False
-        elif comp == SysFilterComparisonOperators.NE:
-            if system_value == value:
-                return False
-        elif comp == SysFilterComparisonOperators.GT:
-            if not system_value or not system_value > value:
-                return False
-        elif comp == SysFilterComparisonOperators.GE:
-            if not system_value or not system_value >= value:
-                return False
-        elif comp == SysFilterComparisonOperators.LT:
-            if not system_value or not system_value < value:
-                return False
-        elif comp == SysFilterComparisonOperators.LE:
-            if not system_value or not system_value <= value:
-                return False
-        elif comp == SysFilterComparisonOperators.IN:
-            if not system_value or system_value not in value:
-                return False
-        elif comp == SysFilterComparisonOperators.CONTAINS:
-            if (
-                not system_value
-                or not isinstance(system_value, str)
-                or value not in system_value
-            ):
-                return False
-        else:
-            # Unknown comparison operator
+        # Standard comparison for all other cases
+        if not compare_values(system_value, filter_item.comp, filter_item.value):
             return False
 
     # All filters passed
     return True
+
+
+def is_attribute_applicable(system: Systems, attr: SysFilterAttr) -> bool:
+    """
+    Check if an attribute is applicable to the system's OS family.
+
+    Args:
+        system: System object containing OS family information
+        attr: SysFilterAttr to check
+
+    Returns:
+        True if the attribute is applicable to the system's OS family, False otherwise
+
+    """
+    windows_only_attrs = [
+        SysFilterAttr.PRODUCT_NAME,
+        SysFilterAttr.RELEASE_ID,
+        SysFilterAttr.CURRENT_BUILD,
+        SysFilterAttr.UBR,
+    ]
+
+    linux_only_attrs = [
+        SysFilterAttr.DISTRO_FAMILY,
+        SysFilterAttr.OS_PRETTY_NAME,
+    ]
+
+    if system.os_family != OSFamilyType.WINDOWS and attr in windows_only_attrs:
+        return False
+
+    return not (system.os_family != OSFamilyType.LINUX and attr in linux_only_attrs)
 
 
 def load_yaml_config(config_file: Path) -> YamlConfig:
@@ -314,11 +296,11 @@ def get_system_attribute_value(
     """
     match attr:
         case SysFilterAttr.OS_FAMILY:
-            return system.os_family_computed
+            return system.os_family
         case SysFilterAttr.DISTRO_FAMILY:
-            return system.distro_family_computed
+            return system.distro_family
         case SysFilterAttr.PRODUCER:
-            return system.producer_computed
+            return system.producer
         case _:
             # Use the enum value as the attribute name
             return getattr(system, attr.value, None)
@@ -439,7 +421,7 @@ def execute_search(
     all_results = []
 
     for system in filtered_systems:
-        system_results = search_single_system(search_config, system)
+        system_results: list[SearchResult] = search_single_system(search_config, system)
         all_results.extend(system_results)
 
         # Apply max_results limit if specified (per system)
@@ -452,7 +434,7 @@ def execute_search(
 
     # Apply unique filter if specified
     if search_config.unique:
-        all_results = deduplicate_results(all_results)
+        all_results: list[SearchResult] = deduplicate_results(all_results)
 
     # Apply global max_results if specified
     if search_config.max_results > 0:
@@ -479,18 +461,18 @@ def search_single_system(
     results = []
 
     try:
-        pattern = re.compile(search_config.regex, re.IGNORECASE)
+        pattern: re.Pattern[str] = re.compile(search_config.regex, re.IGNORECASE)
     except re.error as e:
         click.echo(f"Error: Invalid regex pattern in {search_config.name}: {e}")
         return results
 
     try:
         # Determine encoding
-        encoding = system.file_encoding or "utf-8"
+        encoding: str | LiteralString = system.encoding or "utf-8"
 
         with system.file.open("r", encoding=encoding, errors="replace") as f:
             if search_config.combine and search_config.rs_delimiter:
-                results = search_with_recordset_delimiter(
+                results: list[SearchResult] = search_with_recordset_delimiter(
                     search_config,
                     system,
                     f,

@@ -4,15 +4,90 @@ Excel export functionality for search results.
 Provides comprehensive Excel output with proper formatting, tables, and comments.
 """
 
+import datetime
+from collections import defaultdict
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
-from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
+from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
+from kp_analysis_toolkit.process_scripts.models.results.base import (
+    SearchResult,
+    SearchResults,
+)
+
+
+def export_results_by_os_type(
+    search_results: list[SearchResults],
+    systems: list,
+    output_dir: Path,
+) -> dict[str, Path]:
+    """
+    Export search results to separate Excel files grouped by OS type.
+
+    Args:
+        search_results: List of SearchResults objects to export
+        systems: List of systems processed
+        output_dir: Directory to save reports
+
+    Returns:
+        Dictionary mapping OS types to file paths
+
+    """
+    # Ensure output directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Group systems by OS family
+    systems_by_os = defaultdict(list)
+    for system in systems:
+        os_family = system.os_family.value if system.os_family else "Unknown"
+        systems_by_os[os_family].append(system)
+
+    # Generate timestamp for filenames
+    timestamp: str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
+
+    created_files = {}
+
+    # Create a separate Excel file for each OS type
+    for os_type, os_systems in systems_by_os.items():
+        # Get system names for this OS type
+        system_names: set[str] = {system.system_name for system in os_systems}
+
+        # Filter search results for this OS type
+        os_search_results: list[SearchResults] = []
+        for search_result in search_results:
+            # Create a copy of search result with only relevant systems
+            filtered_results: list[SearchResult] = [
+                r for r in search_result.results if r.system_name in system_names
+            ]
+
+            if filtered_results:
+                # Create a copy of the search result with filtered results
+                filtered_search_result = SearchResults(
+                    search_config=search_result.search_config,
+                    results=filtered_results,
+                )
+                os_search_results.append(filtered_search_result)
+
+        # Skip if no results for this OS type
+        if not os_search_results:
+            continue
+
+        # Create filename with OS type and timestamp
+        sanitized_os_type = "".join(c if c.isalnum() else "_" for c in os_type)
+        filename = f"{sanitized_os_type}-{timestamp}.xlsx"
+        output_path = output_dir / filename
+
+        # Export results for this OS type
+        export_search_results_to_excel(os_search_results, output_path)
+
+        # Add to created files dictionary
+        created_files[os_type] = output_path
+
+    return created_files
 
 
 def export_search_results_to_excel(
@@ -34,16 +109,19 @@ def export_search_results_to_excel(
         summary_data = []
 
         for search_result in search_results:
-            sheet_name = sanitize_sheet_name(search_result.config.name)
+            sheet_name = sanitize_sheet_name(
+                search_result.search_config.excel_sheet_name
+                or search_result.search_config.name,
+            )
 
             # Collect summary data
             summary_data.append(
                 {
-                    "Search Name": search_result.config.name,
+                    "Search Name": search_result.search_config.name,
+                    "Sheet Name": sheet_name,
                     "Total Results": search_result.result_count,
                     "Unique Systems": search_result.unique_systems,
                     "Has Extracted Fields": search_result.has_extracted_fields,
-                    "Sheet Name": sheet_name,
                 },
             )
 
@@ -65,23 +143,23 @@ def _create_results_sheet(
 ) -> None:
     """Create a worksheet with search results."""
     # Create DataFrame from results
-    df = create_dataframe_from_results(search_result)
+    data_frame = create_dataframe_from_results(search_result)
 
     # Write to Excel starting at row 3 to leave room for comment
-    df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=2)
+    data_frame.to_excel(writer, sheet_name=sheet_name, index=False, startrow=2)
 
     # Get the worksheet for formatting
     worksheet = writer.sheets[sheet_name]
 
     # Add and format comment
-    _add_search_comment(worksheet, search_result.config.comment)
+    _add_search_comment(worksheet, search_result.search_config.comment)
 
     # Format as Excel table
-    if not df.empty:
-        _format_as_excel_table(worksheet, df, startrow=3)
+    if not data_frame.empty:
+        _format_as_excel_table(worksheet, data_frame, startrow=3)
 
     # Add search metadata
-    _add_search_metadata(worksheet, search_result, df.shape[1])
+    _add_search_metadata(worksheet, search_result, data_frame.shape[1])
 
 
 def _create_empty_results_sheet(
@@ -100,7 +178,7 @@ def _create_empty_results_sheet(
     worksheet = writer.sheets[sheet_name]
 
     # Add comment
-    _add_search_comment(worksheet, search_result.config.comment)
+    _add_search_comment(worksheet, search_result.search_config.comment)
 
     # Style the "no results" message
     worksheet["A3"].font = Font(italic=True, color="808080")
@@ -189,6 +267,7 @@ def sanitize_sheet_name(name: str) -> str:
     # Excel sheet names can't contain: / \ ? * [ ] :
     # Also limit to 31 characters
     invalid_chars = ["/", "\\", "?", "*", "[", "]", ":"]
+    max_sheet_name_length = 31
 
     sanitized = name
     for char in invalid_chars:
@@ -202,8 +281,8 @@ def sanitize_sheet_name(name: str) -> str:
         sanitized = "Unnamed_Search"
 
     # Limit to 31 characters (Excel limitation)
-    if len(sanitized) > 31:
-        sanitized = sanitized[:28] + "..."
+    if len(sanitized) > max_sheet_name_length:
+        sanitized = sanitized[: max_sheet_name_length - 3] + "..."
 
     return sanitized
 
@@ -240,23 +319,26 @@ def _add_search_metadata(
     # Add metadata headers and values
     metadata = [
         ("Search Configuration:", ""),
-        ("Name:", search_result.config.name),
+        ("Name:", search_result.search_config.name),
         ("Total Results:", search_result.result_count),
         ("Unique Systems:", search_result.unique_systems),
         (
             "Max Results:",
-            search_result.config.max_results
-            if search_result.config.max_results != -1
+            search_result.search_config.max_results
+            if search_result.search_config.max_results != -1
             else "Unlimited",
         ),
-        ("Only Matching:", "Yes" if search_result.config.only_matching else "No"),
-        ("Unique Results:", "Yes" if search_result.config.unique else "No"),
-        ("Full Scan:", "Yes" if search_result.config.full_scan else "No"),
+        (
+            "Only Matching:",
+            "Yes" if search_result.search_config.only_matching else "No",
+        ),
+        ("Unique Results:", "Yes" if search_result.search_config.unique else "No"),
+        ("Full Scan:", "Yes" if search_result.search_config.full_scan else "No"),
     ]
 
-    if search_result.config.field_list:
+    if search_result.search_config.field_list:
         metadata.append(
-            ("Extracted Fields:", ", ".join(search_result.config.field_list)),
+            ("Extracted Fields:", ", ".join(search_result.search_config.field_list)),
         )
 
     # Add metadata to worksheet
@@ -321,7 +403,7 @@ def _format_as_excel_table(
     worksheet.add_table(table)
 
     # Auto-adjust column widths
-    _auto_adjust_column_widths(worksheet, df, startrow)
+    _auto_adjust_column_widths(worksheet, df)
 
 
 def _get_column_letter(col_num: int) -> str:
@@ -337,7 +419,6 @@ def _get_column_letter(col_num: int) -> str:
 def _auto_adjust_column_widths(
     worksheet: Worksheet,
     df: pd.DataFrame,
-    startrow: int,
 ) -> None:
     """Auto-adjust column widths based on content."""
     for col_num, column_name in enumerate(df.columns, 1):
@@ -404,7 +485,7 @@ def create_search_report(
     search_results: list[SearchResults],
     systems: list,
     output_dir: Path,
-    program_config: Any = None,
+    program_config: ProgramConfig = None,
 ) -> dict[str, Path]:
     """
     Create comprehensive search report with multiple Excel files.
@@ -432,6 +513,11 @@ def create_search_report(
     systems_summary_path = output_dir / "systems_summary.xlsx"
     export_systems_summary_to_excel(systems, systems_summary_path)
     created_files["systems_summary"] = systems_summary_path
+
+    # Create OS-specific reports
+    os_specific_files = export_results_by_os_type(search_results, systems, output_dir)
+    for os_type, file_path in os_specific_files.items():
+        created_files[f"os_specific_{os_type}"] = file_path
 
     # Detailed results by system (if requested)
     if (
@@ -462,7 +548,7 @@ def _create_detailed_system_report(
 
             system_results[system_name].append(
                 {
-                    "Search Name": search_result.config.name,
+                    "Search Name": search_result.search_config.name,
                     "Line Number": result.line_number,
                     "Matched Text": result.matched_text,
                     "Extracted Fields": str(result.extracted_fields)
@@ -474,14 +560,14 @@ def _create_detailed_system_report(
     # Create Excel file with one sheet per system
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         for system_name, results in system_results.items():
-            df = pd.DataFrame(results)
+            data_frame = pd.DataFrame(results)
             sheet_name = sanitize_sheet_name(system_name)
 
-            df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1)
+            data_frame.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1)
 
             worksheet = writer.sheets[sheet_name]
             worksheet["A1"] = f"Results for System: {system_name}"
             worksheet["A1"].font = Font(bold=True, size=12, color="1F497D")
 
-            if not df.empty:
-                _format_as_excel_table(worksheet, df, startrow=2)
+            if not data_frame.empty:
+                _format_as_excel_table(worksheet, data_frame, startrow=2)
