@@ -21,8 +21,6 @@ class Systems(KPATBaseModel, FileModel):
     Updated to include all the sys_filter attributes for proper filtering.
     """
 
-    __tablename__ = "systems"
-
     # Basic system attributes
     system_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     system_name: str
