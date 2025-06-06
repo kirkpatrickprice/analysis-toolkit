@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from pydantic import ConfigDict, Field
+from pydantic import Field
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.base import (
@@ -63,8 +63,6 @@ class Systems(KPATBaseModel, FileModel):
         """Check if the system is Darwin (macOS)."""
         return self.os_family == OSFamilyType.DARWIN
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
 
 class RawData(KPATBaseModel):
     """Base model for raw data processing."""
@@ -73,5 +71,3 @@ class RawData(KPATBaseModel):
     source_file: Path
     line_number: int | None = None
     timestamp: str | None = None
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
