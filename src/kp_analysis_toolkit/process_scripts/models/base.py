@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import field_validator
+from pydantic import ConfigDict, field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
@@ -137,8 +137,7 @@ class FileModel(PathValidationMixin):
     file_hash: str | None = None
 
     # Enable arbitrary types to handle Path objects and callables
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @field_validator("file")
     @classmethod
