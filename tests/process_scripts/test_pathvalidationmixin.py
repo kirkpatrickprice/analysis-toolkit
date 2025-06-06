@@ -14,7 +14,7 @@ class TestPathValidationMixin:
         result: Path = PathValidationMixin.validate_path_exists(tmp_path)
         assert result == tmp_path.absolute()
 
-        # Test with a string
+        # Test with a string value
         result = PathValidationMixin.validate_path_exists(str(tmp_path))
         assert result == tmp_path.absolute()
 
