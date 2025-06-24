@@ -76,7 +76,7 @@ global:
     - requireSecuritySignature
     - enableSMBQuic
   only_matching: True
-  combine: True
+  multiline: True
   comment: |-
     LanManager is responsible for providing the SMB-based file sharing on Windows systems.  There are both "SmbServer" and "SmbClient" components.  But this is not the same thing as "Windows Server" vs "Windows 10."  Both servers and desktops will run both services.
       - EnableSMBxProtocol              Enable/Disable specific version of the SMB protocol.  No specific recommendations.
@@ -95,7 +95,7 @@ global:
     - enableSecuritySignature   
     - requireSecuritySignature 
   only_matching: True
-  combine: True
+  multiline: True
   comment: |-
     LanManager is responsible for providing the SMB-based file sharing on Windows systems.  There are both "SmbServer" and "SmbClient" components.  See the lanman_server results file for the server settings.  Both Servers and desktops will run both services.
       - EnableSecuritySignature         Enable the use of signed SMB (does not require it, but permits it.  Recommendation and default is "enabled".
@@ -191,7 +191,7 @@ global:
     - attr: 'producer_version'
       comp: 'ge'
       value: '0.4.5'
-  combine: True
+  multiline: True
   comment: |-
     A list of the peers with which the system is connected for time.  Each of the fields should be self-explanatory.
 
@@ -211,7 +211,7 @@ global:
     - certAuth
     - credSSPAuth
   only_matching: True
-  combine: True
+  multiline: True
   sys_filter:
     - attr: 'os_family'
       comp: 'eq'

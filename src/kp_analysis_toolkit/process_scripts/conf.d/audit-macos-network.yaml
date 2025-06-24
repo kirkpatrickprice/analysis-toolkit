@@ -29,7 +29,7 @@ global:
   regex: 'Network_FirewallStatus::\s+(Mode:\s(?P<mode>.*)|Firewall Logging:\s(?P<logging>.*)|Stealth Mode:\s(?P<stealthMode>.*))'
   excel_sheet_name: Firewall Status
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - mode
     - logging
@@ -86,7 +86,7 @@ global:
     - hostKeyAlgorithms
     - ciphers
     - macs
-  combine: True
+  multiline: True
   comment: |-
     NOTE: If SSH is enabled on a MacOS being used as an end-user device, that could be finding by itself.  For expected uses of SSH...
     
@@ -112,7 +112,7 @@ global:
   regex: 'Network_SharesSamba::\s+((NetBIOSName\s+=\s+(?P<netBiosName>.+);)|ServerDescription\s+=\s+(?P<serverDesc>.*))'
   excel_sheet_name: SMB Status
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - netBiosName
     - serverDesc
@@ -122,7 +122,7 @@ global:
   regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_sealed:\s(?P<smbSealed>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
   excel_sheet_name: SMB Shares
   only_matching: True
-  combine: True
+  multiline: True
   rs_delimiter: '^Network_SharesSamba-SharedFolders::$'
   field_list:
     - prettyName

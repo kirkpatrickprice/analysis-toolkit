@@ -23,7 +23,7 @@ global:
       - "processTermination"
       - "auditPolicyChange"
       - 'processCreation'
-    combine: True
+    multiline: True
     only_matching: True
     comment: |-
       Provides a detailed report of the events that will be captured by the local Windows Event Log service.  NOTE: There are additional settings captured in the raw results, but these are likely the ones you're looking for.

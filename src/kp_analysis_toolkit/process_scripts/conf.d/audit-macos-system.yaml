@@ -21,7 +21,7 @@ global:
   excel_sheet_name: MacOS Version
   max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - 'product_name'
     - 'productVersion'
@@ -59,7 +59,7 @@ global:
     - hasPersonalRecoveryKey
     - hasInstitutionalRecoveryKey
   only_matching: True
-  combine: True
+  multiline: True
 01_system_05_file_system_mounts:
   regex: 'System_FSMounts-mounts::(?P<device>.*?)\s+on\s+(?P<mountPoint>[\w/]+)\s+\((?P<options>.*)\)'
   excel_sheet_name: File System Mounts
@@ -74,7 +74,7 @@ global:
   regex: 'System_InstalledApps-MacOS::((\s{4}(?P<appName>\w.*):)|(\s{6}Version:\s+(?P<version>.*)|(\s{6}Obtained from:\s+(?P<obtainedFrom>.*))|(\s{6}Last Modified:\s+(?P<lastModified>.*?),)|(\s{6}Kind:\s+(?P<kind>.*))|(\s{6}Signed by:\s+(?P<signedBy>.*))|(\s{6}Location:\s+(?P<location>.*))))'
   excel_sheet_name: Installed Applications (MacOS)
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - appName
     - version

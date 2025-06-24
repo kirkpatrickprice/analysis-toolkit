@@ -471,7 +471,7 @@ def search_single_system(
         encoding: str | LiteralString = system.encoding or "utf-8"
 
         with system.file.open("r", encoding=encoding, errors="replace") as f:
-            if search_config.combine and search_config.rs_delimiter:
+            if search_config.multiline and search_config.rs_delimiter:
                 results: list[SearchResult] = search_with_recordset_delimiter(
                     search_config,
                     system,
@@ -576,7 +576,7 @@ def search_with_recordset_delimiter(
         pattern: Compiled regex pattern for matching
 
     Returns:
-        List of search results from combined records
+        List of search results from multilined records
 
     """
     results = []
@@ -598,14 +598,14 @@ def search_with_recordset_delimiter(
         # Check if this line starts a new record
         if rs_pattern.search(line):
             # Process the previous record if it exists
-            if current_record and search_config.combine:
-                combined_text = "\n".join(current_record)
-                match: re.Match[str] | None = pattern.search(combined_text)
+            if current_record and search_config.multiline:
+                multilined_text = "\n".join(current_record)
+                match: re.Match[str] | None = pattern.search(multilined_text)
                 if match:
                     result: SearchResult = create_search_result(
                         search_config,
                         system,
-                        combined_text,
+                        multilined_text,
                         record_start_line,
                         match,
                     )
@@ -622,14 +622,14 @@ def search_with_recordset_delimiter(
             break
 
     # Process the last record
-    if current_record and search_config.combine:
-        combined_text = "\n".join(current_record)
-        match = pattern.search(combined_text)
+    if current_record and search_config.multiline:
+        multilined_text = "\n".join(current_record)
+        match = pattern.search(multilined_text)
         if match:
             result = create_search_result(
                 search_config,
                 system,
-                combined_text,
+                multilined_text,
                 record_start_line,
                 match,
             )
@@ -845,16 +845,16 @@ def validate_search_configs(search_configs: list[SearchConfig]) -> list[str]:
                 f"Search '{search_config.name}' has field_list but only_matching is False",
             )
 
-        # Check for combine without field_list
-        if search_config.combine and not search_config.field_list:
+        # Check for multiline without field_list
+        if search_config.multiline and not search_config.field_list:
             validation_messages.append(
-                f"Search '{search_config.name}' has combine=True but no field_list specified",
+                f"Search '{search_config.name}' has multiline=True but no field_list specified",
             )
 
-        # Check for rs_delimiter without combine
-        if search_config.rs_delimiter and not search_config.combine:
+        # Check for rs_delimiter without multiline
+        if search_config.rs_delimiter and not search_config.multiline:
             validation_messages.append(
-                f"Search '{search_config.name}' has rs_delimiter but combine=False",
+                f"Search '{search_config.name}' has rs_delimiter but multiline=False",
             )
 
     return validation_messages

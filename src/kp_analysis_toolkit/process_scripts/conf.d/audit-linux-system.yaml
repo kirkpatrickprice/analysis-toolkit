@@ -31,7 +31,7 @@ global:
   excel_sheet_name: BIOS Information
   max_results: 1
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - 'vendorName'
     - 'version'
@@ -168,7 +168,7 @@ global:
   regex: 'System_MACSELinuxInfo::(SELinux status:\s+(?P<status>(enabled|disabled)))|(Loaded policy name:\s+(?P<policyName>\w+))|(Current mode:\s+(?P<currentMode>\w+))|(Mode from config file:\s+(?P<configMode>\w+))|(Memory protection checking:\s+(?P<memoryProtectionChecking>.*))'
   excel_sheet_name: SELinux Status
   only_matching: True
-  combine: True
+  multiline: True
   sys_filter:
     - attr: os_family
       comp: eq
@@ -203,7 +203,7 @@ global:
       comp: eq
       value: deb
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - status
     - loadedProfiles

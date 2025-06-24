@@ -37,8 +37,8 @@ There are help sections at the top of each of the provided YAML files, but the m
 | `unique`        | Only display one instance of each match. |
 | `field_list`    | Maps regex "groups" `(<P<group_name>pattern)` to Excel fields.  Must be used with -o / --only-matching.  If regex groups aren't used, then one field name will be added as `raw_data` |
 | `full_scan`     | Override the search short-circuit logic to always scan the entire file. |
-| `rs_delimiter`  | A regex pattern to identify a new recordset.  Only valid in use with `combine`. |
-| `combine`       | Combine results from across multiple lines to form a single record (only valid if groupList is specified). |
+| `rs_delimiter`  | A regex pattern to identify a new recordset.  Only valid in use with `multiline`. |
+| `multiline`       | Combine results from across multiple lines to form a single record (only valid if groupList is specified). |
 | `sys_filter`    | A list of conditions represented in a dictionary with keys `attr`, `comp`, and `value`. |
 
 ## System Filters

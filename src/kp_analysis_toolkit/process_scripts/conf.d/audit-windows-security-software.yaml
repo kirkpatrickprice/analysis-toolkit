@@ -20,7 +20,7 @@ global:
     - lastQuickScanAge
     - productStatus
   only_matching: True
-  combine: True
+  multiline: True
   comment: |-
     This shows results coming from Windows Security Center.  Exactly how different products use SC is a bit of mystery, but for clients using Microsoft Defender, this should give reliable data.
     For ProductState (not ProductStatus -- sorry for the confusing names -- they come from Micorosft)

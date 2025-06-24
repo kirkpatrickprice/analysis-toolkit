@@ -21,7 +21,7 @@ global:
   field_list:
     - nfsStatus
     - sambaStatus
-  combine: True
+  multiline: True
   comment: |-
     On Linux, there are two services that are commonly used to turn the server into a File Server: NFS and Samba
         NFS -- Network File System -- usually used only in all-Linux environemnts or at least where the only systems that will be connecting to the system are other Linux devices

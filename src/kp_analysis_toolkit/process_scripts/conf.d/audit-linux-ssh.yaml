@@ -27,7 +27,7 @@ global:
     - hostKeyAlgorithms
     - ciphers
     - macs
-  combine: True
+  multiline: True
   comment: |-
     This list includes all of the information you're likely to need to review SSH configurations, although if something unique comes up there are additional settings in the raw text files that you might look at.
 

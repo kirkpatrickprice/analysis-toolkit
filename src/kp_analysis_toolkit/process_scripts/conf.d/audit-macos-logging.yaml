@@ -102,7 +102,7 @@ global:
   regex: 'Logging_Firewall-firewall::(EnableLogging=(?P<fwEnableLogging>.*)|LoggingOption=(?P<fwLoggingOption>.*))|Logging_Firewall-alf::(loggingenabled=(?P<alfEnableLogging>.*)|loggingoption=(?P<alfLoggingOption>.*))'
   excel_sheet_name: Firewall Logging
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - fwEnableLogging
     - fwLoggingOption

@@ -15,7 +15,7 @@ global:
       - passwordReqd
       - passwordExpires
     only_matching: True
-    combine: True
+    multiline: True
     comment: |-
       Details about the local Administrator account.
 03_users_02_local_admin_group:
@@ -33,7 +33,7 @@ global:
     - lockoutThreshold
     - lockoutDuration
     - lockoutWindow
-  combine: True
+  multiline: True
   comment: |-
     The local computer's password policy.  This may not be the same as the domain policy.  For the domain policy, you'll need to have your customer run the KPADAudit.ps1 script.
   full_scan: True

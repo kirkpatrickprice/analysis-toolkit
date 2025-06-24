@@ -28,7 +28,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     field_list: list[str] | None = None
     full_scan: bool = False
     rs_delimiter: str | None = None
-    combine: bool = False
+    multiline: bool = False
     sys_filter: list[SystemFilter] | None = None
 
     @field_validator("max_results")
@@ -49,12 +49,12 @@ class SearchConfig(KPATBaseModel, ConfigModel):
             return True
         return value
 
-    @field_validator("combine")
+    @field_validator("multiline")
     @classmethod
-    def validate_combine_with_field_list(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
-        """Validate that combine is only used when field_list is specified."""
+    def validate_multiline_with_field_list(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+        """Validate that multiline is only used when field_list is specified."""
         if value and not info.data.get("field_list"):
-            message: str = "combine can only be used when field_list is specified"
+            message: str = "multiline can only be used when field_list is specified"
             raise ValueError(message)
         return value
 
@@ -71,12 +71,12 @@ class SearchConfig(KPATBaseModel, ConfigModel):
             raise ValueError(message)
         return value
 
-    @field_validator("combine")
+    @field_validator("multiline")
     @classmethod
-    def validate_combine_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
-        """Validate that rs_delimiter is only used with combine=True."""
+    def validate_multiline_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+        """Validate that rs_delimiter is only used with multiline=True."""
         if info.data.get("rs_delimiter") and not value:
-            message = "rs_delimiter can only be used with combine=True"
+            message = "rs_delimiter can only be used with multiline=True"
             raise ValueError(message)
         return value
 

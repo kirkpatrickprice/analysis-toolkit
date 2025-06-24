@@ -21,7 +21,7 @@ global:
   excel_sheet_name: BIOS Information
   max_results: 1
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - 'SMBIos_version'
     - 'manufacturer'
@@ -42,7 +42,7 @@ global:
 01_system_02_win_os_version:
   regex: 'System_OSInfo::(product_name\s+:\s+(?P<product_name>[\w ]+))|(release_id\s+:\s+(?P<release_id>\w+))|(current_build\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
   excel_sheet_name: Windows OS Version
-  combine: True
+  multiline: True
   max_results: 1
   field_list:
     - product_name
@@ -98,7 +98,7 @@ global:
     - wuDescription
     - wuKbNum
   comment: |-
-    This list combines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
+    This list multilines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
 
     The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
     accurately report hotfix installation history (see note on System_InstalledHotfixes section).  This is filtered just for Security Updates and Cumulative Updates.
@@ -128,7 +128,7 @@ global:
     - disableWUAccess
     - noAutoUpdate
     - auOptions
-  combine: True
+  multiline: True
   only_matching: True  
   comment: |-
     Interpreting Windows Update settings from: http://techgenix.com/Registry-Keys-Tweaking-Windows-Update-Part1/.
@@ -155,7 +155,7 @@ global:
     - 'product'
     - 'userName'
   only_matching: True
-  combine: True
+  multiline: True
   sys_filter:
     - attr: 'os_family'
       comp: 'eq'
@@ -204,7 +204,7 @@ global:
   field_list:
     - securityLayer
     - minEncryptionLevel
-  combine: True
+  multiline: True
 01_system_15_screensaver_gpo:
   regex: '(System_ScreenSaverConfigGPO::(ScreenSaveActive\s*:\s*(?P<gpoScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<gpoScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<gpoScreenSaverIsSecure>\d+)))|(System_ScreenSaverConfigRunning::(ScreenSaveActive\s*:\s*(?P<localScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<localScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<localScreenSaverIsSecure>\d+)))'
   excel_sheet_name: Screensaver Config (GPO)
@@ -215,7 +215,7 @@ global:
     - localScreenSaveActive
     - localScreenSaverIsSecure
     - localScreenSaveTimeout
-  combine: True
+  multiline: True
   only_matching: True
   comment: |-
     Using the screensaver is a common way of locking the computer after inactivity.  Many audit standards (e.g. PCI) look for no more than 15 minutes (900 seconds), which seems reasonable.
@@ -237,7 +237,7 @@ global:
     - 'lastRunTime'
     - 'lastTaskResult'
     - 'nextRunTime'
-  combine: True
+  multiline: True
   comment: |-
     A list of all scheduled tasks.  Includes last and next run time as well as the result.  At least some anti-virus could use scheduled tasks to run a weekly full scan.
     

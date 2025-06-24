@@ -31,7 +31,7 @@ global:
   regex: 'Users_PasswordPolicy::((maxFailedLogins=(?P<maxFailedLogins>(\d+)?))|(LockoutDuration=(?P<lockoutDuration>(\d+)?))|(minLength=(?P<minLength>(\d+)?))|(requiresAlpha=(?P<requiresAlpha>(\d+)?))|(requiresNumeric=(?P<requiresNumeric>(\d+)?))|(requiresSymbol=(?P<requiresSymbol>(\d+)?))|(maxMinutesUntilChangePassword=(?P<maxPasswordAgeMins>(\d+)?)))'
   excel_sheet_name: Password Policy
   only_matching: True
-  combine: True
+  multiline: True
   field_list:
     - maxFailedLogins
     - lockoutDuration
@@ -48,7 +48,7 @@ global:
   regex: 'Users_LocalUsers::((UniqueID:\s+(?P<uniqueID>([-\d]+)?))|(NFSHomeDirectory:\s+(?P<homeDir>.*))|(RecordName:\s+(?P<userName>.*))|(UserShell:\s+(?P<shell>.*)))'
   excel_sheet_name: Local Users
   only_matching: True
-  combine: True
+  multiline: True
   rs_delimiter: '^Users_LocalUsers::-$'
   field_list:
     - userName
@@ -67,7 +67,7 @@ global:
   regex: 'Users_LocalGroups::((PrimaryGroupID:\s+(?P<primaryID>(\d+)?))|(RecordName:\s+(?P<groupName>.*))|(GroupMembership:\s+(?P<members>.*)))'
   excel_sheet_name: Local Groups
   only_matching: True
-  combine: True
+  multiline: True
   rs_delimiter: '^Users_LocalGroups::-$'
   field_list:
     - groupName
