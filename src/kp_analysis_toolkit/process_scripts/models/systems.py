@@ -1,5 +1,4 @@
 import uuid
-from pathlib import Path
 
 from pydantic import Field
 
@@ -60,12 +59,3 @@ class Systems(KPATBaseModel, FileModel):
     def is_mac(self) -> bool:
         """Check if the system is Darwin (macOS)."""
         return self.os_family == OSFamilyType.DARWIN
-
-
-class RawData(KPATBaseModel):
-    """Base model for raw data processing."""
-
-    data: str
-    source_file: Path
-    line_number: int | None = None
-    timestamp: str | None = None
