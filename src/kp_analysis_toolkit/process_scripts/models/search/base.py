@@ -5,6 +5,23 @@ from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
 
 
+class MergeFieldConfig(KPATBaseModel):
+    """Configuration for merging multiple source columns into a single destination column."""
+
+    source_columns: list[str]
+    dest_column: str
+
+    @field_validator("source_columns")
+    @classmethod
+    def validate_source_columns(cls, value: list[str]) -> list[str]:
+        min_source_columns: int = 2
+        """Validate that at least two source columns are specified."""
+        if len(value) < min_source_columns:
+            message: str = "merge_fields must specify at least two source_columns"
+            raise ValueError(message)
+        return value
+
+
 class GlobalConfig(KPATBaseModel, ConfigModel):
     """Global configuration that can be applied to all search sections."""
 
@@ -29,7 +46,21 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     full_scan: bool = False
     rs_delimiter: str | None = None
     multiline: bool = False
+    merge_fields: list[MergeFieldConfig] | None = None
     sys_filter: list[SystemFilter] | None = None
+
+    @field_validator("regex")
+    @classmethod
+    def validate_regex(cls, value: str) -> str:
+        """Validate that the regex pattern is valid."""
+        import re
+
+        try:
+            re.compile(value)
+        except re.error as e:
+            message: str = f"Invalid regex pattern: {e}"
+            raise ValueError(message) from e
+        return value
 
     @field_validator("max_results")
     @classmethod
@@ -58,6 +89,15 @@ class SearchConfig(KPATBaseModel, ConfigModel):
             raise ValueError(message)
         return value
 
+    @field_validator("multiline")
+    @classmethod
+    def validate_multiline_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+        """Validate that rs_delimiter is only used with multiline=True."""
+        if info.data.get("rs_delimiter") and not value:
+            message = "rs_delimiter can only be used with multiline=True"
+            raise ValueError(message)
+        return value
+
     @field_validator("rs_delimiter")
     @classmethod
     def validate_rs_delimiter_with_field_list(
@@ -68,15 +108,6 @@ class SearchConfig(KPATBaseModel, ConfigModel):
         """Validate that rs_delimiter is only used when field_list is specified."""
         if value is not None and not info.data.get("field_list"):
             message: str = "rs_delimiter can only be used when field_list is specified"
-            raise ValueError(message)
-        return value
-
-    @field_validator("multiline")
-    @classmethod
-    def validate_multiline_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
-        """Validate that rs_delimiter is only used with multiline=True."""
-        if info.data.get("rs_delimiter") and not value:
-            message = "rs_delimiter can only be used with multiline=True"
             raise ValueError(message)
         return value
 

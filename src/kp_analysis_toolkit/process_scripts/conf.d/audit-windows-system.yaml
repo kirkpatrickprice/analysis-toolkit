@@ -97,6 +97,13 @@ global:
     - wuDate
     - wuDescription
     - wuKbNum
+  merge_fields:
+    - source_columns: [hfDate, wuDate]
+      dest_column: date
+    - source_columns: [hfDescription, wuDescription]
+      dest_column: description
+    - source_columns: [hfKbNum, wuKbNum]
+      dest_column: kbNum
   comment: |-
     This list multilines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
 

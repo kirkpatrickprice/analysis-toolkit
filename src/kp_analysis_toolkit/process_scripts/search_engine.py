@@ -22,6 +22,7 @@ from kp_analysis_toolkit.process_scripts.models.results.base import (
     SearchResults,
 )
 from kp_analysis_toolkit.process_scripts.models.search.base import (
+    MergeFieldConfig,
     SearchConfig,
 )
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
@@ -443,6 +444,51 @@ def execute_search(
     return SearchResults(search_config=search_config, results=all_results)
 
 
+def merge_result_fields(
+    extracted_fields: dict[str, Any],
+    merge_fields_config: list[MergeFieldConfig],
+) -> dict[str, Any]:
+    """
+    Merge fields according to configuration.
+
+    Args:
+        extracted_fields: Dictionary of extracted fields
+        merge_fields_config: List of MergeFieldConfig objects
+
+    Returns:
+        Updated dictionary with merged fields
+
+    """
+    if not merge_fields_config or not extracted_fields:
+        return extracted_fields
+
+    result: dict[str, Any] = extracted_fields.copy()
+    columns_to_remove: set[str] = set()
+
+    for merge_config in merge_fields_config:
+        source_columns = merge_config.source_columns
+        dest_column = merge_config.dest_column
+
+        # Find the first non-empty value from source columns
+        merged_value = None
+        for col in source_columns:
+            if extracted_fields.get(col):
+                merged_value = extracted_fields[col]
+                break
+
+        # Add the merged column to the results
+        if merged_value is not None:
+            result[dest_column] = merged_value
+
+        columns_to_remove.update(source_columns)
+
+    # Remove all source columns after merging
+    for column in columns_to_remove:
+        result.pop(column, None)
+
+    return result
+
+
 def search_single_system(
     search_config: SearchConfig,
     system: Systems,
@@ -706,9 +752,12 @@ def create_search_result(
                 # Field not found in match groups, add as empty string
                 extracted_fields[field] = ""
 
-        # # If no named groups were found, add raw_data field
-        # if not any(extracted_fields.values()):
-        #     extracted_fields["raw_data"] = matching_dict.group(0)
+        # Apply field merging and remove merged fields if configured
+        if search_config.merge_fields:
+            extracted_fields = merge_result_fields(
+                extracted_fields,
+                search_config.merge_fields,
+            )
 
     return SearchResult(
         system_name=system.system_name,
