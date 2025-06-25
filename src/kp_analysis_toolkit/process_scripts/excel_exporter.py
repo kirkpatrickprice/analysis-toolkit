@@ -6,6 +6,7 @@ Provides comprehensive Excel output with proper formatting, tables, and comments
 
 import datetime
 import random
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -383,6 +384,131 @@ def _add_search_metadata(
             worksheet[label_cell].font = Font(bold=True, size=10)
 
 
+def _format_date_columns(
+    worksheet: Worksheet,
+    df: pd.DataFrame,
+    startrow: int = 1,
+) -> None:
+    """
+    Format columns as dates and standardize date representations.
+
+    Apply the following criteria:
+    1. Column name contains 'date' (case-insensitive)
+    2. Column values are in a common date format
+
+    For identified date columns:
+    - Applies Excel date formatting
+    - Standardizes actual cell values to ISO format (YYYY-MM-DD)
+
+    Args:
+        worksheet: The worksheet to format
+        df: DataFrame containing the data
+        startrow: Row where the data starts (1-indexed)
+
+    """
+    is_date_column_threshold: float = 0.7
+
+    # Common date patterns to check
+    date_patterns: list[str] = [
+        # MM/DD/YYYY or MM/DD/YY
+        r"^\d{1,2}/\d{1,2}/\d{2,4}$",
+        # DD-MM-YYYY or DD-MM-YY
+        r"^\d{1,2}-\d{1,2}-\d{2,4}$",
+        # YYYY-MM-DD
+        r"^\d{4}-\d{1,2}-\d{1,2}$",
+        # DD-MMM-YYYY or DD-MMM-YY (01-JAN-2025)
+        r"^\d{1,2}-[A-Za-z]{3}-\d{2,4}$",
+        # MMM DD, YYYY
+        r"^[A-Za-z]{3} \d{1,2}, \d{4}$",
+    ]
+
+    # Date parsing formats to try
+    date_formats = [
+        "%m/%d/%Y",
+        "%m/%d/%y",  # MM/DD/YYYY, MM/DD/YY
+        "%d-%m-%Y",
+        "%d-%m-%y",  # DD-MM-YYYY, DD-MM-YY
+        "%Y-%m-%d",  # YYYY-MM-DD
+        "%d-%b-%Y",
+        "%d-%b-%y",  # DD-MMM-YYYY, DD-MMM-YY
+        "%b %d, %Y",  # MMM DD, YYYY
+    ]
+
+    for col_num, column_name in enumerate(df.columns, 1):
+        column_letter: str = _get_column_letter(col_num)
+        is_date_column = False
+
+        # Check if column name contains 'date'
+        if "date" in column_name.lower():
+            is_date_column = True
+
+        # If not determined by name, check values
+        if not is_date_column:
+            # Sample up to 10 non-empty values from the column
+            sample_values: list[str] = [
+                str(val) for val in df[column_name].dropna().head(10) if pd.notna(val)
+            ]
+
+            if sample_values:
+                # Check if most values match a date pattern
+                matches = 0
+                for value in sample_values:
+                    if any(re.match(pattern, str(value)) for pattern in date_patterns):
+                        matches += 1
+
+                # If more than 70% of sampled values match a date pattern
+                if matches / len(sample_values) > is_date_column_threshold:
+                    is_date_column = True
+
+        # Apply date formatting if it's a date column
+        if is_date_column:
+            # Get the data range for this column (excluding header)
+            data_start_row: int = startrow + 1  # +1 for the header row
+            data_end_row: int = data_start_row + len(df) - 1
+
+            # Apply date format to all cells in the column
+            for row in range(data_start_row, data_end_row + 1):
+                cell: str = f"{column_letter}{row}"
+                cell_value: str | float | None = worksheet[cell].value
+
+                # Skip empty cells
+                if not cell_value or cell_value == "":
+                    continue
+
+                # Convert the date string to a standardized format
+                try:
+                    # Try to parse the date with various formats
+                    parsed_date = None
+
+                    # If already a datetime object, just use it
+                    if isinstance(cell_value, datetime.datetime):
+                        parsed_date = cell_value
+                    else:
+                        # Try each format until one works
+                        for date_format in date_formats:
+                            try:
+                                parsed_date: datetime.datetime = (
+                                    datetime.datetime.strptime(  # noqa: DTZ007
+                                        str(cell_value),
+                                        date_format,
+                                    )
+                                )
+                                break
+                            except ValueError:
+                                continue
+
+                    # If we successfully parsed the date, standardize it
+                    if parsed_date:
+                        # Update the cell with the standardized date string
+                        worksheet[cell].value = parsed_date.strftime("%Y-%m-%d")
+                except Exception:  # noqa: BLE001, S110
+                    # If parsing fails, keep the original value
+                    pass
+
+                # Apply Excel date formatting
+                worksheet[cell].number_format = "yyyy-mm-dd"
+
+
 def _format_as_excel_table(
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -438,6 +564,9 @@ def _format_as_excel_table(
     except ValueError as e:
         message: str = f"Error adding table to worksheet '{worksheet.title}': {e}. "
         raise ValueError(message) from e
+
+    # format date columns
+    _format_date_columns(worksheet, df, startrow)
 
     # Auto-adjust column widths
     _auto_adjust_column_widths(worksheet, df)
