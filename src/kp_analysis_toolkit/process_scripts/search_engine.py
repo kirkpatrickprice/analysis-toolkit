@@ -560,7 +560,7 @@ def _filter_excel_illegal_chars(text: str) -> str:
     return text.translate(trans_table)
 
 
-def search_multiline(
+def search_multiline(  # Ruff complains about complexity, but I couldn't find any other ways to simplify this function without losing functionality  # noqa: C901
     search_config: SearchConfig,
     system: Systems,
     file_handle: IO[str],
@@ -620,20 +620,24 @@ def search_multiline(
     file_content: str = file_handle.read()
     for line_num, _line in enumerate(file_content.split("\n"), 1):
         line: str = _filter_excel_illegal_chars(_line.strip())
+
+        # Check if we reached the maximum results limit
+        if reached_max_results():
+            break
+
+        # Skip empty lines
         if not line:
             continue
 
         # Handle record delimiter if configured
         if search_config.rs_delimiter and re.search(search_config.rs_delimiter, line):
             add_record()
-            if reached_max_results():
-                break
             continue
 
         # Process matches in the current line
-        matches = list(pattern.finditer(line))
+        matches: list[re.Match[str]] = list(pattern.finditer(line))
         if matches:
-            # Add line to matching text
+            # Add line to matching lines
             if matching_lines:
                 matching_lines += "\n"
             matching_lines += line
@@ -660,12 +664,9 @@ def search_multiline(
             and all(field in current_record for field in search_config.field_list)
         ):
             add_record()
-            if reached_max_results():
-                break
 
-    # Add final record if not empty
-    if current_record:
-        add_record()
+    # Add the final record if it exists
+    add_record()  # add_record includes a check for empty records
 
     return results
 
