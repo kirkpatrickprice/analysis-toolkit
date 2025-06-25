@@ -17,13 +17,13 @@ global:
       Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
       to determine if you're missing anything you find important.
 01_system_01_bios:
-  regex: 'System_BIOS::((SMBIOSBIos_version\s+:\s+(?P<SMBIos_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  regex: 'System_BIOS::((SMBIOSBIosversion\s+:\s+(?P<SMBIos_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
   excel_sheet_name: BIOS Information
   max_results: 1
   only_matching: True
   multiline: True
   field_list:
-    - 'SMBIos_version'
+    - 'SMBios_version'
     - 'manufacturer'
     - 'name'
     - 'version'
@@ -40,7 +40,7 @@ global:
       comp: ge
       value: "0.4.7"
 01_system_02_win_os_version:
-  regex: 'System_OSInfo::(product_name\s+:\s+(?P<product_name>[\w ]+))|(release_id\s+:\s+(?P<release_id>\w+))|(current_build\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
+  regex: 'System_OSInfo::(productname\s+:\s+(?P<product_name>[\w ]+))|(releaseid\s+:\s+(?P<release_id>\w+))|(currentbuild\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
   excel_sheet_name: Windows OS Version
   multiline: True
   max_results: 1

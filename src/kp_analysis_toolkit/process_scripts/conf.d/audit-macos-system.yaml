@@ -17,7 +17,7 @@ global:
     Check the version history comments in https://github.com/kirkpatrickprice/macos-auditor/blob/main/kpmacaudit.sh
     to determine if you're missing anything you find important.
 01_system_02_macos_version:                                                     # Debian uses the PRETTY_NAME consistently
-  regex: 'System_VersionInformation::((product_name:\s+(?P<product_name>\w+))|(ProductVersion+:\s+(?P<productVersion>[\w.]+))|(BuildVersion:\s+(?P<buildVersion>\w+)))'
+  regex: 'System_VersionInformation::((productname:\s+(?P<product_name>\w+))|(ProductVersion+:\s+(?P<productVersion>[\w.]+))|(BuildVersion:\s+(?P<buildVersion>\w+)))'
   excel_sheet_name: MacOS Version
   max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
   only_matching: True
