@@ -40,9 +40,9 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     comment: str | None = None
     excel_sheet_name: str
     max_results: int = -1
+    field_list: list[str] | None = None
     only_matching: bool = False
     unique: bool = False
-    field_list: list[str] | None = None
     full_scan: bool = False
     rs_delimiter: str | None = None
     multiline: bool = False
