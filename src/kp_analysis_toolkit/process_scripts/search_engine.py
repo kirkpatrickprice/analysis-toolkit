@@ -575,108 +575,97 @@ def search_multiline(
     in field_list have been populated.
 
     Args:
-        search_config: Search configuration with recordset delimiter
+        search_config: Search configuration
         system: System being searched
-        file_handle: Open file handle
-        pattern: Compiled regex pattern for matching
-
-    Returns:
-        List of search results from multilined records
+        file_handle: IO[str] file handle to read from
+        pattern: Compiled regex pattern to search for
 
     """
-    results: list[SearchResult] = []  # List to hold search results
-    current_record: dict = {}  # Dictionary to hold current record fields
-    start_line_num: int = 0  # The line number where the current record starts
-    line_num: int = 0  # Current line number in the file
-    matching_lines: str = ""  # Matching text for the current record
+    results: list[SearchResult] = []
+    current_record: dict[str, str] = {}
+    start_line_num: int = 0
+    matching_lines: str = ""
 
-    # Get file content into a single string for processing
-    file_content = file_handle.read()
+    # Define clear helper functions with single responsibilities
+    def reset_record_state() -> None:
+        """Reset the state for a new record."""
+        nonlocal current_record, matching_lines, start_line_num
+        current_record = {}
+        matching_lines = ""
+        start_line_num = 0
 
-    # Process line by line
-    for _line in file_content.split("\n"):
-        line_num += 1
+    def add_record() -> None:
+        """Add the current record to results and reset state."""
+        nonlocal current_record, matching_lines, start_line_num
+        if not current_record:
+            return
+
+        result: SearchResult = create_search_result(
+            search_config,
+            system,
+            matching_lines,
+            start_line_num,
+            current_record,
+        )
+        results.append(result)
+        reset_record_state()
+
+    def reached_max_results() -> bool:
+        """Check if the maximum results limit has been reached."""
+        return (
+            search_config.max_results > 0 and len(results) >= search_config.max_results
+        )
+
+    # Process file content line by line
+    file_content: str = file_handle.read()
+    for line_num, _line in enumerate(file_content.split("\n"), 1):
         line: str = _filter_excel_illegal_chars(_line.strip())
-
-        # Skip empty lines
         if not line:
             continue
 
-        # Check if we hit a record delimiter
+        # Handle record delimiter if configured
         if search_config.rs_delimiter and re.search(search_config.rs_delimiter, line):
-            if current_record:  # Add non-empty record
-                result: SearchResult = create_search_result(
-                    search_config,
-                    system,
-                    matching_lines,
-                    start_line_num,
-                    current_record,
-                )
-                results.append(result)
-                current_record = {}  # Reset current record
-                matching_lines = ""  # Reset matching lines
-
-                # Check max_results per system
-                if (
-                    search_config.max_results > 0
-                    and len(results) >= search_config.max_results
-                ):
-                    break
-            start_line_num = 0  # Reset start line number for new record
+            add_record()
+            if reached_max_results():
+                break
             continue
 
         # Process matches in the current line
-        for match in pattern.finditer(line):
-            # Add current line to matching lines
+        matches = list(pattern.finditer(line))
+        if matches:
+            # Add line to matching text
             if matching_lines:
                 matching_lines += "\n"
             matching_lines += line
 
-            # Update the start line number if this is the first match
+            # Set start line number if this is the first match in the record
             if not start_line_num:
                 start_line_num = line_num
 
-            # Create a dictionary from the current match groups
-            group_dict: dict[str, str | Any] = match.groupdict()
-            for field, value in group_dict.items():
-                if value is not None:
-                    current_record[field] = value
+            # Process all matches in the line
+            for match in matches:
+                # Add match fields to current record
+                current_record.update(
+                    {
+                        field: value
+                        for field, value in match.groupdict().items()
+                        if value is not None
+                    },
+                )
 
-        # If no delimiter and all fields found, add record
+        # Check if record is complete based on field list
         if (
             not search_config.rs_delimiter
             and search_config.field_list
             and all(field in current_record for field in search_config.field_list)
         ):
-            result: SearchResult = create_search_result(
-                search_config,
-                system,
-                matching_lines,
-                start_line_num,
-                current_record,
-            )
-            results.append(result)
-            current_record = {}
-            matching_lines = ""
-            start_line_num = 0  # Reset for next record
-
-            # Check max_results per system
-            if (
-                search_config.max_results > 0
-                and len(results) >= search_config.max_results
-            ):
+            add_record()
+            if reached_max_results():
                 break
 
-    # Add the last record if not empty and we haven't finished
+    # Add final record if not empty
     if current_record:
-        result = create_search_result(
-            search_config,
-            system,
-            matching_lines,
-            line_num,
-            current_record,
-        )
-        results.append(result)
+        add_record()
 
     return results
 
