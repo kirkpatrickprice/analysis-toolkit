@@ -321,11 +321,11 @@ def _add_search_comment(worksheet: Worksheet, comment: str | None) -> None:
     if not comment:
         return
 
-    worksheet.merge_cells("A1:C1")  # Merge first row for comment
+    worksheet.merge_cells("A1:D1")  # Merge first row for comment
     worksheet["A1"] = comment
 
     # Style the comment
-    worksheet["A1"].font = Font(bold=True, size=12, color="1F497D")
+    worksheet["A1"].font = Font(bold=False, size=9, color="1F497D", italic=True)
     worksheet["A1"].alignment = Alignment(
         wrap_text=True,
         vertical="top",

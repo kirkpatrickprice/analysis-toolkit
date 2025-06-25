@@ -105,18 +105,16 @@ global:
     - source_columns: [hfKbNum, wuKbNum]
       dest_column: kbNum
   comment: |-
-    This list multilines both Windows Update History with Hotfix History into one list.  Look at 'pending_updates' results for a list of things that still need to be installed.
+    HINT: To force Excel to recognize the date format, you may need to search for "-" and replace it with "-".  This will force Excel to recognize the date format as a date instead of text.
+    
+    This list combines both Windows Update History with Hotfix History into one list.  Look at the 'Pending Updates' tab for a list of updates that still need to be installed.
 
-    The Windows Update History collects all available Windows Update Service history.  This /should/ help with filling in the gaps where "Get-Hotfix" doesn't
-    accurately report hotfix installation history (see note on System_InstalledHotfixes section).  This is filtered just for Security Updates and Cumulative Updates.
-    Additional records are available in the raw files if needed, including for instance daily Defender updates.  That might be helpful as evidence that
-    anti-virus tools are being updated daily.  Basically, if it was action taken by WUS, then it /should/ be in the raw results.
+    Two methods are used to collect this information because Windows tracks the hotfix installation differntly depending on how it was installed.
 
-    The Hotfix update history provides a list of all hotfixes that have been installed.  Reviewing these results is a critical part of analyzing patch management practices.
-    IMPORTANT NOTE: Get-HotFix is not 100% reliable.  Whether it reports on the HF action depends on the manner used to install the HF.  Notably, it does not reliably capture
-    all HFs installed by WindowsUpdate.
-
-    Consider combining the results from the second set of columns into the first so you can sort-and-filter on just one set of dates.
+    The results are merged into a single list with the following fields:
+      - date: The date the update was installed (YYYY-MM-DD)
+      - description: A description of the update
+      - kbNum: The KB number of the update
 01_system_08_installed_software:
   regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
   excel_sheet_name: Installed Software
