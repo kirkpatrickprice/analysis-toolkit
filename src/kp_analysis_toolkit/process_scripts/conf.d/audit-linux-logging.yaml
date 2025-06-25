@@ -78,7 +78,7 @@ global:
     https://docs.datadoghq.com/agent/guide/agent-configuration-files/?tab=agentv6v7 for information on how to read this file
 07_logging_09_fluentd:
   regex: 'Logging_FluentD::'
-  excel_sheet_name: 
+  excel_sheet_name: FluentD Config
   comment: |-
     FluentD is a common log harvester solution we might see in use by our customers.  We'll grab the contents of the /etc/fluent/fluent.conf file.  
     

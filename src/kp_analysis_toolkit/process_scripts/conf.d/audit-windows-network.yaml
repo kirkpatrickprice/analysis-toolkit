@@ -120,7 +120,7 @@ global:
     A list of the wireless networks that were within range.  This does NOT mean that there is an active connection to any of these networks.  Check the ip_addresses results files to see if you can match any of these up.
 02_network_11_firewall_status:
   regex: 'Networking_WindowsFirewallStatus::((?P<name>(\w+\s)+)\s+(?P<enabled>(True|False|NotConfigured))\s+(?P<defaultInboundAction>\w+)\s+(?P<defaultOutboundAction>(\w+))\s+(?P<logFileName>([\w\\%\.]+))\s+(?P<logAllowed>\w+)\s+(?P<logBlocked>\w+)\s+(?P<logIgnored>\w+))'
-  excel_sheet_name: 
+  excel_sheet_name: Firewall Status
   field_list:
     - name
     - enabled
