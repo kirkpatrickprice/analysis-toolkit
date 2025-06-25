@@ -310,6 +310,7 @@ def _add_search_comment(worksheet: Worksheet, comment: str | None) -> None:
     if not comment:
         return
 
+    worksheet.merge_cells("A1:C1")  # Merge first row for comment
     worksheet["A1"] = comment
 
     # Style the comment
@@ -321,7 +322,7 @@ def _add_search_comment(worksheet: Worksheet, comment: str | None) -> None:
     )
 
     # Set row height to accommodate wrapped text
-    worksheet.row_dimensions[1].height = max(30, len(comment) // 100 * 15)
+    worksheet.row_dimensions[1].height = max(30, len(comment) // 120 * 15)
 
 
 def _add_search_metadata(
