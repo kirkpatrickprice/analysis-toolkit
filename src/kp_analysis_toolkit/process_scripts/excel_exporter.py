@@ -242,13 +242,23 @@ def create_dataframe_from_results(search_results: SearchResults) -> pd.DataFrame
     data = []
 
     # Determine all possible extracted field names
-    all_field_names = set()
+    all_field_names: set[str] = set()
     for result in search_results.results:
         if result.extracted_fields:
             all_field_names.update(result.extracted_fields.keys())
 
-    # Sort field names for consistent column ordering
-    sorted_field_names = sorted(all_field_names)
+    # Use field order from search configuration if available
+    ordered_field_names: list[str] = []
+    config_field_list: list[str | None] = search_results.search_config.field_list or []
+
+    # First add fields that are in the configuration's field_list (preserving order)
+    for field in config_field_list:
+        if field in all_field_names:
+            ordered_field_names.append(field)
+            all_field_names.remove(field)
+
+    # Then add any remaining fields (alphabetically sorted)
+    ordered_field_names.extend(sorted(all_field_names))
 
     for result in search_results.results:
         row: dict[str, str] = {
@@ -257,13 +267,13 @@ def create_dataframe_from_results(search_results: SearchResults) -> pd.DataFrame
             "Matched Text": result.matched_text.replace("\n", "\r"),
         }
 
-        # Add extracted fields in consistent order
+        # Add extracted fields in the ordered sequence
         if result.extracted_fields:
-            for field_name in sorted_field_names:
+            for field_name in ordered_field_names:
                 row[field_name] = result.extracted_fields.get(field_name, "")
         else:
             # Add empty columns for consistency if no extracted fields
-            for field_name in sorted_field_names:
+            for field_name in ordered_field_names:
                 row[field_name] = ""
 
         data.append(row)
