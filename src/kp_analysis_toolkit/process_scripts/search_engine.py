@@ -471,8 +471,8 @@ def search_single_system(
         encoding: str | LiteralString = system.encoding or "utf-8"
 
         with system.file.open("r", encoding=encoding, errors="replace") as f:
-            if search_config.multiline and search_config.rs_delimiter:
-                results: list[SearchResult] = search_with_recordset_delimiter(
+            if search_config.multiline:
+                results: list[SearchResult] = search_multiline(
                     search_config,
                     system,
                     f,
@@ -560,7 +560,7 @@ def _filter_excel_illegal_chars(text: str) -> str:
     return text.translate(trans_table)
 
 
-def search_with_recordset_delimiter(
+def search_multiline(
     search_config: SearchConfig,
     system: Systems,
     file_handle: IO[str],
@@ -568,6 +568,11 @@ def search_with_recordset_delimiter(
 ) -> list[SearchResult]:
     """
     Search file using recordset delimiter for multi-line records.
+
+    This function processes matches across multiple lines and combines them into
+    single record entries. If rs_delimiter is provided, it separates records.
+    If no delimiter is provided, records are considered complete when all fields
+    in field_list have been populated.
 
     Args:
         search_config: Search configuration with recordset delimiter
@@ -579,61 +584,99 @@ def search_with_recordset_delimiter(
         List of search results from multilined records
 
     """
-    results = []
+    results: list[SearchResult] = []  # List to hold search results
+    current_record: dict = {}  # Dictionary to hold current record fields
+    start_line_num: int = 0  # The line number where the current record starts
+    line_num: int = 0  # Current line number in the file
+    matching_lines: str = ""  # Matching text for the current record
 
-    try:
-        rs_pattern = re.compile(search_config.rs_delimiter, re.IGNORECASE)
-    except re.error as e:
-        click.echo(
-            f"Error: Invalid recordset delimiter pattern in {search_config.name}: {e}",
-        )
-        return results
+    # Get file content into a single string for processing
+    file_content = file_handle.read()
 
-    current_record = []
-    record_start_line = 1
+    # Process line by line
+    for _line in file_content.split("\n"):
+        line_num += 1
+        line: str = _filter_excel_illegal_chars(_line.strip())
 
-    for _line_num, _line in enumerate(file_handle, 1):
-        line = _line.strip()
+        # Skip empty lines
+        if not line:
+            continue
 
-        # Check if this line starts a new record
-        if rs_pattern.search(line):
-            # Process the previous record if it exists
-            if current_record and search_config.multiline:
-                multilined_text = "\n".join(current_record)
-                match: re.Match[str] | None = pattern.search(multilined_text)
-                if match:
-                    result: SearchResult = create_search_result(
-                        search_config,
-                        system,
-                        multilined_text,
-                        record_start_line,
-                        match,
-                    )
-                    results.append(result)
+        # Check if we hit a record delimiter
+        if search_config.rs_delimiter and re.search(search_config.rs_delimiter, line):
+            if current_record:  # Add non-empty record
+                result: SearchResult = create_search_result(
+                    search_config,
+                    system,
+                    matching_lines,
+                    start_line_num,
+                    current_record,
+                )
+                results.append(result)
+                current_record = {}  # Reset current record
+                matching_lines = ""  # Reset matching lines
 
-            # Start new record
-            current_record = [line]
-            record_start_line = _line_num
-        else:
-            current_record.append(line)
+                # Check max_results per system
+                if (
+                    search_config.max_results > 0
+                    and len(results) >= search_config.max_results
+                ):
+                    break
+            start_line_num = 0  # Reset start line number for new record
+            continue
 
-        # Check max_results per system
-        if search_config.max_results > 0 and len(results) >= search_config.max_results:
-            break
+        # Process matches in the current line
+        for match in pattern.finditer(line):
+            # Add current line to matching lines
+            if matching_lines:
+                matching_lines += "\n"
+            matching_lines += line
 
-    # Process the last record
-    if current_record and search_config.multiline:
-        multilined_text = "\n".join(current_record)
-        match = pattern.search(multilined_text)
-        if match:
-            result = create_search_result(
+            # Update the start line number if this is the first match
+            if not start_line_num:
+                start_line_num = line_num
+
+            # Create a dictionary from the current match groups
+            group_dict: dict[str, str | Any] = match.groupdict()
+            for field, value in group_dict.items():
+                if value is not None:
+                    current_record[field] = value
+
+        # If no delimiter and all fields found, add record
+        if (
+            not search_config.rs_delimiter
+            and search_config.field_list
+            and all(field in current_record for field in search_config.field_list)
+        ):
+            result: SearchResult = create_search_result(
                 search_config,
                 system,
-                multilined_text,
-                record_start_line,
-                match,
+                matching_lines,
+                start_line_num,
+                current_record,
             )
             results.append(result)
+            current_record = {}
+            matching_lines = ""
+            start_line_num = 0  # Reset for next record
+
+            # Check max_results per system
+            if (
+                search_config.max_results > 0
+                and len(results) >= search_config.max_results
+            ):
+                break
+
+    # Add the last record if not empty and we haven't finished
+    if current_record:
+        result = create_search_result(
+            search_config,
+            system,
+            matching_lines,
+            line_num,
+            current_record,
+        )
+        results.append(result)
 
     return results
 
@@ -643,7 +686,7 @@ def create_search_result(
     system: Systems,
     text: str,
     line_num: int,
-    match: re.Match,
+    matching_dict: dict[str, str | Any],
 ) -> SearchResult:
     """
     Create a SearchResult object from a regex match.
@@ -653,7 +696,7 @@ def create_search_result(
         system: System that was searched
         text: Full text that was matched against
         line_num: Line number where match occurred
-        match: Regex match object
+        matching_dict: Regex match object OR match.groupdict() dictionary
 
     Returns:
         SearchResult object
@@ -662,25 +705,25 @@ def create_search_result(
     # Extract fields if field_list is specified
     extracted_fields = None
     if search_config.field_list:
-        extracted_fields = {}
+        if type(matching_dict) is re.Match:
+            # If matching_dict is a Match object, convert to groupdict
+            matching_dict = matching_dict.groupdict()
+        extracted_fields: dict = {}
         for field in search_config.field_list:
             try:
-                extracted_fields[field] = match.group(field)
+                extracted_fields[field] = matching_dict.get(field)
             except IndexError:  # noqa: PERF203
                 # Field not found in match groups, add as empty string
                 extracted_fields[field] = ""
 
-        # If no named groups were found, add raw_data field
-        if not any(extracted_fields.values()):
-            extracted_fields["raw_data"] = match.group(0)
-
-    # Use only matching text if specified
-    matched_text = match.group(0) if search_config.only_matching else text
+        # # If no named groups were found, add raw_data field
+        # if not any(extracted_fields.values()):
+        #     extracted_fields["raw_data"] = matching_dict.group(0)
 
     return SearchResult(
         system_name=system.system_name,
         line_number=line_num,
-        matched_text=matched_text,
+        matched_text=text.strip(),
         extracted_fields=extracted_fields,
     )
 
