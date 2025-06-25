@@ -107,11 +107,19 @@ def export_search_results_to_excel(
     # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-        summary_data = []
+    # Sort search results based on their configuration name
+    sorted_search_configs = sorted(
+        search_results,
+        key=lambda sr: sr.search_config.excel_sheet_name
+        if sr.search_config.name
+        else "",
+    )
 
-        for search_result in search_results:
-            sheet_name = sanitize_sheet_name(
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        summary_data: list = []
+
+        for search_result in sorted_search_configs:
+            sheet_name: str = sanitize_sheet_name(
                 search_result.search_config.excel_sheet_name
                 or search_result.search_config.name,
             )
