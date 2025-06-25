@@ -384,7 +384,7 @@ def _add_search_metadata(
             worksheet[label_cell].font = Font(bold=True, size=10)
 
 
-def _format_date_columns(
+def _format_date_columns(  # noqa: C901, PLR0912
     worksheet: Worksheet,
     df: pd.DataFrame,
     startrow: int = 1,
@@ -565,11 +565,106 @@ def _format_as_excel_table(
         message: str = f"Error adding table to worksheet '{worksheet.title}': {e}. "
         raise ValueError(message) from e
 
+    # Set top-left alignment for all cells in table range
+    _set_table_alignment(worksheet, table_range)
+
     # format date columns
     _format_date_columns(worksheet, df, startrow)
 
     # Auto-adjust column widths
     _auto_adjust_column_widths(worksheet, df)
+
+    # Adjust row heights based on content
+    _adjust_row_heights(worksheet, df, startrow)
+
+
+def _set_table_alignment(worksheet: Worksheet, table_range: str) -> None:
+    """
+    Set top-left alignment for all cells in the table range.
+
+    Args:
+        worksheet: The worksheet containing the table
+        table_range: The Excel range of the table (e.g., 'A3:F10')
+
+    """
+    # Parse the range
+    start_cell, end_cell = table_range.split(":")
+    start_col = start_cell[0]
+    start_row = int(start_cell[1:])
+    end_col = end_cell[0] if len(end_cell) == 2 else end_cell[:2]  # noqa: PLR2004
+    end_row = int(end_cell[1:]) if len(end_cell) == 2 else int(end_cell[2:])  # noqa: PLR2004
+
+    # Get column indices
+    start_col_idx = ord(start_col) - ord("A") + 1
+    end_col_idx = (
+        ord(end_col) - ord("A") + 1
+        if len(end_col) == 1
+        else 26 + (ord(end_col[1]) - ord("A") + 1)
+    )
+
+    # Set alignment for all cells in the range
+    alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+    for row in range(start_row, end_row + 1):
+        for col_idx in range(start_col_idx, end_col_idx + 1):
+            col_letter = _get_column_letter(col_idx)
+            cell = f"{col_letter}{row}"
+            worksheet[cell].alignment = alignment
+
+
+def _adjust_row_heights(
+    worksheet: Worksheet,
+    df: pd.DataFrame,
+    startrow: int = 1,
+) -> None:
+    """
+    Adjust row heights based on cell content.
+
+    Args:
+        worksheet: The worksheet to adjust
+        df: DataFrame containing the data
+        startrow: Row where the data starts (1-indexed)
+
+    """
+    # Get column widths (in characters)
+    col_widths = {}
+    for col_num, _ in enumerate(df.columns, 1):
+        col_letter = _get_column_letter(col_num)
+        col_widths[col_num] = worksheet.column_dimensions[col_letter].width
+
+    # Process each row
+    for row_idx, df_row in enumerate(df.itertuples(index=False), startrow + 1):
+        max_height = 15  # Default minimum height
+
+        # Check each cell in the row
+        for col_idx, value in enumerate(df_row, 1):
+            if pd.isna(value):
+                continue
+
+            # Convert value to string
+            str_value = str(value)
+
+            # Calculate needed height based on content
+            col_width = col_widths.get(col_idx, 10)  # Default width if not found
+
+            # Count newlines
+            newline_count = str_value.count("\n") + str_value.count("\r")
+
+            # Estimate wrapped lines based on text length and column width
+            # This is a simple approximation - actual wrapping depends on font metrics
+            estimated_wrapped_lines = max(1, len(str_value) // int(col_width * 0.85))
+
+            # Calculate total lines needed
+            total_lines = max(1, newline_count + 1, estimated_wrapped_lines)
+
+            # Calculate height (approximately 15 units per line)
+            needed_height = total_lines * 15
+
+            # Update max height for this row
+            max_height = max(max_height, needed_height)
+
+        # Set the row height
+        worksheet.row_dimensions[row_idx].height = max_height
 
 
 def _get_column_letter(col_num: int) -> str:
