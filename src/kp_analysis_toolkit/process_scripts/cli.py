@@ -24,8 +24,8 @@ from kp_analysis_toolkit.process_scripts.models.program_config import ProgramCon
 )
 @click.option(
     "source_files_path",
-    "--start-path",
-    "-p",
+    "--start-dir",
+    "-d",
     default="./",
     help="Default: the current working directory (./). Specify the path to start searching for files.  Will walk the directory tree from this path.",
 )
