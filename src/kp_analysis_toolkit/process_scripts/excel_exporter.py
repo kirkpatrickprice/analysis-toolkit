@@ -243,10 +243,10 @@ def create_dataframe_from_results(search_results: SearchResults) -> pd.DataFrame
     sorted_field_names = sorted(all_field_names)
 
     for result in search_results.results:
-        row = {
+        row: dict[str, str] = {
             "System Name": result.system_name,
             "Line Number": result.line_number,
-            "Matched Text": result.matched_text,
+            "Matched Text": result.matched_text.replace("\n", "\r"),
         }
 
         # Add extracted fields in consistent order
