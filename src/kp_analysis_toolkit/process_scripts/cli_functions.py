@@ -27,6 +27,7 @@ if TYPE_CHECKING:
         SearchResult,
         SearchResults,
     )
+    from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
 
 def create_results_path(program_config: ProgramConfig) -> None:
@@ -203,7 +204,9 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     create_results_path(program_config)
 
     # Load systems
-    systems = list(process_systems.enumerate_systems_from_source_files(program_config))
+    systems: list[Systems] = list(
+        process_systems.enumerate_systems_from_source_files(program_config),
+    )
     click.echo(f"Found {len(systems)} systems to process")
 
     # Load search configurations
