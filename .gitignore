@@ -5,6 +5,7 @@
 testdata/results/
 conf.d/test.yaml
 src/kp_analysis_toolkit/process_scripts/conf.d/test.yaml
+testdata/nipper/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -187,3 +188,4 @@ cython_debug/
 *.code-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
+

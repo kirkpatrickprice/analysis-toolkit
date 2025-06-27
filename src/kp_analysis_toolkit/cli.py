@@ -1,7 +1,12 @@
 import click
 
 from kp_analysis_toolkit import __version__ as cli_version
-from kp_analysis_toolkit.process_scripts.cli import process_command_line
+from kp_analysis_toolkit.nipper_expander.cli import (
+    process_command_line as nipper_process_command_line,
+)
+from kp_analysis_toolkit.process_scripts.cli import (
+    process_command_line as scripts_process_command_line,
+)
 
 
 @click.group()
@@ -16,7 +21,8 @@ def cli() -> None:
 
 def main() -> None:
     """Main entry point for the kpat_cli command line interface."""
-    cli.add_command(process_command_line, name="scripts")
+    cli.add_command(scripts_process_command_line, name="scripts")
+    cli.add_command(nipper_process_command_line, name="nipper")
     cli()
 
 
