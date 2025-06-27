@@ -38,18 +38,23 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
         )
     except ValueError as e:
         click.secho(f"Error validating configuration: {e}", fg="red")
+        sys.exit(1)
 
     click.echo(
         f"Processing Nipper CSV file: {program_config.input_file!s}",
     )
 
-    process_nipper_csv(
-        program_config,
-    )
+    try:
+        process_nipper_csv(
+            program_config,
+        )
 
-    click.echo(
-        f"Processed {program_config.input_file} and saved results to {program_config.output_file}",
-    )
+        click.echo(
+            f"Processed {program_config.input_file} and saved results to {program_config.output_file}",
+        )
+    except (ValueError, FileNotFoundError, KeyError) as e:
+        click.secho(f"Error processing CSV file: {e}", fg="red")
+        sys.exit(1)
 
 
 def get_input_file(
@@ -70,29 +75,26 @@ def get_input_file(
         Path(source_files_path / f) for f in source_files_path.glob("*.csv")
     ]
     if len(dirlist) == 0:
-        click.echo(
-            f"No CSV files found in {source_files_path!s}.",
-        )
-        sys.exit(1)
-    elif len(dirlist) == 1:
+        error_msg = f"No CSV files found in {source_files_path!s}."
+        raise ValueError(error_msg)
+    if len(dirlist) == 1:
         return dirlist[0]
-    else:
-        # if more than one CSV file is found, print the results and provide the user a choice
-        click.secho(
-            'Multiple CSV files found.  Use the "--infile <filename>" option to specify the input file or choose from below.',
-            fg="yellow",
-        )
-        for index, filename in enumerate(dirlist, 1):
-            click.echo(f"({index:03d}) {filename}")
-        click.echo()
-        choice: int = 0
-        while choice < 1 or choice > len(dirlist):
-            try:
-                choice = int(input("Choose a file or press CTRL-C to quit: "))
-            except KeyboardInterrupt:  # noqa: PERF203
-                click.secho("\nExiting...\n", fg="red")
-                sys.exit()
-            except ValueError:
-                print("\nSpecify the line number (digits only)\n")
-                sys.exit()
-        return dirlist[choice]
+    # if more than one CSV file is found, print the results and provide the user a choice
+    click.secho(
+        'Multiple CSV files found.  Use the "--infile <filename>" option to specify the input file or choose from below.',
+        fg="yellow",
+    )
+    for index, filename in enumerate(dirlist, 1):
+        click.echo(f"({index:03d}) {filename}")
+    click.echo()
+    choice: int = 0
+    while choice < 1 or choice > len(dirlist):
+        try:
+            choice = int(input("Choose a file or press CTRL-C to quit: "))
+        except KeyboardInterrupt:  # noqa: PERF203
+            click.secho("\nExiting...\n", fg="red")
+            sys.exit()
+        except ValueError:
+            print("\nSpecify the line number (digits only)\n")
+            sys.exit()
+    return dirlist[choice - 1]
