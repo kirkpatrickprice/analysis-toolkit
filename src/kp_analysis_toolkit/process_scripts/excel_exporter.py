@@ -7,6 +7,7 @@ Provides comprehensive Excel output with proper formatting, tables, and comments
 import datetime
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from openpyxl.styles import Alignment, Font
@@ -47,7 +48,7 @@ def export_results_by_os_type(
     # Group systems by OS family
     systems_by_os = defaultdict(list)
     for system in systems:
-        os_family = system.os_family.value if system.os_family else "Unknown"
+        os_family = str(system.os_family) if system.os_family else "Unknown"
         systems_by_os[os_family].append(system)
 
     # Generate timestamp for filenames
@@ -86,7 +87,7 @@ def export_results_by_os_type(
         output_path = output_dir / filename
 
         # Export results for this OS type
-        export_search_results_to_excel(os_search_results, output_path)
+        export_search_results_to_excel(os_search_results, output_path, os_systems)
 
         # Add to created files dictionary
         created_files[os_type] = output_path
@@ -97,6 +98,7 @@ def export_results_by_os_type(
 def export_search_results_to_excel(
     search_results: list[SearchResults],
     output_path: Path,
+    systems: list[Any] | None = None,
 ) -> None:
     """
     Export search results to Excel with each search as a separate worksheet.
@@ -104,6 +106,7 @@ def export_search_results_to_excel(
     Args:
         search_results: List of SearchResults objects to export
         output_path: Path where the Excel file should be saved
+        systems: Optional list of Systems objects for systems summary
 
     """
     # Ensure output directory exists
@@ -113,7 +116,7 @@ def export_search_results_to_excel(
     sorted_search_configs = sorted(
         search_results,
         key=lambda sr: sr.search_config.excel_sheet_name
-        if sr.search_config.name
+        if sr.search_config and sr.search_config.name
         else "",
     )
 
@@ -146,6 +149,10 @@ def export_search_results_to_excel(
 
         # Create summary sheet
         _create_summary_sheet(writer, summary_data)
+
+        # Create systems summary sheet if systems data is provided
+        if systems:
+            _create_systems_summary_sheet(writer, systems)
 
 
 def _create_results_sheet(
@@ -350,14 +357,6 @@ def _add_search_metadata(
         if label.endswith(":"):
             worksheet[label_cell].font = Font(bold=True, size=10)
 
-    # ...existing code...
-
-    # ...existing code...
-
-    # ...existing code...
-
-    # ...existing code...
-
 
 def export_systems_summary_to_excel(systems: list, output_path: Path) -> None:
     """
@@ -428,7 +427,7 @@ def create_search_report(
 
     # Main search results
     search_results_path = output_dir / "search_results.xlsx"
-    export_search_results_to_excel(search_results, search_results_path)
+    export_search_results_to_excel(search_results, search_results_path, systems)
     created_files["search_results"] = search_results_path
 
     # Systems summary
@@ -493,3 +492,53 @@ def _create_detailed_system_report(
 
             if not data_frame.empty:
                 format_as_excel_table(worksheet, data_frame, startrow=2)
+
+
+def _create_systems_summary_sheet(writer: pd.ExcelWriter, systems: list) -> None:
+    """Create a systems summary worksheet with overview of all discovered systems."""
+    # Create systems summary data
+    systems_data: list[dict[str, str]] = []
+    for system in systems:
+        systems_data.append(
+            {
+                "System Name": system.system_name,
+                "OS Family": system.os_family.value if system.os_family else "Unknown",
+                "Producer": system.producer.value if system.producer else "Unknown",
+                "Producer Version": system.producer_version or "Unknown",
+                "Linux Family": system.distro_family.value
+                if system.distro_family
+                else "N/A",
+                "OS Pretty Name": system.os_pretty_name or "N/A",
+                "OS Version": system.os_version or "N/A",
+                "Product Name": system.product_name or "N/A",
+                "Release ID": system.release_id or "N/A",
+                "Current Build": system.current_build or "N/A",
+                "File Path": str(system.file),
+                "File Encoding": system.encoding or "Unknown",
+            },
+        )
+
+    systems_df = pd.DataFrame(systems_data)
+
+    # Write systems summary to second sheet
+    systems_df.to_excel(writer, sheet_name="Systems Summary", index=False, startrow=1)
+
+    worksheet = writer.sheets["Systems Summary"]
+
+    # Add title
+    worksheet["A1"] = f"Systems Summary ({len(systems)} systems discovered)"
+    worksheet["A1"].font = Font(bold=True, size=16, color="1F497D")
+
+    # Format as table
+    if not systems_df.empty:
+        format_as_excel_table(worksheet, systems_df, startrow=2)
+
+    # Move systems summary sheet to second position (after Summary sheet)
+    workbook = writer.book
+    # Find the Summary sheet index and place Systems Summary after it
+    summary_index = workbook.worksheets.index(workbook["Summary"])
+    target_index = summary_index + 1
+    workbook.move_sheet(
+        "Systems Summary",
+        offset=target_index - len(workbook.worksheets) + 1,
+    )

@@ -1,4 +1,5 @@
 import sys
+from collections import defaultdict
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -195,7 +196,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
         )
 
 
-def process_scipts_results(program_config: ProgramConfig) -> None:
+def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     """Process the source files and execute searches."""
     time_stamp: str = datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
     click.echo("Processing source files...")
@@ -241,10 +242,20 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
         os_results[matching_os].append(results)
 
         if program_config.verbose:
-            click.echo(f"  Found {results.result_count} matches")
+            if results.result_count == 0:
+                click.secho("  No matches found", fg="yellow")
+            else:
+                click.echo(f"  Found {results.result_count} matches")
 
     # Export results to separate Excel files based on OS type
     files_created: list[str] = []
+
+    # Group systems by OS family for proper filtering
+    systems_by_os = defaultdict(list)
+    for system in systems:
+        os_family = system.os_family.value if system.os_family else "Unknown"
+        systems_by_os[os_family].append(system)
+
     for os_type, results in os_results.items():
         if not results:
             continue
@@ -252,7 +263,11 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
         output_file: Path = (
             program_config.results_path / f"{os_type}_search_results-{time_stamp}.xlsx"
         )
-        export_search_results_to_excel(results, output_file)
+
+        # Filter systems to only include those for this OS type
+        os_systems = systems_by_os.get(os_type, [])
+
+        export_search_results_to_excel(results, output_file, os_systems)
         files_created.append(str(output_file.relative_to(program_config.results_path)))
         if program_config.verbose:
             click.echo(
