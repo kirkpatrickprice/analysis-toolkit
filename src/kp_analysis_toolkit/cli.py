@@ -7,6 +7,7 @@ from kp_analysis_toolkit.nipper_expander.cli import (
 from kp_analysis_toolkit.process_scripts.cli import (
     process_command_line as scripts_process_command_line,
 )
+from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
 CONTEXT_SETTINGS: dict[str, int] = {
     "max_content_width": 120,
@@ -20,9 +21,16 @@ CONTEXT_SETTINGS: dict[str, int] = {
     prog_name="kpat_cli",
     message="%(prog)s version %(version)s",
 )
-def cli() -> None:
+@click.option(
+    "--skip-update-check",
+    is_flag=True,
+    default=False,
+    help="Skip checking for updates at startup.",
+)
+def cli(skip_update_check: bool) -> None:  # noqa: FBT001
     """Command line interface for the KP Analysis Toolkit."""
-    pass  # noqa: PIE790
+    if not skip_update_check:
+        check_and_prompt_update()
 
 
 def main() -> None:
