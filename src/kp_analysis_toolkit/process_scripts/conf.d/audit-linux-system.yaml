@@ -5,7 +5,7 @@ global:
       value: Linux
 
 01_system_01_kp_nix_version:
-  regex: 'kp_nix_version: (?P<kp_nix_version>.*)'
+  regex: 'KPNIXVERSION: (?P<kp_nix_version>\d+\.\d+\.\d+)'
   excel_sheet_name: KPNIXAUDIT Version
   max_results: 1
   only_matching: True
@@ -147,7 +147,7 @@ global:
   comment: |-
     We don't see if very often, but file system encryption can be provided internally by the OS using "dm-crypt" (very similar to BitLocker on Windows and FileVault on MacOS).
 01_system_05_file_system_mounts:
-  regex: 'System_FSMounts::(?P<unit>.\s[-\w.\d]+\.mount)\s+(?P<loadState>\w+)\s+(?P<status>\w+)\s+(?P<sub>\w+)\s+(?P<description>.*)'
+  regex: 'System_FSMounts-systemctl::(?P<unit>.\s[-\w.\d]+\.mount)\s+(?P<loadState>\w+)\s+(?P<status>\w+)\s+(?P<sub>\w+)\s+(?P<description>.*)'
   excel_sheet_name: File System Mounts
   only_matching: True
   field_list:

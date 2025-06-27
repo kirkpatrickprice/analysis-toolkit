@@ -5,7 +5,7 @@ global:
       value: Darwin
 
 01_system_01_kp_mac_version:
-  regex: 'kp_mac_version: (?P<kp_mac_version>.*)'
+  regex: 'KPMACVERSION: (?P<kp_mac_version>\d+\.\d+\.\d+)'
   excel_sheet_name: KPMACAUDIT Version
   max_results: 1
   only_matching: True

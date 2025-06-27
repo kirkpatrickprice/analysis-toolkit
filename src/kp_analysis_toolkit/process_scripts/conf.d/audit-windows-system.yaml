@@ -5,7 +5,7 @@ global:
       value: Windows
 
 01_system_01_kp_win_version:
-    regex: 'kp_win_version: (?P<kp_win_version>.*)'
+    regex: 'System_PSDetails::KPWINVERSION: (?P<kp_win_version>\d+\.\d+\.\d+)'
     excel_sheet_name: KPWINAUDIT Version
     max_results: 1
     only_matching: True
@@ -235,7 +235,7 @@ global:
   regex: 'System_SNMPConfig::'
   excel_sheet_name: SNMP Config
 01_system_18_scheduled_tasks:
-  regex: 'System_ScheduledTaskInfo::\s*((Taskname\s*:\s*(?P<taskName>.+))|(LastRunTime\s*:\s*(?P<lastRunTime>[\d: /AMP]+))|(LastTaskResult\s*:\s*(?P<lastTaskResult>\d+))|(NextRunTime\s*:\s*(?P<nextRunTime>[\d: /AMP]+)))'
+  regex: 'System_ScheduledTaskInfo::\s*((?P<task_name>[A-Za-z0-9 -_]+)\s+(?P<last_run_time>[0-9]{1,2}/[0-9/:\s]+:[0-9]{1,2})\s+(?P<last_result>[0-9]+)\s+(?P<number_missed_runs>[0-9]+)\s(?P<next_run_time>.*))'
   excel_sheet_name: Scheduled Tasks
   field_list:
     - 'taskName'
