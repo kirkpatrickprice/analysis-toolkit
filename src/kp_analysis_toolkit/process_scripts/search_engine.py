@@ -581,6 +581,10 @@ def search_line_by_line(
     for line_num, _line in enumerate(file_handle, 1):
         line: str = _filter_excel_illegal_chars(_line.strip())
 
+        # Skip lines that match predefined patterns
+        if should_skip_line(line):
+            continue
+
         # Skip empty lines unless full_scan is enabled
         if not line and not search_config.full_scan:
             continue
@@ -694,6 +698,10 @@ def search_multiline(  # Ruff complains about complexity, but I couldn't find an
         # Check if we reached the maximum results limit
         if reached_max_results():
             break
+
+        # Skip lines that match predefined patterns
+        if should_skip_line(line):
+            continue
 
         # Skip empty lines
         if not line:
