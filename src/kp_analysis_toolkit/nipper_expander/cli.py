@@ -29,6 +29,7 @@ from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_cs
     help="Default: the current working directory (./). Specify the path to start searching for files.  Will walk the directory tree from this path.",
 )
 def process_command_line(_infile: str, source_files_path: str) -> None:
+    """Process a Nipper CSV file and expand it into a more readable format."""
     # Create a program configuration object
     try:
         program_config: ProgramConfig = ProgramConfig(

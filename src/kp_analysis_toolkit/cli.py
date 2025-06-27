@@ -8,15 +8,21 @@ from kp_analysis_toolkit.process_scripts.cli import (
     process_command_line as scripts_process_command_line,
 )
 
+CONTEXT_SETTINGS: dict[str, int] = {
+    "max_content_width": 120,
+    "terminal_width": 120,
+}
 
-@click.group()
+
+@click.group(context_settings=CONTEXT_SETTINGS)
 @click.version_option(
     version=cli_version,
     prog_name="kpat_cli",
     message="%(prog)s version %(version)s",
 )
 def cli() -> None:
-    pass
+    """Command line interface for the KP Analysis Toolkit."""
+    pass  # noqa: PIE790
 
 
 def main() -> None:
