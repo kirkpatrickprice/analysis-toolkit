@@ -75,12 +75,7 @@ def process_command_line(**cli_config: dict) -> None:
     try:
         program_config: ProgramConfig = ProgramConfig(**cli_config)
     except ValueError as e:
-        click.echo(
-            click.style(
-                f"Error validating configuration: {e}",
-                fg="red",
-            ),
-        )
+        click.secho(f"Error validating configuration: {e}", fg="red")
         return
 
     # Echo the program configuration to the screen
