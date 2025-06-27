@@ -30,7 +30,8 @@ class TestCLIVersionChecking:
 
     @patch("kp_analysis_toolkit.cli.check_and_prompt_update")
     def test_cli_skips_version_check_when_flag_set(
-        self, mock_check_update: Mock
+        self,
+        mock_check_update: Mock,
     ) -> None:
         """Test that CLI skips version check when flag is set."""
         runner = CliRunner()
@@ -59,7 +60,8 @@ class TestCLIVersionChecking:
 
     @patch("kp_analysis_toolkit.cli.check_and_prompt_update")
     def test_nipper_subcommand_triggers_version_check(
-        self, mock_check_update: Mock
+        self,
+        mock_check_update: Mock,
     ) -> None:
         """Test that the nipper subcommand also triggers version check."""
         runner = CliRunner()
