@@ -1,4 +1,3 @@
-import csv
 import sys
 from pathlib import Path
 
@@ -17,7 +16,7 @@ from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_cs
 )
 @click.option(
     "_infile",
-    "--infile",
+    "--in-file",
     "-f",
     default=None,
     help="Input file to process. If not specified, will search the current directory for CSV files.",
@@ -30,9 +29,6 @@ from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_cs
     help="Default: the current working directory (./). Specify the path to start searching for files.  Will walk the directory tree from this path.",
 )
 def process_command_line(_infile: str, source_files_path: str) -> None:
-    # print (sys.maxsize)
-    csv.field_size_limit(sys.maxsize)
-
     # Create a program configuration object
     try:
         program_config: ProgramConfig = ProgramConfig(
