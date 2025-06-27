@@ -3,6 +3,7 @@ from pathlib import Path
 from pydantic import computed_field, field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
+from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 
 
 class ProgramConfig(KPATBaseModel):
@@ -26,10 +27,10 @@ class ProgramConfig(KPATBaseModel):
     def output_file(self) -> Path:
         """Return the path for the expanded XLSX output file."""
         # Get the input file's stem (filename without extension)
-        stem = self.input_file.stem
+        stem: str = self.input_file.stem
 
         # Create new filename with "expanded" suffix and xlsx extension
-        expanded_filename = f"{stem}_expanded.xlsx"
+        expanded_filename: str = f"{stem}_expanded-{get_timestamp()}.xlsx"
 
         # Return the complete path in the same directory as the input file
         return (self.input_file.parent / expanded_filename).absolute()
