@@ -18,7 +18,7 @@ from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_cs
 @click.option(
     "_infile",
     "--infile",
-    "-i",
+    "-f",
     default=None,
     help="Input file to process. If not specified, will search the current directory for CSV files.",
 )
