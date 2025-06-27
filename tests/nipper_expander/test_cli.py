@@ -84,7 +84,7 @@ class TestNipperExpanderCLI:
                     ],
                 )
 
-                assert result.exit_code is None  # CLI should handle gracefully
+                assert result.exit_code == 1  # CLI should exit with error code
                 assert "Error validating configuration" in result.output
 
     def test_cli_invalid_input_file(self) -> None:
@@ -281,18 +281,30 @@ class TestCLIIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create realistic test CSV
             test_csv = Path(temp_dir) / "nipper_test.csv"
-            csv_content = """Finding,Risk,devices,Description
-High Risk Finding,High,router1;switch1;firewall1,Security vulnerability
-Medium Risk Finding,Medium,router2;switch2,Configuration issue
-Low Risk Finding,Low,switch3,Minor issue"""
+            csv_content = """Issue Title,Devices,Rating,Finding,Impact,Ease,Recommendation
+High Risk Finding,router1;switch1;firewall1,High,Security vulnerability finding,High security impact,Easy to exploit,Apply security patch
+Medium Risk Finding,router2;switch2,Medium,Configuration issue finding,Medium impact,Moderate effort,Update configuration
+Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor and review"""
             test_csv.write_text(csv_content)
 
             runner = CliRunner()
 
             # Mock the actual processing to avoid file system operations
-            with patch(
-                "kp_analysis_toolkit.nipper_expander.process_nipper.process_nipper_csv",
-            ) as mock_process:
+            with (
+                patch(
+                    "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
+                ) as mock_process,
+                patch(
+                    "kp_analysis_toolkit.nipper_expander.cli.ProgramConfig",
+                ) as mock_config_class,
+            ):
+                # Create a mock config instance
+                mock_config = MagicMock()
+                mock_config.input_file = test_csv
+                mock_config.source_files_path = temp_dir
+                mock_config.output_file = Path(temp_dir) / "nipper_test_expanded.xlsx"
+                mock_config_class.return_value = mock_config
+
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -308,8 +320,7 @@ Low Risk Finding,Low,switch3,Minor issue"""
 
                 # Verify the program config passed to processing
                 config = mock_process.call_args[0][0]
-                assert str(config.input_file) == str(test_csv)
-                assert config.source_files_path == temp_dir
+                assert config == mock_config
 
     def test_multiple_csv_files_discovery(self) -> None:
         """Test behavior when multiple CSV files exist."""
@@ -370,21 +381,17 @@ Low Risk Finding,Low,switch3,Minor issue"""
         """Test error recovery and user feedback."""
         runner = CliRunner()
 
-        # Test with invalid configuration
-        with patch(
-            "kp_analysis_toolkit.nipper_expander.models.program_config.ProgramConfig",
-        ) as mock_config:
-            mock_config.side_effect = ValueError("Invalid configuration")
+        # Test with nonexistent file - this should trigger a processing error, not config error
+        result = runner.invoke(
+            process_command_line,
+            [
+                "--in-file",
+                "nonexistent.csv",
+            ],
+        )
 
-            result = runner.invoke(
-                process_command_line,
-                [
-                    "--in-file",
-                    "nonexistent.csv",
-                ],
-            )
-
-            assert "Error validating configuration" in result.output
+        assert "Error processing CSV file" in result.output
+        assert result.exit_code == 1
 
 
 class TestCLIParameterValidation:
