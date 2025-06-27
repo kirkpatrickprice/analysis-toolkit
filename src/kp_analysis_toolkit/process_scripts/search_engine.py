@@ -35,6 +35,41 @@ from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 
 
+def should_skip_line(line: str) -> bool:
+    """
+    Check if a line should be skipped based on predefined patterns.
+
+    Lines are skipped if they contain:
+    1. "###[BEGIN]"
+    2. "###Processing Command:"
+    3. "###Running:"
+    4. "###[END]"
+    5. Any comments noted by "###" (noted by three or more hashes)
+
+    Args:
+        line: The line to check
+
+    Returns:
+        True if the line should be skipped, False otherwise
+
+    """
+    # Check for specific patterns first
+    specific_patterns = [
+        "###[BEGIN]",
+        "###Processing Command:",
+        "###Running:",
+        "###[END]",
+    ]
+
+    for pattern in specific_patterns:
+        if pattern in line:
+            return True
+
+    # Check for general ### comments (three or more hashes)
+    # This will match ###, ####, #####, etc. at the beginning of lines
+    return bool(re.search(r"###", line.strip()))
+
+
 def compare_version(
     system_version: str | None,
     comp: SysFilterComparisonOperators,
