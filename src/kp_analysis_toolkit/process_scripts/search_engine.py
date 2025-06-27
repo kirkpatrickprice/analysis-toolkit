@@ -83,15 +83,15 @@ def compare_version(
 
     value_components = [int(x) for x in filter_version.split(".")]
 
-    if comp == SysFilterComparisonOperators.EQ:
+    if comp == SysFilterComparisonOperators.EQUALS:
         return system_components == value_components
-    if comp == SysFilterComparisonOperators.GE:
+    if comp == SysFilterComparisonOperators.GREATER_EQUAL:
         return system_components >= value_components
-    if comp == SysFilterComparisonOperators.GT:
+    if comp == SysFilterComparisonOperators.GREATER_THAN:
         return system_components > value_components
-    if comp == SysFilterComparisonOperators.LE:
+    if comp == SysFilterComparisonOperators.LESS_EQUAL:
         return system_components <= value_components
-    if comp == SysFilterComparisonOperators.LT:
+    if comp == SysFilterComparisonOperators.LESS_THAN:
         return system_components < value_components
     return False
 
@@ -126,11 +126,11 @@ def evaluate_system_filters(system: Systems, filters: list[SystemFilter]) -> boo
             str,
         ):
             version_operators = [
-                SysFilterComparisonOperators.EQ,
-                SysFilterComparisonOperators.GE,
-                SysFilterComparisonOperators.GT,
-                SysFilterComparisonOperators.LE,
-                SysFilterComparisonOperators.LT,
+                SysFilterComparisonOperators.EQUALS,
+                SysFilterComparisonOperators.GREATER_EQUAL,
+                SysFilterComparisonOperators.GREATER_THAN,
+                SysFilterComparisonOperators.LESS_EQUAL,
+                SysFilterComparisonOperators.LESS_THAN,
             ]
             if filter_item.comp in version_operators:
                 if not compare_version(
@@ -223,7 +223,7 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
         List of all search configurations including those from included files
 
     """
-    all_configs: list[YamlConfig] = []
+    all_configs: list[SearchConfig] = []
 
     # Add configs from current file
     for _search_config in yaml_config.search_configs.values():
@@ -232,6 +232,10 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
             search_config: SearchConfig = _search_config.merge_global_config(
                 yaml_config.global_config,
             )
+        else:
+            # Use the search config as-is when no global config exists
+            search_config = _search_config
+
         all_configs.append(search_config)
 
     # Process includes
@@ -332,11 +336,11 @@ def get_system_attribute_value(
     """
     match attr:
         case SysFilterAttr.OS_FAMILY:
-            return system.os_family
+            return getattr(system, "os_family", None)
         case SysFilterAttr.DISTRO_FAMILY:
-            return system.distro_family
+            return getattr(system, "distro_family", None)
         case SysFilterAttr.PRODUCER:
-            return system.producer
+            return getattr(system, "producer", None)
         case _:
             # Use the enum value as the attribute name
             return getattr(system, attr.value, None)
@@ -359,7 +363,7 @@ def compare_values(  # noqa: PLR0911
         True if comparison matches, False otherwise
 
     """
-    if system_value is None:
+    if system_value is None or filter_value is None:
         return False
 
     try:

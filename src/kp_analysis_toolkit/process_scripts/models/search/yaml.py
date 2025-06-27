@@ -41,7 +41,7 @@ class YamlConfig(KPATBaseModel, ConfigModel):
                 if "excel_sheet_name" not in config_data:
                     config_data["excel_sheet_name"] = key
 
-                search_configs[key] = SearchConfig(name=key, **value)
+                search_configs[key] = SearchConfig(name=key, **config_data)
 
         config = cls(
             global_config=global_config,
@@ -53,7 +53,7 @@ class YamlConfig(KPATBaseModel, ConfigModel):
 
         return config
 
-    def validate_sheet_names(self) -> list["ValidationMessage"]:
+    def validate_sheet_names(self) -> list["ValidationMessage"]:  # noqa: C901
         """Validate Excel sheet names for uniqueness and length."""
         messages = []
 
@@ -82,7 +82,7 @@ class YamlConfig(KPATBaseModel, ConfigModel):
                 sheet_name = config.excel_sheet_name or name
 
                 # Check length
-                if len(sheet_name) > 31:
+                if len(sheet_name) > 31:  # noqa: PLR2004
                     messages.append(
                         ValidationMessage(
                             level="ERROR",
