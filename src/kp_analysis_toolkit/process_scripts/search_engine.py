@@ -459,22 +459,11 @@ def execute_search(
     for system in filtered_systems:
         system_results: list[SearchResult] = search_single_system(search_config, system)
         all_results.extend(system_results)
-
-        # Apply max_results limit if specified (per system)
-        if (
-            search_config.max_results > 0
-            and len(system_results) >= search_config.max_results
-        ):
-            # Truncate this system's results if needed
-            system_results = system_results[: search_config.max_results]
+        # Note: max_results is already handled per-file within search_single_system
 
     # Apply unique filter if specified
     if search_config.unique:
         all_results: list[SearchResult] = deduplicate_results(all_results)
-
-    # Apply global max_results if specified
-    if search_config.max_results > 0:
-        all_results = all_results[: search_config.max_results]
 
     return SearchResults(search_config=search_config, results=all_results)
 
