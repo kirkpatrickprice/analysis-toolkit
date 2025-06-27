@@ -3,6 +3,7 @@ from typing import Any
 import pandas as pd
 
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
+from kp_analysis_toolkit.utils.excel_utils import export_dataframe_to_excel
 
 
 def process_nipper_csv(program_config: ProgramConfig) -> pd.DataFrame:
@@ -42,7 +43,13 @@ def process_nipper_csv(program_config: ProgramConfig) -> pd.DataFrame:
     # Create a new DataFrame from the expanded rows
     result_data_frame: pd.DataFrame = pd.DataFrame(expanded_rows)
 
-    # Write the result to an Excel file
-    result_data_frame.to_excel(program_config.output_file, index=False)
+    # Write the result to an Excel file using the shared exporter
+    export_dataframe_to_excel(
+        result_data_frame,
+        program_config.output_file,
+        sheet_name="Expanded Nipper",
+        title="Nipper Expanded Report - One row per device/finding",
+        as_table=True,
+    )
 
     return result_data_frame

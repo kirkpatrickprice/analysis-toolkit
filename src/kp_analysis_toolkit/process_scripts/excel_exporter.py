@@ -5,21 +5,22 @@ Provides comprehensive Excel output with proper formatting, tables, and comments
 """
 
 import datetime
-import random
-import re
 from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils.exceptions import IllegalCharacterError
-from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 from kp_analysis_toolkit.process_scripts.models.results.base import (
     SearchResult,
     SearchResults,
+)
+from kp_analysis_toolkit.utils.excel_utils import (
+    format_as_excel_table,
+    sanitize_sheet_name,
 )
 
 
@@ -175,7 +176,7 @@ def _create_results_sheet(
 
     # Format as Excel table
     if not data_frame.empty:
-        _format_as_excel_table(worksheet, data_frame, startrow=3)
+        format_as_excel_table(worksheet, data_frame, startrow=3)
 
     # Add search metadata
     _add_search_metadata(worksheet, search_result, data_frame.shape[1])
@@ -219,7 +220,7 @@ def _create_summary_sheet(writer: pd.ExcelWriter, summary_data: list[dict]) -> N
 
     # Format as table
     if not summary_df.empty:
-        _format_as_excel_table(worksheet, summary_df, startrow=2)
+        format_as_excel_table(worksheet, summary_df, startrow=2)
 
     # Move summary sheet to first position
     workbook = writer.book
@@ -280,40 +281,6 @@ def create_dataframe_from_results(search_results: SearchResults) -> pd.DataFrame
         data.append(row)
 
     return pd.DataFrame(data)
-
-
-def sanitize_sheet_name(name: str) -> str:
-    """
-    Sanitize sheet name for Excel compatibility.
-
-    Args:
-        name: Original sheet name
-
-    Returns:
-        Sanitized sheet name safe for Excel
-
-    """
-    # Excel sheet names can't contain: / \ ? * [ ] :
-    # Also limit to 31 characters
-    invalid_chars = ["/", "\\", "?", "*", "[", "]", ":"]
-    max_sheet_name_length = 31
-
-    sanitized = name
-    for char in invalid_chars:
-        sanitized = sanitized.replace(char, "_")
-
-    # Remove leading/trailing spaces
-    sanitized = sanitized.strip()
-
-    # Ensure it's not empty
-    if not sanitized:
-        sanitized = "Unnamed_Search"
-
-    # Limit to 31 characters (Excel limitation)
-    if len(sanitized) > max_sheet_name_length:
-        sanitized = sanitized[: max_sheet_name_length - 3] + "..."
-
-    return sanitized
 
 
 def _add_search_comment(worksheet: Worksheet, comment: str | None) -> None:
@@ -383,319 +350,13 @@ def _add_search_metadata(
         if label.endswith(":"):
             worksheet[label_cell].font = Font(bold=True, size=10)
 
+    # ...existing code...
 
-def _format_date_columns(  # noqa: C901, PLR0912
-    worksheet: Worksheet,
-    df: pd.DataFrame,
-    startrow: int = 1,
-) -> None:
-    """
-    Format columns as dates and standardize date representations.
+    # ...existing code...
 
-    Apply the following criteria:
-    1. Column name contains 'date' (case-insensitive)
-    2. Column values are in a common date format
+    # ...existing code...
 
-    For identified date columns:
-    - Applies Excel date formatting
-    - Standardizes actual cell values to ISO format (YYYY-MM-DD)
-
-    Args:
-        worksheet: The worksheet to format
-        df: DataFrame containing the data
-        startrow: Row where the data starts (1-indexed)
-
-    """
-    is_date_column_threshold: float = 0.7
-
-    # Common date patterns to check
-    date_patterns: list[str] = [
-        # MM/DD/YYYY or MM/DD/YY
-        r"^\d{1,2}/\d{1,2}/\d{2,4}$",
-        # DD-MM-YYYY or DD-MM-YY
-        r"^\d{1,2}-\d{1,2}-\d{2,4}$",
-        # YYYY-MM-DD
-        r"^\d{4}-\d{1,2}-\d{1,2}$",
-        # DD-MMM-YYYY or DD-MMM-YY (01-JAN-2025)
-        r"^\d{1,2}-[A-Za-z]{3}-\d{2,4}$",
-        # MMM DD, YYYY
-        r"^[A-Za-z]{3} \d{1,2}, \d{4}$",
-    ]
-
-    # Date parsing formats to try
-    date_formats = [
-        "%m/%d/%Y",
-        "%m/%d/%y",  # MM/DD/YYYY, MM/DD/YY
-        "%d-%m-%Y",
-        "%d-%m-%y",  # DD-MM-YYYY, DD-MM-YY
-        "%Y-%m-%d",  # YYYY-MM-DD
-        "%d-%b-%Y",
-        "%d-%b-%y",  # DD-MMM-YYYY, DD-MMM-YY
-        "%b %d, %Y",  # MMM DD, YYYY
-    ]
-
-    for col_num, column_name in enumerate(df.columns, 1):
-        column_letter: str = _get_column_letter(col_num)
-        is_date_column = False
-
-        # Check if column name contains 'date'
-        if "date" in column_name.lower():
-            is_date_column = True
-
-        # If not determined by name, check values
-        if not is_date_column:
-            # Sample up to 10 non-empty values from the column
-            sample_values: list[str] = [
-                str(val) for val in df[column_name].dropna().head(10) if pd.notna(val)
-            ]
-
-            if sample_values:
-                # Check if most values match a date pattern
-                matches = 0
-                for value in sample_values:
-                    if any(re.match(pattern, str(value)) for pattern in date_patterns):
-                        matches += 1
-
-                # If more than 70% of sampled values match a date pattern
-                if matches / len(sample_values) > is_date_column_threshold:
-                    is_date_column = True
-
-        # Apply date formatting if it's a date column
-        if is_date_column:
-            # Get the data range for this column (excluding header)
-            data_start_row: int = startrow + 1  # +1 for the header row
-            data_end_row: int = data_start_row + len(df) - 1
-
-            # Apply date format to all cells in the column
-            for row in range(data_start_row, data_end_row + 1):
-                cell: str = f"{column_letter}{row}"
-                cell_value: str | float | None = worksheet[cell].value
-
-                # Skip empty cells
-                if not cell_value or cell_value == "":
-                    continue
-
-                # Convert the date string to a standardized format
-                try:
-                    # Try to parse the date with various formats
-                    parsed_date = None
-
-                    # If already a datetime object, just use it
-                    if isinstance(cell_value, datetime.datetime):
-                        parsed_date = cell_value
-                    else:
-                        # Try each format until one works
-                        for date_format in date_formats:
-                            try:
-                                parsed_date: datetime.datetime = (
-                                    datetime.datetime.strptime(  # noqa: DTZ007
-                                        str(cell_value),
-                                        date_format,
-                                    )
-                                )
-                                break
-                            except ValueError:
-                                continue
-
-                    # If we successfully parsed the date, standardize it
-                    if parsed_date:
-                        # Update the cell with the standardized date string
-                        worksheet[cell].value = parsed_date.strftime("%Y-%m-%d")
-                except Exception:  # noqa: BLE001, S110
-                    # If parsing fails, keep the original value
-                    pass
-
-                # Apply Excel date formatting
-                worksheet[cell].number_format = "yyyy-mm-dd"
-
-
-def _format_as_excel_table(
-    worksheet: Worksheet,
-    df: pd.DataFrame,
-    startrow: int = 1,
-) -> None:
-    """
-    Format DataFrame as an Excel table with proper styling.
-
-    Args:
-        worksheet: The worksheet to format
-        df: DataFrame that was written to the worksheet
-        startrow: Row where the data starts (1-indexed)
-
-    """
-    if df.empty:
-        return
-
-    # Calculate table range
-    end_row = startrow + len(df)
-    end_col_letter = _get_column_letter(len(df.columns))
-    table_range = f"A{startrow}:{end_col_letter}{end_row}"
-
-    # Create unique table name
-    random_suffix = random.randint(1000, 9999)
-    table_name = f"Table_{worksheet.title}_{random_suffix}".replace(
-        " ",
-        "_",
-    ).replace(
-        "-",
-        "_",
-    )
-    # Ensure table name doesn't start with a number or contain invalid chars
-    table_name = "".join(c if c.isalnum() or c == "_" else "_" for c in table_name)
-    if table_name[0].isdigit():
-        table_name = "T_" + table_name
-
-    # Create table
-    table = Table(displayName=table_name, ref=table_range)
-
-    # Add table style
-    style = TableStyleInfo(
-        name="TableStyleMedium9",
-        showFirstColumn=False,
-        showLastColumn=False,
-        showRowStripes=True,
-        showColumnStripes=False,
-    )
-    table.tableStyleInfo = style
-
-    # Add table to worksheet
-    try:
-        worksheet.add_table(table)
-    except ValueError as e:
-        message: str = f"Error adding table to worksheet '{worksheet.title}': {e}. "
-        raise ValueError(message) from e
-
-    # Set top-left alignment for all cells in table range
-    _set_table_alignment(worksheet, table_range)
-
-    # format date columns
-    _format_date_columns(worksheet, df, startrow)
-
-    # Auto-adjust column widths
-    _auto_adjust_column_widths(worksheet, df)
-
-    # Adjust row heights based on content
-    _adjust_row_heights(worksheet, df, startrow)
-
-
-def _set_table_alignment(worksheet: Worksheet, table_range: str) -> None:
-    """
-    Set top-left alignment for all cells in the table range.
-
-    Args:
-        worksheet: The worksheet containing the table
-        table_range: The Excel range of the table (e.g., 'A3:F10')
-
-    """
-    # Parse the range
-    start_cell, end_cell = table_range.split(":")
-    start_col = start_cell[0]
-    start_row = int(start_cell[1:])
-    end_col = end_cell[0] if len(end_cell) == 2 else end_cell[:2]  # noqa: PLR2004
-    end_row = int(end_cell[1:]) if len(end_cell) == 2 else int(end_cell[2:])  # noqa: PLR2004
-
-    # Get column indices
-    start_col_idx = ord(start_col) - ord("A") + 1
-    end_col_idx = (
-        ord(end_col) - ord("A") + 1
-        if len(end_col) == 1
-        else 26 + (ord(end_col[1]) - ord("A") + 1)
-    )
-
-    # Set alignment for all cells in the range
-    alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
-
-    for row in range(start_row, end_row + 1):
-        for col_idx in range(start_col_idx, end_col_idx + 1):
-            col_letter = _get_column_letter(col_idx)
-            cell = f"{col_letter}{row}"
-            worksheet[cell].alignment = alignment
-
-
-def _adjust_row_heights(
-    worksheet: Worksheet,
-    df: pd.DataFrame,
-    startrow: int = 1,
-) -> None:
-    """
-    Adjust row heights based on cell content.
-
-    Args:
-        worksheet: The worksheet to adjust
-        df: DataFrame containing the data
-        startrow: Row where the data starts (1-indexed)
-
-    """
-    # Get column widths (in characters)
-    col_widths = {}
-    for col_num, _ in enumerate(df.columns, 1):
-        col_letter = _get_column_letter(col_num)
-        col_widths[col_num] = worksheet.column_dimensions[col_letter].width
-
-    # Process each row
-    for row_idx, df_row in enumerate(df.itertuples(index=False), startrow + 1):
-        max_height = 15  # Default minimum height
-
-        # Check each cell in the row
-        for col_idx, value in enumerate(df_row, 1):
-            if pd.isna(value):
-                continue
-
-            # Convert value to string
-            str_value = str(value)
-
-            # Calculate needed height based on content
-            col_width = col_widths.get(col_idx, 10)  # Default width if not found
-
-            # Count newlines
-            newline_count = str_value.count("\n") + str_value.count("\r")
-
-            # Estimate wrapped lines based on text length and column width
-            # This is a simple approximation - actual wrapping depends on font metrics
-            estimated_wrapped_lines = max(1, len(str_value) // int(col_width * 0.85))
-
-            # Calculate total lines needed
-            total_lines = max(1, newline_count + 1, estimated_wrapped_lines)
-
-            # Calculate height (approximately 15 units per line)
-            needed_height = total_lines * 15
-
-            # Update max height for this row
-            max_height = max(max_height, needed_height)
-
-        # Set the row height
-        worksheet.row_dimensions[row_idx].height = max_height
-
-
-def _get_column_letter(col_num: int) -> str:
-    """Convert column number to Excel column letter."""
-    result = ""
-    while col_num > 0:
-        col_num -= 1
-        result = chr(col_num % 26 + ord("A")) + result
-        col_num //= 26
-    return result
-
-
-def _auto_adjust_column_widths(
-    worksheet: Worksheet,
-    df: pd.DataFrame,
-) -> None:
-    """Auto-adjust column widths based on content."""
-    for col_num, column_name in enumerate(df.columns, 1):
-        column_letter = _get_column_letter(col_num)
-
-        # Calculate max width needed
-        max_length = len(str(column_name))  # Header length
-
-        # Check data in column
-        for value in df[column_name]:
-            if pd.notna(value):
-                max_length = max(max_length, len(str(value)))
-
-        # Set width with reasonable bounds
-        adjusted_width = min(max(max_length + 2, 10), 80)  # Min 10, Max 80 chars
-        worksheet.column_dimensions[column_letter].width = adjusted_width
+    # ...existing code...
 
 
 def export_systems_summary_to_excel(systems: list, output_path: Path) -> None:
@@ -739,7 +400,7 @@ def export_systems_summary_to_excel(systems: list, output_path: Path) -> None:
 
         # Format as table
         if not systems_df.empty:
-            _format_as_excel_table(worksheet, systems_df, startrow=2)
+            format_as_excel_table(worksheet, systems_df, startrow=2)
 
 
 def create_search_report(
@@ -831,4 +492,4 @@ def _create_detailed_system_report(
             worksheet["A1"].font = Font(bold=True, size=12, color="1F497D")
 
             if not data_frame.empty:
-                _format_as_excel_table(worksheet, data_frame, startrow=2)
+                format_as_excel_table(worksheet, data_frame, startrow=2)
