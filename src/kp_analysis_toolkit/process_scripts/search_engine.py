@@ -1068,7 +1068,7 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
 
         # Export to Excel
         output_file = program_config.results_path / "search_results.xlsx"
-        export_search_results_to_excel(all_results, output_file)
+        export_search_results_to_excel(all_results, output_file, systems)
 
         # Create summary report
         summary_file = program_config.results_path / "search_summary.txt"
