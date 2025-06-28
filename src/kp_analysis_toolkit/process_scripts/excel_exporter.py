@@ -4,7 +4,6 @@ Excel export functionality for search results.
 Provides comprehensive Excel output with proper formatting, tables, and comments.
 """
 
-import datetime
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -23,6 +22,7 @@ from kp_analysis_toolkit.utils.excel_utils import (
     format_as_excel_table,
     sanitize_sheet_name,
 )
+from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 
 
 def export_results_by_os_type(
@@ -52,7 +52,7 @@ def export_results_by_os_type(
         systems_by_os[os_family].append(system)
 
     # Generate timestamp for filenames
-    timestamp: str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
+    timestamp: str = get_timestamp()
 
     created_files = {}
 

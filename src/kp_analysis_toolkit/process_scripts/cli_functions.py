@@ -1,6 +1,5 @@
 import sys
 from collections import defaultdict
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import click
@@ -20,6 +19,7 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
     load_search_configs,
     load_yaml_config,
 )
+from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -198,7 +198,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
 
 def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
     """Process the source files and execute searches."""
-    time_stamp: str = datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
+    time_stamp: str = get_timestamp()
     click.echo("Processing source files...")
 
     # Create results path
