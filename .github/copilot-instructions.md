@@ -9,3 +9,5 @@ All data models should be annotated with type hints, and all fields should have 
 All provided input should be validated using Pydantic's validation features. This includes checking types, required fields, and any custom validation logic that may be necessary.
 
 Each toolkit will export its results into Excel.  Excel handling will be provided by Pandas using openpyxl as the engine.
+
+All test data should be created in the `testdata` directory with a structure that mirrors the source data.  This allows for easy testing and validation of the data models and processing logic.
