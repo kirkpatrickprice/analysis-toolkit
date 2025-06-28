@@ -1,3 +1,6 @@
+import sys
+from collections.abc import Callable
+
 import click
 
 from kp_analysis_toolkit import __version__ as cli_version
@@ -46,6 +49,59 @@ def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
 cli.add_command(scripts_process_command_line, name="scripts")
 cli.add_command(nipper_process_command_line, name="nipper")
 cli.add_command(rtf_process_command_line, name="rtf-to-text")
+
+
+def _show_deprecation_warning(legacy_cmd: str, new_cmd: str) -> None:
+    """Show deprecation warning for legacy commands."""
+    click.secho(
+        f"⚠️  WARNING: The '{legacy_cmd}' command is deprecated.",
+        fg="yellow",
+        bold=True,
+    )
+    click.secho(
+        f"   Please use '{new_cmd}' instead.",
+        fg="yellow",
+    )
+    click.secho(
+        "   This legacy command will be removed in a future version.",
+        fg="yellow",
+    )
+    click.echo()
+
+
+def _create_legacy_command(
+    legacy_name: str,
+    new_command: str,
+    command_func: Callable[[], None],
+) -> Callable[[], None]:
+    """Create a legacy command wrapper with deprecation warning."""
+
+    def legacy_wrapper() -> None:
+        _show_deprecation_warning(legacy_name, new_command)
+        # Update sys.argv[0] to show the correct command name in help
+        original_argv0 = sys.argv[0]
+        sys.argv[0] = legacy_name.replace("_", "-")
+        try:
+            command_func()
+        finally:
+            # Restore original sys.argv[0]
+            sys.argv[0] = original_argv0
+
+    return legacy_wrapper
+
+
+# Create legacy command wrappers
+legacy_adv_searchfor: Callable[[], None] = _create_legacy_command(
+    "adv-searchfor",
+    "kpat_cli scripts",
+    scripts_process_command_line,
+)
+
+legacy_nipper_expander: Callable[[], None] = _create_legacy_command(
+    "nipper_expander",
+    "kpat_cli nipper",
+    nipper_process_command_line,
+)
 
 
 def main() -> None:
