@@ -238,10 +238,10 @@ global:
   regex: 'System_ScheduledTaskInfo::\s*((?P<task_name>[A-Za-z0-9 -_]+)\s+(?P<last_run_time>[0-9]{1,2}/[0-9/:\s]+:[0-9]{1,2})\s+(?P<last_result>[0-9]+)\s+(?P<number_missed_runs>[0-9]+)\s(?P<next_run_time>.*))'
   excel_sheet_name: Scheduled Tasks
   field_list:
-    - 'taskName'
-    - 'lastRunTime'
-    - 'lastTaskResult'
-    - 'nextRunTime'
+    - 'task_name'
+    - 'last_run_time'
+    - 'last_task_result'
+    - 'next_run_time'
   multiline: True
   comment: |-
     A list of all scheduled tasks.  Includes last and next run time as well as the result.  At least some anti-virus could use scheduled tasks to run a weekly full scan.

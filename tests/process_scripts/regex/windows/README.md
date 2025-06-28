@@ -7,22 +7,36 @@ This directory contains comprehensive unit tests for all Windows YAML configurat
 The tests are organized by Windows YAML configuration file:
 
 - `base.py` - Base test utilities and fixtures shared across all Windows regex tests
-- `test_windows_system.py` - **Dynamic tests** for `audit-windows-system.yaml` patterns ✨ NEW
-- `test_windows_users.py` - Tests for `audit-windows-users.yaml` patterns  
-- `test_windows_security_software.py` - Tests for `audit-windows-security-software.yaml` patterns
-- `test_windows_network.py` - Tests for `audit-windows-network.yaml` patterns
-- `test_windows_logging.py` - Tests for `audit-windows-logging.yaml` patterns
-- `test_all_windows.py` - Imports all tests for easy discovery
+- `test_all_windows_dynamic.py` - **Dynamic test generator** for all Windows YAML files ✨ NEW
+- `test_windows_system.py` - **Dynamic tests** for `audit-windows-system.yaml` patterns ✨ UPDATED
+- `test_windows_users.py` - **Dynamic tests** for `audit-windows-users.yaml` patterns ✨ NEW
+- `test_windows_network.py` - **Dynamic tests** for `audit-windows-network.yaml` patterns ✨ NEW
+- `test_windows_security_software.py` - **Dynamic tests** for `audit-windows-security-software.yaml` patterns ✨ NEW
+- `test_windows_logging.py` - **Dynamic tests** for `audit-windows-logging.yaml` patterns ✨ NEW
 
-### Dynamic Test Generation
+### Dynamic Test Generation System
 
-The `test_windows_system.py` file features **dynamic test generation** that:
-- Automatically creates tests for each regex pattern in the YAML file
-- Tests patterns against real Windows audit data from 4 different systems
-- Validates `multiline` and `max_results` parameter effects
-- Checks field name consistency between `field_list` and regex named groups
-- Requires no manual updates when YAML patterns change
-- Provides detailed diagnostics for pattern issues
+The entire test suite now features **comprehensive dynamic test generation**:
+
+#### Core Architecture
+- **`DynamicWindowsYamlTestMixin`** - Reusable mixin class providing all dynamic test methods
+- **Automatic YAML Discovery** - Tests are generated for all `audit-windows-*.yaml` files
+- **Shared Code Base** - All test files use the same underlying logic from the mixin
+- **Individual Test Files** - Each YAML file has its own test file for targeted testing
+
+#### Key Features
+- **Zero Configuration** - New YAML files are automatically detected and tested
+- **Consistent Test Coverage** - All YAML files get the same comprehensive test suite
+- **Real-World Validation** - Tests run against actual Windows audit data from 4 systems
+- **Parameter Testing** - Validates `multiline`, `max_results`, `field_list` behavior
+- **Performance Monitoring** - Ensures patterns execute within reasonable time limits
+- **Configuration Validation** - Checks field name consistency and pattern compilation
+
+#### Individual Test Files Benefits
+- Run tests for specific YAML files: `pytest test_windows_users.py -v`
+- Faster iteration when working on specific configurations
+- Clear separation of concerns for different audit areas
+- Easy integration with CI/CD pipelines for targeted testing
 
 See `test_windows_system_README.md` for detailed documentation of the dynamic testing approach.
 
@@ -108,21 +122,48 @@ The test suite covers all regex patterns from the following YAML files:
 
 ### Run All Windows Regex Tests
 ```bash
-python -m pytest tests/process_scripts/regex/
+# Run all Windows YAML pattern tests
+python -m pytest tests/process_scripts/regex/windows/ -v
+
+# Run the comprehensive dynamic test generator
+python -m pytest tests/process_scripts/regex/windows/test_all_windows_dynamic.py -v
 ```
 
-### Run Tests for Specific YAML
+### Run Tests for Specific YAML Files
 ```bash
-python -m pytest tests/process_scripts/regex/test_windows_system.py
-python -m pytest tests/process_scripts/regex/test_windows_users.py
-python -m pytest tests/process_scripts/regex/test_windows_network.py
-python -m pytest tests/process_scripts/regex/test_windows_security_software.py
-python -m pytest tests/process_scripts/regex/test_windows_logging.py
+# Individual YAML test files (recommended for focused testing)
+python -m pytest tests/process_scripts/regex/windows/test_windows_system.py -v
+python -m pytest tests/process_scripts/regex/windows/test_windows_users.py -v
+python -m pytest tests/process_scripts/regex/windows/test_windows_network.py -v
+python -m pytest tests/process_scripts/regex/windows/test_windows_security_software.py -v
+python -m pytest tests/process_scripts/regex/windows/test_windows_logging.py -v
 ```
 
-### Run Only Pattern Tests (Skip Integration Tests)
+### Run Specific Test Types
 ```bash
-python -m pytest tests/process_scripts/regex/ -k "not Integration"
+# Test only pattern compilation across all YAML files
+python -m pytest tests/process_scripts/regex/windows/ -k "test_pattern_compilation" -v
+
+# Test only field list consistency
+python -m pytest tests/process_scripts/regex/windows/ -k "test_field_list_consistency" -v
+
+# Test multiline parameter effects
+python -m pytest tests/process_scripts/regex/windows/ -k "test_multiline_parameter_effects" -v
+
+# Test max_results parameter effects  
+python -m pytest tests/process_scripts/regex/windows/ -k "test_max_results_parameter_effects" -v
+```
+
+### Performance and Debugging
+```bash
+# Run with detailed output to see warnings and info
+python -m pytest tests/process_scripts/regex/windows/ -v -s
+
+# Test performance only
+python -m pytest tests/process_scripts/regex/windows/ -k "test_pattern_performance" -v
+
+# Quick smoke test - just check YAML files load
+python -m pytest tests/process_scripts/regex/windows/ -k "test_yaml_file_loads_successfully" -v
 ```
 
 ### Run Tests with Verbose Output
