@@ -16,3 +16,9 @@
 * New tool -- RTF to Text Converter
     * Converts RTF files to plaintext, ASCII-encoded files
     * Useful for router configs (and other files) where the information was provided in RTF, but needs to be used (e.g. by Nipper) as plaintext files.
+06/28/2025
+    * Add `conf.d` folder to build
+    * Bump toolkit to v2.0.1
+    * Bump `process_scripts` to v0.4.1
+    * Add progress bar to non-verbose output
+    * Bump toolkit to v2.0.2

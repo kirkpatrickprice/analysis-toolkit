@@ -1,5 +1,6 @@
 import sys
 from collections import defaultdict
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
 import click
@@ -23,6 +24,8 @@ from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from click._termui_impl import ProgressBar
 
     from kp_analysis_toolkit.process_scripts.models.results.base import (
         SearchResult,
@@ -222,30 +225,46 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     }
 
     # Execute searches
-    for config in search_configs:
-        os_type: str = _get_sysfilter_os_type(config)
-        if program_config.verbose:
-            click.echo(
-                f"Executing search: ({os_type}) {config.name}",
-            )
+    search_iterator: ProgressBar[SearchConfig] | list[SearchConfig] = (
+        click.progressbar(
+            search_configs,
+            length=len(search_configs),
+            label="Executing searches",
+            show_eta=True,
+            show_percent=True,
+        )
+        if not program_config.verbose
+        else search_configs
+    )
 
-        results: SearchResults = execute_search(config, systems)
+    with (
+        search_iterator
+        if not program_config.verbose
+        else nullcontext(search_configs) as iterator
+    ):
+        for config in iterator:
+            os_type: str = _get_sysfilter_os_type(config)
 
-        # Find the matching OS type or default to UNDEFINED
-        matching_os: OSFamilyType = OSFamilyType.UNDEFINED
-        for enum_os in OSFamilyType:
-            if enum_os.value == os_type:
-                matching_os = enum_os.value
-                break
+            if program_config.verbose:
+                click.echo(f"Executing search: ({os_type}) {config.name}")
 
-        # Append results to the corresponding OS type list
-        os_results[matching_os].append(results)
+            results: SearchResults = execute_search(config, systems)
 
-        if program_config.verbose:
-            if results.result_count == 0:
-                click.secho("  No matches found", fg="yellow")
-            else:
-                click.echo(f"  Found {results.result_count} matches")
+            # Find the matching OS type or default to UNDEFINED
+            matching_os: OSFamilyType = OSFamilyType.UNDEFINED
+            for enum_os in OSFamilyType:
+                if enum_os.value == os_type:
+                    matching_os = enum_os.value
+                    break
+
+            # Append results to the corresponding OS type list
+            os_results[matching_os].append(results)
+
+            if program_config.verbose:
+                if results.result_count == 0:
+                    click.secho("  No matches found", fg="yellow")
+                else:
+                    click.echo(f"  Found {results.result_count} matches")
 
     # Export results to separate Excel files based on OS type
     files_created: list[str] = []
