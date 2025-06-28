@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This repository includes two automated testing workflows:
+This repository includes two automated testing workflows using the latest GitHub Actions.
 
 ## 🧪 Main Test Workflow (`test.yml`)
 
@@ -16,6 +16,7 @@ This repository includes two automated testing workflows:
 - Generates JUnit XML test reports
 - Uploads test artifacts
 - Publishes test results in PR comments
+- Uses latest GitHub Actions (checkout@v4, setup-python@v5, upload-artifact@v4)
 
 **Manual Trigger:**
 1. Go to the "Actions" tab in GitHub
