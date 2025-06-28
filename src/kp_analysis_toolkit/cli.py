@@ -15,7 +15,7 @@ CONTEXT_SETTINGS: dict[str, int] = {
 }
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.version_option(
     version=cli_version,
     prog_name="kpat_cli",
@@ -27,16 +27,25 @@ CONTEXT_SETTINGS: dict[str, int] = {
     default=False,
     help="Skip checking for updates at startup.",
 )
-def cli(skip_update_check: bool) -> None:  # noqa: FBT001
+@click.pass_context
+def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
     """Command line interface for the KP Analysis Toolkit."""
+    # Always run version check unless explicitly skipped
     if not skip_update_check:
         check_and_prompt_update()
+    
+    # If no subcommand was invoked and no help was requested, show help
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+
+
+# Add commands to the CLI group at import time
+cli.add_command(scripts_process_command_line, name="scripts")
+cli.add_command(nipper_process_command_line, name="nipper")
 
 
 def main() -> None:
     """Main entry point for the kpat_cli command line interface."""
-    cli.add_command(scripts_process_command_line, name="scripts")
-    cli.add_command(nipper_process_command_line, name="nipper")
     cli()
 
 

@@ -11,7 +11,7 @@ class TestCLIVersionChecking:
     """Integration tests for CLI version checking functionality."""
 
     def test_cli_with_skip_update_check(self) -> None:
-        """Test CLI with --skip-update-check flag."""
+        """Test CLI with --skip-update-check flag shows help correctly."""
         runner = CliRunner()
         result = runner.invoke(cli, ["--skip-update-check", "--help"])
 
@@ -21,9 +21,9 @@ class TestCLIVersionChecking:
 
     @patch("kp_analysis_toolkit.cli.check_and_prompt_update")
     def test_cli_calls_version_check_by_default(self, mock_check_update: Mock) -> None:
-        """Test that CLI calls version check by default."""
+        """Test that CLI calls version check by default when invoked without subcommand."""
         runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
+        result = runner.invoke(cli, [])
 
         assert result.exit_code == 0
         mock_check_update.assert_called_once()
@@ -35,9 +35,21 @@ class TestCLIVersionChecking:
     ) -> None:
         """Test that CLI skips version check when flag is set."""
         runner = CliRunner()
-        result = runner.invoke(cli, ["--skip-update-check", "--help"])
+        result = runner.invoke(cli, ["--skip-update-check"])
 
         assert result.exit_code == 0
+        mock_check_update.assert_not_called()
+
+    @patch("kp_analysis_toolkit.cli.check_and_prompt_update")
+    def test_cli_help_does_not_trigger_version_check(self, mock_check_update: Mock) -> None:
+        """Test that --help does not trigger version check (Click special handling)."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+
+        assert result.exit_code == 0
+        assert "Command line interface for the KP Analysis Toolkit" in result.output
+        assert "--skip-update-check" in result.output
+        # Help is handled specially by Click and doesn't invoke the group callback
         mock_check_update.assert_not_called()
 
     def test_cli_version_option_still_works(self) -> None:
