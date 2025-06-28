@@ -1,0 +1,43 @@
+name: Quick Test (Ubuntu Only)
+
+on:
+  # Allow manual triggering for quick feedback
+  workflow_dispatch:
+  
+  # Also run on pushes to feature branches for faster feedback
+  push:
+    branches:
+      - 'feature/*'
+      - 'fix/*'
+      - 'hotfix/*'
+
+jobs:
+  quick-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+    
+    - name: Run quick test suite
+      run: |
+        uv run pytest tests/ -v --tb=short --ff
+    
+    - name: Run syntax check
+      if: always()
+      run: |
+        uv run python -m py_compile src/kp_analysis_toolkit/**/*.py
