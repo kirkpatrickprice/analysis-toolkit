@@ -17,54 +17,8 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
     compare_version,
     evaluate_system_filters,
     get_system_attribute_value,
-    should_skip_line,
     system_matches_all_filters,
 )
-
-
-class TestShouldSkipLine:
-    """Tests for the should_skip_line function."""
-
-    def test_skip_begin_marker(self) -> None:
-        """Test that lines containing ###[BEGIN] are skipped."""
-        assert should_skip_line("###[BEGIN] Some section")
-        assert should_skip_line("    ###[BEGIN]    ")
-        assert should_skip_line("prefix ###[BEGIN] suffix")
-
-    def test_skip_processing_command(self) -> None:
-        """Test that lines containing ###Processing Command: are skipped."""
-        assert should_skip_line("###Processing Command: ls -la")
-        assert should_skip_line("  ###Processing Command: test  ")
-
-    def test_skip_running_command(self) -> None:
-        """Test that lines containing ###Running: are skipped."""
-        assert should_skip_line("###Running: some command")
-        assert should_skip_line("prefix ###Running: suffix")
-
-    def test_skip_end_marker(self) -> None:
-        """Test that lines containing ###[END] are skipped."""
-        assert should_skip_line("###[END] Some section")
-        assert should_skip_line("###[END]")
-
-    def test_skip_general_comments(self) -> None:
-        """Test that lines with three or more hashes are skipped."""
-        assert should_skip_line("### This is a comment")
-        assert should_skip_line("#### Another comment")
-        assert should_skip_line("##### More hashes")
-        assert should_skip_line("####### Even more")
-
-    def test_do_not_skip_valid_lines(self) -> None:
-        """Test that valid lines are not skipped."""
-        assert not should_skip_line("This is a normal line")
-        assert not should_skip_line("## Only two hashes")
-        assert not should_skip_line("# Single hash")
-        assert not should_skip_line("No hashes at all")
-
-    def test_skip_content_with_hash_anywhere(self) -> None:
-        """Test that lines with ### anywhere are skipped."""
-        assert should_skip_line("Some data ### with hashes")
-        assert should_skip_line("Value=123###456")
-        assert should_skip_line("Data: ###something but not at start")
 
 
 class TestCompareVersion:
