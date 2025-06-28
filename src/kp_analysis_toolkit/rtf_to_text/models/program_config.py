@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import computed_field, field_validator
+from pydantic import computed_field, field_validator, model_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
@@ -12,6 +12,14 @@ class ProgramConfig(KPATBaseModel):
     program_path: Path = Path(__file__).parent.parent
     input_file: Path | None = None
     source_files_path: Path | None = None
+    _timestamp: str = ""
+
+    @model_validator(mode="after")
+    def set_timestamp(self) -> "ProgramConfig":
+        """Set timestamp once during model creation."""
+        if not self._timestamp:
+            self._timestamp = get_timestamp()
+        return self
 
     @field_validator("input_file")
     @classmethod
@@ -29,8 +37,8 @@ class ProgramConfig(KPATBaseModel):
         # Get the input file's stem (filename without extension)
         stem: str = self.input_file.stem
 
-        # Create new filename with "_converted.txt" suffix
-        converted_filename: str = f"{stem}_converted-{get_timestamp()}.txt"
+        # Create new filename with "_converted.txt" suffix using cached timestamp
+        converted_filename: str = f"{stem}_converted-{self._timestamp}.txt"
 
         # Return the complete path in the same directory as the input file
         return (self.input_file.parent / converted_filename).absolute()

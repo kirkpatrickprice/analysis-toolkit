@@ -52,7 +52,7 @@ class TestProgramConfig:
 
             # Mock the detect_encoding function to verify it's called
             with patch(
-                "kp_analysis_toolkit.rtf_to_text.process_rtf.detect_encoding"
+                "kp_analysis_toolkit.rtf_to_text.process_rtf.detect_encoding",
             ) as mock_detect:
                 mock_detect.return_value = "utf-8"
 
@@ -107,14 +107,39 @@ class TestProcessRtfFile:
                 source_files_path=tmpdir_path,
             )
 
-            process_rtf_file(config)
+            # Store the expected output file path before processing
+            # (since the computed field generates a new timestamp each time it's accessed)
+            expected_output_file = config.output_file
+
+            # Ensure we handle any exceptions during processing
+            try:
+                process_rtf_file(config)
+            except Exception as e:
+                # Add debugging info for CI failures
+                print(f"Exception during RTF processing: {e}")
+                print(f"Input file: {config.input_file}")
+                print(f"Expected output file: {expected_output_file}")
+                print(f"Input file exists: {config.input_file.exists()}")
+                raise
 
             # Check that output file was created (it will have a timestamp in the name)
-            assert config.output_file.exists()
+            if not expected_output_file.exists():
+                # Debug information for intermittent failures
+                files_in_dir = list(tmpdir_path.iterdir())
+                print(f"Expected output file: {expected_output_file}")
+                print(f"Files in temp directory: {files_in_dir}")
+                # Look for any files with the expected pattern
+                pattern_files = list(tmpdir_path.glob("test_converted-*.txt"))
+                print(f"Files matching pattern: {pattern_files}")
+
+            assert expected_output_file.exists(), (
+                f"Output file {expected_output_file} was not created"
+            )
 
             # Check that content was converted (should contain "Hello World" and "This is a test")
-            output_content = config.output_file.read_text(
-                encoding="ascii", errors="ignore"
+            output_content = expected_output_file.read_text(
+                encoding="ascii",
+                errors="ignore",
             )
             assert "Hello World" in output_content
             assert "This is a test" in output_content
