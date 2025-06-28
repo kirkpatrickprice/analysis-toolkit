@@ -17,7 +17,7 @@ global:
       Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
       to determine if you're missing anything you find important.
 01_system_01_bios:
-  regex: 'System_BIOS::((SMBIOSBIosversion\s+:\s+(?P<SMBIos_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  regex: 'System_BIOS::((SMBIOSBIosversion\s+:\s+(?P<SMBios_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
   excel_sheet_name: BIOS Information
   max_results: 1
   only_matching: True
