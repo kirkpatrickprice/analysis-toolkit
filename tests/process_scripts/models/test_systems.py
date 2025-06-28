@@ -10,9 +10,9 @@ from kp_analysis_toolkit.process_scripts.models.enums import (
 )
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
-win_file = Path("testdata/windows/windows10pro-cb19044-kp0.4.7.txt")
-mac_file = Path("testdata/macos/macos-13.3.1-kp0.1.0.txt")
-nix_file = Path("testdata/linux/ubuntu-22.04-0.6.22.txt")
+win_file = Path("testdata/process_scripts/windows/windows10pro-cb19044-kp0.4.7.txt")
+mac_file = Path("testdata/process_scripts/macos/macos-13.3.1-kp0.1.0.txt")
+nix_file = Path("testdata/process_scripts/linux/ubuntu-22.04-0.6.22.txt")
 
 
 class TestSystems:
@@ -108,7 +108,7 @@ class TestSystems:
             producer=ProducerType.KPWINAUDIT,
             producer_version="1.2.abc",
         )
-        with pytest.raises(ValueError):  # noqa: PT011
+        with pytest.raises(ValueError):
             _: list[int] = system.version_components
 
     def test_is_windows_true(self) -> None:

@@ -17,7 +17,7 @@ class TestVersionChecker:
         """Test VersionChecker initialization."""
         checker = VersionChecker()
         assert checker.package_name == "kp-analysis-toolkit"
-        assert checker.current_version == "0.0.1"  # From __init__.py
+        assert checker.current_version == "2.0.0"  # From __init__.py
 
     def test_init_custom_package(self) -> None:
         """Test VersionChecker initialization with custom package name."""
@@ -31,8 +31,8 @@ class TestVersionChecker:
         mock_response = Mock()
         mock_response.read.return_value = json.dumps(
             {
-                "info": {"version": "2.0.0"},
-            }
+                "info": {"version": "2.1.0"},
+            },
         ).encode()
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=None)
@@ -42,7 +42,7 @@ class TestVersionChecker:
         has_update, latest_version = checker.check_for_updates()
 
         assert has_update is True
-        assert latest_version == "2.0.0"
+        assert latest_version == "2.1.0"
         mock_urlopen.assert_called_once()
 
     @patch("kp_analysis_toolkit.utils.version_checker.urlopen")
@@ -52,8 +52,8 @@ class TestVersionChecker:
         mock_response = Mock()
         mock_response.read.return_value = json.dumps(
             {
-                "info": {"version": "0.0.1"},
-            }
+                "info": {"version": "2.0.0"},
+            },
         ).encode()
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=None)
@@ -63,7 +63,7 @@ class TestVersionChecker:
         has_update, latest_version = checker.check_for_updates()
 
         assert has_update is False
-        assert latest_version == "0.0.1"
+        assert latest_version == "2.0.0"
 
     @patch("kp_analysis_toolkit.utils.version_checker.urlopen")
     def test_check_for_updates_network_error(self, mock_urlopen: Mock) -> None:
@@ -184,7 +184,8 @@ class TestCheckAndPromptUpdate:
 
     @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
     def test_update_available_user_accepts_success(
-        self, mock_checker_class: Mock
+        self,
+        mock_checker_class: Mock,
     ) -> None:
         """Test when update is available, user accepts, and upgrade succeeds."""
         mock_checker = Mock()
@@ -202,7 +203,8 @@ class TestCheckAndPromptUpdate:
 
     @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
     def test_update_available_user_accepts_fails(
-        self, mock_checker_class: Mock
+        self,
+        mock_checker_class: Mock,
     ) -> None:
         """Test when update is available, user accepts, but upgrade fails."""
         mock_checker = Mock()

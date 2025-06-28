@@ -59,12 +59,12 @@ class TestShouldSkipLine:
         assert not should_skip_line("## Only two hashes")
         assert not should_skip_line("# Single hash")
         assert not should_skip_line("No hashes at all")
-        assert not should_skip_line("Data: ###something but not at start")
 
-    def test_do_not_skip_content_with_hash_in_middle(self) -> None:
-        """Test that lines with ### in the middle are not skipped."""
-        assert not should_skip_line("Some data ### with hashes")
-        assert not should_skip_line("Value=123###456")
+    def test_skip_content_with_hash_anywhere(self) -> None:
+        """Test that lines with ### anywhere are skipped."""
+        assert should_skip_line("Some data ### with hashes")
+        assert should_skip_line("Value=123###456")
+        assert should_skip_line("Data: ###something but not at start")
 
 
 class TestCompareVersion:
@@ -74,50 +74,72 @@ class TestCompareVersion:
         """Test equality comparison of versions."""
         assert compare_version("1.2.3", SysFilterComparisonOperators.EQUALS, "1.2.3")
         assert not compare_version(
-            "1.2.3", SysFilterComparisonOperators.EQUALS, "1.2.4"
+            "1.2.3",
+            SysFilterComparisonOperators.EQUALS,
+            "1.2.4",
         )
 
     def test_greater_than_versions(self) -> None:
         """Test greater than comparison of versions."""
         assert compare_version(
-            "1.2.4", SysFilterComparisonOperators.GREATER_THAN, "1.2.3"
+            "1.2.4",
+            SysFilterComparisonOperators.GREATER_THAN,
+            "1.2.3",
         )
         assert compare_version(
-            "2.0.0", SysFilterComparisonOperators.GREATER_THAN, "1.9.9"
+            "2.0.0",
+            SysFilterComparisonOperators.GREATER_THAN,
+            "1.9.9",
         )
         assert not compare_version(
-            "1.2.3", SysFilterComparisonOperators.GREATER_THAN, "1.2.3"
+            "1.2.3",
+            SysFilterComparisonOperators.GREATER_THAN,
+            "1.2.3",
         )
 
     def test_greater_equal_versions(self) -> None:
         """Test greater than or equal comparison of versions."""
         assert compare_version(
-            "1.2.3", SysFilterComparisonOperators.GREATER_EQUAL, "1.2.3"
+            "1.2.3",
+            SysFilterComparisonOperators.GREATER_EQUAL,
+            "1.2.3",
         )
         assert compare_version(
-            "1.2.4", SysFilterComparisonOperators.GREATER_EQUAL, "1.2.3"
+            "1.2.4",
+            SysFilterComparisonOperators.GREATER_EQUAL,
+            "1.2.3",
         )
         assert not compare_version(
-            "1.2.2", SysFilterComparisonOperators.GREATER_EQUAL, "1.2.3"
+            "1.2.2",
+            SysFilterComparisonOperators.GREATER_EQUAL,
+            "1.2.3",
         )
 
     def test_less_than_versions(self) -> None:
         """Test less than comparison of versions."""
         assert compare_version("1.2.2", SysFilterComparisonOperators.LESS_THAN, "1.2.3")
         assert not compare_version(
-            "1.2.3", SysFilterComparisonOperators.LESS_THAN, "1.2.3"
+            "1.2.3",
+            SysFilterComparisonOperators.LESS_THAN,
+            "1.2.3",
         )
 
     def test_less_equal_versions(self) -> None:
         """Test less than or equal comparison of versions."""
         assert compare_version(
-            "1.2.3", SysFilterComparisonOperators.LESS_EQUAL, "1.2.3"
+            "1.2.3",
+            SysFilterComparisonOperators.LESS_EQUAL,
+            "1.2.3",
         )
         assert compare_version(
-            "1.2.2", SysFilterComparisonOperators.LESS_EQUAL, "1.2.3"
+            "1.2.2",
+            SysFilterComparisonOperators.LESS_EQUAL,
+            "1.2.3",
         )
         assert not compare_version(
-            "1.2.4", SysFilterComparisonOperators.LESS_EQUAL, "1.2.3"
+            "1.2.4",
+            SysFilterComparisonOperators.LESS_EQUAL,
+            "1.2.3",
         )
 
     def test_none_system_version(self) -> None:
