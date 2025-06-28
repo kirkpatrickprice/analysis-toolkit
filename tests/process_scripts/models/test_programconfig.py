@@ -200,8 +200,9 @@ class TestProgramConfig:
         mock_file_system: callable,
     ) -> None:
         """Test ensure_results_path_exists when the path doesn't exist."""
-        # First return True for validation, then False for the method check
-        mock_file_system["exists"].side_effect = [True, True, False]
+        # Configure mock to return True for validation calls, then False for the results path check
+        # Add extra True values to handle any additional calls in CI environments
+        mock_file_system["exists"].side_effect = [True, True, True, False, True, True]
 
         config = ProgramConfig(**valid_config_params)
         config.ensure_results_path_exists()
