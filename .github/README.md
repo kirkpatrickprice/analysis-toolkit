@@ -1,6 +1,38 @@
 # GitHub Actions Workflows
 
-This repository includes two automated testing workflows using the latest GitHub Actions.
+This repository includes three automated workflows using the latest GitHub Actions. These workflows ensure cross-platform compatibility by testing on Windows, macOS, and Linux, even though primary development is conducted on Windows.
+
+## 📦 Publish Workflow (`publish.yml`)
+
+**Triggers:**
+- Push to `main` branch
+- Manual trigger via GitHub web interface
+
+**Features:**
+- Automatically detects version changes in `src/kp_analysis_toolkit/__init__.py`
+- Runs full test suite before publishing
+- Builds and publishes to PyPI using trusted publishing
+- Creates GitHub releases with automatic changelogs
+- Uses semantic versioning
+- Provides detailed logging and notifications
+
+**Requirements:**
+- `PYPI_API_TOKEN` secret configured in repository settings
+- Optional: GitHub environment named `pypi` for enhanced security (currently disabled)
+
+**Process:**
+1. Monitors changes to `__version__` in `__init__.py`
+2. Compares current version with previous commit
+3. If version changed, runs full test suite
+4. Builds package using `uv build`
+5. Publishes to PyPI using official PyPA action
+6. Creates GitHub release with version tag
+7. Provides success/failure notifications
+
+**Manual Release:**
+1. Update version in `src/kp_analysis_toolkit/__init__.py`
+2. Commit and push to `main` branch
+3. Workflow automatically detects change and publishes
 
 ## 🧪 Main Test Workflow (`test.yml`)
 

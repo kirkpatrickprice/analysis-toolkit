@@ -1,0 +1,149 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.check-version.outputs.changed }}
+      current-version: ${{ steps.check-version.outputs.version }}
+      previous-version: ${{ steps.check-version.outputs.previous-version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history to compare versions
+    
+    - name: Check if version changed
+      id: check-version
+      run: |
+        # Get current version from __init__.py
+        CURRENT_VERSION=$(python -c "
+        import re
+        with open('src/kp_analysis_toolkit/__init__.py', 'r') as f:
+            content = f.read()
+        match = re.search(r'__version__\s*=\s*[\"\'](.*?)[\"\']', content)
+        print(match.group(1) if match else 'unknown')
+        ")
+        
+        echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        
+        # Get previous version from the last commit that changed __init__.py
+        if git log --oneline --follow src/kp_analysis_toolkit/__init__.py | wc -l | grep -q "^1$"; then
+          # This is the first commit with __init__.py, so version changed
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "previous-version=none" >> $GITHUB_OUTPUT
+          echo "First version detected: $CURRENT_VERSION"
+        else
+          # Get the version from the previous commit
+          PREVIOUS_VERSION=$(git show HEAD~1:src/kp_analysis_toolkit/__init__.py | python -c "
+          import re
+          import sys
+          content = sys.stdin.read()
+          match = re.search(r'__version__\s*=\s*[\"\'](.*?)[\"\']', content)
+          print(match.group(1) if match else 'unknown')
+          ")
+          
+          echo "previous-version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Version unchanged: $CURRENT_VERSION"
+          fi
+        fi
+
+  publish:
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+    runs-on: ubuntu-latest
+    # Note: Configure 'pypi' environment in GitHub for enhanced security
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+    
+    - name: Run tests before publishing
+      run: |
+        uv run python -m pytest tests/ -v
+    
+    - name: Build package
+      run: |
+        uv build
+    
+    - name: Verify build
+      run: |
+        ls -la dist/
+        # Check that both wheel and source distribution were created
+        if [ ! -f dist/*.whl ] || [ ! -f dist/*.tar.gz ]; then
+          echo "ERROR: Build artifacts missing"
+          exit 1
+        fi
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        verbose: true
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.check-version.outputs.current-version }}
+        name: Release v${{ needs.check-version.outputs.current-version }}
+        body: |
+          ## What's Changed
+          
+          Version bumped from ${{ needs.check-version.outputs.previous-version }} to ${{ needs.check-version.outputs.current-version }}
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ needs.check-version.outputs.previous-version }}...v${{ needs.check-version.outputs.current-version }}
+          
+          ## Installation
+          
+          ```bash
+          pipx upgrade kp-analysis-toolkit
+          ```
+          
+          Or for new installations:
+          ```bash
+          pipx install kp-analysis-toolkit
+          ```
+        draft: false
+        prerelease: false
+
+  notify:
+    needs: [check-version, publish]
+    if: always() && needs.check-version.outputs.version-changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Publish Success
+      if: needs.publish.result == 'success'
+      run: |
+        echo "✅ Successfully published version ${{ needs.check-version.outputs.current-version }} to PyPI"
+        echo "🏷️ GitHub release created: v${{ needs.check-version.outputs.current-version }}"
+    
+    - name: Publish Failed
+      if: needs.publish.result == 'failure'
+      run: |
+        echo "❌ Failed to publish version ${{ needs.check-version.outputs.current-version }} to PyPI"
+        echo "Check the logs above for details"
+        exit 1
