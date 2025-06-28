@@ -8,13 +8,13 @@ from kp_analysis_toolkit.process_scripts.models.base import FileModel
 from kp_analysis_toolkit.utils import get_file_encoding
 
 
-class TestFile(BaseModel, FileModel):
+class DummyFile(BaseModel, FileModel):
     """Test cases for FileModel."""
 
     model_config: ConfigDict = FileModel.model_config.copy()
 
 
-class TestFileModel:
+class DummyFileModel:
     """Test cases for FileModel."""
 
     def test_init_with_valid_file(self, tmp_path: Path | str) -> None:
@@ -24,7 +24,7 @@ class TestFileModel:
         test_file.write_text("Test content")
 
         # Initialize FileModel with the file
-        model = TestFile(file=test_file)
+        model = DummyFile(file=test_file)
 
         # Check that the file is correctly set
         assert model.file == test_file.absolute()
@@ -34,7 +34,7 @@ class TestFileModel:
     def test_init_with_nonexistent_file(self) -> None:
         """Test initialization with a non-existent file raises ValueError."""
         with pytest.raises(ValueError) as excinfo:
-            TestFile(file=Path("nonexistent_file.txt"))
+            DummyFile(file=Path("nonexistent_file.txt"))
         assert "does not exist" in str(excinfo.value)
 
     def test_validate_file_method(self, tmp_path: Path | str) -> None:
@@ -44,7 +44,7 @@ class TestFileModel:
         test_file.write_text("Test content")
 
         # Validate the file
-        validated_path = TestFile.validate_file(test_file)
+        validated_path = DummyFile.validate_file(test_file)
         assert validated_path == test_file.absolute()
 
     def test_read_line_with_encoding(self, tmp_path: Path | str) -> None:
@@ -55,7 +55,7 @@ class TestFileModel:
         test_file.write_text(test_content)
 
         # Initialize FileModel with the file and specify encoding directly
-        model = TestFile(file=test_file, encoding="utf-8")
+        model = DummyFile(file=test_file, encoding="utf-8")
 
         # Read lines and check content
         lines = list(model.read_line())
@@ -83,7 +83,7 @@ class TestFileModel:
         monkeypatch.setattr(get_file_encoding, "detect_encoding", mock_detect_encoding)
 
         # Initialize FileModel without specifying encoding
-        model = TestFile(file=test_file)
+        model = DummyFile(file=test_file)
 
         # Read lines and check that encoding was auto-detected
         list(model.read_line())
@@ -97,7 +97,7 @@ class TestFileModel:
         test_file.write_text(test_content, encoding="utf-8")
 
         # Initialize FileModel with the file
-        model = TestFile(file=test_file)
+        model = DummyFile(file=test_file)
 
         # Generate hash
         file_hash = model.generate_file_hash()
@@ -112,7 +112,7 @@ class TestFileModel:
         # Create a model with different content and check that hash differs
         different_file = tmp_path / "different.txt"
         different_file.write_text("Different content", encoding="utf-8")
-        different_model = TestFile(file=different_file)
+        different_model = DummyFile(file=different_file)
         different_hash = different_model.generate_file_hash()
 
         assert file_hash != different_hash
@@ -128,8 +128,8 @@ class TestFileModel:
         file2.write_text(content)
 
         # Generate hashes
-        model1 = TestFile(file=file1)
-        model2 = TestFile(file=file2)
+        model1 = DummyFile(file=file1)
+        model2 = DummyFile(file=file2)
 
         hash1 = model1.generate_file_hash()
         hash2 = model2.generate_file_hash()

@@ -8,7 +8,7 @@ from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
 
 
-class TestConfigModel(KPATBaseModel, ConfigModel):
+class DummyConfigModel(KPATBaseModel, ConfigModel):
     """Test model that inherits from both KPATBaseModel and ConfigModel."""
 
     string_field: str = "test string"
@@ -27,26 +27,26 @@ class TestConfigModel(KPATBaseModel, ConfigModel):
 class TestConfigModelClass:
     def test_to_dict_returns_dictionary(self) -> None:
         """Test that to_dict returns a dictionary."""
-        config = TestConfigModel()
+        config = DummyConfigModel()
         result: dict[str, str] = config.to_dict()
         assert isinstance(result, dict)
 
     def test_to_dict_converts_values_to_strings(self) -> None:
         """Test that all values in the dictionary are strings."""
-        config = TestConfigModel()
+        config = DummyConfigModel()
         result: dict[str, str] = config.to_dict()
         for value in result.values():
             assert isinstance(value, str)
 
     def test_to_dict_handles_none_values(self) -> None:
         """Test that None values are converted to 'None' string."""
-        config = TestConfigModel()
+        config = DummyConfigModel()
         result: dict[str, str] = config.to_dict()
         assert result["none_field"] == "None"
 
     def test_to_dict_converts_different_types(self) -> None:
         """Test that different data types are properly converted to strings."""
-        config = TestConfigModel()
+        config = DummyConfigModel()
         result: dict[str, str] = config.to_dict()
 
         assert result["string_field"] == "test string"
@@ -64,7 +64,7 @@ class TestConfigModelClass:
 
     def test_to_dict_includes_all_fields(self) -> None:
         """Test that all fields from the model are included in the dictionary."""
-        config = TestConfigModel()
+        config = DummyConfigModel()
         result: dict[str, str] = config.to_dict()
 
         expected_fields = {
@@ -83,7 +83,7 @@ class TestConfigModelClass:
 
     def test_to_dict_with_custom_values(self) -> None:
         """Test to_dict with custom field values."""
-        config = TestConfigModel(
+        config = DummyConfigModel(
             string_field="custom string",
             int_field=100,
             float_field=9.99,
