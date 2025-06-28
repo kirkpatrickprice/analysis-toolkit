@@ -27,6 +27,19 @@
             ]
         },
         {
+            "name": "KPAT CLI (Nipper)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "nipper",
+                "-d", "testdata/nipper"
+            ]
+        },
+        {
             "name": "KPAT CLI (Scripts) List Config Files",
             "type": "debugpy",
             "request": "launch",
