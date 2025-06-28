@@ -66,7 +66,7 @@ TestWindowsSystemPatterns = globals().get("TestWindowsSystemPatterns")
 TestWindowsUsersPatterns = globals().get("TestWindowsUsersPatterns")
 TestWindowsNetworkPatterns = globals().get("TestWindowsNetworkPatterns")
 TestWindowsSecuritySoftwarePatterns = globals().get(
-    "TestWindowsSecuritysoftwarePatterns"
+    "TestWindowsSecuritysoftwarePatterns",
 )
 TestWindowsLoggingPatterns = globals().get("TestWindowsLoggingPatterns")
 

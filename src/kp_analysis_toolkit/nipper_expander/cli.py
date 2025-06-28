@@ -86,7 +86,7 @@ def get_input_file(
     )
     for index, filename in enumerate(dirlist, 1):
         click.echo(
-            f"{index:{len(str(len(dirlist)))}d} - {filename}"
+            f"{index:{len(str(len(dirlist)))}d} - {filename}",
         )  # Padding for alignment
     click.echo()
     choice: int = 0

@@ -118,11 +118,11 @@ class ValidationMixin:
         collection_allowed: bool = True,
     ) -> SysFilterValueType:
         """Validate filter value based on comparison operator."""
-        if not collection_allowed and isinstance(value, (list, set)):
+        if not collection_allowed and isinstance(value, list | set):
             message: str = f"Operator '{comp_op}' cannot be used with collection values"
             raise ValueError(message)
 
-        if collection_allowed and not isinstance(value, (list, set)):
+        if collection_allowed and not isinstance(value, list | set):
             message: str = f"Operator '{comp_op}' requires a collection value"
             raise ValueError(message)
 

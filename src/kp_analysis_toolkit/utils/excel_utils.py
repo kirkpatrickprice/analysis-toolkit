@@ -255,7 +255,8 @@ def format_as_excel_table(
     # Create unique table name
     random_suffix: int = random.randint(1000, 9999)
     table_name: str = f"Table_{worksheet.title}_{random_suffix}".replace(
-        " ", "_"
+        " ",
+        "_",
     ).replace(
         "-",
         "_",

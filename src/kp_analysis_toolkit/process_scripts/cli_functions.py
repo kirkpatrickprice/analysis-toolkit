@@ -53,8 +53,8 @@ def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
     size = sys.getsizeof(obj)
 
     # Handle iterables
-    if isinstance(obj, (list, tuple, set, dict)):
-        if isinstance(obj, (list, tuple, set)):
+    if isinstance(obj, list | tuple | set | dict):
+        if isinstance(obj, list | tuple | set):
             size += sum(get_size(i, seen) for i in obj)
         else:  # dict
             size += sum(get_size(k, seen) + get_size(v, seen) for k, v in obj.items())
@@ -196,7 +196,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
         )
 
 
-def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
+def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
     """Process the source files and execute searches."""
     time_stamp: str = datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005
     click.echo("Processing source files...")

@@ -784,7 +784,7 @@ def create_search_result(
         for field in search_config.field_list:
             try:
                 extracted_fields[field] = matching_dict.get(field)
-            except IndexError:  # noqa: PERF203
+            except IndexError:
                 # Field not found in match groups, add as empty string
                 extracted_fields[field] = ""
 
