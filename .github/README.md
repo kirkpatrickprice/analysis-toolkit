@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This repository includes three automated workflows using the latest GitHub Actions. These workflows ensure cross-platform compatibility by testing on Windows, macOS, and Linux, even though primary development is conducted on Windows.
+This repository includes three automated workflows using the latest GitHub Actions. The workflows are optimized for efficient CI/CD with comprehensive cross-platform testing when needed and quick feedback during development.
 
 ## 📦 Publish Workflow (`publish.yml`)
 
@@ -36,10 +36,10 @@ This repository includes three automated workflows using the latest GitHub Actio
 3. Cross-platform tests run automatically
 4. If tests pass, publish workflow detects change and publishes
 
-## 🧪 Main Test Workflow (`test.yml`)
+## 🧪 Cross-Platform Test Workflow (`test.yml`)
 
 **Triggers:**
-- Push to any branch (including `main`)
+- Push to `main` branch only
 - Pull requests to `main` 
 - Manual trigger via GitHub web interface
 
@@ -67,10 +67,25 @@ This repository includes three automated workflows using the latest GitHub Actio
 - Manual trigger via GitHub web interface
 
 **Features:**
-- Windows-only testing for faster feedback
+- Windows-only testing for faster feedback during development
 - Fails fast on first error
 - Includes syntax checking
 - Optimized for development workflow
+- Provides rapid feedback without consuming excessive CI resources
+
+## 🎯 Testing Strategy
+
+### **Optimized CI/CD Approach:**
+- **Feature branches**: Use `quick-test.yml` for rapid feedback (Windows-only)
+- **Main branch**: Full cross-platform testing with `test.yml` (Windows, macOS, Linux)
+- **Publishing**: Depends on successful cross-platform tests
+- **Pull requests**: Cross-platform tests run to ensure compatibility before merge
+
+### **Resource Efficiency:**
+- Avoid running expensive cross-platform tests on every feature push
+- Use quick Windows-only tests for development iterations
+- Reserve comprehensive testing for main branch and releases
+- Balanced approach between thorough testing and CI resource usage
 
 ## 📊 Test Results
 

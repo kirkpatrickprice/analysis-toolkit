@@ -200,10 +200,11 @@ The toolkit automatically installs required dependencies:
 
 ### Publishing and Releases
 The toolkit uses automated publishing to PyPI:
+- **Cross-platform testing**: Full test suite runs on Windows, macOS, and Linux before publishing
 - **Automatic publishing**: When the version in `src/kp_analysis_toolkit/__init__.py` is updated and pushed to the main branch
 - **GitHub Actions**: Handles testing, building, and publishing automatically
 - **GitHub Releases**: Automatically created with version tags and changelogs
-- **Quality assurance**: Full test suite must pass before publishing
+- **Quality assurance**: Cross-platform tests must pass before publishing
 
 📖 **[View Publishing Setup Guide](.github/PYPI_SETUP.md)** for maintainers
 
