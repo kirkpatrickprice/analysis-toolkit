@@ -26,13 +26,7 @@ jobs:
       id: check-version
       run: |
         # Get current version from __init__.py
-        CURRENT_VERSION=$(python -c "
-        import re
-        with open('src/kp_analysis_toolkit/__init__.py', 'r') as f:
-            content = f.read()
-        match = re.search(r'__version__\s*=\s*[\"\'](.*?)[\"\']', content)
-        print(match.group(1) if match else 'unknown')
-        ")
+        CURRENT_VERSION=$(python3 -c "import re; content = open('src/kp_analysis_toolkit/__init__.py', 'r').read(); match = re.search(r'__version__\s*=\s*[\"\'](.*?)[\"\']', content); print(match.group(1) if match else 'unknown')")
         
         echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
         
@@ -44,13 +38,7 @@ jobs:
           echo "First version detected: $CURRENT_VERSION"
         else
           # Get the version from the previous commit
-          PREVIOUS_VERSION=$(git show HEAD~1:src/kp_analysis_toolkit/__init__.py | python -c "
-          import re
-          import sys
-          content = sys.stdin.read()
-          match = re.search(r'__version__\s*=\s*[\"\'](.*?)[\"\']', content)
-          print(match.group(1) if match else 'unknown')
-          ")
+          PREVIOUS_VERSION=$(git show HEAD~1:src/kp_analysis_toolkit/__init__.py | python3 -c "import re, sys; content = sys.stdin.read(); match = re.search(r'__version__\s*=\s*[\"\'](.*?)[\"\']', content); print(match.group(1) if match else 'unknown')")
           
           echo "previous-version=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
           
