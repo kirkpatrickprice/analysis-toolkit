@@ -60,24 +60,32 @@ This document describes how to set up automatic PyPI publishing for the KP Analy
    git push origin main
    ```
 
-3. Check the GitHub Actions tab to see the workflow running
+3. Watch the workflow sequence:
+   - **First**: Cross-Platform Unit Tests workflow runs automatically
+   - **Then**: If tests pass, Publish workflow triggers and detects version change
+   - **Finally**: Package is built and published to PyPI
+
+4. Check the GitHub Actions tab to see both workflows running in sequence
 
 ## How It Works
 
 ### Version Detection
-- The workflow monitors changes to `src/kp_analysis_toolkit/__init__.py`
+- The publish workflow waits for the Cross-Platform Unit Tests to complete successfully
+- It monitors changes to `src/kp_analysis_toolkit/__init__.py`
 - It compares the current `__version__` with the previous commit
-- If the version changed, it triggers the publishing process
+- If the version changed AND tests passed, it triggers the publishing process
 
 ### Publishing Process
-1. **Tests**: Runs the full test suite to ensure quality
-2. **Build**: Creates both wheel and source distributions using `uv build`
-3. **Verify**: Checks that build artifacts were created correctly
-4. **Publish**: Uploads to PyPI using the official PyPA action
-5. **Release**: Creates a GitHub release with the new version tag
-6. **Notify**: Reports success or failure
+1. **Tests**: Cross-platform tests (Windows, macOS, Linux) must pass first
+2. **Version Check**: Detects if version changed in `__init__.py`
+3. **Build**: Creates both wheel and source distributions using `uv build`
+4. **Verify**: Checks that build artifacts were created correctly
+5. **Publish**: Uploads to PyPI using the official PyPA action
+6. **Release**: Creates a GitHub release with the new version tag
+7. **Notify**: Reports success or failure
 
 ### Security Features
+- Depends on comprehensive cross-platform testing before publishing
 - Uses GitHub's trusted publishing (no long-lived secrets)
 - Optional environment protection rules
 - Full audit trail in GitHub Actions logs

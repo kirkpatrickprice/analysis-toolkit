@@ -1,10 +1,10 @@
 name: Cross-Platform Unit Tests
 
 on:
-  # Trigger on push to any branch except main
+  # Trigger on push to any branch (including main)
   push:
-    branches-ignore:
-      - main
+    branches:
+      - '**'
   
   # Trigger on pull requests to main
   pull_request:

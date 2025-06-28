@@ -5,12 +5,12 @@ This repository includes three automated workflows using the latest GitHub Actio
 ## 📦 Publish Workflow (`publish.yml`)
 
 **Triggers:**
-- Push to `main` branch
+- After `Cross-Platform Unit Tests` workflow completes successfully on `main` branch
 - Manual trigger via GitHub web interface
 
 **Features:**
+- **Depends on cross-platform tests**: Only runs after test.yml passes on all platforms
 - Automatically detects version changes in `src/kp_analysis_toolkit/__init__.py`
-- Runs full test suite before publishing
 - Builds and publishes to PyPI using trusted publishing
 - Creates GitHub releases with automatic changelogs
 - Uses semantic versioning
@@ -18,13 +18,14 @@ This repository includes three automated workflows using the latest GitHub Actio
 
 **Requirements:**
 - `PYPI_API_TOKEN` secret configured in repository settings
+- Cross-platform tests must pass first
 - Optional: GitHub environment named `pypi` for enhanced security (currently disabled)
 
 **Process:**
-1. Monitors changes to `__version__` in `__init__.py`
-2. Compares current version with previous commit
-3. If version changed, runs full test suite
-4. Builds package using `uv build`
+1. Waits for `Cross-Platform Unit Tests` workflow to complete successfully
+2. Monitors changes to `__version__` in `__init__.py`
+3. Compares current version with previous commit
+4. If version changed and tests passed, builds package using `uv build`
 5. Publishes to PyPI using official PyPA action
 6. Creates GitHub release with version tag
 7. Provides success/failure notifications
@@ -32,12 +33,13 @@ This repository includes three automated workflows using the latest GitHub Actio
 **Manual Release:**
 1. Update version in `src/kp_analysis_toolkit/__init__.py`
 2. Commit and push to `main` branch
-3. Workflow automatically detects change and publishes
+3. Cross-platform tests run automatically
+4. If tests pass, publish workflow detects change and publishes
 
 ## 🧪 Main Test Workflow (`test.yml`)
 
 **Triggers:**
-- Push to any branch except `main`
+- Push to any branch (including `main`)
 - Pull requests to `main` 
 - Manual trigger via GitHub web interface
 
@@ -49,6 +51,7 @@ This repository includes three automated workflows using the latest GitHub Actio
 - Generates JUnit XML test reports
 - Uploads test artifacts
 - Publishes test results in PR comments
+- **Required for publishing**: Publish workflow waits for this to complete successfully
 - Uses latest GitHub Actions (checkout@v4, setup-python@v5, upload-artifact@v4)
 
 **Manual Trigger:**
