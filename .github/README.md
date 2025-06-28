@@ -1,26 +1,62 @@
 # GitHub Actions Workflows
 
-This repository includes two automated testing workflows using the latest GitHub Actions.
+This repository includes three automated workflows using the latest GitHub Actions. The workflows are optimized for efficient CI/CD with comprehensive cross-platform testing when needed and quick feedback during development.
 
-## 🧪 Main Test Workflow (`test.yml`)
+## 📦 Publish Workflow (`publish.yml`)
 
 **Triggers:**
-- Push to any branch except `main`
+- After `Cross-Platform Unit Tests` workflow completes successfully on `main` branch
+- Manual trigger via GitHub web interface
+
+**Features:**
+- **Depends on cross-platform tests**: Only runs after test.yml passes on all platforms
+- Automatically detects version changes in `src/kp_analysis_toolkit/__init__.py`
+- Builds and publishes to PyPI using trusted publishing
+- Creates GitHub releases with automatic changelogs
+- Uses semantic versioning
+- Provides detailed logging and notifications
+
+**Requirements:**
+- `PYPI_API_TOKEN` secret configured in repository settings
+- Cross-platform tests must pass first
+- Optional: GitHub environment named `pypi` for enhanced security (currently disabled)
+
+**Process:**
+1. Waits for `Cross-Platform Unit Tests` workflow to complete successfully
+2. Monitors changes to `__version__` in `__init__.py`
+3. Compares current version with previous commit
+4. If version changed and tests passed, builds package using `uv build`
+5. Publishes to PyPI using official PyPA action
+6. Creates GitHub release with version tag
+7. Provides success/failure notifications
+
+**Manual Release:**
+1. Update version in `src/kp_analysis_toolkit/__init__.py`
+2. Commit and push to `main` branch
+3. Cross-platform tests run automatically
+4. If tests pass, publish workflow detects change and publishes
+
+## 🧪 Cross-Platform Test Workflow (`test.yml`)
+
+**Triggers:**
+- Push to `main` branch only
 - Pull requests to `main` 
 - Manual trigger via GitHub web interface
 
 **Features:**
-- Tests on Windows (officially supported OS)
+- Tests on Windows, macOS, and Linux (comprehensive cross-platform support)
 - Uses Python 3.12
 - Runs all 460+ unit tests with pytest
+- Includes syntax checking across all platforms
 - Generates JUnit XML test reports
 - Uploads test artifacts
 - Publishes test results in PR comments
+- **Required for publishing**: Publish workflow waits for this to complete successfully
 - Uses latest GitHub Actions (checkout@v4, setup-python@v5, upload-artifact@v4)
 
 **Manual Trigger:**
 1. Go to the "Actions" tab in GitHub
-2. Select "Run Unit Tests" workflow
+2. Select "Cross-Platform Unit Tests" workflow
 3. Click "Run workflow"
 4. Choose the branch and click "Run workflow"
 
@@ -31,10 +67,25 @@ This repository includes two automated testing workflows using the latest GitHub
 - Manual trigger via GitHub web interface
 
 **Features:**
-- Windows-only testing for faster feedback
+- Windows-only testing for faster feedback during development
 - Fails fast on first error
 - Includes syntax checking
 - Optimized for development workflow
+- Provides rapid feedback without consuming excessive CI resources
+
+## 🎯 Testing Strategy
+
+### **Optimized CI/CD Approach:**
+- **Feature branches**: Use `quick-test.yml` for rapid feedback (Windows-only)
+- **Main branch**: Full cross-platform testing with `test.yml` (Windows, macOS, Linux)
+- **Publishing**: Depends on successful cross-platform tests
+- **Pull requests**: Cross-platform tests run to ensure compatibility before merge
+
+### **Resource Efficiency:**
+- Avoid running expensive cross-platform tests on every feature push
+- Use quick Windows-only tests for development iterations
+- Reserve comprehensive testing for main branch and releases
+- Balanced approach between thorough testing and CI resource usage
 
 ## 📊 Test Results
 
@@ -44,9 +95,9 @@ This repository includes two automated testing workflows using the latest GitHub
 
 ## 🔧 Local Testing
 
-To run the same tests locally on Windows:
+To run the same tests locally (works on Windows, macOS, and Linux):
 
-```powershell
+```bash
 # Install dependencies
 uv sync --dev
 
@@ -58,6 +109,9 @@ uv run pytest tests/ -v --tb=short --junitxml=pytest-results.xml
 
 # Quick test run
 uv run pytest tests/ -v --tb=short --ff
+
+# Syntax check
+uv run python -c "import compileall; import sys; sys.exit(0 if compileall.compile_dir('src/kp_analysis_toolkit', quiet=1) else 1)"
 ```
 
 ## 🐛 Known Issues

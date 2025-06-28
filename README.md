@@ -32,6 +32,7 @@ Converts Rich Text Format (RTF) files to plain text files using ASCII encoding. 
 The toolkit is built on Python and supports cross-platform operation:
 - **Primary development platform**: Windows
 - **Supported platforms**: Windows, macOS, Linux
+- **Testing coverage**: All platforms tested via CI/CD pipeline
 
 ### Prerequisites
 - **Python 3.12 or higher**
@@ -163,6 +164,13 @@ For detailed usage instructions, configuration options, and examples for each mo
 
 ## Development
 
+### Development Environment
+- **Primary development platform**: Windows
+- **Testing**: Comprehensive CI testing on Windows, macOS, and Linux
+- **Cross-platform compatibility**: Ensured through automated testing
+
+While development is primarily conducted on Windows, the toolkit is designed to be cross-platform compatible. Continuous Integration (CI) testing is performed against all three major operating systems (Windows, macOS, and Linux) to ensure proper functionality across platforms.
+
 ### Running from Source
 For development or testing purposes:
 
@@ -189,6 +197,16 @@ The toolkit automatically installs required dependencies:
 - **pydantic** for data validation
 - **charset-normalizer** for encoding detection
 - **striprtf** for RTF processing
+
+### Publishing and Releases
+The toolkit uses automated publishing to PyPI:
+- **Cross-platform testing**: Full test suite runs on Windows, macOS, and Linux before publishing
+- **Automatic publishing**: When the version in `src/kp_analysis_toolkit/__init__.py` is updated and pushed to the main branch
+- **GitHub Actions**: Handles testing, building, and publishing automatically
+- **GitHub Releases**: Automatically created with version tags and changelogs
+- **Quality assurance**: Cross-platform tests must pass before publishing
+
+📖 **[View Publishing Setup Guide](.github/PYPI_SETUP.md)** for maintainers
 
 ## Related Projects
 
