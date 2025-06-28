@@ -73,3 +73,9 @@ uv run pytest tests/ -v --tb=short --ff
 1. Use `path.resolve()` on both paths before comparison
 2. Example: `assert result.resolve() == expected.resolve()`
 3. This normalizes paths to their absolute, canonical form
+
+**Windows Glob Patterns**: PowerShell doesn't handle Unix-style glob patterns (`**/*.py`) the same way. Use Python's `compileall` module instead:
+
+1. Replace: `python -m py_compile src/**/*.py`
+2. With: `python -c "import compileall; sys.exit(0 if compileall.compile_dir('src/module') else 1)"`
+3. This provides cross-platform syntax checking
