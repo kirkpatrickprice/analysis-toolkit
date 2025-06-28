@@ -16,11 +16,10 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     strategy:
       fail-fast: false  # Continue testing other combinations even if one fails
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.12"]
     
     steps:
@@ -43,13 +42,13 @@ jobs:
     
     - name: Run tests with pytest
       run: |
-        uv run pytest tests/ -v --tb=short --junitxml=pytest-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
+        uv run pytest tests/ -v --tb=short --junitxml=pytest-results-windows-${{ matrix.python-version }}.xml
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+        name: test-results-windows-${{ matrix.python-version }}
         path: |
           pytest-results-*.xml
           .pytest_cache/
@@ -58,6 +57,6 @@ jobs:
       uses: dorny/test-reporter@v1.9.1
       if: always() && github.event_name == 'pull_request'
       with:
-        name: Pytest Results (${{ matrix.os }}, Python ${{ matrix.python-version }})
+        name: Pytest Results (Windows, Python ${{ matrix.python-version }})
         path: pytest-results-*.xml
         reporter: java-junit

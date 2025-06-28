@@ -10,7 +10,7 @@ This repository includes two automated testing workflows using the latest GitHub
 - Manual trigger via GitHub web interface
 
 **Features:**
-- Tests on Ubuntu, Windows, and macOS
+- Tests on Windows (officially supported OS)
 - Uses Python 3.12
 - Runs all 460+ unit tests with pytest
 - Generates JUnit XML test reports
@@ -31,7 +31,7 @@ This repository includes two automated testing workflows using the latest GitHub
 - Manual trigger via GitHub web interface
 
 **Features:**
-- Ubuntu-only testing for faster feedback
+- Windows-only testing for faster feedback
 - Fails fast on first error
 - Includes syntax checking
 - Optimized for development workflow
@@ -44,9 +44,9 @@ This repository includes two automated testing workflows using the latest GitHub
 
 ## 🔧 Local Testing
 
-To run the same tests locally:
+To run the same tests locally on Windows:
 
-```bash
+```powershell
 # Install dependencies
 uv sync --dev
 
