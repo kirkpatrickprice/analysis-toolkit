@@ -1,0 +1,132 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+
+04_users_01_auth_config:
+  regex: 'Users_AuthConfig'
+  excel_sheet_name: Authentication Config
+  comment: |-
+    This list shows the authentication systems that the device is configured for.  Examples include:
+      Active Directory - self-explanatory
+      KerberosKDC - probably directly tied to Active Directory since AD is also built on Kerberos
+      shadowhash - local authentication source
+04_users_02_home_folders:
+  regex: 'Users_HomeFolders::(?!.*Shared)d(?P<permissions>[rwx-]+)\+\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>.*)'
+  excel_sheet_name: Home Folder Permissions
+  only_matching: True
+  field_list:
+    - dir
+    - permissions
+    - owner
+    - group
+  comment: |-
+    Home folders should be restricted such that only the user can access the contents.  By default ([rwxr-xr-x]), all user accounts can view the listing of files but not the files themselves (see invididual file permissions to determine what's possible there).
+
+    If this is a single-user system, this isn't as much of an issue -- that is, until a second user is added.
+
+    Ideally, we would see that home folder permissions are set to [rwx------] or [rwx--x--x].
+04_users_03_password_policy:
+  regex: 'Users_PasswordPolicy::((maxFailedLogins=(?P<maxFailedLogins>(\d+)?))|(LockoutDuration=(?P<lockoutDuration>(\d+)?))|(minLength=(?P<minLength>(\d+)?))|(requiresAlpha=(?P<requiresAlpha>(\d+)?))|(requiresNumeric=(?P<requiresNumeric>(\d+)?))|(requiresSymbol=(?P<requiresSymbol>(\d+)?))|(maxMinutesUntilChangePassword=(?P<maxPasswordAgeMins>(\d+)?)))'
+  excel_sheet_name: Password Policy
+  only_matching: True
+  multiline: True
+  field_list:
+    - maxFailedLogins
+    - lockoutDuration
+    - minLength
+    - requiresAlpha
+    - requiresNumeric
+    - requiresSymbol
+    - maxPasswordAgeMins
+  comment: |-
+    This is the local MacOS password policy for any locally-defined accounts.  Note: MacOS can also authenticate against Active Directory or Kerberos, in which case, those policies will apply to those accounts.
+
+    For the record, 129,600 minutes is 90 days (1440 minutes per day)
+04_users_04_local_users:
+  regex: 'Users_LocalUsers::((UniqueID:\s+(?P<uniqueID>([-\d]+)?))|(NFSHomeDirectory:\s+(?P<homeDir>.*))|(RecordName:\s+(?P<userName>.*))|(UserShell:\s+(?P<shell>.*)))'
+  excel_sheet_name: Local Users
+  only_matching: True
+  multiline: True
+  rs_delimiter: '^Users_LocalUsers::-$'
+  field_list:
+    - userName
+    - uniqueID
+    - homeDir
+    - shell
+  comment: |-
+    This is the list of all locally-defined users (not coming from Active Directory or elsewhere).  Most of them are probably service accounts, starting with an _.  It's good to know that they're there, but they should also all have /sbin/nologin or /bin/false as their user shell, which prohibits interactive use of the accounts.
+
+    Pay special attention to users who have /bin/bash, /bin/zsh, /bin/sh and similar shells as these are users who can login interactively.
+
+    Also, pay special attention to any user with uniqueID=0 as these are accounts with "root" permissions.
+
+    NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Usernames affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
+04_users_05_local_groups:
+  regex: 'Users_LocalGroups::((PrimaryGroupID:\s+(?P<primaryID>(\d+)?))|(RecordName:\s+(?P<groupName>.*))|(GroupMembership:\s+(?P<members>.*)))'
+  excel_sheet_name: Local Groups
+  only_matching: True
+  multiline: True
+  rs_delimiter: '^Users_LocalGroups::-$'
+  field_list:
+    - groupName
+    - primaryID
+    - members
+  comment: |-
+    This is the list of all locally-defined groups (not coming from Active Directory or elsewhere).  Most of them are probably built-in accounts, starting with an _.  
+
+    Pay special attention to these groups:
+      - staff: A built-in group meant to capture all people who use this device.  This group is made the group-owner of various directories, including all user home folders.
+      - wheel: A built-in group that is granted elevated access to parts of the operating system (could also include sudo access / check the sudoers file)
+      - admin and/or sudo: A built-in group that is granted sudo access to run commands as root
+
+    NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Group names affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
+04_users_06_root_status:
+  regex: 'Users_RootStatus::(?P<rootStatus>.*)'
+  excel_sheet_name: Root User Status
+  only_matching: True
+  field_list:
+    - rootStatus
+  comment: |-
+    The root user shouldn't be used directly and should be disabled.  This check determines if there are any authenticators configured for the root account.
+    
+    This should be 0.  A non-zero value indicates that it is possible to sign in as the root account.
+04_users_07_sudoers:
+  regex: 'Users_SudoersConfig::/etc/sudoers.*?::[\w%].*'
+  excel_sheet_name: Sudoers File
+  comment: |-
+    The sudoers file controls use of the "sudo" program.  Sudo is used to grant the ability to execute commands as the root user -- effectively making users with sudo access administrators on the system.
+
+    Pay special attention to lines that grant permissions, such as:
+      - username    ALL=(ALL)ALL
+      - %groupname  ALL=(ALL)ALL
+
+    There are also a few CIS benchmark recommendations that look for specific Defaults to be configured.  Look at the CIS MacOS 13 Benchmark for more information.
+04_users_08_siri_status:
+  regex: 'Users_SiriStatus-(?P<username>.*?)-Enabled::\s+"Assistant Enabled"\s+=\s+(?P<siriStatus>\d+)'
+  excel_sheet_name: Siri Status
+  only_matching: True
+  field_list:
+    - username
+    - siriStatus
+  comment: |-
+    Siri can be enabled on a macOS device just like on an iPhone.  CIS Benchmark doesn't make any specific recommendations except that Siri usage should be consistent with organizational policy.
+04_users_09_screensaver:
+  regex: 'Users_ScreensaverStatus-(?P<username>.*?)::(?P<screensaverTimeout>.*)'
+  excel_sheet_name: Screensaver Timeout
+  only_matching: True
+  field_list:
+    - username
+    - screensaverTimeout
+  comment: |-
+    This is the screensaver timeout value.  For reference, 15 minutes is 900 seconds.
+04_users_10_password_hints:
+  regex: 'Users_PasswordHints::RetriesUntilHint=(?P<retriesUntilHint>.*)'
+  excel_sheet_name: Password Hints
+  only_matching: True
+  field_list:
+    - retriesUntilHint
+  comment: |-
+    Passowrd hints should not be used as they are often directly related to the user's password and even when they're not, they're still just another form of "someting you know" and do regularly meet the password complexity requirements.
+    This section shows if hints are displayed on the login screen.  The value should 0 or "Unset", but a positive number indicates the number of failed login attempts before the hint will be displayed.

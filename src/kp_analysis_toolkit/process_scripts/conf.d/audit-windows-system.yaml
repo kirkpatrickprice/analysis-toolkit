@@ -1,0 +1,252 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+01_system_01_kp_win_version:
+    regex: 'System_PSDetails::KPWINVERSION: (?P<kp_win_version>\d+\.\d+\.\d+)'
+    excel_sheet_name: KPWINAUDIT Version
+    max_results: 1
+    only_matching: True
+    field_list:
+      - 'kp_win_version'
+    comment: |-
+      KPWinAudit version information.  Use this to confirm that all script results were produced with a recent version.
+      
+      Check the version history comments in https://github.com/kirkpatrickprice/windows-audit-scripts/blob/main/kpwinaudit/kpwinaudit.ps1
+      to determine if you're missing anything you find important.
+01_system_01_bios:
+  regex: 'System_BIOS::((SMBIOSBIosversion\s+:\s+(?P<SMBios_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  excel_sheet_name: BIOS Information
+  max_results: 1
+  only_matching: True
+  multiline: True
+  field_list:
+    - 'SMBios_version'
+    - 'manufacturer'
+    - 'name'
+    - 'version'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+    - attr: producer
+      comp: eq
+      value: KPWINAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.4.7"
+01_system_02_win_os_version:
+  regex: 'System_OSInfo::(productname\s+:\s+(?P<product_name>[\w ]+))|(releaseid\s+:\s+(?P<release_id>\w+))|(currentbuild\s+:\s+(?P<current_build>\d+))|(UBR\s+:\s+(?P<UBR>\d+))'
+  excel_sheet_name: Windows OS Version
+  multiline: True
+  max_results: 1
+  field_list:
+    - product_name
+    - release_id
+    - current_build
+    - UBR
+  comment: |-
+    Windows operating system details.  The most helpful fields are:
+      - product_name is a friendly name, but isn't as good for identifying the OS within MS' documentation
+      - Release ID reflects the YYMM of this particular OS.  Especially on the desktop OSes, not all Release IDs of Windows 10 (for instance) are created equal
+      - current_build is the build number that represents the OS version and is more specific than the friendlier Product Name
+      - UBR identifies the latest specific hotfix that has been installed.  This is the best indicator as to whether the most recent patches have been installed
+
+    Visit https://kirkpatrickprice.atlassian.net/l/cp/7E9b522s for links to MS documentation that can be used to help interpret the results.
+01_system_03_bitlocker_status:
+  regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
+  excel_sheet_name: BitLocker Status
+  field_list:
+    - 'MountPoint'
+    - 'EncryptionMethod'
+    - 'KeyProtector'
+    - 'VolumeStatus'
+    - 'ProtectionStatus'
+  only_matching: True
+  comment: |-
+    Capture the BitLocker status of each disk drive attached to the system.  This can be used to confirm statements such as 'All drives are encrypted with BitLocker.'
+01_system_04_gpo_summary:
+  regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
+  excel_sheet_name: Group Policy Summary
+  comment: |-
+    This section includes a summary of how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides some of the specific policy items that have been applied.
+
+    This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
+01_system_05_installed_capabilities:
+  regex: 'System_InstalledCapabilities::.*Installed'
+  excel_sheet_name: Installed Capabilities
+  comment: |-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+    Windows Capabilities include such things as an OpenSSH client, Notepad and Internet Explorer.
+01_system_06_installed_features:
+  regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
+  excel_sheet_name: Installed Features
+  comment: |-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+01_system_07_patching:
+  regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+\s+(AM|PM)\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
+  excel_sheet_name: Update and Hotfix History
+  field_list:
+    - hfDate
+    - hfDescription
+    - hfKbNum
+    - wuDate
+    - wuDescription
+    - wuKbNum
+  merge_fields:
+    - source_columns: [hfDate, wuDate]
+      dest_column: date
+    - source_columns: [hfDescription, wuDescription]
+      dest_column: description
+    - source_columns: [hfKbNum, wuKbNum]
+      dest_column: kbNum
+  comment: |-
+    HINT: To force Excel to recognize the date format, you may need to search for "-" and replace it with "-".  This will force Excel to recognize the date format as a date instead of text.
+    
+    This list combines both Windows Update History with Hotfix History into one list.  Look at the 'Pending Updates' tab for a list of updates that still need to be installed.
+
+    Two methods are used to collect this information because Windows tracks the hotfix installation differntly depending on how it was installed.
+
+    The results are merged into a single list with the following fields:
+      - date: The date the update was installed (YYYY-MM-DD)
+      - description: A description of the update
+      - kbNum: The KB number of the update
+01_system_08_installed_software:
+  regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
+  excel_sheet_name: Installed Software
+  full_scan: True
+01_system_09_pending_updates:
+  regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
+  excel_sheet_name: Pending Updates
+  full_scan: True
+01_system_10_windows_update_config:
+  regex: '(System_WindowsUpdateConfig::\s*UseWUServer\s+:\s+(?P<useWUServer>\d+))|(System_WindowsUpdateConfig::\s*WUServer\s+:\s+(?P<wuServer>.*))|(System_WindowsUpdateConfig::\s*ElevateNonAdmins\s+:\s+(?P<elevateNonAdmins>\d+))|(System_WindowsUpdateConfig::\s*DisableWindowsUpdateAccess\s+:\s+(?P<disableWUAccess>\d+))|(System_WindowsUpdateConfig::\s*NoAutoUpdate\s+:\s+(?P<noAutoUpdate>\s*\d+))|(System_WindowsUpdateConfig::\s*AUOptions\s+:\s+(?P<auOptions>\d+))'
+  excel_sheet_name: Windows Update Config
+  field_list:
+    - useWUServer
+    - wuServer
+    - elevateNonAdmins
+    - disableWUAccess
+    - noAutoUpdate
+    - auOptions
+  multiline: True
+  only_matching: True  
+  comment: |-
+    Interpreting Windows Update settings from: http://techgenix.com/Registry-Keys-Tweaking-Windows-Update-Part1/.
+      - WUServer will provide the update source if using WSUS.  If not set, WSUS is not being used to receive updates.
+      - ElevateNonAdmins allows non-admin users to approve/reject installing updates.  The default is "enabled"
+      - DisableWindowsUpdateAccess prevents end-users from interacting with the Windows Update control panel (http://support.microsoft.com/kb/326686)
+      - AUOptions means the following:
+        2 - Agent notifies user prior to downloading updates
+        3 - Automatic download with user notification prior to install
+        4 - Automatic download and install according to schedule (look for ScheduledInstallDay and ScheduledInstallTime keys)
+        5 - Automatic updates are required with some user configurability
+      - NoAutoUpdate=1 disables automatic updates altogether
+      - ScheduledInstallDay and ScheduledInstallTime only have relevance when AUOptions = 4.
+      - ScheduledInstallDay: 1 = Sunday, 7 = Saturday, 0 = Any day
+      - ScheduledInstallTime: 1 to 24 to indicate the hour in which updates should be installed
+    If these following registry paths are not found, then system updates are managed through another method (e.g. MDM)
+01_system_11_running_processes:
+  regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*))|(UserName\s+:(?P<userName>.*)))'
+  excel_sheet_name: Running Processes
+  field_list:
+    - 'processName'
+    - 'path'
+    - 'company'
+    - 'product'
+    - 'userName'
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: 'os_family'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'producer'
+      comp: 'eq'
+      value: 'KPWINAUDIT'
+    - attr: 'producer_version'
+      comp: 'ge'
+      value: '0.4.6'
+  comment: |-
+    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit versions 0.4.6 and later and includes the username running the process.
+
+    Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
+01_system_12_system_services_raw:
+  regex: 'System_Services::(?!DisplayName)(?!--)'
+  excel_sheet_name: System Services (Raw)
+  comment: |-
+    A list of system services and their current statusk.  This file shows the lines exactly as they appear in the text file (without too much processing).  Another file includes the results in columnar listing for easier sort/filter.
+01_system_12_system_services_labeled:
+  regex: 'System_Services::(?!DisplayName)(?!--)(?P<serviceName>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startupType>.*)'
+  excel_sheet_name: System Services (Labeled)
+  field_list:
+    - 'serviceName'
+    - 'status'
+    - 'startupType'
+  only_matching: True
+  comment: |-
+    A list of system services and their current status.  This file includes the results in columnar listing for easier sort/filter.  Another file shows the lines exactly as they appear in the text file (without too much processing).
+01_system_14_rdp_config:
+  regex: 'System_RDPEncryption::((SecurityLayer\s*:\s*(?P<securityLayer>\d+))|(MinEncryptionLevel\s*:\s*(?P<minEncryptionLevel>\d+)))'
+  excel_sheet_name: RDP Encryption Config
+  comment: |-
+    This section pulls together a couple of settings for how Windows handles RDP encryption.
+    First, we collect the GPO setting from the registry for the source of RDP's encryption.  https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-terminalservices-rdp-winstationextensions-securitylayer
+      SecurityLayer = 0       Use RDP Security Layer (this is sub-par)
+      SecurityLayer = 1       Negotiate the security layer (not ideal)
+      SecurityLayer = 2       Use SSL/TLS Security Layer (best)
+    If there no results, then this GPO is not set, which results in "Negotiate" behavior.
+
+    When the GPO is configured to "RDP" or when negotiated parameters result in using "RDP Security Layer", the next result provides the RDP Encryption setting.
+      MinEncryptionLevel = 1  Low
+      MinEncryptionLevel = 2  Negotiated (default)
+      MinEncryptionLevel = 3  High
+    RDP should not be used as the security layer (see above), but if it must be used, then only "High Security" should be used.
+  field_list:
+    - securityLayer
+    - minEncryptionLevel
+  multiline: True
+01_system_15_screensaver_gpo:
+  regex: '(System_ScreenSaverConfigGPO::(ScreenSaveActive\s*:\s*(?P<gpoScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<gpoScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<gpoScreenSaverIsSecure>\d+)))|(System_ScreenSaverConfigRunning::(ScreenSaveActive\s*:\s*(?P<localScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<localScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<localScreenSaverIsSecure>\d+)))'
+  excel_sheet_name: Screensaver Config (GPO)
+  field_list:
+    - gpoScreenSaveActive
+    - gpoScreenSaverIsSecure
+    - gpoScreenSaveTimeout
+    - localScreenSaveActive
+    - localScreenSaverIsSecure
+    - localScreenSaveTimeout
+  multiline: True
+  only_matching: True
+  comment: |-
+    Using the screensaver is a common way of locking the computer after inactivity.  Many audit standards (e.g. PCI) look for no more than 15 minutes (900 seconds), which seems reasonable.
+    There are other methods of achieving this (such as through Power Settings), but these registry keys related to using GPO and to user-directed configurations respectively.
+    Don't put too much faith in these results, especially they aren't conclusive or contradict what the customer says.
+    If this registry query comes back blank, GPO is not used to enforce screensaver settings
+      gpoScreenSaveActive        Is the screensaver enabled
+      gpoScreenSaverIsSecure     Requires a password to unlock the screensaver
+      gpoScreenSaverTimeOut      Inactivity period in seconds before the screensaver kicks in (900 seconds = 15 minutes)
+    There are also "local" variants (not enforced by GPO) for each.01_system_16_screensaver_registry
+01_system_17_snmp:
+  regex: 'System_SNMPConfig::'
+  excel_sheet_name: SNMP Config
+01_system_18_scheduled_tasks:
+  regex: 'System_ScheduledTaskInfo::\s*((?P<task_name>[A-Za-z0-9 -_]+)\s+(?P<last_run_time>[0-9]{1,2}/[0-9/:\s]+:[0-9]{1,2})\s+(?P<last_result>[0-9]+)\s+(?P<number_missed_runs>[0-9]+)\s(?P<next_run_time>.*))'
+  excel_sheet_name: Scheduled Tasks
+  field_list:
+    - 'task_name'
+    - 'last_run_time'
+    - 'last_task_result'
+    - 'next_run_time'
+  multiline: True
+  comment: |-
+    A list of all scheduled tasks.  Includes last and next run time as well as the result.  At least some anti-virus could use scheduled tasks to run a weekly full scan.
+    
+    Result codes:
+      0 -- Success
+      1 -- File or path not found
+      Other codes -- https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-error-and-success-constants

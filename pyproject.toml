@@ -4,19 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kp-analysis-toolkit"
-version = "1.0.5"
+dynamic = ["version"]
 authors = [
-            {name="Randy Bartels", email="rjbartels@outlook.com"},
-    ]
+    {name="Randy Bartels", email="rjbartels@outlook.com"},
+]
 description = "Python utilities to parse technical information for security audits"
 readme = "README.md"
 keywords = ["pii discovery", "data discovery", "credit card discovery"]
-requires-python = ">=3.9,<4"
-dependencies = ["colorama>=0.4.6",
-                "pandas>=1.5.1",
-                "pyyaml>=6.0",
-                "xlsxwriter>=3.0.3",
-    ]
+requires-python = ">=3.12,<4"
+dependencies = [
+    "charset-normalizer>=3.4.0",
+    "click>=8.1.8",
+    "openpyxl>=3.1.5",
+    "packaging>=21.0",
+    "pandas>=1.5.1",
+    "pydantic>=2.11.5",
+    "pyyaml>=6.0",
+    "striprtf>=0.0.26",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Information Technology",
@@ -25,33 +30,37 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Security",
     "Topic :: Utilities",
-    ]
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4.4",]
-test = ["pytest>=7.4.4",]
-pypi = ["build>=1.2.1", "twine>=5.0.0",]
+dev = [
+    "pytest>=8.3.5",
+]
 
 [project.scripts]
-adv-searchfor = "adv_searchfor.adv_searchfor:main"
-nipper-expander = "nipper_expander.nipper_expander:main"
+kpat_cli = "kp_analysis_toolkit.cli:main"
+nipper_expander = "kp_analysis_toolkit.cli:legacy_nipper_expander"
+adv-searchfor = "kp_analysis_toolkit.cli:legacy_adv_searchfor"
 
 [project.urls]
 Homepage = "https://github.com/kirkpatrickprice/analysis-toolkit"
 Issues = "https://github.com/kirkpatrickprice/analysis-toolkit/issues"
 
-[tool.bandit]
-targets = ["."]
-exclude_dirs = ["tests"]
-#skips = ["B324"]
-
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+version = {attr = "kp_analysis_toolkit.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = "src/"
-addopts = ["--import-mode=importlib",]
+addopts = ["--import-mode=importlib"]
 markers = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

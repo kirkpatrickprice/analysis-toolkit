@@ -1,0 +1,35 @@
+---
+
+# Instructions for working in YAML mode:
+#   * Use an arbitary-but-descriptive name for the section
+#   * Config options use the same names as the argument parser variables in searchfor.py
+#   * If an option is not specified here, it is assumed to be either the program's default (--filespec '*.txt') or specified on the command line (e.g. --filespec 'somefiles*.txt')
+#   * List items are indented with a hyphen under the list variable's name
+#   * Booleans are set to either True or False (case sensitive)
+# Comments (like these) are ignored by the YAML parser, so feel free to use them liberally
+
+# When using YAML mode, results will be written to Excel files.  These will be saved as 'saved/<os_type>/<check_name>.csv' 
+# under the currect directory.  The destinaton root folder ("saved") can be overridden with "--out-path" on the command line.
+# The sub-folders ("/<os_type>/") will always be created.  The <os_type> is determined by the OS family of the system being audited.
+
+# This file /should/ work well on most still-maintained Windows versions, including Windows desktops and servers.  
+# Basically, anything that can run kpwinaudit.ps1
+
+# See the repo at https://github.com/kirkpatrickprice/analysis_toolkit for more information on how to write you're own YAML config files
+
+# ##################################################################
+# ######################## Global items ############################
+# ##################################################################
+# These items will apply to configs in this FILE and only for this file (not for includes).  If the same configurations options are included in any
+# specific checks below, these will be entirely overwritten (not additive)
+# NOTE: Despite the name, "global" does not apply to included files.  This prevents some headaches that could occur when inheriting conflicting "globals" across a set of files
+
+##################################################################
+######################## Include ##########################
+##################################################################
+
+include_all:
+  files:
+    - audit-linux.yaml
+    - audit-macos.yaml
+    - audit-windows.yaml

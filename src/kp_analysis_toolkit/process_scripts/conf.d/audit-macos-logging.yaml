@@ -1,0 +1,128 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+
+03_logging_01_auditd_status:
+  regex: 'Logging_AuditdStatus::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)|(Logging_AuditConfig::/etc/security/audit_control::(expire-after:(?P<expireAfter>.*)|flags:(?P<allUserFlags>.*)))'
+  excel_sheet_name: AuditD Status
+  only_matching: True
+  full_scan: True
+  field_list:
+    - pid
+    - exitStatus
+    - label
+    - expireAfter
+    - allUserFlags
+  comment: |-
+    Apple System Log (ASL, as implemented in AuditD) performs kernel-level logging.  For instance, it's a common way to generate file system access logs and some FIM products (e.g. Rapid7) actually require it as they are only monitoring AuditD events.
+
+    See https://www.scip.ch/en/?labs.20150108 and the MacOS CIS Benchmark item 3.2 for additional background info.
+
+    Fields include:
+      - pid/exitStats/Label: Determines if AuditD is running on the system.  According to the CIS benchmarks, the correct response is that we see AuditD listed, even if the PID column is blank ("-")
+      - expireAfter: Maximum amount size/retention time for the related log files.  They will be rotated/deleted after this value
+      - allUserFlags: Events that will be logged for all users (see user-specific logging configuration in "auditd_user_logging" file)
+
+    Common values for audit events:
+      - lo: Login/logout
+      - aa: Authentication and authorization
+      - ad: Administrative
+      - pc: Process-related events
+      - fr/fw: File read/write
+      - nt: Network
+      - no: Invalid class
+03_logging_01_auditd_user_logging:
+  regex: 'Logging_AuditConfig::/etc/security/audit_user::(?P<user>\w+):(?P<alwaysAudit>[\w+,-^]+):(?P<neverAudit>[\w+,-^]+)'
+  excel_sheet_name: AuditD User Logging
+  only_matching: True
+  field_list:
+    - user
+    - alwaysAudit
+    - neverAudit
+  comment: |-
+    These results include all of the user-specific logging overrides.  This will be useful specifically in a PCI assessment where all actions taken by a user with root/admin permissions need to be logged.  You might also find it useful in other situations.
+
+    Common values for audit events:
+      - lo: Login/logout
+      - aa: Authentication and authorization
+      - ad: Administrative
+      - pc: Process-related events
+      - fr/fw: File read/write
+      - nt: Network
+      - no: Invalid class
+03_logging_02_install_log_retention:
+  regex: 'Logging_InstallLog::/etc/asl/com.apple.install::\*\s+file\s+(?P<destination>[/\w.]+)((.*?file_max=(?P<file_max>\w+).*?all_max=(?P<all_max>\w+))|(.*ttl=(?P<ttl>\d+)))'
+  excel_sheet_name: Install Log Retention
+  only_matching: True
+  field_list:
+    - destination
+    - file_max
+    - all_max
+    - ttl
+  comment: |-
+    macOS writes information pertaining to system-related events to the file /var/log/install.log.  The retention period for this log file is set in the /etc/asl/com.apple.install configuration file.
+    Specifically, we want to see 'ttl=365' or greater.  We do NOT want to see 'file_max' or 'all_max=' followed by a file size.
+03_logging_04_logfile_permissions:
+  regex: 'Logging_AuditPermissions::d(?P<permissions>[rwx-]+)\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>audit|log.?)'
+  excel_sheet_name: Logfile Permissions
+  only_matching: True
+  field_list: 
+    - dir
+    - permissions
+    - owner
+    - group
+  comment: |-
+    These results include the file system permissions for the the folders used to write logs (/var/audit and /var/log).  Permissions should be limited to only those with a need to read log files.  Compare the owner and group permissions to expectations (it may be necessary to review group memberships as well).  "Other" should have no permissions to these folders.
+
+    As with all Unix-line file system permissions, each permissions block is really three different field_list:
+      Owner: The user-owner of the file/directory (rwx, as necessary)
+      Group: The group-owner of the file/directory (rwx, as necessary / check system group memberships)
+      Other: Anyone else on the system (--- to restrict all access)
+
+    For directories:
+      - Read means that users can see the directory contents listed when browsing the file system (files have their own permissions block)
+      - Write means that users can create new files in the directory
+      - Execute means they can change into the directory
+03_logging_04_syslog_config:
+  regex: 'Logging_SyslogConfig::(?P<configFile>[\w/.]+)::(?!#)(?P<line>[?>\w].*)'
+  excel_sheet_name: Syslog Config
+  comment: |-
+    MacOS uses two different logging services:
+      1 - Syslog appears to be used only for sending logs to remote destinations (e.g. @...)
+      2 - Apple System Log (ASL) appears to be used for any local flat-file logging destinations
+        
+    Check for:
+        - lines with an @ sign (sent remotely)
+        - lines with /dev/null (thrown away)
+        - lines with file names such as /var/log/auth.log (sent to this file)
+        - Retention criteria (e.g. sized-based with file_max=50M or all_max=150M, and time-based such as ttl=365)
+03_logging_04_firewall_logging:
+  regex: 'Logging_Firewall-firewall::(EnableLogging=(?P<fwEnableLogging>.*)|LoggingOption=(?P<fwLoggingOption>.*))|Logging_Firewall-alf::(loggingenabled=(?P<alfEnableLogging>.*)|loggingoption=(?P<alfLoggingOption>.*))'
+  excel_sheet_name: Firewall Logging
+  only_matching: True
+  multiline: True
+  field_list:
+    - fwEnableLogging
+    - fwLoggingOption
+    - alfEnableLogging
+    - alfLoggingOption
+  comment: |-
+    Firewall logging should be enabled to capture events from the MacOS desktop firewall (socketFilter)
+    
+    We want to see:
+      - fwEnableLogging: true
+      - fwLoggingOption: detail
+      - alfLoggingEnabled: 1
+      - alfLoggingOption: 4
+03_logging_07_logging_samples:
+  regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
+  excel_sheet_name: Logging Samples
+  field_list:
+    - 'logfile'
+    - 'head_tail'
+    - 'logentry'
+  only_matching: True
+  comment: |-
+    We collect samples of various logs below.  To save space, we collect only the first ('head') and last ('tail') 25 lines of each file to confirm that events were and continue to be written to the logs.  If you need to see more of some log files, you'll need to ask for those separately.

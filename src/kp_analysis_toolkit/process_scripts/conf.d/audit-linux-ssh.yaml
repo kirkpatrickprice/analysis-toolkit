@@ -1,0 +1,60 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+
+
+03_ssh_01_settings:
+  regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
+  excel_sheet_name: SSH Server Settings
+  only_matching: True
+  field_list:
+    - usePam
+    - maxAuthTries
+    - permitRootLogin
+    - passwordAuthentication
+    - challengeResponseAuthentcation
+    - pubKeyAuthentication
+    - kbdInteractiveAuthentication
+    - permitEmptyPasswords
+    - clientAliveInterval
+    - clientAliveCountMax
+    - x11Forwarding
+    - allowTCPForwarding
+    - protocol
+    - kexAlgorithms
+    - hostKeyAlgorithms
+    - ciphers
+    - macs
+  multiline: True
+  comment: |-
+    This list includes all of the information you're likely to need to review SSH configurations, although if something unique comes up there are additional settings in the raw text files that you might look at.
+
+    The settings are in groups:
+        - Authentication settings -- controls how users, including the root user, authenticate through SSH
+        - Session timeout settings (clientAlive*) -- the "interval" is the number of seconds between keep-alive checks.  The maxCount is the number of keep-alives to send.  So, the SSH will timeout in Interval*maxCount seconds
+        - Forwarding settings -- X11 and raw TCP forwarding.  X11 is for GUI. Both of these settings have the likely effect of expanding the scope for a PCI DSS assessment and worth considering for other audits too
+        - Encryption settings -- Check Confluence at https://kirkpatrickprice.atlassian.net/l/cp/L6jcE4Hx for pointers on what we should see
+
+    Notes: 
+        - If the KexAlgorithms includes specifically "diffie-hellman-group-exchange" without specifying a group number (such as group14 or group21), then you'll need to check the "weak moduli" file to see if the system is configured to support moduli of less than 2,048 bits.
+        - This is the "effective configuration" (results of "sshd -T") and takes into account any system-wide crypto policies that may be in place on later versions of Linux OSes.  See the "system_crypto_policies" for additional info.
+
+    From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
+03_ssh_02_crypto_weak_moduli:
+  regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535|2047)'
+  excel_sheet_name: SSH Weak Moduli
+  field_list:
+    - 'mod_size'
+  unique: True
+  comment: |-
+    If the "SSH Settings" file shows systems with KexAlgorithms which use "diffie-hellman-group-exchange" without specifying a group number (such as group14 or group21), then any moduli in this file can be used, including any that are less than 3,072 bits.  These results show if any such moduli are configured.
+
+    On 3072- vs 2048-bit as the minimum size... I've found numerous reputable references online (e.g. Mozilla, Palo Alto, Proxmox, and others) that suggest that the minimum size should be 3072.
+03_ssh_07_subsystems:
+  regex: 'Network_OpenSSHServerConfig::subsystem'
+  excel_sheet_name: SSH Subsystems
+  comment: |-
+    SSH Subsystems use the SSH protocol to provide additional functionality.  The only subsystem we're likely to ever run into is SFTP - note that this is not FTP/S (which is the FTP protocol over TLS).  SFTP denotes use of the SSH protocol and can be used by command line utilities such "scp" as well as GUIs such WinSCP and others.
+    

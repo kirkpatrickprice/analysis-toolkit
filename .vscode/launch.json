@@ -1,0 +1,97 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync"
+        },
+        {
+            "name": "KPAT CLI (Scripts)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "scripts",
+                "--verbose",
+                "-d", "testdata/"
+            ]
+        },
+        {
+            "name": "KPAT CLI (Nipper)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "nipper",
+                "-d", "testdata/nipper"
+            ]
+        },
+        {
+            "name": "KPAT CLI (Scripts) List Config Files",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "scripts",
+                "--verbose",
+                "--list-audit-configs"
+            ]
+        },
+        {
+            "name": "KPAT CLI (Scripts) List Systems",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "scripts",
+                "-d", "testdata/",
+                "--verbose",
+                "--list-systems"
+            ]
+        },
+        {
+            "name": "KPAT CLI (Scripts) Test.yaml",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "args": [
+                "scripts",
+                "-c", "test.yaml",
+                "-d", "testdata/"
+            ]
+        },
+        {
+            "name": "KPAT CLI (Scripts) Validation Error",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "args": [
+                "scripts",
+                "-c", "no-such-file.yaml"
+            ]
+        },
+    ]
+}

@@ -1,0 +1,142 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+
+02_network_01_macos_ping_results:
+  regex: 'Network_ConnectivityTest::(?P<xmitPackets>\d+) packets transmitted, (?P<recdPackets>\d+) packets received, (?P<pktLoss>[\d.%]+) packet loss'
+  excel_sheet_name: Ping Results
+  only_matching: True
+  field_list:
+    - xmitPackets
+    - recdPackets
+    - pktLoss
+  comment: |-
+    A quick PING test to google.com.  On a PCI audit, ideally this would fail (pktLoss = 100%) from systems in the CDE (not necessarily those that are "connected to").
+    If it doesn't, it's worth a conversation as all inbound and outbound communication must be explicitly defined for the CDE, so is "Ping to Google, really necessary?"
+    If you're not working on a PCI audit, you can decide if this is helpful to you.
+02_network_02_dns_nameserver:
+  regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver (?P<nameServer>[\d.]+)'
+  excel_sheet_name: DNS Nameserver
+  only_matching: True
+  field_list:
+    - nameServer
+  comment: |-
+    We collect the DNS resolver configuration.  Using an external resolver could open up some interesting attack vectors through DNS poisoning.  And in PCI DSS, DNS Servers are listed as a possible system component to include in scope (see page 10 of v3.2.1).
+    It's also interesting to note if there are any differences across the sample population as differences could be indicative of systems under differing levels of management.
+02_network_04_firewall_status:
+  regex: 'Network_FirewallStatus::\s+(Mode:\s(?P<mode>.*)|Firewall Logging:\s(?P<logging>.*)|Stealth Mode:\s(?P<stealthMode>.*))'
+  excel_sheet_name: Firewall Status
+  only_matching: True
+  multiline: True
+  field_list:
+    - mode
+    - logging
+    - stealthMode
+  comment: |-
+    MacOS' ALF (Application Level Firewall?) is the built-in desktop firewall for the system.  This section provides the basic status information, but if you want to see the rules, you'll want to inspect those separately.
+    We'll use the system_profiler command to get the data in a standard, and human-readble, format.
+02_network_05_listening_services:
+  regex: 'Network_ListeningServices::(?P<processName>[\w-]+)\s+(?P<pid>\d+)\s+(?P<user>[\w\d]+)\s+([\d\w]+)\s+(?P<addrFamily>(IPv4|IPv6))\s(.*?)(?P<proto>(TCP|UDP))\s+(?P<addrPort>.*)\s\(LISTEN\)'
+  excel_sheet_name: Listening Services
+  field_list:
+    - processName
+    - pid
+    - user
+    - addrFamily
+    - proto
+    - addrPort
+  only_matching: True
+  comment: |-
+    We list all of the listening ports, including the binary that's listening on it.  I consider the Package Manager Updates, Running Processes and this information to be among the most valuable data we collect from each system.
+
+    For the most part, you can probably ignore anything bound to localhost (127.0.0.1 and ::1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
+    
+    Some interesting, common port numbers:
+      - 80,443,8080,8433 -- Web servers with and without encryption
+      - 20,21,989,990 -- FTP and FTP/S
+      - 25,465,587 -- SMTP email servers
+      - 23,992 -- Telnet and Telnet/S
+      - 110,143,220,993,995 -- Email client services (POP3 and IMAP with and without /S)
+      - 53 -- DNS
+      - 22 -- SSH and SFTP (distinct from FTP/S, which is FTP over TLS)
+      - 1433,1521,3306,5432 -- SQL Server, Oracle, MySQL and PostgreSQL databases
+
+    These are just a few of the highlights you're likely to stumble on.  Check out https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers or other Internet sources for more.
+02_network_06_ssh_settings:
+  regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
+  excel_sheet_name: SSH Server Settings
+  only_matching: True
+  field_list:
+    - usePam
+    - maxAuthTries
+    - permitRootLogin
+    - passwordAuthentication
+    - challengeResponseAuthentcation
+    - pubKeyAuthentication
+    - kbdInteractiveAuthentication
+    - permitEmptyPasswords
+    - clientAliveInterval
+    - clientAliveCountMax
+    - x11Forwarding
+    - allowTCPForwarding
+    - protocol
+    - kexAlgorithms
+    - hostKeyAlgorithms
+    - ciphers
+    - macs
+  multiline: True
+  comment: |-
+    NOTE: If SSH is enabled on a MacOS being used as an end-user device, that could be finding by itself.  For expected uses of SSH...
+    
+    This list includes all of the information you're likely to need to review SSH configurations, although if something unique comes up there are additional settings in the raw text files that you might look at.
+
+    The settings are in groups:
+        - Authentication settings -- controls how users, including the root user, authenticate through SSH
+        - Session timeout settings (clientAlive*) -- the "interval" is the number of seconds between keep-alive checks.  The maxCount is the number of keep-alives to send.  So, the SSH will timeout in Interval*maxCount seconds
+        - Forwarding settings -- X11 and raw TCP forwarding.  X11 is for GUI. Both of these settings have the likely effect of expanding the scope for a PCI DSS assessment and worth considering for other audits too
+        - Encryption settings -- Check Confluence at https://kirkpatrickprice.atlassian.net/l/cp/L6jcE4Hx for pointers on what we should see
+
+    From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
+02_network_08_nfs:
+  regex: 'Network_SharesNFS::nfsd is (?P<nfsStatus>.*)'
+  excel_sheet_name: NFS Status
+  only_matching: True
+  field_list:
+    - nfsStatus
+  comment: |-
+    The Network File System (NFS) is common in Unix/Linux-only environments where SMB compatability is not needed for access to/from Windows systems
+    MacOS can run an NFS server as nfsd and the directories that will be shared are listed in /etc/exports
+02_network_08_smb_status:
+  regex: 'Network_SharesSamba::\s+((NetBIOSName\s+=\s+(?P<netBiosName>.+);)|ServerDescription\s+=\s+(?P<serverDesc>.*))'
+  excel_sheet_name: SMB Status
+  only_matching: True
+  multiline: True
+  field_list:
+    - netBiosName
+    - serverDesc
+  comment: |-
+    MacOS SMB configuration settings if the device is configured with File Sharing.  Also be sure to check if the device is listening on port 445/tcp to determine if the system is currently available as a Windows file share (Network_ListeningServices)
+02_network_08_smb_shares:
+  regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_sealed:\s(?P<smbSealed>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
+  excel_sheet_name: SMB Shares
+  only_matching: True
+  multiline: True
+  rs_delimiter: '^Network_SharesSamba-SharedFolders::$'
+  field_list:
+    - prettyName
+    - dirPath
+    - afpShared
+    - smbShared
+    - smbCreateMask
+    - smbDirMask
+    - smbSealed
+  comment: |-
+    These are the directories that are shared from the MacOS device.  The fields:
+      - prettyName: How the folder is displayed when browsing it on the Network
+      - dirPath: The native file system folder that's being shared
+      - afp/smbShared: Whether the folder is shared via Apple's own file server protocol and/or via SMB (MS-compatible)
+      - smbCreateMask: The file system permissions to be applied to new files created on the share.  The default is 644 which provides owners with read/write access and limits others to read-only access to file contents.
+      - smbDirMask: The file system permissions to be applied to directories shared through SMB.  The default is 755 which provides owners with full permissions and allows others to change into directores but not create or access any files specifically.
+      - smbSealed: Required encrypted SMB connections to acccess this share

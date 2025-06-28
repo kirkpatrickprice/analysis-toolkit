@@ -1,0 +1,403 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+
+01_system_01_kp_nix_version:
+  regex: 'KPNIXVERSION: (?P<kp_nix_version>\d+\.\d+\.\d+)'
+  excel_sheet_name: KPNIXAUDIT Version
+  max_results: 1
+  only_matching: True
+  field_list:
+    - 'kp_nix_version'
+  comment: |-
+    KPNixAudit version information.  Use this to confirm that all script results were produced with a recent version.
+    
+    Check the version history comments in https://github.com/kirkpatrickprice/linux-audit-scripts/blob/main/kpnixaudit.sh
+    to determine if you're missing anything you find important.
+01_system_02_linux_os_version:                                                     # Debian uses the PRETTY_NAME consistently
+  regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<os_version>.*)'
+  excel_sheet_name: Linux OS Version
+  max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
+  only_matching: True
+  field_list:
+    - 'os_version'
+  comment: |-
+    For non-RPM based distro's, this will have an accurate OS version name.  You can use this to check online if the version is still supported by the vendor.
+    For RPM-based distros such as Amazon Linux, CentOS, Oracle Linux and Red Hat, check out the "01_system_02_os_version_rpm" file for more accurate version details.
+01_system_01_bios:
+  regex: 'System_BIOS::\s+(Vendor: (?P<vendorName>.*)|(Version: (?P<version>.*))|(Release Date: (?P<releaseDate>.*)))'
+  excel_sheet_name: BIOS Information
+  max_results: 1
+  only_matching: True
+  multiline: True
+  field_list:
+    - 'vendorName'
+    - 'version'
+    - 'releaseDate'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.21"
+01_system_02_linux_os_version_rpm:
+  # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
+  regex: 'System_VersionInformation::/etc/system-release::(?P<RPMVersion>.*)'
+  excel_sheet_name: RPM OS Version
+  max_results: 1
+  field_list:
+    - RPMVersion
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: rpm
+01_system_03_cron_jobs:
+  regex: 'System_CrontabConfig::/etc/crontab::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)\s+(?P<user>\w+)(?P<command>.*)'
+  excel_sheet_name: System Cron Jobs
+  only_matching: True
+  field_list:
+    - minute
+    - hour
+    - dayOfMonth
+    - month
+    - dayOfWeek
+    - user
+    - command
+  comment: |-
+    Cron is the task scheduler, so you can use this to get a list of the scheduled tasks running on a system.  E.g. backup jobs on database servers.
+    Additionally, in the raw text file results, the contents of any scripts located in /etc/cron.* are provided.  If there any interesting jobs -- like a backup job on DB server --
+    you might look at them to see if there are hard-coded passwords or other interesting bits in there.
+
+    From your WSL instance, use "man 5 crontab" to learn more.  In the meantime, the field names should be self-explanatory, but a few pointers might help:
+        - Minute, hour, day, month and day of the week values
+            - * = Any value
+            - */N = every N -- e.g. */6 in "hour" mean "every 6 hours" (actually "any hour that is divisible by 6" using a 24-hour clock)
+            - Digits mean explitly that value -- e.g. 0 in "minute" means "top of the hour"
+            - n,m = Either of the values -- e.g. 0,12 in "hour" means "at midnight and noon"
+            - n-m = A range of values -- e.g. 0-3 in "month" means "Jan,Feb,March"
+        - Day of Week starts with Sunday = 0 (or 7)
+01_system_03_cron_files:
+  regex: 'System_CrontabConfig::(?P<filename>[\w/\-.\d]+)::'
+  excel_sheet_name: System Cron Files
+  only_matching: True
+  field_list:
+    - filename
+  unique: True
+01_system_03_user_crontabs:
+  regex: 'System_UserCrontab::/var/spool/cron/(crontabs)?/(?P<user>\w+)::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)(?P<command>.*)'
+  excel_sheet_name: User Cron Files
+  only_matching: True
+  field_list:
+    - user
+    - minute
+    - hour
+    - dayOfMonth
+    - month
+    - dayOfWeek
+    - command
+  comment: |-
+    Cron is the task scheduler.  This list includes all per-user cron jobs, which are separate from the system-level cron jobs listed in 01_system_03_cron_jobs.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.21"
+01_system_03_systemd_timers:
+  regex: 'System_Timers::(?P<next>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s+[A-Z]{3,4})\s+(?P<timeLeft>[0-9].*?left)\s+(?P<last>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s[A-Z]{3,4})\s+(?P<passed>[0-9].*?ago)\s+(?P<unit>[A-Za-z].*?\.timer)\s+(?P<activates>[A-Za-z].*)'
+  excel_sheet_name: SystemD Timers
+  only_matching: True
+  field_list:
+    - next
+    - timeLeft
+    - last
+    - passed
+    - unit
+    - activates
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.18"
+  comment: |-
+    In addition to the cron system, which has been around for decades, SystemD also has "timers" to schedule system jobs and other activities.  This list shows all of the currently active timers on the system.  Reference the raw results files for additional details on specific timers.
+01_system_04_file_system_encryption:
+  regex: 'System_FSEncryption::(?!#)'
+  excel_sheet_name: File System Encryption
+  comment: |-
+    We don't see if very often, but file system encryption can be provided internally by the OS using "dm-crypt" (very similar to BitLocker on Windows and FileVault on MacOS).
+01_system_05_file_system_mounts:
+  regex: 'System_FSMounts-systemctl::(?P<unit>.\s[-\w.\d]+\.mount)\s+(?P<loadState>\w+)\s+(?P<status>\w+)\s+(?P<sub>\w+)\s+(?P<description>.*)'
+  excel_sheet_name: File System Mounts
+  only_matching: True
+  field_list:
+    - unit
+    - loadState
+    - status
+    - sub
+    - description
+  comment: |-
+    One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
+    including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
+01_system_06_supported_file_systems:
+  regex: 'System_FSModules::'
+  excel_sheet_name: Supported File Systems
+  comment: |-
+    This is a straight-up CIS benchmark check (1.1.1.1) for which file system modules are supported by the server.  Some of these might be required in specific situationsn -- such as Docker's need for squashfs.  But if those conditions aren't present, then this is the "brown M&Ms" test to see if CIS guidelines have been followed.
+01_system_07_selinux_status:
+  regex: 'System_MACSELinuxInfo::(SELinux status:\s+(?P<status>(enabled|disabled)))|(Loaded policy name:\s+(?P<policyName>\w+))|(Current mode:\s+(?P<currentMode>\w+))|(Mode from config file:\s+(?P<configMode>\w+))|(Memory protection checking:\s+(?P<memoryProtectionChecking>.*))'
+  excel_sheet_name: SELinux Status
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: rpm
+  field_list:
+    - status
+    - policyName
+    - currentMode
+    - configMode
+    - memoryProtectionChecking
+  comment: |-
+    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
+    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
+    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
+    is installed.  SELinux is usually used on RPM-based distros such as Red Hat, CentOS, Oracle Linux and Amazon Linux.
+
+    Recommended settings:
+        - Policy name "targeted"
+        - Current mode "enforcing"
+        - Memory protection should be "actual (secure)"
+01_system_07_apparmor_status:
+  regex: 'System_MACAppArmorInfo::(apparmor module is (?P<status>.*))|((?P<loadedProfiles>[0-9]+) profiles are loaded)|((?P<enforceProfiles>[0-9]+) profiles are in enforce mode)|((?P<complainProfiles>[0-9]+) profiles are in complain mode)|((?P<definedProcesses>[0-9]+) processes have profiles defined)|((?P<enforceProcesses>[0-9]+) processes are in enforce mode)|((?P<complainProcesses>[0-9]+) processes are in complain mode)|((?P<unconstrainedProcesses>[0-9]+) processes are unconfined but have a profile defined)'
+  excel_sheet_name: AppArmor Status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: deb
+  only_matching: True
+  multiline: True
+  field_list:
+    - status
+    - loadedProfiles
+    - enforceProfiles
+    - complainProfiles
+    - definedProcesses
+    - enforceProcesses
+    - complainProcesses
+    - unconstrainedProcesses
+  comment: |-
+    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
+    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
+    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
+    is installed.  AppArmor is usually used on Debian-based distros such as Debian and Ubuntu.
+
+    Recommendations:
+        - The module should report as "loaded"
+        - There should be at least some profiles and processes defined (>0)
+        - All defined profiles/processes should either be in "enforce" or "complain" mode
+        - No processes should be in "unconfined" status
+01_system_08_aslr_config:
+  regex: 'System_MemoryASLRConfig::'
+  excel_sheet_name: Memory Randomization Config
+  comment: |-
+    Address Space Layout Randomization (ASLR) enhances security by randomizing memory locations, making it harder for hackers to execute buffer overflow, stack overflow and other similar attacks.  
+    
+    Possible values:
+      0 = Disabled (bad)
+      1 = Enabled (OK)
+      2 = Enabled for data segments too (Best, and default for most modern systems)
+01_system_09_suid_coredump:
+  regex: 'System_MemoryCoreDump::fs.suid_dumpable'
+  excel_sheet_name: SUID Core Dump Config
+  comment: |-
+    SUID programs run with elevated permissions and core dumps could contain sensitive system information.  One example is the "passwd" command to change a user's password.
+
+    Values:
+        - 0 (SUID_DUMP_DISABLE) = SUID programs will not be dumped (preferred)
+        - 1 (SUID_DUMP_USER) = SUID programs will be dumped (bad)
+        - 2 (SUID_SAFE) = SUID programs will be dumped such that the core dump files are only readable by ROOT (OK)
+01_system_10_installed_packages_deb:
+  regex: 'System_PackageInstalledSoftware-dpkg::(?P<pkg_name>\w+).*install'
+  excel_sheet_name: Installed Packages (DPKG)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: deb
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    DPKG ("Debian package") is the package manager for Debian-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+01_system_10_installed_packages_rpm:
+  regex: 'System_PackageInstalledSoftware-rpm::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
+  excel_sheet_name: Installed Packages (RPM)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+    - 'install_date'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: rpm
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    RPM ("Redhat Package Manager") is the package manager for Redhat-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+
+    The list also includes the date when the package was last installed or updated.  This provides a rough approximation of patching history, but it becomes less granular as time goes by.  Specifically, if the same package is updated in March and again in September, only the September date will be retained.
+01_system_11_package_history_deb:
+  regex: 'System_PackageInstalledSoftware-dpkg::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
+  excel_sheet_name: Package History (DPKG)
+  only_matching: True
+  field_list:                                                                    # Print the package name first (G2), followed by the date (G1)
+    - 'pkg_name'
+    - 'install_date'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: deb
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    Unlike RPM-based distros (see comment in "installed_packages_rpm"), Debian systems keep a log of all package manager activity.  By default, this log is retained on-system for 12 months.  Reference: https://linuxhint.com/see-dpkg-apt-history/
+
+    This list shows the time-and-date of each package installation action.  Since "updating packages" means "installing the new version", this also can be used to show patching history.  However, know that "installing new packages" and "patching existing packages" look the same in these logs, so it's not 100% fool-proof.
+01_system_12_pending_package_updates_deb:
+  regex: 'System_PackageManagerUpdates-apt::\s+(?P<pkg_name>((.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*)))\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
+  excel_sheet_name: Pending Package Updates (APT)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+    - 'cur_version'
+    - 'pend_version'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: deb
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    This list uses an Debian-based distro's operating system tools to query its package manager repos for pending updates.  It's exactly the same function as Windows Update.  It reflects the current status of outstanding updates as of the moment the script was run on the system.
+    
+    The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
+01_system_12_pending_package_updates_labeled_rpm:
+  regex: 'System_PackageManagerUpdates-dnf::(?!Last meta)(?!Available Upgrades)(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?!Get:)(?!Hit:)((?P<pkg_name>(.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kernel.*)(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*))\s+(?P<pend_version>[\w\-.:]+))'
+  excel_sheet_name: Pending Package Updates (DNF)
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: rpm
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  full_scan: True
+  field_list:
+    - 'pkg_name'
+    - 'pend_version'
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    This list uses an RPM-based distro's operating system tools to query its package manager repos for pending updates.  It's exactly the same function as Windows Update.  It reflects the current status of outstanding updates as of the moment the script was run on the system.
+    
+    The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
+
+    The source column indicates whether the data came from "dnf" (preferred, modern tool for RPM-based distros) or "yum" (legacy tool).  Use the DNF data if it's there.
+01_system_13_running_processes:
+  # Uses negative look-ahead '(?!...)' to ignore anything that ends with [.*] which are system process names and probably not useful
+  regex: 'System_RunningProcesses::(?!.*\[\w.*?\]$)(?P<user>[\w+]+)\s+(?P<pid>[\d]+)\s+(?P<cpuPct>[\d.]+)\s+(?P<memPct>[\d.]+)\s+(?P<vsz>\d+)\s+(?P<rss>\d+)\s+(?P<tty>[?\w/]+)\s+(?P<stat>[\w><+]+)\s+(?P<start>[\w:]+)\s+(?P<time>[\d:]+)\s+(?P<command>.*)'
+  excel_sheet_name: Running Processes
+  only_matching: True
+  field_list:
+    - user
+    - pid
+    - cpuPct
+    - memPct
+    - vsz
+    - rss
+    - tty
+    - stat
+    - start
+    - time
+    - command
+  comment: |-
+    This is as good as a blood test at the doctor's office.  If it's not listed here, the process isn't running. You can use it to find running anti-virus daemons, database servers, web servers, pretty much anything
+
+    The most interesting fields are:
+        - user = The username that's running the process.  If you see any web servers running as root, well... that's a really bad practice
+        - start = When did the process last start up.  If you see any really long-lived web servers, well... you can bet they haven't been patched since they were last started
+        - command = the actual process name and the options that were passed to it upon startup.  Sometimes you might find passwords or other sensitive data in the command line options
+
+      If you would like to learn more about the other fields, use "man ps" from your WSL prompt.

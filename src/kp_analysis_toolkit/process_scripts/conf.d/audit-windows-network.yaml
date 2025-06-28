@@ -1,0 +1,238 @@
+global:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+02_network_01_win_ping_results:
+  regex: 'Networking_ConnectivityTest::\s+Packets:'
+  excel_sheet_name: Ping Results
+02_network_02_ip_addresses_labeled:
+  regex: 'Networking_IPInfo::(?P<interfaceId>\d+)\s+(?P<ipAddress>[\da-f:.%]+)\s+(?P<prefixLength>\d+)\s+(?P<prefixOrigin>\w+)\s+(?P<suffixOrigin>\w+)\s+(?P<addressState>\w+)'
+  excel_sheet_name: IP Address Information
+  field_list:
+    - 'interfaceId'
+    - 'ipAddress'
+    - 'prefixLength'
+    - 'prefixOrigin'
+    - 'suffixOrigin'
+    - 'addressState'
+  only_matching: True
+  comment: |-
+    IP Address information for each active (AddressState=Preferred) interface.  Compare this information against firewall/router configs and network diagrams.  
+    This file shows the labeled results (in Excel columns).  The "raw" version of this file shows the same data without attempting to place it in Excel columns.  Use this file unless it shows something unexpected.
+02_network_03_ip_addresses_raw:
+  regex: 'Networking_IPInfo::\d.*[\da-f:.%]+'
+  excel_sheet_name: IP Address Information (Raw)
+  comment: |-
+    IP Address information for each active (AddressState=Preferred) interface.  Compare this information against firewall/router configs and network diagrams.  
+    This file shows the raw results (full line, without columns).  The "labeled" version of this file shows the same data in Excel columns.  Use this file if the other one shows something unexpected.
+02_network_04_dns_nameserver:
+  regex: 'Networking_DNSInfo::.*{[\da-f:.% ,]+}'
+  excel_sheet_name: DNS Nameserver
+02_network_05_listening_services_labeled:
+  regex: 'Networking_ListeningServices::(?P<protocol>TCP|UDP)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<local_port>\d+).*LISTENING\s(?P<process_name>[\w-]+)\s+(?P<pid>\d+)'
+  excel_sheet_name: Listening Services
+  field_list:
+    - 'protocol'
+    - 'ip_address'
+    - 'local_port'
+    - 'process_name'
+    - 'pid'
+  only_matching: True
+  comment: |-
+    Provide a list of all network listeners and the process that is listening on the port.  This is useful in a wide range of situations including:
+      - Identifying web (TCP/80), FTP (TCP/20-21), SSH (TCP/22), database (TCP/1433, 3306, 5432), RDP (TCP/3389) and other common servers
+      - Comparing listening services against documented lists of ports, protocols and services
+      - Comparing against hardening documentation
+      - Determining if there are any insecure ports, protocols or services in use that require additional protections.
+    Services that are bound to the localhost (IPv4 127.0.0.1 and IPv6 ::1) can only be accessed by another process on the same system.  However, services that are listening on a routable address are much more interesting.
+
+    This is the "labeled" file and should be used unless it shows something unexpected.  There is also a "raw" (without Excel columns) file if needed.
+02_network_06_listening_services_raw:
+  regex: 'Networking_ListeningServices::(TCP|UDP)'
+  excel_sheet_name: Listening Services (Raw)
+  comment: |-
+    Provide a list of all network listeners and the process that is listening on the port.  This is useful in a wide range of situations including:
+      - Identifying web (TCP/80), FTP (TCP/20-21), SSH (TCP/22), database (TCP/1433, 3306, 5432), RDP (TCP/3389) and other common servers
+      - Comparing listening services against documented lists of ports, protocols and services
+      - Comparing against hardening documentation
+      - Determining if there are any insecure ports, protocols or services in use that require additional protections.
+    Services that are bound to the localhost (IPv4 127.0.0.1 and IPv6 ::1) can only be accessed by another process on the same system.  However, services that are listening on a routable address are much more interesting.
+
+    This is the "raw" file and should be used only if needed.  There is also a "labeled" (with Excel columns) file that should be used unless it shows something unexpected.
+02_network_07_lanman_server:
+  regex: 'Networking_LanmanServerConfig::\s*((EnableSMB1Protocol\s*:\s*(?P<enableSMB1Protocol>[\w\d]+))|(EnableSMB2Protocol\s*:\s*(?P<enableSMB2Protocol>[\w\d]+))|(AutoDisconnectTimeout\s*:\s*(?P<autoDisconnectTimeout>[\w\d]+))|(AutoShareServer\s*:\s*(?P<autoShareServer>[\w\d]+))|(AutoShareWorkstation\s*:\s*(?P<autoShareWorkstation>[\w\d]+))|(EnableSecuritySignature\s*:\s*(?P<enableSecuritySignature>[\w\d]+))|(NullSessionPipes\s*:\s*(?P<nullSessionPipes>[\w\d]+))|(NullSessionShare\s*:\s*(?P<nullSessionShare>[\w\d]+))|(RequireSecuritySignature\s*:\s*(?P<requireSecuritySignature>[\w\d]+))|(EnableSMBQUIC\s*:\s*(?P<enableSMBQuic>[\w\d]+)))'
+  excel_sheet_name: LanManager Server Config
+  field_list:
+    - enableSMB1Protocol
+    - enableSMB2Protocol
+    - autoDisconnectTimeout
+    - autoShareServer
+    - autoShareWorkstation
+    - enableSecuritySignature
+    - nullSessionPipes
+    - nullSessionShare
+    - requireSecuritySignature
+    - enableSMBQuic
+  only_matching: True
+  multiline: True
+  comment: |-
+    LanManager is responsible for providing the SMB-based file sharing on Windows systems.  There are both "SmbServer" and "SmbClient" components.  But this is not the same thing as "Windows Server" vs "Windows 10."  Both servers and desktops will run both services.
+      - EnableSMBxProtocol              Enable/Disable specific version of the SMB protocol.  No specific recommendations.
+      - AutoDisconnectTimeout           SMB sessions will disconnect after (minutes).  Default is 15 which is also CIS recommendation.
+      - AutoShareServer/Workstation     Enable/disable the automatic shares.  Recommnedation is disabled.
+      - EnableSecuritySignature         Enable the use of signed SMB (does not require it, but permits it.  Recommendation and default is "enabled".
+      - NullSessionPipes/Shares         Shares and/or pipes that can be accessed through a null session.  Recommendation and default "blank".
+      - RequireSecuritySignature        Require the use of signed SMB.  Default is "Disabled", but recommendation is "Enabled".
+      - EnableInsecureGuestLogons       This setting disallows guest logons, which could be used directly or as a fall-back for access to network resources.  Recommnedation is Disabled.
+    Reference CIS Windows 10 and Windows Server 2016 benchmarks and https://docs.microsoft.com/en-US/troubleshoot/windows-server/networking/guest-access-in-smb2-is-disabled-by-default
+02_network_08_lanman_client:
+  regex: 'Networking_LanmanClientConfig::\s*((EnableInsecureGuestLogons\s*:\s*(?P<enableInsecureGuestLogons>[\w\d]+))|(EnableSecuritySignature\s*:\s*(?P<enableSecuritySignature>[\w\d]+))|(RequireSecuritySignature\s*:\s*(?P<requireSecuritySignature>[\w\d]+)))'
+  excel_sheet_name: LanManager Client Config
+  field_list:
+    - enableInsecureGuestLogons 
+    - enableSecuritySignature   
+    - requireSecuritySignature 
+  only_matching: True
+  multiline: True
+  comment: |-
+    LanManager is responsible for providing the SMB-based file sharing on Windows systems.  There are both "SmbServer" and "SmbClient" components.  See the lanman_server results file for the server settings.  Both Servers and desktops will run both services.
+      - EnableSecuritySignature         Enable the use of signed SMB (does not require it, but permits it.  Recommendation and default is "enabled".
+      - RequireSecuritySignature        Require the use of signed SMB.  Default is "Disabled", but recommendation is "Enabled".
+      - EnableInsecureGuestLogons       This setting disallows guest logons, which could be used directly or as a fall-back for access to network resources.  Recommnedation is Disabled.
+    Reference CIS Windows 10 and Windows Server 2016 benchmarks and https://docs.microsoft.com/en-US/troubleshoot/windows-server/networking/guest-access-in-smb2-is-disabled-by-default
+02_network_09_network_shares:
+  regex: 'Networking_Shares::(?!Name)(?!--)'
+  excel_sheet_name: Network Shares
+  comment: |-
+    These are network shares that are available on each device.  The $ shares - ADMIN$, C$, IPC$, etc -- are hidden shares in that they don't show up when browsing the computer.  As long as NULLSESSIONS is set properly (see lanman_server results), there are no special problems with these hidden shares.
+    If NULLSESSIONS is enabled, then the IPC$ share can be used by an attacker to gather intelligence about the system.
+02_network_10_wlan_available:
+  regex: 'Networking_WLANNetworks::\s*(((?P<index>\d+)\s{1,5}(?P<ssid>[\w-]+)).*802\.[\d\w]+\s+(?P<authentication>[\w\d-]+))'
+  excel_sheet_name: Wireless Networks
+  field_list:
+    - 'index'
+    - 'ssid'
+    - 'authentication'
+  only_matching: True
+  comment: |-
+    A list of the wireless networks that were within range.  This does NOT mean that there is an active connection to any of these networks.  Check the ip_addresses results files to see if you can match any of these up.
+02_network_11_firewall_status:
+  regex: 'Networking_WindowsFirewallStatus::((?P<name>(\w+\s)+)\s+(?P<enabled>(True|False|NotConfigured))\s+(?P<defaultInboundAction>\w+)\s+(?P<defaultOutboundAction>(\w+))\s+(?P<logFileName>([\w\\%\.]+))\s+(?P<logAllowed>\w+)\s+(?P<logBlocked>\w+)\s+(?P<logIgnored>\w+))'
+  excel_sheet_name: Firewall Status
+  field_list:
+    - name
+    - enabled
+    - defaultInboundAction
+    - defaultOutboundAction
+    - logFileName
+    - logAllowed
+    - logBlocked
+    - logIgnored
+  only_matching: True
+  comment: |-
+    A list of the Windows Firewall profiles.  Usually there are three (https://bobcares.com/blog/configure-windows-firewall-rules-with-powershell/):
+      - Domain -- Applies to computers in an Active Directory domain
+      - Private -- Any network marked "private" by the user when they connect to it (for instance, these are the ones where you allow the computer to discoverable)
+      - Public -- Any network that was marked "public" by the user upon connecting
+    There could be other domains, but these are three you're likely to see.  As for the other fields in this report, they should be self-explanatory.  Review the firewall_rules report for rule details.
+02_network_12_firewall_rules:
+  regex: 'Networking_WindowsFirewallRules::(?!(DisplayName|--))((?P<name>.*?)\s+(?P<profile>(Domain|Public|Private|Any)\s{2}|(Domain, .*|Public, .*|Private, .*))\s+True\s+(?P<direction>\w+)\s+(?P<action>\w+))'
+  excel_sheet_name: Firewall Rules
+  field_list:
+    - name
+    - profile
+    - direction
+    - action
+  only_matching: True
+  comment: |-
+    A list of enabled firewall rules.
+
+    NOTE: This will only show rules using the default, built-in profile names (Domain, Public, Private).  If you observed any unique profile names in the firewall_status report, you'll need to review the raw results directly to see what rules are in use.
+02_network_13_ipsec_config:
+  regex: 'Networking_IPSecConfig::'
+  excel_sheet_name: IPsec Config
+  full_scan: True
+02_network_14_clock_permissions:
+  regex: 'Time_ClockPermissions::SeSystemtimePrivilege = (?P<clockPermissions>.*)'
+  excel_sheet_name: Clock Permissions
+  sys_filter:
+    - attr: 'os_family'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'producer'
+      comp: 'eq'
+      value: 'KPWINAUDIT'
+    - attr: 'producer_version'
+      comp: 'ge'
+      value: '0.4.5'
+  field_list:
+    - clockPermissions  
+  comment: |-
+    These results show this is the list of entities (Windows SIDs) with permissions to adjust the clock.  Default is *19 (Windows LSA) and *544 (Local Administrators)
+    
+    This is critical for a PCI DSS assessment, but is also important for other types of audits.
+02_network_15_ntp_peers:
+  regex: 'Time_W32TimePeers::(Peer:\s+(?P<peer>.*)|State:\s+(?P<state>.*)|Mode:\s+(?P<mode>.*)|Last Successful Sync Time:\s+(?P<syncTime>.*))'
+  excel_sheet_name: NTP Peers
+  field_list:
+    - peer
+    - state
+    - mode
+    - syncTime
+  sys_filter:
+    - attr: 'os_family'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'producer'
+      comp: 'eq'
+      value: 'KPWINAUDIT'
+    - attr: 'producer_version'
+      comp: 'ge'
+      value: '0.4.5'
+  multiline: True
+  comment: |-
+    A list of the peers with which the system is connected for time.  Each of the fields should be self-explanatory.
+
+    Only trusted, internal sources should be used for most devices.  These trusted time sources should query only trusted external time sources and should also peer with each other.
+02_network_16_winrm:
+  regex: '(Networking_WinRM-service::\s+(AllowRemoteAccess\s+=\s+(?P<allowRemoteAccess>.*))|(AllowUnencrypted\s+=\s+(?P<allowUnencrypted>.*))|(Negotiate\s+=\s+(?P<negotiateAuth>.*))|(Basic\s+=\s+(?P<basicAuth>.*))|(Kerberos\s+=\s+(?P<kerberosAuth>.*))|(Certificate\s+=\s+(?P<certAuth>.*))|(CredSSP\s+=\s+(?P<credSSPAuth>.*)))|(Networking_WinRM-winrs::\s+AllowRemoteShellAccess\s+=\s+(?P<allowRemoteShellAccess>.*))|(Networking_WinRM-listener::\s+(Transport\s+=\s+(?P<transport>.*))|(ListeningOn\s+=\s+(?P<listeningOn>.*)))'
+  excel_sheet_name: WinRM Config
+  field_list:
+    - allowRemoteAccess
+    - allowRemoteShellAccess
+    - transport
+    - listeningOn
+    - allowUnencrypted
+    - negotiateAuth
+    - basicAuth
+    - kerberosAuth
+    - certAuth
+    - credSSPAuth
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: 'os_family'
+      comp: 'eq'
+      value: 'Windows'
+    - attr: 'producer'
+      comp: 'eq'
+      value: 'KPWINAUDIT'
+    - attr: 'producer_version'
+      comp: 'ge'
+      value: '0.4.7'
+  comment: |-
+    Windows Remote Monitoring (WinRM) provides remote management capabilities (reference: WS-MAN protocol) as well as PowerShell Remoting features
+    There a few settings that should be evaluated to ensure that remote access is properly secured and encrypted
+      - Transport: Can be HTTP or HTTPS, but regardless of the setting, WinRM performs encryption according to the 'AllowUnencrypted' setting below
+      - AllowUnuncrypted: This defaults to False, which ensures that message-level encryption is enforced for the WinRM protocol even if HTTP is used as the transport
+      - Auth methods: Various authentication methods enabled on the WinRM server
+      - ListeningOn: The IP addresses where the server is listening for WinRM connections
+      - AllowRemoteAccess: Pretty much what it says
+      - AllowRemoteShellAccess: Allows PowerShell remote shell connections
+02_network_18_w32time_log_sample:
+  regex: 'Time_W32TimeLogs::'
+  excel_sheet_name: W32Time Log Sample
+  comment: |-
+    A list of Windows Event Logs related to Time Synchronization.  This is needed for PCI DSS assessment.
