@@ -3,8 +3,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 📚 Documentation
-    url: https://github.com/your-org/analysis-toolkit/blob/main/README.md
+    url: https://github.com/kirkpatrickprice/analysis-toolkit/blob/main/README.md
     about: Check the documentation for usage examples and troubleshooting
   - name: 💬 Discussions
-    url: https://github.com/your-org/analysis-toolkit/discussions
+    url: https://github.com/kirkpatrickprice/analysis-toolkit/discussions
     about: Ask questions, share ideas, or discuss the project with the community
