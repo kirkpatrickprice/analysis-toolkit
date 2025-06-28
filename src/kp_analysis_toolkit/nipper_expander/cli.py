@@ -81,17 +81,19 @@ def get_input_file(
         return dirlist[0]
     # if more than one CSV file is found, print the results and provide the user a choice
     click.secho(
-        'Multiple CSV files found.  Use the "--infile <filename>" option to specify the input file or choose from below.',
+        'Multiple CSV files found.  Use the "--in-file <filename>" option to specify the input file or choose from below.',
         fg="yellow",
     )
     for index, filename in enumerate(dirlist, 1):
-        click.echo(f"({index:03d}) {filename}")
+        click.echo(
+            f"{index:{len(str(len(dirlist)))}d} - {filename}"
+        )  # Padding for alignment
     click.echo()
     choice: int = 0
     while choice < 1 or choice > len(dirlist):
         try:
             choice = int(input("Choose a file or press CTRL-C to quit: "))
-        except KeyboardInterrupt:  # noqa: PERF203
+        except KeyboardInterrupt:
             click.secho("\nExiting...\n", fg="red")
             sys.exit()
         except ValueError:
