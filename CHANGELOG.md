@@ -13,3 +13,6 @@
 * Formerly `nipper_expander` --> `kpat_cli nipper`
     * Expands a Nipper CSV file with "one-row-per-finding" with multiple devices listed in the same row into "one-row-per-device-per-finding"
     * Helps with sorting and filtering Nipper findings in Excel
+* New tool -- RTF to Text Converter
+    * Converts RTF files to plaintext, ASCII-encoded files
+    * Useful for router configs (and other files) where the information was provided in RTF, but needs to be used (e.g. by Nipper) as plaintext files.
