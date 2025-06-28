@@ -10,9 +10,10 @@ This repository includes two automated testing workflows using the latest GitHub
 - Manual trigger via GitHub web interface
 
 **Features:**
-- Tests on Windows (officially supported OS)
+- Tests on Windows, macOS, and Linux (comprehensive cross-platform support)
 - Uses Python 3.12
 - Runs all 460+ unit tests with pytest
+- Includes syntax checking across all platforms
 - Generates JUnit XML test reports
 - Uploads test artifacts
 - Publishes test results in PR comments
@@ -20,7 +21,7 @@ This repository includes two automated testing workflows using the latest GitHub
 
 **Manual Trigger:**
 1. Go to the "Actions" tab in GitHub
-2. Select "Run Unit Tests" workflow
+2. Select "Cross-Platform Unit Tests" workflow
 3. Click "Run workflow"
 4. Choose the branch and click "Run workflow"
 
@@ -44,9 +45,9 @@ This repository includes two automated testing workflows using the latest GitHub
 
 ## 🔧 Local Testing
 
-To run the same tests locally on Windows:
+To run the same tests locally (works on Windows, macOS, and Linux):
 
-```powershell
+```bash
 # Install dependencies
 uv sync --dev
 
@@ -58,6 +59,9 @@ uv run pytest tests/ -v --tb=short --junitxml=pytest-results.xml
 
 # Quick test run
 uv run pytest tests/ -v --tb=short --ff
+
+# Syntax check
+uv run python -c "import compileall; import sys; sys.exit(0 if compileall.compile_dir('src/kp_analysis_toolkit', quiet=1) else 1)"
 ```
 
 ## 🐛 Known Issues

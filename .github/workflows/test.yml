@@ -1,4 +1,4 @@
-name: Run Unit Tests
+name: Cross-Platform Unit Tests
 
 on:
   # Trigger on push to any branch except main
@@ -16,10 +16,11 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # Continue testing other combinations even if one fails
       matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.12"]
     
     steps:
@@ -42,13 +43,18 @@ jobs:
     
     - name: Run tests with pytest
       run: |
-        uv run pytest tests/ -v --tb=short --junitxml=pytest-results-windows-${{ matrix.python-version }}.xml
+        uv run pytest tests/ -v --tb=short --junitxml=pytest-results-${{ matrix.os }}-${{ matrix.python-version }}.xml
+    
+    - name: Run syntax check
+      if: always()
+      run: |
+        uv run python -c "import compileall; import sys; sys.exit(0 if compileall.compile_dir('src/kp_analysis_toolkit', quiet=1) else 1)"
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results-windows-${{ matrix.python-version }}
+        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
         path: |
           pytest-results-*.xml
           .pytest_cache/
@@ -57,6 +63,6 @@ jobs:
       uses: dorny/test-reporter@v1.9.1
       if: always() && github.event_name == 'pull_request'
       with:
-        name: Pytest Results (Windows, Python ${{ matrix.python-version }})
+        name: Pytest Results (${{ matrix.os }}, Python ${{ matrix.python-version }})
         path: pytest-results-*.xml
         reporter: java-junit
