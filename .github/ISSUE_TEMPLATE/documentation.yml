@@ -1,0 +1,190 @@
+name: Documentation Issue/Request
+description: Report documentation problems or request new documentation
+title: "[DOCS] "
+labels: ["documentation", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Please fill out the sections below whether you're reporting a problem with existing docs or requesting new documentation.
+
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: Type of Documentation Issue
+      description: What type of documentation issue is this?
+      options:
+        - Documentation Issue - Something is wrong/unclear
+        - Documentation Request - Need new documentation
+        - Documentation Enhancement - Improve existing docs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: doc_location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation located (for issues) or where should it be added (for requests)?
+      options:
+        - README.md
+        - CLI Help/Usage
+        - Code Comments
+        - Examples/Tutorials
+        - Installation Instructions
+        - Troubleshooting Guide
+        - New documentation needed
+        - Other/Multiple locations
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected_module
+    attributes:
+      label: Related Module
+      description: Which module/tool is this documentation related to?
+      options:
+        - General/Project Overview
+        - CLI/Installation
+        - process-scripts
+        - nipper-expander
+        - rtf-to-text
+        - Excel export
+        - Configuration
+        - All modules
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_issue
+    attributes:
+      label: Current Documentation Issue
+      description: "FOR ISSUES: Describe what's wrong, unclear, or missing in the current documentation"
+      placeholder: |
+        - What specific section/content has issues?
+        - What makes it confusing or incorrect?
+        - What did you expect to find?
+        - How did you try to use the documentation?
+
+  - type: textarea
+    id: documentation_request
+    attributes:
+      label: Documentation Request
+      description: "FOR REQUESTS: Describe what new documentation you need"
+      placeholder: |
+        - What topic/feature needs documentation?
+        - What should the documentation cover?
+        - What questions should it answer?
+        - What examples would be helpful?
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Target Audience
+      description: Who is the primary audience for this documentation?
+      options:
+        - New users/beginners
+        - Experienced users
+        - Developers/contributors
+        - KP Auditors
+        - KP Customers using the toolkit
+        - All users
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this documentation issue/request?
+      options:
+        - Low - Nice to have improvement
+        - Medium - Would help users significantly
+        - High - Important for usability
+        - Critical - Blocking users or causing confusion
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case/Scenario
+      description: Describe the specific scenario where this documentation is needed
+      placeholder: |
+        - What were you trying to accomplish?
+        - What workflow or task requires this documentation?
+        - What questions were you trying to answer?
+
+  - type: textarea
+    id: suggested_content
+    attributes:
+      label: Suggested Content/Fix
+      description: If you have ideas for the content or how to fix the issue, please share them
+      placeholder: |
+        - Suggested text or structure
+        - Examples that should be included
+        - Commands or code snippets
+        - Screenshots or diagrams that would help
+      render: markdown
+
+  - type: textarea
+    id: examples_needed
+    attributes:
+      label: Examples Needed
+      description: What specific examples would make this documentation more helpful?
+      placeholder: |
+        - Command line examples
+        - Sample input/output files
+        - Configuration examples
+        - Step-by-step walkthroughs
+
+  - type: textarea
+    id: current_workaround
+    attributes:
+      label: Current Workaround
+      description: How are you currently solving this problem or finding the information you need?
+      placeholder: |
+        - Where else did you look for information?
+        - What alternative approaches are you using?
+        - What other resources helped you?
+
+  - type: checkboxes
+    id: doc_format
+    attributes:
+      label: Documentation Format Preferences
+      description: What format(s) would be most helpful? (Check all that apply)
+      options:
+        - label: Written documentation/guides
+        - label: Code examples with comments
+        - label: Command-line examples
+        - label: Screenshots or diagrams
+        - label: Video tutorials
+        - label: FAQ format
+        - label: Interactive examples
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other context, links, or information about this documentation issue/request
+      placeholder: |
+        - Links to related issues or discussions
+        - References to similar documentation in other projects
+        - Additional details that might be helpful
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have checked the current documentation to see if this already exists
+          required: true
+        - label: I have provided clear details about what documentation is needed or what's wrong
+          required: true
+        - label: I understand this is a request for documentation improvement
+          required: true

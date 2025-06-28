@@ -1,0 +1,154 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below to help us understand and reproduce the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the behavior
+      placeholder: |
+        1. Run command '...'
+        2. With input file '...'
+        3. See error
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened instead?
+      placeholder: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_output
+    attributes:
+      label: Error Output
+      description: If applicable, paste any error messages or stack traces
+      placeholder: Paste error output here...
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: KP Analysis Toolkit Version
+      description: What version of the toolkit are you using?
+      placeholder: "e.g., 1.2.3 (run: kp-analysis-toolkit --version)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python Version
+      description: What version of Python are you using?
+      placeholder: "e.g., 3.12.10 (run: python --version)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected Module
+      description: Which module/tool is affected by this bug?
+      options:
+        - CLI/General
+        - process-scripts
+        - nipper-expander
+        - rtf-to-text
+        - Excel export
+        - Other/Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my workflow
+        - Critical - Blocking my work
+    validations:
+      required: true
+
+  - type: textarea
+    id: input_files
+    attributes:
+      label: Sample Input Files
+      description: Provide a OneDrive link to the files which produced the error (DO NOT UPLOAD TO GH)
+      placeholder: OneDrive link to input files
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Have you found any workaround for this issue?
+      placeholder: Describe any workarounds you've found
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: Any additional information that might be helpful
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all the requested information above
+          required: true
+        - label: I have removed any sensitive information from my submission
+          required: true

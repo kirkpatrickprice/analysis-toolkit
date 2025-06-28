@@ -1,0 +1,128 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please fill out the sections below to help us understand your request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe the problem you're trying to solve.
+      placeholder: "I'm frustrated when... / It would be helpful if... / Currently there's no way to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Target Module
+      description: Which module/tool should this feature be added to?
+      options:
+        - CLI/General
+        - process-scripts
+        - nipper-expander
+        - rtf-to-text
+        - Excel export
+        - New module
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my workflow
+        - Critical - Blocking my work
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: What other approaches have you thought about?
+
+  - type: textarea
+    id: use_cases
+    attributes:
+      label: Use Cases
+      description: Describe specific use cases where this feature would be valuable.
+      placeholder: |
+        1. When analyzing X type of data...
+        2. During Y workflow...
+        3. For Z use case...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Provide examples of how this feature would work (command line usage, input/output, etc.)
+      placeholder: |
+        Example command:
+        kpat_cli new-feature --option value
+
+        Expected output:
+        ...
+      render: shell
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups/References
+      description: If applicable, add mockups, screenshots, or references to similar features in other tools
+      placeholder: Attach images or describe similar features in other tools
+
+  - type: checkboxes
+    id: implementation
+    attributes:
+      label: Implementation Considerations
+      description: Check any that apply
+      options:
+        - label: This feature would require new dependencies
+        - label: This feature would require changes to the CLI interface
+        - label: This feature would require new configuration options
+        - label: This feature might affect performance
+        - label: This feature might require breaking changes
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Add any other context, links, or information about the feature request here.
+      placeholder: Any additional information that might be helpful
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and discussions to ensure this is not a duplicate
+          required: true
+        - label: I have provided a clear problem statement and proposed solution
+          required: true
+        - label: I understand this is a request and not a guarantee of implementation
+          required: true
+        - label: I have removed any sensitive information from my submission
+          required: true
