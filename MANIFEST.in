@@ -1,1 +1,1 @@
-include src/adv_searchfor/conf.d/*.yaml
+include src/kp_analysis_toolkit/process_scripts/conf.d/*.yaml

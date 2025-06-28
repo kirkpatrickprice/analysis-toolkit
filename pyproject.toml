@@ -48,6 +48,10 @@ Issues = "https://github.com/kirkpatrickprice/analysis-toolkit/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+"kp_analysis_toolkit.process_scripts" = ["conf.d/*.yaml"]
 
 [tool.setuptools.dynamic]
 version = {attr = "kp_analysis_toolkit.__version__"}
