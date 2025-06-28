@@ -2,6 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode
 
 # KPAT CLI
+results/
 testdata/**/results/
 conf.d/test.yaml
 src/kp_analysis_toolkit/process_scripts/conf.d/test.yaml
