@@ -39,8 +39,8 @@ dev = [
 
 [project.scripts]
 kpat_cli = "kp_analysis_toolkit.cli:main"
-nipper_expander = "kp_analysis_toolkit.cli:main"
-adv-searchfor = "kp_analysis_toolkit.cli:main"
+nipper_expander = "kp_analysis_toolkit.cli:legacy_nipper_expander"
+adv-searchfor = "kp_analysis_toolkit.cli:legacy_adv_searchfor"
 
 [project.urls]
 Homepage = "https://github.com/kirkpatrickprice/analysis-toolkit"
