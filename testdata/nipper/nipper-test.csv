@@ -1,0 +1,510 @@
+Issue Title,Devices,Rating,Finding,Impact,Ease,Recommendation
+2.3 Interfaces Were Configured With No Filtering,"firewall1
+firewall2",Critical,"Network filtering rule lists can be assigned to individual network interfaces to provide filtering of network traffic.KirkpatrickPrice determined that 19 network interfaces on firewall had no network filtering rules assigned. These are detailed below.  Table 13: Network interfaces with no filtering on firewall is shown in the main report.
+","The network traffic from an attacker attached to one of the network interfaces detailed above would not be subjected to filtering, potentially providing unrestricted access to network services.",The network traffic would not be subjected to filtering.,KirkpatrickPrice recommends that all network interfaces should be configured filtering to help prevent unauthorized access to network services and hosts.
+2.4 Rules Allow Access To Administrative Services,"firewall1
+firewall2",Critical,"Administrative network services are essential to enable network administrators to remotely configure, update, modify and monitor the systems. Typically these services fall in to two groups: 
+* remote command, graphical or web-based environments that enable administrators to quickly configure and manage devices.
+* informational services which either provide alerts, notifications and may also enable the modification of settings using specialist software.
+
+KirkpatrickPrice identified eight filter rules on firewall that allow access to administrative network services. Those filter rules are listed below.  Table 14: Firewall Policy from IOT to wan1 administrative service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 15: Firewall Policy from Office to wan1 administrative service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 16: Firewall Policy from Office to IOT administrative service rules on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 17: Firewall Policy from IOT to Cameras administrative service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 18: Firewall Policy from IOT to VPN administrative service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 19: Firewall Policy from Office to Lab administrative service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 20: Firewall Policy from Lab to wan1 administrative service rule on firewall is shown in the main report.
+",The administrative services by their nature enable the remote configuration of a device and access to a wealth of sensitive configuration information. These services are likely to be a prime target for an attacker who may attempt to gain access by exploiting a vulnerability or attacking the authentication systems.,Access to the administrative network services detailed in the finding would not be prevented by the network filter rules if any network traffic were to match the rule.,"KirkpatrickPrice recommends that network filter rules should only be configured to allow access to administrative network services from those who are authorized. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.5 Filter Rules Allow Packets From Any Source To Any Destination And Any Port,"firewall1
+firewall2",Critical,"Network filtering rules can be configured on a wide range of network devices to restrict access, helping to prevent unauthorized access to network hosts and services. The filtering rules are processed sequentially when they are applied to network packets, with the first rule that matches the network packet being applied.KirkpatrickPrice identified six network filter rules on firewall that allows packets from any source to any destination and any port. 
+
+ 
+
+  Table 21: Firewall Policy from IOT to wan1 rules allowing packets from any source to any destination and any port on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 22: Firewall Policy from Office to wan1 rules allowing packets from any source to any destination and any port on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 23: Firewall Policy from Office to IOT rules allowing packets from any source to any destination and any port on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 24: Firewall Policy from Office to Lab rules allowing packets from any source to any destination and any port on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 25: Firewall Policy from Lab to wan1 rules allowing packets from any source to any destination and any port on firewall is shown in the main report.
+","If network filtering rules are not configured to restrict access to network services from only those hosts that require the access then unauthorized access may be gained to those services covered in this finding. For a network edge device, this could lead to a remote attacker gaining access to network service. For an internal device this could lead a malicious user gaining unauthorized access to a service.",The network filtering would not prevent a malicious user or an attacker from accessing the network services covered by the rules detailed in this finding.,"KirkpatrickPrice recommends that, where possible, all network filtering rules should be configured to restrict access to network services from only those hosts that require the access. However, it is worth noting that it may not be possible to achieve this in all circumstances, such as with a public web server where business requirements imply that any network address should be permitted to access the service. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.6 Filter Rules Allow Packets From Any Source To Network Destinations And Any Port,"firewall1
+firewall2",High,"Network filtering rules can be configured on a wide range of network devices to restrict access, helping to prevent unauthorized access to network hosts and services. The filtering rules are processed sequentially when they are applied to network packets, with the first rule that matches the network packet being applied.KirkpatrickPrice identified two network filter rules on firewall that allows packets from any source to network destinations and any port. 
+
+ 
+
+  Table 26: Firewall Policy from IOT to Cameras rules allowing packets from any source to network destinations and any port on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 27: Firewall Policy from IOT to VPN rules allowing packets from any source to network destinations and any port on firewall is shown in the main report.
+","If network filtering rules are not configured to restrict access to network services from only those hosts that require the access then unauthorized access may be gained to those services covered in this finding. For a network edge device, this could lead to a remote attacker gaining access to network service. For an internal device this could lead a malicious user gaining unauthorized access to a service.",The network filtering would not prevent a malicious user or an attacker from accessing the network services covered by the rules detailed in this finding.,"KirkpatrickPrice recommends that, where possible, all network filtering rules should be configured to restrict access to network services from only those hosts that require the access. However, it is worth noting that it may not be possible to achieve this in all circumstances, such as with a public web server where business requirements imply that any network address should be permitted to access the service. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.7 Rules Allow Access To Clear-Text Protocol Services,"firewall1
+firewall2",High,"Clear-text protocol services are those network services that provide no encryption of the network traffic between the service and a connected client. Whilst some clear-text protocol services are relatively simple and be of little of interest to an attacker, others may be used for the remote administration of the device and transfer their authentication credentials with no encryption.KirkpatrickPrice identified nine filter rules on firewall that allow access to clear-text protocol services. Those filter rules are listed below.  Table 28: Firewall Policy from IOT to wan1 clear-text protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 29: Firewall Policy from Office to wan1 clear-text protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 30: Firewall Policy from Office to IOT clear-text protocol rules on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 31: Firewall Policy from IOT to Cameras clear-text protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 32: Firewall Policy from IOT to VPN clear-text protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 33: Firewall Policy from DMZ to Secure clear-text protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 34: Firewall Policy from Office to Lab clear-text protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 35: Firewall Policy from Lab to wan1 clear-text protocol rule on firewall is shown in the main report.
+","Due to a lack of encryption, an attacker who is able to monitor clear-text protocol service network communications would gain access to the information transmitted. The information could include the authentication credentials used to access the service or any other information transferred. Furthermore, some of the services could be used for remote administration and once accessed could be used to attack other devices on the network, bypassing any configured network filtering. Additionally, clear-text protocol services are vulnerable to man in the middle style attacks.","Access to the network services detailed in the finding would not be prevented by the network filter rules if any network traffic were to match the rule. 
+
+ 
+
+Network monitoring tools are available on the Internet and, depending on the operating system, may be installed by default. It is worth noting that an attacker may have to perform additional actions in order to be in a position where the network traffic can be monitored. This could mean that an attacker would have to perform a layer-2 attack or exploit a weakness in a routing protocol. 
+
+","KirkpatrickPrice recommends that, where possible, network filter rules should not allow access to clear-text protocol services. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.8 Clear Text Telnet Service Enabled,"firewall1
+firewall2",High,"The Telnet protocol (described in RFC 15 and RFC 854) is a clear-text protocol that is widely used to provide command-based access to systems and applications. Telnet is a simple protocol that was one of the first Transmission Control Protocol/Internet Protocol protocols to be developed, before security features were given a greater importance. Many modern network devices still provide a Telnet service for remote administrative purposes alongside the more secure Secure Shell service.KirkpatrickPrice determined that the Telnet service was enabled on firewall.","Due to the lack of encryption provided by the Telnet protocol, an attacker who is able to monitor a Telnet session would be able to view all of the authentication credentials and data passed in the session. The attacker could then attempt to gain access to the device using the authentication credentials extracted from the session and potentially gain access under the context of that user. Since Telnet is commonly used for network device administration this could gain the attacker an administrative level of access.","To exploit the fact that the Telnet protocol does not provide any encryption, the attacker would need to be able to monitor the Telnet session between a Telnet server and client. In some situations the attacker may not need to perform any further action other than launching a network monitoring tool. However, in a switched network the attacker may need to perform additional actions such as an Address Resolution Protocol attack and in a routed environment the attacker may have to compromise the network routing. 
+
+ 
+
+Tools that are capable of both monitoring and displaying network traffic in an easy to read form can be downloaded from the Internet. There are also tools that automatically detect where authentication credentials or files are being transferred and display or save the data. Tools are also available that enable an attacker to easily perform a variety of network attacks in order to be able to monitor and intercept sessions between two network devices. 
+
+","KirkpatrickPrice recommends that the Telnet service should be disabled. If remote administrative access is required then KirkpatrickPrice recommends that a cryptographically secure alternative, such as Secure Shell, should be used instead. If Telnet has to be used then KirkpatrickPrice recommends that network filtering should be employed to restrict access to the service from only those specific devices that need the access."
+2.9 Long Session Timeout,"firewall1
+firewall2",High,"The session timeout setting is used to determine if a administrative or user session is no longer being used, enabling a device to determine when a session can be automatically disconnected. A session could become unused if an administrator has not properly terminated and remains authenticated or if they leave their computer unattended without terminating their session.KirkpatrickPrice determined that the session timeout was set to 15 minutes on firewall.","An attacker could be able to access a system using an authenticated session that is no longer being used. The attacker would then be able to perform information gathering, configuration and other malicious activities under the context of the previous authenticated user. Due to the nature of the access, this could be an administrative level of access.","To exploit this finding an attacker would have to identify a session that had not been correctly terminated before it expires and then take over that session. This could be as simple as plugging a console cable in to a port on the device or taking over a computer system whilst the operator has left their system open, both of which would require physical access. However, an attacker may also be able to perform this attack remotely if an insecure network protocol has been used to create the session.",KirkpatrickPrice recommends that a timeout period of 10 minutes should be configured for all sessions.
+2.10 Clear Text Hypertext Transfer Protocol Service Enabled,"firewall1
+firewall2",Medium,"Hypertext Transfer Protocol (RFC 2616) provides web-based services, such as information services, network device administration and other potentially sensitive services. Hypertext Transfer Protocol provides no encryption of the connection between the client and server including any authentication and data transfer.KirkpatrickPrice determined that the clear text Hypertext Transfer Protocol server was enabled on firewall.","Due to the lack of encryption provided by the Hypertext Transfer Protocol service, an attacker who is able to monitor a session would be able to view all of the authentication credentials and data passed in the session. The attacker could then attempt to gain access to the device using the authentication credentials extracted from the session and potentially gain access under the context of that user. Since Hypertext Transfer Protocol is commonly used for network device administration this could gain the attacker an administrative level of access.","To exploit the fact that the Hypertext Transfer Protocol service does not provide any encryption, the attacker would need to be able to monitor the session between a Hypertext Transfer Protocol server and web browser. In some situations the attacker may not need to perform any further action other than launching a network monitoring tool. However, in a switched network the attacker may need to perform additional actions such as an Address Resolution Protocol attack and in a routed environment the attacker may have to compromise the network routing. 
+
+ 
+
+Tools that are capable of both monitoring and displaying network traffic in an easy to read form can be downloaded from the Internet. There are also tools that automatically detect where authentication credentials or files are being transferred and display or save the data. Tools are also available that enable an attacker to easily perform a variety of network attacks in order to be able to monitor and intercept sessions between two network devices. 
+
+","KirkpatrickPrice recommends that the Hypertext Transfer Protocol service should be disabled. If remote administrative access is required then KirkpatrickPrice recommends that a cryptographically secure alternative, such as Hypertext Transfer Protocol over SSL, should be used instead."
+2.11 Rules Allow Access To Potentially Unnecessary Services,"firewall1
+firewall2",Medium,"A number of different network services provide little to no functionality and are installed by default on some operating systems. Examples of these services are: 
+* echo - a network service that responds with a copy of the data sent to it.
+* qotd - a network service that responds a random quote.
+* discard - a network service that simply ignores anything that is sent to it.
+* chargen - a network service that returns with a repeating character sequence.
+* daytime - a network service that returns the current system time and date.
+
+KirkpatrickPrice identified eight filter rules on firewall that allow access to potentially unnecessary network services. Those filter rules are listed below.  Table 36: Firewall Policy from IOT to wan1 unnecessary service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 37: Firewall Policy from Office to wan1 unnecessary service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 38: Firewall Policy from Office to IOT unnecessary service rules on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 39: Firewall Policy from IOT to Cameras unnecessary service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 40: Firewall Policy from IOT to VPN unnecessary service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 41: Firewall Policy from Office to Lab unnecessary service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 42: Firewall Policy from Lab to wan1 unnecessary service rule on firewall is shown in the main report.
+","Although a number of these services may appear to be relatively harmless, serious issues may exist with their use and running unnecessary services also places a burden on the host system. Furthermore, an attacker may be able to use a combination of some network services such as chargen and echo to perform a Denial of Service attack.",Access to the potentially unnecessary network services detailed in the finding would not be prevented by the network filter rules if any network traffic were to match the rule.,"KirkpatrickPrice recommends that, where possible, network filter rules should be configured to prevent access to potentially unnecessary services. Additionally, if the potentially unnecessary network services are not required, KirkpatrickPrice suggests that they should be disabled. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.12 Rules Allow Access To Potentially Sensitive Services,"firewall1
+firewall2",Medium,"Whilst not strictly administrative services, a number of network services can be classified as potentially sensitive due to their nature. These network services could be database services that enable applications to connect to and query data, authentication services or Microsoft Windows file sharing services.KirkpatrickPrice identified eight filter rules on firewall that allow access to potentially sensitive network services. Those filter rules are listed below.  Table 43: Firewall Policy from IOT to wan1 sensitive service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 44: Firewall Policy from Office to wan1 sensitive service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 45: Firewall Policy from Office to IOT sensitive service rules on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 46: Firewall Policy from IOT to Cameras sensitive service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 47: Firewall Policy from IOT to VPN sensitive service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 48: Firewall Policy from Office to Lab sensitive service rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 49: Firewall Policy from Lab to wan1 sensitive service rule on firewall is shown in the main report.
+","Although there may be a business requirement for access to be permitted to these services, such as access to Windows file shares, these services also offer a tempting target for an attacker. At worst an attacker may be able to exploit configuration or software vulnerabilities in these services in order to gain access to the service host and data. It is also typical for these services to provide an attacker with a wealth of information about the systems, such as enumerating users from a Windows hosts or obtaining software version details from database services.",Access to the potentially sensitive network services detailed in the finding would not be prevented by the network filter rules if any network traffic were to match the rule.,"KirkpatrickPrice recommends that access to potentially sensitive services should be restricted to only those who are authorized. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.13 User Account Names Contained admin,"firewall1
+firewall2",Medium,"When User Account names contain admin, a clear indication is given to an attacker or malicious user that the account most likely has higher privilege levels than a standard user.  This allows an attacker to focus their resources in a more direct way, such as targeted phishing attacks or other social engineering techniques.KirkpatrickPrice identified one user account containing admin in the username on firewall. This is shown in Table 50  Table 50: User on firewall with 'admin' in username is shown in the main report.
+","A malicious user would be able to create targeted phishing and social engineering attacks at a specific user they believe to have admin or elevated privileges.  Once access is gained, they would have that user's access to a system, which could include re-configuring the device, extracting potentially sensitive information and disabling the device. Once an attacker has obtained the configuration from the device they may be able to identify authentication credentials that could then be used to gain access to other network devices.",Exploiting this vulnerability would require an attacker to have gained access to sensitive information detailing user accounts and associated ID's before being able to identify appropriate targets for phishing or social engineering attacks.,"KirkpatrickPrice strongly recommends that all Admin or elevated privilege accounts should not contain information that identifies them as being such. 
+
+ 
+
+ 
+
+"
+2.14 No Border Gateway Protocol Route Flap Prevention,"firewall1
+firewall2",Medium,"Border Gateway Protocol is a routing protocol that allows network devices to dynamically adapt to changes to the network topology. Border Gateway Protocol routers update their neighbors with changes such as network link status changes. Border Gateway Protocol route flapping is a condition where routing tables are constantly being updated due to a link transitioning between up and down status. These transitions cause routing tables to be continuously updated across the infrastructure. Routing devices can be configured with Border Gateway Protocol route dampening in order to help mitigate against constant route flapping.KirkpatrickPrice determined that Border Gateway Protocol route dampening had not been configured on firewall.","Excessive route updates, caused by a link status constantly changing between up to down, can impact network routing performance. Network routing could slow with network packets being dropped, possibly causing a Denial of Service condition.","It is possible for an attacker to send Border Gateway Protocol packets to a router to update the routing table and cause a route flapping condition. However, the attacker may need additional information in order to perform the attack, such as a Border Gateway Protocol password.",KirkpatrickPrice recommends that Border Gateway Protocol route dampening should be configured to help prevent excessive routing updates from causing a Denial of Service condition.
+2.15 FortiAnalyzer Logging Not Enabled,"firewall1
+firewall2",Medium,"Logging is an important component of a secure network configuration. When appropriately configured, the messages logged provide a wealth of information to a network administrator when diagnosing a problem, identifying an attack or when used to provide an activity audit trail. When a well configured logging system is combined with a good monitoring and alert system it will enable network administrators to promptly respond to networking issues, Denial of Service attacks, administrative system logons and a host of other important information. 
+
+ 
+
+The FortiAnalyzer logging system provides a vendor specific protocol for logging messages to a remote system using an encrypted connection, enabling the collection, storage and administration of logs securely transferred from devices to a single location. The sending of logs to other systems, not only provides additional storage space for logs, which could be size restricted on the originating network device, but it also provides an extra level of protection for the logs in a scenario where an attacker has compromised the security of the message source. 
+
+KirkpatrickPrice determined that the logging of system messages to a FortiAnalyzer logging server was not configured on firewall.","If an attacker were to compromise a device that was not configured to log messages to a remote system, the attacker could clear the message logs stored within the device to remove any evidence of an intrusion. Additionally, if network devices are not sending system messages to a central logging system where they can be easily managed, administrators may never be alerted to potential issues with the device, or a possible intrusion attempt.",System messages will not be sent to a FortiAnalyzer logging system.,KirkpatrickPrice recommends that FortiAnalyzer logging should be configured to enable system messages to be logged to a central logging server.
+2.16 Filter Rules That Allow Any Protocol Were Configured,"firewall1
+firewall2",Low,"Network filtering rules are typically configured to enable hosts to access a specific network service or services. Therefore a network filter rule which enables access to a secure web service could be configured to access a specific destination host on Transmission Control Protocol port 443. However, it is also possible to configure the filter rule to allow access using any protocol which, for the previous example, would enable access to port 443 using both Transmission Control Protocol and User Datagram Protocol.KirkpatrickPrice identified eight filter rules on firewall that allow any protocol. Those filter rules are listed below.  Table 51: Firewall Policy from IOT to wan1 any protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 52: Firewall Policy from Office to wan1 any protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 53: Firewall Policy from Office to IOT any protocol rules on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 54: Firewall Policy from IOT to Cameras any protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 55: Firewall Policy from IOT to VPN any protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 56: Firewall Policy from Office to Lab any protocol rule on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 57: Firewall Policy from Lab to wan1 any protocol rule on firewall is shown in the main report.
+",If a network protocol is not specified then it an attacker would not be prevented from accessing hosts and services detailed in the finding using protocols other than those which the services are listening on. This could enable an attacker to gain unauthorized access to a network service or leave unfiltered network ports which an attacker could utilize in a targeted attack.,"With no specific network protocol configured on the network filtering rules identified, access attempts using a network protocol other than the one that was intended would not be prevented by the filtering.","KirkpatrickPrice recommends that all network filter rules should be configured to use only the specific protocols required. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.17 Filter Rules Allow Packets From Any Source To A Destination Range,"firewall1
+firewall2",Low,"Network filtering rules can be configured on a wide range of network devices to restrict access, helping to prevent unauthorized access to network hosts and services. The filtering rules are processed sequentially when they are applied to network packets, with the first rule that matches the network packet being applied.KirkpatrickPrice identified four network filter rules on firewall that allows packets from any source to a Destination range. 
+
+ 
+
+  Table 58: Firewall Policy from Guest to Secure rules allowing packets from any source to a Destination range on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 59: Firewall Policy from wan1 to DMZ rules allowing packets from any source to a Destination range on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 60: Firewall Policy from DMZ to Secure rules allowing packets from any source to a Destination range on firewall is shown in the main report.
+
+
+ is shown in the main report.
+
+
+  Table 61: Firewall Policy from Cameras to Secure rules allowing packets from any source to a Destination range on firewall is shown in the main report.
+","If network filtering rules are not configured to restrict access to network services from only those hosts that require the access then unauthorized access may be gained to those services covered in this finding. For a network edge device, this could lead to a remote attacker gaining access to network service. For an internal device this could lead a malicious user gaining unauthorized access to a service.",The network filtering would not prevent a malicious user or an attacker from accessing the network services covered by the rules detailed in this finding.,"KirkpatrickPrice recommends that, where possible, all network filtering rules should be configured to restrict access to network services from only those hosts that require the access. However, it is worth noting that it may not be possible to achieve this in all circumstances, such as with a public web server where business requirements imply that any network address should be permitted to access the service. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.18 Weak Password Age Policy Setting,"firewall1
+firewall2",Low,"The password age policy setting is used to determine how much time can pass before a user will be forced to change their password.KirkpatrickPrice determined that the password age policy setting was configured to not enforce a password age on firewall.","Strong authentication credentials are a key component of a systems security. It is therefore important that a user chooses a strong password and that it is changed on a regular basis. 
+
+ 
+
+The younger a passwords age the better it is for security because of a number of reasons. For example, if given enough time it may be possible for an attacker who had captured some encrypted network traffic to decrypt and identify the user authentication credentials. Over time any password is likely to be used and be present in a greater number of locations, such as on other devices, system backups and temporary files. It is also possible that over a period of time a password may become known to co-workers or passersby from casual or intentional shoulder surfing. 
+
+","A malicious user, or attacker, who has gained access to a password would have a far greater chance of the password continuing to work in the future if the device does not enforce a maximum password age.",KirkpatrickPrice recommends that a user password age policy setting of 60 days should be configured.
+2.19 No Pre-Logon Banner Message,"firewall1
+firewall2",Low,"A pre-logon banner message is one that is shown to users when they connect to a device and prior to the user logon.KirkpatrickPrice determined that firewall was configured with no pre-logon banner message.","A pre-logon banner message is often overlooked when configuring a device, but it is an important security setting which could potentially discourage an uncommitted attacker from proceeding any further. A pre-logon banner message should be configured to warning any potential attacker against unauthorized access and the consequences. Furthermore if legal proceedings are executed against an attacker it would be easier to prove intent on behalf of the attacker if they were first warned against unauthorized access.","With no pre-logon banner configured, an attacker would not be presented with a carefully worded legal warning prior to attempting to logon.",KirkpatrickPrice recommends that a carefully worded legal banner that warns against unauthorized access should be configured.
+2.20 Filter Allow Rules Were Configured Without Logging,"firewall1
+firewall2",Low,"Network filter rules can be configured to log an access attempt when network traffic matches a specific filter rule. The network filter rule logging facility helps network administrators to diagnose issues, determine a rules usage and provide an audit trail for network traffic accessing specific hosts and services.KirkpatrickPrice identified one filter rule on firewall that does not log allowed network traffic. The filter rule is shown below in Table 62.  Table 62: Firewall Policy from Office to Lab rule not logging allowed network traffic on firewall is shown in the main report.
+","It is common for an attacker to perform network reconnaissance in order to identify potential target hosts and services. An attackers reconnaissance phase can vary greatly in intensity and covertness, but any network scans that match network filter rules that are not configured to log will not be recorded. 
+
+ 
+
+Logging access attempts to network hosts and services that are filtered using allow rules provides useful information about an attackers activities, enabling a network administrators to determine which hosts and services were accessed. The information collected would also be useful as evidence in case any legal action were to be taken against the attacker. With no logging of allow filter rules the information would not be recorded for use by network administrators, auditors or a network forensic team. Additionally, with no logging of allow filter rules network administrators may not be able to determine which hosts were accessed by an attacker and log monitoring software, if configured, would not alert network administrators of a potential attack in progress. 
+
+",An attacker's attempts to access network services covered by the allow filter rules detailed in the finding would not be logged.,"KirkpatrickPrice recommends that all network filter rules that allow network traffic should be configured to log the access attempt. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.21 No Post Logon Banner Message,"firewall1
+firewall2",Informational,"Post logon banner messages are ones that are shown to users after they have authenticated and prior to being given access to the device.  It is one that is shown to users when they connect to a device and prior to the user logon.KirkpatrickPrice determined that firewall was configured with no post logon banner message.","The post logon banner is useful for detailing the acceptable use policy and the change control procedures which should be followed prior to making any changes to a device's configuration. An acceptable use message detailing the change control procedures and waning against abuse of the policy could help to prevent ad-hoc changes being made to a device's configuration. 
+
+ 
+
+Additionally, if a device does not have the facilities to configure a pre-logon banner message then the post logon banner message could be the only place where a legal warning against unauthorized access could be given. 
+
+","With no post logon banner configured, a user would not be given a reminder of the acceptable use and change control procedure policy details.","KirkpatrickPrice recommends that a post logon banner message is configured that details both the acceptable use policy and change control procedures. Additionally, if the device does not support a pre-logon banner message then KirkpatrickPrice recommends that the post logon banner message should also include a carefully worded legal warning against unauthorized access."
+2.22 Filter Rule List Does Not End With Drop All And Log,"firewall1
+firewall2",Informational,"Network devices that are capable of performing network filtering will usually drop all network traffic when it does not match any of the configured network filter rules. However, this network traffic is also usually excluded from logging when a network filter rule does not apply.KirkpatrickPrice identified twelve filter rule lists on firewall that did not end with a drop all and log rule. Those filter rule lists are detailed below. 
+* Firewall Policy from Secure to wan1.
+* Firewall Policy from IOT to wan1.
+* Firewall Policy from Office to wan1.
+* Firewall Policy from Office to IOT.
+* Firewall Policy from IOT to Cameras.
+* Firewall Policy from Guest to Secure.
+* Firewall Policy from wan1 to DMZ.
+* Firewall Policy from IOT to VPN.
+* Firewall Policy from DMZ to Secure.
+* Firewall Policy from Cameras to Secure.
+* Firewall Policy from Office to Lab.
+* Firewall Policy from Lab to wan1.
+
+","It is common for an attacker to perform network reconnaissance in order to identify potential target hosts and services. An attackers reconnaissance phase can vary greatly in intensity and covertness, but any network scans which do not match the configured filter rules will not be logged. 
+
+ 
+
+The log information collected would be useful as evidence in case any legal action were to be taken against the attacker. Without any logging of the network traffic that does not match any of the filter rules, the information would not be recorded for use by network administrators, auditors or a network forensic team. 
+
+",Any network traffic that does not match any network filter rules will not be logged.,"KirkpatrickPrice recommends that a drop all and log filter rule should be configured as the final rule in a filter rule list. 
+
+ 
+
+KirkpatrickPrice recommends that: 
+* filter rules should only allow access to specific destination addresses.
+* filter rules should only allow access to specific destination network ports.
+* filter rules should only allow access from specific source addresses.
+* filter rules should specify a specific network protocol.
+* Internet Control Message Protocol filter rules should specify a specific message type.
+* filter rules should always drop network packets and not reject them.
+* filter rules should perform a specific action and not rely on a default action.
+
+"
+2.23 Internet Control Message Protocol Redirect Messages Were Enabled,"firewall1
+firewall2",Informational,"When sending network traffic through a router, Internet Control Message Protocol redirect messages could be sent to the router in order to indicate a specific route that the sending host would like the network traffic to take. On a router that accepts Internet Control Message Protocol redirect message the network traffic will be forwarded using the specified route. Furthermore, some routers will cache the new routing information for use with future network packets.KirkpatrickPrice determined that the Internet Control Message Protocol Redirects feature was enabled on eleven network interfaces on firewall. These are detailed below.  Table 63: Network interfaces on firewall with Internet Control Message Protocol Redirects enabled is shown in the main report.
+","An attacker could use Internet Control Message Protocol redirects to modify the route that a packet takes through a network. However, it is worth noting that on networks with functional network routing, disabling Internet Control Message Protocol redirects will have little to no effect.","Internet Control Message Protocol redirect messages will be accepted, but not necessarily acted upon. An attacker could download software from the Internet in order to perform this attack.","KirkpatrickPrice recommends that, if not required, the processing of Internet Control Message Protocol redirect messages on devices should be disabled."
