@@ -67,3 +67,9 @@ uv run pytest tests/ -v --tb=short --ff
 1. Check if mocks have enough return values for all expected calls
 2. Consider using `unittest.mock.DEFAULT` or more values in `side_effect`
 3. The same tests usually pass locally due to different execution contexts
+
+**Windows Path Comparison**: On Windows, path comparisons may fail due to short/long filename differences (e.g., `RUNNER~1` vs `runneradmin`). To fix:
+
+1. Use `path.resolve()` on both paths before comparison
+2. Example: `assert result.resolve() == expected.resolve()`
+3. This normalizes paths to their absolute, canonical form

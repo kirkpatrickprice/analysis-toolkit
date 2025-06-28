@@ -32,7 +32,8 @@ class TestGetInputFile:
             rtf_file.write_text("{\rtf1 test}")
 
             result = get_input_file(None, tmpdir)
-            assert result == rtf_file
+            # Resolve both paths to handle Windows short/long path differences
+            assert result.resolve() == rtf_file.resolve()
 
     def test_get_input_file_multiple_rtf_files_user_choice(self) -> None:
         """Test user choice when multiple RTF files exist."""
@@ -47,7 +48,10 @@ class TestGetInputFile:
                 result = get_input_file(None, tmpdir)
 
             # Result should be one of the files (order may vary based on filesystem)
-            assert result in [rtf_file1, rtf_file2]
+            # Resolve paths to handle Windows short/long path differences
+            resolved_result = result.resolve()
+            resolved_files = [rtf_file1.resolve(), rtf_file2.resolve()]
+            assert resolved_result in resolved_files
 
 
 class TestProcessCommandLine:
