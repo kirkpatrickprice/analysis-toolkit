@@ -7,6 +7,9 @@ from kp_analysis_toolkit.nipper_expander.cli import (
 from kp_analysis_toolkit.process_scripts.cli import (
     process_command_line as scripts_process_command_line,
 )
+from kp_analysis_toolkit.rtf_to_text.cli import (
+    process_command_line as rtf_process_command_line,
+)
 from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
 CONTEXT_SETTINGS: dict[str, int] = {
@@ -33,7 +36,7 @@ def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
     # Always run version check unless explicitly skipped
     if not skip_update_check:
         check_and_prompt_update()
-    
+
     # If no subcommand was invoked and no help was requested, show help
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
@@ -42,6 +45,7 @@ def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
 # Add commands to the CLI group at import time
 cli.add_command(scripts_process_command_line, name="scripts")
 cli.add_command(nipper_process_command_line, name="nipper")
+cli.add_command(rtf_process_command_line, name="rtf-to-text")
 
 
 def main() -> None:
