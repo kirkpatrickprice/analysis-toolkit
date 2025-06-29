@@ -60,13 +60,13 @@ def _extract_regex_data_with_raw(
                                     extracted_data,
                                 ), extracted_data
     except (OSError, UnicodeDecodeError):
-        return None
+        return None, None
 
     # Return formatted result if we have all required data
     if len(extracted_data) == len(required_keys):
         return patterns.formatter(extracted_data), extracted_data
 
-    return None
+    return None, None
 
 
 def enumerate_systems_from_source_files(
@@ -257,8 +257,8 @@ def get_producer_type(file: Path, encoding: str) -> tuple[ProducerType, str]:
                         ProducerType(producer),
                         regex_result.group("producer_version"),
                     )
-    # If no match is found, return OTHER
-    return ProducerType.OTHER
+    # If no match is found, return OTHER with unknown version
+    return ProducerType.OTHER, "Unknown"
 
 
 def get_system_details(
@@ -310,7 +310,7 @@ def get_system_details(
 
     patterns: RegexPatterns | None = os_patterns.get(producer)
     if not patterns:
-        return None
+        return None, None
 
     extracted_data: tuple[str, dict[str, str]] = _extract_regex_data_with_raw(
         file=file,
