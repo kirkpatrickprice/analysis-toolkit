@@ -9,7 +9,6 @@ from enum import Enum
 from pathlib import Path
 from typing import IO, Any, LiteralString
 
-import click
 import yaml
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
@@ -33,6 +32,7 @@ from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
 from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
+from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 
 def should_skip_line(line: str) -> bool:
@@ -537,7 +537,8 @@ def search_single_system(
     try:
         pattern: re.Pattern[str] = re.compile(search_config.regex, re.IGNORECASE)
     except re.error as e:
-        click.echo(f"Error: Invalid regex pattern in {search_config.name}: {e}")
+        rich_output = get_rich_output()
+        rich_output.error(f"Invalid regex pattern in {search_config.name}: {e}")
         return results
 
     try:
@@ -556,7 +557,8 @@ def search_single_system(
                 results = search_line_by_line(search_config, system, f, pattern)
 
     except (OSError, UnicodeDecodeError) as e:
-        click.echo(f"Error processing {system.file}: {e}")
+        rich_output = get_rich_output()
+        rich_output.error(f"Error processing {system.file}: {e}")
 
     return results
 
@@ -856,19 +858,22 @@ def execute_all_searches(
     )
 
     if program_config.verbose:
-        click.echo(f"Loaded {len(search_configs)} search configurations")
+        rich_output = get_rich_output()
+        rich_output.info(f"Loaded {len(search_configs)} search configurations")
 
     # Execute searches
     all_results = []
     for search_config in search_configs:
         if program_config.verbose:
-            click.echo(f"Executing search: {search_config.name}")
+            rich_output = get_rich_output()
+            rich_output.debug(f"Executing search: {search_config.name}")
 
         results = execute_search(search_config, systems)
         all_results.append(results)
 
         if program_config.verbose:
-            click.echo(
+            rich_output = get_rich_output()
+            rich_output.debug(
                 f"  Found {results.result_count} matches across {results.unique_systems} systems",
             )
 
@@ -1044,16 +1049,17 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
         from . import process_systems
         from .excel_exporter import export_search_results_to_excel
 
-        click.echo("Processing source files...")
+        rich_output = get_rich_output()
+        rich_output.header("Processing Source Files")
 
         # Load systems
         systems = list(
             process_systems.enumerate_systems_from_source_files(program_config),
         )
-        click.echo(f"Found {len(systems)} systems to process")
+        rich_output.info(f"Found {len(systems)} systems to process")
 
         if not systems:
-            click.echo(
+            rich_output.warning(
                 "No systems found to process. Check source files path and specification.",
             )
             return
@@ -1066,9 +1072,9 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
         validation_messages = validate_search_configs(search_configs)
 
         if validation_messages:
-            click.echo("\nValidation Warnings:")
+            rich_output.subheader("Validation Warnings")
             for message in validation_messages:
-                click.echo(f"  - {message}")
+                rich_output.warning(f"  - {message}")
 
         # Export to Excel
         output_file = program_config.results_path / "search_results.xlsx"
@@ -1081,15 +1087,16 @@ def process_search_workflow(program_config: ProgramConfig) -> None:
         # Display summary
         stats = get_search_statistics(all_results)
 
-        click.echo("\nSearch Summary:")
-        click.echo(f"  Total searches executed: {stats['total_searches']}")
-        click.echo(f"  Searches with results: {stats['searches_with_results']}")
-        click.echo(f"  Total matches found: {stats['total_matches']}")
-        click.echo(f"  Results exported to: {output_file}")
-        click.echo(f"  Summary report: {summary_file}")
+        rich_output.subheader("Search Summary")
+        rich_output.info(f"  Total searches executed: {stats['total_searches']}")
+        rich_output.info(f"  Searches with results: {stats['searches_with_results']}")
+        rich_output.info(f"  Total matches found: {stats['total_matches']}")
+        rich_output.success(f"  Results exported to: {output_file}")
+        rich_output.success(f"  Summary report: {summary_file}")
 
     except Exception as e:
-        click.echo(f"Error during search processing: {e}")
+        rich_output = get_rich_output()
+        rich_output.error(f"Error during search processing: {e}")
         if program_config.verbose:
             import traceback
 

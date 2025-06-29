@@ -1,10 +1,6 @@
 import sys
 from collections import defaultdict
-from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
-
-import click
-import pandas as pd
 
 from kp_analysis_toolkit.process_scripts import process_systems
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
@@ -21,11 +17,10 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
     load_yaml_config,
 )
 from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
+from kp_analysis_toolkit.utils.rich_output import RichOutput, get_rich_output
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from click._termui_impl import ProgressBar
 
     from kp_analysis_toolkit.process_scripts.models.results.base import (
         SearchResult,
@@ -36,11 +31,13 @@ if TYPE_CHECKING:
 
 def create_results_path(program_config: ProgramConfig) -> None:
     """Create the results path if it does not exist."""
+    rich_output = get_rich_output()
+    
     if program_config.results_path.exists():
-        click.echo(f"Reusing results path: {program_config.results_path}")
+        rich_output.info(f"Reusing results path: {program_config.results_path}")
         return
     if program_config.verbose:
-        click.echo(f"Creating results path: {program_config.results_path}")
+        rich_output.debug(f"Creating results path: {program_config.results_path}")
     program_config.results_path.mkdir(parents=True, exist_ok=False)
 
 
@@ -67,46 +64,139 @@ def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
 
 def list_audit_configs(program_config: ProgramConfig) -> None:
     """List all available audit configuration files."""
-    click.echo("Listing available audit configuration files...")
-    terminal_width: int = pd.get_option("display.width")
+    rich_output = get_rich_output()
+    rich_output.header("Available Audit Configuration Files")
+    
+    # Create a Rich table for configuration files
+    table = rich_output.table(
+        title="📋 Audit Configuration Files",
+        show_header=True,
+        header_style="bold cyan",
+        border_style="blue",
+    )
+    
+    if table is None:  # Quiet mode
+        return
+        
+    table.add_column("Configuration File", style="cyan", min_width=30)
+    if program_config.verbose:
+        table.add_column("Details", style="white", min_width=40)
+    
+    max_details_items = 3  # Limit displayed details in verbose mode
+    
     for config_file in process_systems.get_config_files(program_config.config_path):
         yaml_data: dict[str, Any] = load_yaml_config(config_file)
-        click.echo(
-            f" - {summarize_text(str(config_file.relative_to(program_config.config_path)), max_length=terminal_width - 3)}",
-        )
+        relative_path = str(config_file.relative_to(program_config.config_path))
+        
         if program_config.verbose:
-            terminal_width: int = pd.get_option("display.width")
+            # Create details string for verbose mode
+            details = []
             for key, value in yaml_data.to_dict().items():
-                text: str = summarize_text(str(value), max_length=terminal_width - 3)
-                click.echo(f"\t- {key}: {text}")
+                details.append(f"{key}: {rich_output.format_value(value, 60)}")
+            details_text = "\n".join(details[:max_details_items])
+            if len(yaml_data.to_dict()) > max_details_items:
+                details_text += f"\n... and {len(yaml_data.to_dict()) - max_details_items} more"
+            table.add_row(relative_path, details_text)
+        else:
+            table.add_row(relative_path)
+    
+    rich_output.display_table(table)
 
 
 def list_sections() -> None:
     """List all sections found in the specified source files."""
-    click.echo("Listing sections...")
+    rich_output = get_rich_output()
+    rich_output.info("Listing sections... (feature not yet implemented)")
 
 
 def list_source_files(program_config: ProgramConfig) -> None:
     """List all source files found in the specified path."""
-    click.echo("Listing source files...")
+    rich_output = get_rich_output()
+    rich_output.header("Source Files")
 
-    for i, file in enumerate(process_systems.get_source_files(program_config)):  # noqa: B007
-        click.echo(f" - {file}")
+    source_files = list(process_systems.get_source_files(program_config))
+    
+    if not source_files:
+        rich_output.warning("No source files found")
+        return
 
-    click.echo(f"Total source files found: {i + 1}")
+    # Create a Rich table for source files
+    table = rich_output.table(
+        title="📁 Source Files",
+        show_header=True,
+        header_style="bold cyan",
+        border_style="blue",
+    )
+    
+    if table is None:  # Quiet mode
+        return
+        
+    table.add_column("File Path", style="cyan", min_width=40)
+    table.add_column("Size", style="white", justify="right", min_width=10)
+
+    bytes_per_kb = 1024  # Standard byte to KB conversion
+    
+    for file in source_files:
+        try:
+            file_size = file.stat().st_size
+            size_str = f"{file_size:,} bytes" if file_size < bytes_per_kb else f"{file_size / bytes_per_kb:.1f} KB"
+        except OSError:
+            size_str = "Unknown"
+        
+        table.add_row(str(file), size_str)
+
+    rich_output.display_table(table)
+    rich_output.success(f"Total source files found: {len(source_files)}")
 
 
 def list_systems(program_config: ProgramConfig) -> None:
     """List all systems found in the specified source files."""
-    click.echo("Listing systems...")
-    i: int = 0
+    rich_output = get_rich_output()
+    rich_output.header("Systems Found")
 
-    for system in process_systems.enumerate_systems_from_source_files(program_config):
-        click.echo(f" - {system.system_name} (SHA256: {system.file_hash})")
-        i += 1
-        for key, value in system.model_dump().items():
-            click.echo(f"\t- {key}: {value}")
-    click.echo(f"Total systems found: {i}")
+    systems = list(process_systems.enumerate_systems_from_source_files(program_config))
+    
+    if not systems:
+        rich_output.warning("No systems found")
+        return
+
+    # Create a Rich table for systems
+    table = rich_output.table(
+        title="🖥️ Systems",
+        show_header=True,
+        header_style="bold cyan",
+        border_style="blue",
+    )
+    
+    if table is None:  # Quiet mode
+        return
+        
+    table.add_column("System Name", style="bold white", min_width=25)
+    table.add_column("File Hash", style="dim white", min_width=16)
+    if program_config.verbose:
+        table.add_column("Details", style="white", min_width=40)
+
+    max_detail_fields = 5  # Limit displayed details in verbose mode
+    hash_display_length = 16  # Length of hash to display
+
+    for system in systems:
+        row_data = [system.system_name, system.file_hash[:hash_display_length] + "..."]
+        
+        if program_config.verbose:
+            # Create details string for verbose mode
+            details = []
+            for key, value in system.model_dump().items():
+                if key not in ["system_name", "file_hash"]:  # Skip already displayed fields
+                    details.append(f"{key}: {rich_output.format_value(value, 60)}")
+            details_text = "\n".join(details[:max_detail_fields])
+            if len(details) > max_detail_fields:
+                details_text += f"\n... and {len(details) - max_detail_fields} more fields"
+            row_data.append(details_text)
+        
+        table.add_row(*row_data)
+
+    rich_output.display_table(table)
+    rich_output.success(f"Total systems found: {len(systems)}")
 
 
 def summarize_text(
@@ -125,84 +215,24 @@ def summarize_text(
 
 
 def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> None:
-    """Print the program configuration in verbose mode."""
-    click.echo("Program configuration:")
+    """Print the program configuration in verbose mode using Rich formatting."""
+    rich_output: RichOutput = get_rich_output(verbose=True)
 
-    # Set the column widths for display
-    # Get terminal width (or use a default if we can't determine it)
-    try:
-        terminal_width = pd.get_option("display.width")
-    except:  # noqa: E722
-        terminal_width: int = 120  # Default width
-
-    original_width: int = 25
-    effective_width: int = 60
-
-    # Prepare the configuration data for Pandas DataFrame
-    config_data: list[dict[str, str]] = []
-    for field_name, field_value in program_config.to_dict().items():
-        try:
-            original_str: str = summarize_text(
-                str(cli_config[field_name]),
-                max_length=effective_width,
-            )
-        except KeyError:
-            original_str: str = "<Computed>"
-
-        # Format original value if it exceeds the width
-        effective_str: str = summarize_text(field_value, max_length=effective_width)
-
-        # Append to the configuration data list
-        config_data.append(
-            {
-                "Parameter": field_name,
-                "Original": original_str,
-                "Effective": effective_str,
-            },
-        )
-
-    if config_data:
-        # Create DataFrame
-        dataframe = pd.DataFrame(config_data)
-
-        # Calculate column widths
-        # Find max parameter name length for dynamic sizing
-        max_param_width: int = (
-            max(len(str(param)) for param in dataframe["Parameter"]) + 1
-        )
-
-        # Apply column formatting
-        with pd.option_context(
-            "display.max_rows",
-            None,  # Show all rows
-            "display.max_columns",
-            None,  # Show all columns
-            "display.width",
-            terminal_width,
-        ):
-            # Format the dataframe with custom column widths
-            formatted_df: pd.DataFrame = dataframe.copy()
-
-        # Adjust column display format
-        formatted_df["Effective"] = formatted_df["Effective"].str.ljust(effective_width)
-        click.echo(
-            formatted_df.to_string(
-                index=False,
-                col_space={
-                    "Parameter": max_param_width,
-                    "Original": original_width,
-                    "Effective": effective_width,
-                },
-                justify="left",
-                max_colwidth=effective_width,
-            ),
-        )
+    # Display configuration using Rich
+    rich_output.configuration_table(
+        config_dict=program_config.to_dict(),
+        original_dict=cli_config,
+        title="Program Configuration",
+        force=True,
+    )
 
 
 def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
     """Process the source files and execute searches."""
+    rich_output = get_rich_output()
     time_stamp: str = get_timestamp()
-    click.echo("Processing source files...")
+    
+    rich_output.header("Processing Source Files")
 
     # Create results path
     create_results_path(program_config)
@@ -211,42 +241,26 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     systems: list[Systems] = list(
         process_systems.enumerate_systems_from_source_files(program_config),
     )
-    click.echo(f"Found {len(systems)} systems to process")
+    rich_output.info(f"Found {len(systems)} systems to process")
 
     # Load search configurations
     search_configs: list[SearchConfig] = load_search_configs(
         program_config.audit_config_file,
     )
-    click.echo(f"Loaded {len(search_configs)} search configurations")
+    rich_output.info(f"Loaded {len(search_configs)} search configurations")
 
     # Initialize dictionary with all OSFamilyType values using a dictionary comprehension
     os_results: dict[str, list[SearchResult]] = {
         os_type.value: [] for os_type in OSFamilyType
     }
 
-    # Execute searches
-    search_iterator: ProgressBar[SearchConfig] | list[SearchConfig] = (
-        click.progressbar(
-            search_configs,
-            length=len(search_configs),
-            label="Executing searches",
-            show_eta=True,
-            show_percent=True,
-        )
-        if not program_config.verbose
-        else search_configs
-    )
-
-    with (
-        search_iterator
-        if not program_config.verbose
-        else nullcontext(search_configs) as iterator
-    ):
-        for config in iterator:
+    # Execute searches with Rich progress bar or verbose output
+    if program_config.verbose:
+        # Use verbose Rich output instead of progress bar
+        rich_output.subheader("Executing Searches")
+        for config in search_configs:
             os_type: str = _get_sysfilter_os_type(config)
-
-            if program_config.verbose:
-                click.echo(f"Executing search: ({os_type}) {config.name}")
+            rich_output.debug(f"Executing search: ({os_type}) {config.name}")
 
             results: SearchResults = execute_search(config, systems)
 
@@ -260,13 +274,31 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
             # Append results to the corresponding OS type list
             os_results[matching_os].append(results)
 
-            if program_config.verbose:
-                if results.result_count == 0:
-                    click.secho("  No matches found", fg="yellow")
-                else:
-                    click.echo(f"  Found {results.result_count} matches")
+            if results.result_count == 0:
+                rich_output.warning("  No matches found")
+            else:
+                rich_output.success(f"  Found {results.result_count} matches")
+    else:
+        # Use Rich progress bar for non-verbose mode
+        for config in rich_output.simple_progress(
+            search_configs,
+            "Executing searches",
+        ):
+            os_type: str = _get_sysfilter_os_type(config)
+            results: SearchResults = execute_search(config, systems)
+
+            # Find the matching OS type or default to UNDEFINED
+            matching_os: OSFamilyType = OSFamilyType.UNDEFINED
+            for enum_os in OSFamilyType:
+                if enum_os.value == os_type:
+                    matching_os = enum_os.value
+                    break
+
+            # Append results to the corresponding OS type list
+            os_results[matching_os].append(results)
 
     # Export results to separate Excel files based on OS type
+    rich_output.subheader("Exporting Results")
     files_created: list[str] = []
 
     # Group systems by OS family for proper filtering
@@ -289,14 +321,14 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
         export_search_results_to_excel(results, output_file, os_systems)
         files_created.append(str(output_file.relative_to(program_config.results_path)))
         if program_config.verbose:
-            click.echo(
+            rich_output.debug(
                 f"Exported {len(results)} results for {os_type} to {output_file.relative_to(program_config.results_path)}",
             )
 
     if not files_created:
-        click.echo("No results found to export.")
+        rich_output.warning("No results found to export.")
     else:
-        click.echo(
+        rich_output.success(
             f"{len(files_created)} results files created: {', '.join(files_created)}",
         )
 
