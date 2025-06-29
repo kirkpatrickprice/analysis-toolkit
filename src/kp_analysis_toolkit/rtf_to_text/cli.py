@@ -6,6 +6,7 @@ import click
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
 from kp_analysis_toolkit.rtf_to_text.process_rtf import process_rtf_file
+from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 
 @click.command(name="rtf-to-text")
@@ -30,6 +31,9 @@ from kp_analysis_toolkit.rtf_to_text.process_rtf import process_rtf_file
 )
 def process_command_line(_infile: str, source_files_path: str) -> None:
     """Convert RTF files to plain text format with ASCII encoding."""
+    # Get the rich output console
+    console = get_rich_output()
+
     # Create a program configuration object
     try:
         program_config: ProgramConfig = ProgramConfig(
@@ -37,21 +41,19 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
             source_files_path=source_files_path,
         )
     except ValueError as e:
-        click.secho(f"Error validating configuration: {e}", fg="red")
+        console.error(f"Error validating configuration: {e}")
         sys.exit(1)
 
-    click.echo(
-        f"Converting RTF file: {program_config.input_file!s}",
-    )
+    console.info(f"Converting RTF file: {program_config.input_file!s}")
 
     try:
         process_rtf_file(program_config)
 
-        click.echo(
+        console.success(
             f"Converted {program_config.input_file} and saved results to {program_config.output_file}",
         )
     except (ValueError, FileNotFoundError, OSError) as e:
-        click.secho(f"Error processing RTF file: {e}", fg="red")
+        console.error(f"Error processing RTF file: {e}")
         sys.exit(1)
 
 
@@ -65,6 +67,8 @@ def get_input_file(
     If an infile is specified, use it. Otherwise, search the current directory for an RTF file.
     If multiple RTF files are found, prompt the user to select one.
     """
+    console = get_rich_output()
+
     if infile:
         return Path(infile)
     # Get a directory listing of all RTF files in the current directory
@@ -77,20 +81,28 @@ def get_input_file(
         raise ValueError(error_msg)
     if len(dirlist) == 1:
         return dirlist[0]
-    # if more than one RTF file is found, print the results and provide the user a choice
-    click.secho(
+
+    # If more than one RTF file is found, display menu and get user choice
+    console.warning(
         'Multiple RTF files found. Use the "--in-file <filename>" option to specify the input file or choose from below.',
-        fg="yellow",
     )
+
+    # Create a table for file selection
+    from rich.table import Table
+
+    table = Table(
+        title="Available RTF Files", show_header=True, header_style="bold blue"
+    )
+    table.add_column("Option", style="cyan", width=8)
+    table.add_column("Filename", style="green")
+
     for index, filename in enumerate(dirlist, 1):
-        click.echo(
-            f"{index:{len(str(len(dirlist)))}d} - {filename}",
-        )  # Padding for alignment
-    click.echo()
+        table.add_row(str(index), str(filename.name))
 
     # Add option to process all files
-    click.echo(f"{len(dirlist) + 1} - Process all files")
-    click.echo()
+    table.add_row(str(len(dirlist) + 1), "[bold yellow]Process all files[/bold yellow]")
+
+    console.print(table)
 
     choice: int = 0
     while choice < 1 or choice > len(dirlist) + 1:
@@ -99,10 +111,10 @@ def get_input_file(
                 input("Choose a file, select 'all files', or press CTRL-C to quit: "),
             )
         except KeyboardInterrupt:
-            click.secho("\nExiting...\n", fg="red")
+            console.error("Exiting...")
             sys.exit()
         except ValueError:
-            print("\nSpecify the line number (digits only)\n")
+            console.warning("Specify the line number (digits only)")
 
     if choice == len(dirlist) + 1:
         # Process all files
@@ -114,25 +126,34 @@ def get_input_file(
 
 def _process_all_files(file_list: list[Path]) -> None:
     """Process all RTF files in the list."""
+    console = get_rich_output()
+
     total_files = len(file_list)
     successful = 0
     failed = 0
 
-    click.echo(f"Processing {total_files} RTF files...")
+    console.info(f"Processing {total_files} RTF files...")
 
-    for file_path in file_list:
-        try:
-            program_config = ProgramConfig(
-                input_file=file_path,
-                source_files_path=file_path.parent,
-            )
-            process_rtf_file(program_config)
-            click.echo(
-                f"✓ Converted: {file_path.name} -> {program_config.output_file.name}",
-            )
-            successful += 1
-        except (ValueError, FileNotFoundError, OSError) as e:
-            click.secho(f"✗ Failed to convert {file_path.name}: {e}", fg="red")
-            failed += 1
+    # Create progress bar
+    with console.progress() as progress:
+        task = progress.add_task("Converting RTF files...", total=total_files)
 
-    click.echo(f"\nProcessing complete: {successful} successful, {failed} failed")
+        for file_path in file_list:
+            try:
+                program_config = ProgramConfig(
+                    input_file=file_path,
+                    source_files_path=file_path.parent,
+                )
+                process_rtf_file(program_config)
+                console.success(
+                    f"Converted: {file_path.name} -> {program_config.output_file.name}",
+                )
+                successful += 1
+            except (ValueError, FileNotFoundError, OSError) as e:
+                console.error(f"Failed to convert {file_path.name}: {e}")
+                failed += 1
+
+            progress.update(task, advance=1)
+
+    # Display summary
+    console.info(f"Processing complete: {successful} successful, {failed} failed")
