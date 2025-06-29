@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-import click
+import rich_click as click
 
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig

@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-import click
+import rich_click as click
 
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
@@ -91,7 +91,9 @@ def get_input_file(
     from rich.table import Table
 
     table = Table(
-        title="Available RTF Files", show_header=True, header_style="bold blue"
+        title="Available RTF Files",
+        show_header=True,
+        header_style="bold blue",
     )
     table.add_column("Option", style="cyan", width=8)
     table.add_column("Filename", style="green")

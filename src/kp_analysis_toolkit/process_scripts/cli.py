@@ -1,4 +1,4 @@
-import click
+import rich_click as click
 
 from kp_analysis_toolkit.process_scripts import (
     __version__ as process_scripts_version,
@@ -76,6 +76,7 @@ def process_command_line(**cli_config: dict) -> None:
         program_config: ProgramConfig = ProgramConfig(**cli_config)
     except ValueError as e:
         from kp_analysis_toolkit.utils.rich_output import error
+
         error(f"Error validating configuration: {e}")
         return
 
