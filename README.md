@@ -79,20 +79,33 @@ pipx install kp-analysis-toolkit
 ## Updates
 
 ### Automatic Update Checking
-Starting with version 2.0, the toolkit automatically checks for updates on PyPI each time you run it. If a newer version is available, you'll be prompted to upgrade:
+Starting with version 2.0, the toolkit automatically checks for updates on PyPI each time you run it. If a newer version is available, the toolkit will display upgrade instructions and exit:
 
 ```
-📦 Update available: 2.0.0 → 2.0.1
-Current version: 2.0.0
-Latest version:  2.0.1
+📦 Update Available
 
-Would you like to upgrade now? [y/N]:
+┌─ Upgrade Instructions ──────────────────────────────────┐
+│ Current version: 2.0.0                                  │
+│ Latest version:  2.0.1                                  │
+│                                                         │
+│ To upgrade, run:                                        │
+│ pipx upgrade kp-analysis-toolkit                        │
+│                                                         │
+│ Or if you want to skip this check in the future:        │
+│ kpat_cli --skip-update-check                            │
+└─────────────────────────────────────────────────────────┘
+
+The application will now exit. Please run the upgrade command above 
+and then run your command again.
+
+Note: Upgrade checks can be disabled using the --skip-update-check option.
 ```
 
-**Upgrade Process:**
-- The toolkit uses `pipx` to upgrade automatically
-- After successful upgrade, the application restarts with the new version
-- If upgrade fails (e.g. no Internet connection), you'll see an error message and can continue with the current version
+**Why does the toolkit exit instead of upgrading automatically?**
+- **File locking**: When Python applications upgrade themselves while running, file locks can cause upgrade failures
+- **Reliability**: Manual upgrades using `pipx upgrade` are more reliable and consistent
+- **User control**: You have full control over when and how upgrades happen
+- **Error handling**: `pipx` provides better error messages and troubleshooting information
 
 ### Manual Updates
 Update manually using `pipx`:
@@ -101,12 +114,12 @@ pipx upgrade kp-analysis-toolkit
 ```
 
 ### Disabling Update Checks
-Skip update checks for automated scripts:
+Skip update checks for automated scripts or when you don't want to be prompted:
 ```bash
 kpat_cli --skip-update-check scripts --help
 ```
 
-**Note:** Update checking requires a network connection. Without network access, you'll see a warning but the program continues normally.
+**Note:** Update checking requires a network connection. Without network access, you may see a brief warning but the program continues normally.
 
 ## Usage
 

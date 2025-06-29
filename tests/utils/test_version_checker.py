@@ -90,69 +90,24 @@ class TestVersionChecker:
         assert has_update is False
         assert latest_version is None
 
-    @patch("builtins.input", return_value="y")
-    def test_prompt_for_upgrade_yes(self, mock_input: Mock) -> None:
-        """Test prompt_for_upgrade when user says yes."""
+    def test_prompt_for_upgrade_displays_info(self) -> None:
+        """Test prompt_for_upgrade displays upgrade information."""
         checker = VersionChecker()
 
-        with patch("click.confirm", return_value=True):
-            result = checker.prompt_for_upgrade(__version__)
+        with patch(
+            "kp_analysis_toolkit.utils.version_checker.get_rich_output"
+        ) as mock_rich:
+            mock_rich_instance = Mock()
+            mock_rich.return_value = mock_rich_instance
 
-        assert result is True
+            result = checker.prompt_for_upgrade("2.1.0")
 
-    @patch("builtins.input", return_value="n")
-    def test_prompt_for_upgrade_no(self, mock_input: Mock) -> None:
-        """Test prompt_for_upgrade when user says no."""
-        checker = VersionChecker()
-
-        with patch("click.confirm", return_value=False):
-            result = checker.prompt_for_upgrade(__version__)
-
-        assert result is False
-
-    @patch("kp_analysis_toolkit.utils.version_checker.shutil.which")
-    def test_find_pipx_executable_found(self, mock_which: Mock) -> None:
-        """Test _find_pipx_executable when pipx is found."""
-        mock_which.return_value = "/usr/bin/pipx"
-
-        checker = VersionChecker()
-        result = checker._find_pipx_executable()
-
-        assert result == "/usr/bin/pipx"
-        mock_which.assert_called_once_with("pipx")
-
-    @patch("kp_analysis_toolkit.utils.version_checker.shutil.which")
-    def test_find_pipx_executable_not_found(self, mock_which: Mock) -> None:
-        """Test _find_pipx_executable when pipx is not found."""
-        mock_which.return_value = None
-
-        checker = VersionChecker()
-        result = checker._find_pipx_executable()
-
+        # New implementation returns None and displays info
         assert result is None
-
-    @patch("kp_analysis_toolkit.utils.version_checker.subprocess.run")
-    @patch("kp_analysis_toolkit.utils.version_checker.shutil.which")
-    def test_upgrade_package_success(self, mock_which: Mock, mock_run: Mock) -> None:
-        """Test upgrade_package when upgrade succeeds."""
-        mock_which.return_value = "/usr/bin/pipx"
-        mock_run.return_value = Mock(returncode=0)
-
-        checker = VersionChecker()
-        result = checker.upgrade_package()
-
-        assert result is True
-        mock_run.assert_called_once()
-
-    @patch("kp_analysis_toolkit.utils.version_checker.shutil.which")
-    def test_upgrade_package_pipx_not_found(self, mock_which: Mock) -> None:
-        """Test upgrade_package when pipx is not found."""
-        mock_which.return_value = None
-
-        checker = VersionChecker()
-        result = checker.upgrade_package()
-
-        assert result is False
+        mock_rich_instance.header.assert_called_once()
+        mock_rich_instance.panel.assert_called_once()
+        mock_rich_instance.info.assert_called_once()
+        mock_rich_instance.warning.assert_called_once()
 
 
 class TestCheckAndPromptUpdate:
@@ -165,14 +120,15 @@ class TestCheckAndPromptUpdate:
         mock_checker.check_for_updates.return_value = (False, __version__)
         mock_checker_class.return_value = mock_checker
 
-        # Should not raise any exception
+        # Should not raise any exception and should not exit
         check_and_prompt_update()
 
         mock_checker.check_for_updates.assert_called_once()
+        mock_checker.prompt_for_upgrade.assert_not_called()
 
     @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
     def test_network_error(self, mock_checker_class: Mock) -> None:
-        """Test when network error occurs."""
+        """Test when network error occurs during update check."""
         mock_checker = Mock()
         mock_checker.check_for_updates.return_value = (False, None)
         mock_checker_class.return_value = mock_checker
@@ -181,58 +137,21 @@ class TestCheckAndPromptUpdate:
         check_and_prompt_update()
 
         mock_checker.check_for_updates.assert_called_once()
+        mock_checker.prompt_for_upgrade.assert_not_called()
 
     @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
-    def test_update_available_user_declines(self, mock_checker_class: Mock) -> None:
-        """Test when update is available but user declines."""
-        newer_version = _get_next_minor_version(__version__)
-        mock_checker = Mock()
-        mock_checker.check_for_updates.return_value = (True, newer_version)
-        mock_checker.prompt_for_upgrade.return_value = False
-        mock_checker_class.return_value = mock_checker
-
-        check_and_prompt_update()
-
-        mock_checker.check_for_updates.assert_called_once()
-        mock_checker.prompt_for_upgrade.assert_called_once_with(newer_version)
-        mock_checker.upgrade_package.assert_not_called()
-
-    @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
-    def test_update_available_user_accepts_success(
-        self,
-        mock_checker_class: Mock,
+    def test_update_available_shows_info_and_exits(
+        self, mock_checker_class: Mock
     ) -> None:
-        """Test when update is available, user accepts, and upgrade succeeds."""
+        """Test when update is available, shows info and exits."""
         newer_version = _get_next_minor_version(__version__)
         mock_checker = Mock()
         mock_checker.check_for_updates.return_value = (True, newer_version)
-        mock_checker.prompt_for_upgrade.return_value = True
-        mock_checker.upgrade_package.return_value = True
         mock_checker_class.return_value = mock_checker
 
-        check_and_prompt_update()
+        with patch("sys.exit") as mock_exit:
+            check_and_prompt_update()
 
         mock_checker.check_for_updates.assert_called_once()
         mock_checker.prompt_for_upgrade.assert_called_once_with(newer_version)
-        mock_checker.upgrade_package.assert_called_once()
-        mock_checker.restart_application.assert_called_once()
-
-    @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
-    def test_update_available_user_accepts_fails(
-        self,
-        mock_checker_class: Mock,
-    ) -> None:
-        """Test when update is available, user accepts, but upgrade fails."""
-        newer_version = _get_next_minor_version(__version__)
-        mock_checker = Mock()
-        mock_checker.check_for_updates.return_value = (True, newer_version)
-        mock_checker.prompt_for_upgrade.return_value = True
-        mock_checker.upgrade_package.return_value = False
-        mock_checker_class.return_value = mock_checker
-
-        check_and_prompt_update()
-
-        mock_checker.check_for_updates.assert_called_once()
-        mock_checker.prompt_for_upgrade.assert_called_once_with(newer_version)
-        mock_checker.upgrade_package.assert_called_once()
-        mock_checker.restart_application.assert_not_called()
+        mock_exit.assert_called_once_with(0)
