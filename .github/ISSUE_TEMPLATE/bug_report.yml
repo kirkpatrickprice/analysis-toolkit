@@ -64,7 +64,7 @@ body:
     id: version
     attributes:
       label: KP Analysis Toolkit Version
-      description: What version of the toolkit are you using?
+      description: What version of the toolkit are you using (run `kpat_cli --version`)?
       placeholder: "e.g., 1.2.3 (run: kp-analysis-toolkit --version)"
     validations:
       required: true
@@ -86,7 +86,7 @@ body:
     id: python_version
     attributes:
       label: Python Version
-      description: What version of Python are you using?
+      description: What version of Python are you using (run `kpat_cli --version`)?
       placeholder: "e.g., 3.12.10 (run: python --version)"
     validations:
       required: true
