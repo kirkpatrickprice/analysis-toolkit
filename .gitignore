@@ -4,7 +4,9 @@
 # KPAT CLI
 results/
 testdata/**/results/
+testdata/rtf/*_converted*.*
 conf.d/test.yaml
+testdata/nipper/*.xlsx
 src/kp_analysis_toolkit/process_scripts/conf.d/test.yaml
 
 ### Python ###
