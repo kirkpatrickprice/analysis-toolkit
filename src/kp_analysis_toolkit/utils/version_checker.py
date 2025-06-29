@@ -1,17 +1,15 @@
 """Version checking utility for the KP Analysis Toolkit."""
 
 import json
-import shutil
-import subprocess
 import sys
 from typing import Any
 from urllib.error import URLError
 from urllib.request import urlopen
 
-import click
 from packaging import version
 
 from kp_analysis_toolkit import __version__
+from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 
 class VersionChecker:
@@ -60,152 +58,78 @@ class VersionChecker:
         else:
             return latest > current, latest_version
 
-    def prompt_for_upgrade(self, latest_version: str) -> bool:
+    def prompt_for_upgrade(self, latest_version: str) -> None:
         """
-        Prompt user to upgrade to the latest version.
+        Inform user about available upgrade and provide instructions.
 
         Args:
             latest_version: The latest available version
 
-        Returns:
-            True if user wants to upgrade, False otherwise
-
         """
-        click.echo()
-        click.secho(
-            f"📦 Update available: {self.current_version} → {latest_version}",
-            fg="yellow",
-            bold=True,
+        rich = get_rich_output()
+
+        rich.header("📦 Update Available")
+
+        # Get the command that was actually run
+        actual_command = "kpat_cli"
+        if len(sys.argv) > 0:
+            # If running via python -m, show the expected command format
+            if (
+                sys.argv[0].endswith(("cli.py", "__main__.py"))
+                or "kp_analysis_toolkit" in sys.argv[0]
+            ):
+                actual_command = "kpat_cli"
+            else:
+                # Use the actual command if it looks like our CLI
+                cmd_name = sys.argv[0]
+                if "kpat" in cmd_name.lower() or cmd_name.endswith(".exe"):
+                    actual_command = cmd_name
+
+        # Show version comparison in a panel
+        version_info = f"""[yellow]Current version:[/yellow] {self.current_version}
+[green]Latest version:[/green]  {latest_version}
+
+To upgrade, run:
+[bold cyan]pipx upgrade {self.package_name}[/bold cyan]
+
+Or if you want to skip this check in the future:
+[bold cyan]{actual_command} --skip-update-check[/bold cyan]"""
+
+        rich.panel(version_info, title="Upgrade Instructions", border_style="yellow")
+
+        rich.info(
+            "The application will now exit. Please run the upgrade command above and then run your command again."
         )
-        click.echo(
-            f"Current version: {self.current_version}\n"
-            f"Latest version:  {latest_version}",
+        rich.warning(
+            "Note: Upgrade checks can be disabled using the --skip-update-check option."
         )
-        click.echo()
-
-        return click.confirm(
-            "Would you like to upgrade now?",
-            default=False,
-        )
-
-    def _find_pipx_executable(self) -> str | None:
-        """Find the pipx executable path."""
-        return shutil.which("pipx")
-
-    def upgrade_package(self) -> bool:
-        """
-        Upgrade the package using pipx.
-
-        Returns:
-            True if upgrade was successful, False otherwise
-
-        """
-        pipx_path = self._find_pipx_executable()
-        if not pipx_path:
-            click.secho(
-                "❌ pipx not found. Please install pipx first:\n"
-                "   pip install pipx\n"
-                "   pipx ensurepath",
-                fg="red",
-            )
-            return False
-
-        try:
-            click.echo("🔄 Upgrading package with pipx...")
-
-            # First, try to upgrade using pipx upgrade
-            result: subprocess.CompletedProcess[str] = subprocess.run(  # noqa: S603
-                [pipx_path, "upgrade", self.package_name],
-                capture_output=True,
-                text=True,
-                timeout=300,  # 5 minute timeout
-                check=False,  # Don't raise on non-zero exit
-            )
-
-            if result.returncode == 0:
-                click.secho("✅ Package upgraded successfully!", fg="green", bold=True)
-                return True
-
-            # If upgrade fails, try reinstall
-            click.echo("⚠️  Upgrade failed, trying reinstall...")
-            result = subprocess.run(  # noqa: S603
-                [pipx_path, "install", "--force", self.package_name],
-                capture_output=True,
-                text=True,
-                timeout=300,
-                check=False,
-            )
-
-            if result.returncode == 0:
-                click.secho(
-                    "✅ Package reinstalled successfully!",
-                    fg="green",
-                    bold=True,
-                )
-                return True
-
-        except subprocess.TimeoutExpired:
-            click.secho("❌ Upgrade timed out", fg="red")
-            return False
-        except subprocess.CalledProcessError as e:
-            click.secho(f"❌ Upgrade failed: {e}", fg="red")
-            return False
-        else:
-            click.secho(
-                f"❌ Failed to upgrade package: {result.stderr}",
-                fg="red",
-            )
-            return False
-
-    def restart_application(self) -> None:
-        """
-        Attempt to restart the application.
-
-        If restart is not feasible, notifies user to restart manually.
-        """
-        try:
-            # Attempt to restart using the same command line arguments
-            click.echo("🔄 Restarting application...")
-            subprocess.Popen([sys.executable, *sys.argv])  # noqa: S603
-            sys.exit(0)
-        except Exception:  # noqa: BLE001
-            # If restart fails, notify user
-            click.secho(
-                "✅ Upgrade complete! Please run the command again to use the new version.",
-                fg="green",
-                bold=True,
-            )
-            sys.exit(0)
 
 
 def check_and_prompt_update(package_name: str = "kp-analysis-toolkit") -> None:
     """
-    Check for updates and prompt user if available.
+    Check for updates and inform user if available.
 
     This function should be called at the start of CLI execution.
+    If an update is available, it will display upgrade instructions and exit.
 
     Args:
         package_name: The PyPI package name to check
 
     """
     checker = VersionChecker(package_name)
+    rich = get_rich_output()
 
     try:
         has_update, latest_version = checker.check_for_updates()
 
         if latest_version is None:
             # Network error or other issue - fail silently
-            click.echo("⚠️  Unable to check for updates (network unavailable)", err=True)
+            rich.debug("Unable to check for updates (network unavailable)")
             return
 
         if has_update and latest_version:
-            if checker.prompt_for_upgrade(latest_version):
-                if checker.upgrade_package():
-                    checker.restart_application()
-                else:
-                    click.echo("❌ Upgrade failed. Continuing with current version...")
-            else:
-                click.echo("Continuing with current version...")
+            checker.prompt_for_upgrade(latest_version)
+            sys.exit(0)  # Exit after showing upgrade instructions
 
     except Exception:  # noqa: BLE001, S110
         # Any unexpected error - fail silently and continue
