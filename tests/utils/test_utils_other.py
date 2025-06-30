@@ -59,8 +59,13 @@ class TestDetectEncoding:
 
     def test_nonexistent_file(self) -> None:
         """Test handling of non-existent file."""
-        with pytest.raises(FileNotFoundError):
-            detect_encoding("/nonexistent/file.txt")
+        # The function should gracefully handle non-existent files by returning None
+        # instead of raising exceptions, as per the robustness improvements
+        with patch("kp_analysis_toolkit.utils.get_file_encoding.warning"):
+            result = detect_encoding("/nonexistent/file.txt")
+
+        # Should return None instead of raising an exception
+        assert result is None
 
 
 class TestGetTimestamp:
