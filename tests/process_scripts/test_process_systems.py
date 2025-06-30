@@ -1,6 +1,12 @@
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from kp_analysis_toolkit.process_scripts.process_systems import get_config_files
+from kp_analysis_toolkit.process_scripts.models.enums import ProducerType
+from kp_analysis_toolkit.process_scripts.process_systems import (
+    enumerate_systems_from_source_files,
+    get_config_files,
+    get_producer_type,
+)
 
 
 class TestGetConfigFiles:
@@ -79,3 +85,235 @@ class TestGetConfigFiles:
         assert nested_yaml.name not in [f.name for f in result], (
             "Should not find nested.yaml"
         )
+
+
+class TestFileSkippingLogic:
+    """Tests for file skipping logic to prevent regression of encoding and producer detection fixes."""
+
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.detect_encoding")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_source_files")
+    def test_skip_files_with_encoding_detection_failure(
+        self,
+        mock_get_source_files: MagicMock,
+        mock_detect_encoding: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test that files with encoding detection failure are skipped."""
+        # Create a test file
+        test_file = tmp_path / "encoding_failure_test.txt"
+        test_file.write_text("Test content")
+
+        # Mock get_source_files to return our test file
+        mock_get_source_files.return_value = [test_file]
+
+        # Mock detect_encoding to return None (encoding detection failure)
+        mock_detect_encoding.return_value = None
+
+        # Create a simple mock program config (don't need full validation for this test)
+        from unittest.mock import MagicMock
+
+        program_config = MagicMock()
+
+        # Process files
+        systems = list(enumerate_systems_from_source_files(program_config))
+
+        # Should return empty list (file was skipped)
+        assert len(systems) == 0
+        mock_detect_encoding.assert_called_once_with(test_file)
+
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.warning")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_producer_type")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.detect_encoding")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_source_files")
+    def test_skip_files_with_unknown_producer(
+        self,
+        mock_get_source_files: MagicMock,
+        mock_detect_encoding: MagicMock,
+        mock_get_producer_type: MagicMock,
+        mock_warning: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test that files with unknown producer are skipped."""
+        # Create a test file
+        test_file = tmp_path / "unknown_producer_test.txt"
+        test_file.write_text("Test content without known producer patterns")
+
+        # Mock get_source_files to return our test file
+        mock_get_source_files.return_value = [test_file]
+
+        # Mock detect_encoding to return valid encoding
+        mock_detect_encoding.return_value = "utf-8"
+
+        # Mock get_producer_type to return OTHER (unknown producer)
+        mock_get_producer_type.return_value = (ProducerType.OTHER, "Unknown")
+
+        # Create a simple mock program config
+        from unittest.mock import MagicMock
+
+        program_config = MagicMock()
+
+        # Process files
+        systems = list(enumerate_systems_from_source_files(program_config))
+
+        # Should return empty list (file was skipped)
+        assert len(systems) == 0
+
+        # Should have called warning about unknown producer
+        mock_warning.assert_called_once()
+        warning_call_args = mock_warning.call_args[0][0]
+        assert "Skipping file due to unknown producer" in warning_call_args
+        assert str(test_file) in warning_call_args
+
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_distro_family")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.generate_file_hash")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_system_details")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_producer_type")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.detect_encoding")
+    @patch("kp_analysis_toolkit.process_scripts.process_systems.get_source_files")
+    def test_process_valid_files_successfully(  # noqa: PLR0913
+        self,
+        mock_get_source_files: MagicMock,
+        mock_detect_encoding: MagicMock,
+        mock_get_producer_type: MagicMock,
+        mock_get_system_details: MagicMock,
+        mock_generate_file_hash: MagicMock,
+        mock_get_distro_family: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test that valid files are processed successfully."""
+        # Create a test file
+        test_file = tmp_path / "valid_producer_test.txt"
+        test_file.write_text("KPNIXVERSION: 0.6.21")
+
+        # Mock get_source_files to return our test file
+        mock_get_source_files.return_value = [test_file]
+
+        # Mock detect_encoding to return valid encoding
+        mock_detect_encoding.return_value = "utf-8"
+
+        # Mock get_producer_type to return valid producer
+        mock_get_producer_type.return_value = (ProducerType.KPNIXAUDIT, "0.6.21")
+
+        # Mock get_system_details
+        mock_get_system_details.return_value = (
+            "Ubuntu 22.04",
+            {"os_pretty_name": "Ubuntu 22.04"},
+        )
+
+        # Mock file hash generation
+        mock_generate_file_hash.return_value = "test_hash_123"
+
+        # Mock distro family for Linux
+        mock_get_distro_family.return_value = None
+
+        # Create a simple mock program config
+        from unittest.mock import MagicMock
+
+        program_config = MagicMock()
+
+        # Process files
+        systems = list(enumerate_systems_from_source_files(program_config))
+
+        # Should successfully process the file
+        assert len(systems) == 1
+        system = systems[0]
+        assert system.system_name == "valid_producer_test"
+        assert system.producer == ProducerType.KPNIXAUDIT
+        assert system.producer_version == "0.6.21"
+        assert system.encoding == "utf-8"
+
+
+class TestGetProducerType:
+    """Tests for the get_producer_type function to ensure proper producer detection."""
+
+    def test_detect_kpnix_producer(self, tmp_path: Path) -> None:
+        """Test detection of KPNIX producer type."""
+        # Create a file with KPNIX producer pattern
+        test_file = tmp_path / "kpnix_test.txt"
+        content = """System Report for test-system
+This report was generated Mon Jan 01 12:00:00 UTC 2024
+KPNIXVERSION: 0.6.21
++ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + +"""
+        test_file.write_text(content, encoding="utf-8")
+
+        # Test producer detection
+        producer, version = get_producer_type(test_file, "utf-8")
+
+        assert producer == ProducerType.KPNIXAUDIT
+        assert version == "0.6.21"
+
+    def test_detect_kpwin_producer(self, tmp_path: Path) -> None:
+        """Test detection of KPWIN producer type."""
+        # Create a file with KPWIN producer pattern
+        test_file = tmp_path / "kpwin_test.txt"
+        content = """System Report for WIN-TEST-01
+This report was generated Mon Jan 01 12:00:00 UTC 2024
+System_PSDetails::KPWINVERSION: 0.4.8
++ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + +"""
+        test_file.write_text(content, encoding="utf-8")
+
+        # Test producer detection
+        producer, version = get_producer_type(test_file, "utf-8")
+
+        assert producer == ProducerType.KPWINAUDIT
+        assert version == "0.4.8"
+
+    def test_detect_kpmac_producer(self, tmp_path: Path) -> None:
+        """Test detection of KPMAC producer type."""
+        # Create a file with KPMAC producer pattern
+        test_file = tmp_path / "kpmac_test.txt"
+        content = """System Report for MAC-TEST-01
+This report was generated Mon Jan 01 12:00:00 UTC 2024
+KPMACVERSION: 0.1.0
++ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + + +"""
+        test_file.write_text(content, encoding="utf-8")
+
+        # Test producer detection
+        producer, version = get_producer_type(test_file, "utf-8")
+
+        assert producer == ProducerType.KPMACAUDIT
+        assert version == "0.1.0"
+
+    def test_detect_unknown_producer(self, tmp_path: Path) -> None:
+        """Test that files without known producer patterns return OTHER."""
+        # Create a file without any known producer patterns
+        test_file = tmp_path / "unknown_test.txt"
+        content = """Some random file content
+Without any known producer version strings
+Just regular text content here"""
+        test_file.write_text(content, encoding="utf-8")
+
+        # Test producer detection
+        producer, version = get_producer_type(test_file, "utf-8")
+
+        assert producer == ProducerType.OTHER
+        assert version == "Unknown"
+
+    def test_detect_partial_match_producer(self, tmp_path: Path) -> None:
+        """Test that files with partial matches but wrong format return OTHER."""
+        # Create a file with partial match (missing version)
+        test_file = tmp_path / "partial_test.txt"
+        content = """System Report for test-system
+This report contains KPNIXVERSION but no proper version
+KPNIXVERSION:
+Some other content here"""
+        test_file.write_text(content, encoding="utf-8")
+
+        # Test producer detection
+        producer, version = get_producer_type(test_file, "utf-8")
+
+        # Should return OTHER because regex doesn't match (no version number)
+        assert producer == ProducerType.OTHER
+        assert version == "Unknown"
+
+    def test_detect_empty_file_producer(self, tmp_path: Path) -> None:
+        """Test producer detection on empty files."""
+        # Create an empty file
+        test_file = tmp_path / "empty_test.txt"
+        test_file.touch()
+
+        # Test producer detection
+        producer, version = get_producer_type(test_file, "utf-8")
+
+        assert producer == ProducerType.OTHER
+        assert version == "Unknown"
