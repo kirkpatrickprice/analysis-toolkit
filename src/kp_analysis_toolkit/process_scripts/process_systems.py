@@ -14,6 +14,7 @@ from kp_analysis_toolkit.process_scripts.models.program_config import ProgramCon
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_file
+from kp_analysis_toolkit.utils.rich_output import warning
 
 
 def _extract_regex_data_with_raw(
@@ -89,8 +90,18 @@ def enumerate_systems_from_source_files(
     for file in get_source_files(program_config):
         # Process each file and add the results to the list
 
-        encoding: str = detect_encoding(file)
+        encoding: str | None = detect_encoding(file)
+        if encoding is None:
+            # Skip files where encoding cannot be determined
+            continue
+
         producer, producer_version = get_producer_type(file, encoding)
+
+        # Skip files where producer cannot be determined
+        if producer == ProducerType.OTHER:
+            warning(f"Skipping file due to unknown producer: {file}")
+            continue
+
         distro_family: DistroFamilyType | None = None
         match producer:
             case ProducerType.KPNIXAUDIT:
@@ -103,8 +114,6 @@ def enumerate_systems_from_source_files(
                 os_family: OSFamilyType = OSFamilyType.WINDOWS
             case ProducerType.KPMACAUDIT:
                 os_family: OSFamilyType = OSFamilyType.DARWIN
-            case _:
-                os_family: OSFamilyType = OSFamilyType.UNDEFINED
         system_os, os_details = get_system_details(
             file=file,
             encoding=encoding,
