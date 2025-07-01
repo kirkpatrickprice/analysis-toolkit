@@ -57,3 +57,11 @@ class OSFamilyType(EnumStrMixin, StrEnum):
     WINDOWS = "Windows"
     OTHER = "Other"
     UNDEFINED = "Undefined"
+
+
+class ExecutionMode(EnumStrMixin, StrEnum):
+    """Enum for search execution modes."""
+
+    SEQUENTIAL = "sequential"  # Sequential execution (default)
+    THREADED = "threaded"  # Multi-threaded execution for I/O-bound operations
+    MULTIPROCESS = "multiprocess"  # Multi-process execution for CPU-bound operations

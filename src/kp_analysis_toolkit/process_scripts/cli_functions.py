@@ -11,8 +11,10 @@ from kp_analysis_toolkit.process_scripts.models.program_config import (
     ProgramConfig,
 )
 from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.process_scripts.parallel_engine import (
+    search_configs_with_processes,
+)
 from kp_analysis_toolkit.process_scripts.search_engine import (
-    execute_search,
     load_search_configs,
     load_yaml_config,
 )
@@ -265,7 +267,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
     )
 
 
-def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
+def process_scipts_results(program_config: ProgramConfig) -> None:
     """Process the source files and execute searches."""
     rich_output = get_rich_output()
     time_stamp: str = get_timestamp()
@@ -292,48 +294,24 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
         os_type.value: [] for os_type in OSFamilyType
     }
 
-    # Execute searches with Rich progress bar or verbose output
-    if program_config.verbose:
-        # Use verbose Rich output instead of progress bar
-        rich_output.subheader("Executing Searches")
-        for config in search_configs:
-            os_type: str = _get_sysfilter_os_type(config)
-            rich_output.debug(f"Executing search: ({os_type}) {config.name}")
+    # Execute searches using multiprocess execution
+    rich_output.info(f"Using {program_config.worker_description}")
 
-            results: SearchResults = execute_search(config, systems)
+    all_results: list[SearchResults] = search_configs_with_processes(
+        search_configs,
+        systems,
+        program_config.max_workers,
+    )
 
-            # Find the matching OS type or default to UNDEFINED
-            matching_os: OSFamilyType = OSFamilyType.UNDEFINED
-            for enum_os in OSFamilyType:
-                if enum_os.value == os_type:
-                    matching_os = enum_os.value
-                    break
-
-            # Append results to the corresponding OS type list
-            os_results[matching_os].append(results)
-
-            if results.result_count == 0:
-                rich_output.warning("  No matches found")
-            else:
-                rich_output.success(f"  Found {results.result_count} matches")
-    else:
-        # Use Rich progress bar for non-verbose mode
-        for config in rich_output.simple_progress(
-            search_configs,
-            "Executing searches",
-        ):
-            os_type: str = _get_sysfilter_os_type(config)
-            results: SearchResults = execute_search(config, systems)
-
-            # Find the matching OS type or default to UNDEFINED
-            matching_os: OSFamilyType = OSFamilyType.UNDEFINED
-            for enum_os in OSFamilyType:
-                if enum_os.value == os_type:
-                    matching_os = enum_os.value
-                    break
-
-            # Append results to the corresponding OS type list
-            os_results[matching_os].append(results)
+    # Process results into OS-specific groups
+    for results in all_results:
+        os_type: str = _get_sysfilter_os_type(results.search_config)
+        matching_os: OSFamilyType = OSFamilyType.UNDEFINED
+        for enum_os in OSFamilyType:
+            if enum_os.value == os_type:
+                matching_os = enum_os.value
+                break
+        os_results[matching_os].append(results)
 
     # Export results to separate Excel files based on OS type
     rich_output.subheader("Exporting Results")

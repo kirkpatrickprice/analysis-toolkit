@@ -862,19 +862,45 @@ def execute_all_searches(
         rich_output.info(f"Loaded {len(search_configs)} search configurations")
 
     # Execute searches
-    all_results = []
-    for search_config in search_configs:
+    if program_config.execution_mode == "sequential":
+        all_results = []
+        for search_config in search_configs:
+            if program_config.verbose:
+                rich_output = get_rich_output()
+                rich_output.debug(f"Executing search: {search_config.name}")
+
+            results = execute_search(search_config, systems)
+            all_results.append(results)
+
+            if program_config.verbose:
+                rich_output = get_rich_output()
+                rich_output.debug(
+                    f"  Found {results.result_count} matches across {results.unique_systems} systems",
+                )
+    else:
+        # Import parallel engine here to avoid circular imports
+        from .parallel_engine import (
+            search_configs_with_processes,
+            search_configs_with_threads,
+        )
+
         if program_config.verbose:
             rich_output = get_rich_output()
-            rich_output.debug(f"Executing search: {search_config.name}")
+            rich_output.info(f"Using {program_config.execution_mode} execution mode")
+            if program_config.max_workers:
+                rich_output.info(f"  Max workers: {program_config.max_workers}")
 
-        results = execute_search(search_config, systems)
-        all_results.append(results)
-
-        if program_config.verbose:
-            rich_output = get_rich_output()
-            rich_output.debug(
-                f"  Found {results.result_count} matches across {results.unique_systems} systems",
+        if program_config.execution_mode == "multiprocess":
+            all_results = search_configs_with_processes(
+                search_configs,
+                systems,
+                max_workers=program_config.max_workers,
+            )
+        else:  # threaded
+            all_results = search_configs_with_threads(
+                search_configs,
+                systems,
+                max_workers=program_config.max_workers,
             )
 
     return all_results

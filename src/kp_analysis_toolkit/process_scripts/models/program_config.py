@@ -1,3 +1,4 @@
+import multiprocessing as mp
 from pathlib import Path
 
 from pydantic import computed_field, field_validator
@@ -25,6 +26,7 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin, ConfigM
     list_source_files: bool = False
     list_systems: bool = False
     verbose: bool = False
+    max_workers: int | None = None  # Will be computed to int during validation
 
     @field_validator("audit_config_file")
     @classmethod
@@ -77,6 +79,35 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin, ConfigM
     def validate_out_path(cls, value: str) -> str:
         """Validate that output path is not empty."""
         return cls.validate_non_empty_string(value) or value
+
+    @field_validator("max_workers")
+    @classmethod
+    def validate_max_workers(cls, value: int | None) -> int:
+        """Validate and compute max_workers value."""
+        if value is None:
+            # If no value provided, use CPU count
+            return mp.cpu_count()
+        if value <= 0:
+            message: str = "max_workers must be a positive integer"
+            raise ValueError(message)
+        return value
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def is_single_threaded(self) -> bool:
+        """Check if single-threaded execution is requested."""
+        return self.max_workers == 1
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def worker_description(self) -> str:
+        """Get a description of the worker configuration."""
+        if self.is_single_threaded:
+            return "single-threaded execution (max_workers=1)"
+        # Check if this was auto-computed (equals CPU count) or user-provided
+        if self.max_workers == mp.cpu_count():
+            return f"multiprocess execution with auto workers ({self.max_workers})"
+        return f"multiprocess execution with {self.max_workers} workers"
 
     def ensure_results_path_exists(self) -> None:
         """Ensure the results path directory exists, creating it if necessary."""

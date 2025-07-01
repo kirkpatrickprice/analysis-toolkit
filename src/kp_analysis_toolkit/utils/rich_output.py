@@ -7,6 +7,7 @@ across the toolkit including messages, progress bars, tables, and panels.
 
 from __future__ import annotations
 
+import threading
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
@@ -66,8 +67,9 @@ class RichOutput:
             force_terminal=True,
             width=120,
         )
-        self.verbose = verbose
-        self.quiet = quiet
+        self._verbose = verbose
+        self._quiet = quiet
+        self._lock = threading.RLock()  # Reentrant lock for nested calls
 
         # Message styling configuration
         self._styles = {
@@ -79,6 +81,43 @@ class RichOutput:
             MessageType.HEADER: {"style": "bold blue", "prefix": "📋 "},
             MessageType.SUBHEADER: {"style": "bold white", "prefix": "▸ "},
         }
+
+    @property
+    def verbose(self) -> bool:
+        """Thread-safe getter for verbose."""
+        with self._lock:
+            return self._verbose
+
+    @verbose.setter
+    def verbose(self, value: bool) -> None:
+        """Thread-safe setter for verbose."""
+        with self._lock:
+            self._verbose = value
+
+    @property
+    def quiet(self) -> bool:
+        """Thread-safe getter for quiet."""
+        with self._lock:
+            return self._quiet
+
+    @quiet.setter
+    def quiet(self, value: bool) -> None:
+        """Thread-safe setter for quiet."""
+        with self._lock:
+            self._quiet = value
+
+    def update_settings(
+        self,
+        *,
+        verbose: bool | None = None,
+        quiet: bool | None = None,
+    ) -> None:
+        """Thread-safe atomic update of both settings."""
+        with self._lock:
+            if verbose is not None:
+                self._verbose = verbose
+            if quiet is not None:
+                self._quiet = quiet
 
     def message(
         self,
@@ -532,16 +571,37 @@ class RichOutput:
 
 # Global instance for convenience
 _rich_output: RichOutput | None = None
+_creation_lock = threading.Lock()
 
 
-def get_rich_output(*, verbose: bool = False, quiet: bool = False) -> RichOutput:
-    """Get or create the global RichOutput instance."""
-    if "_rich_output" not in globals() or globals()["_rich_output"] is None:
-        globals()["_rich_output"] = RichOutput(verbose=verbose, quiet=quiet)
-    else:
-        # Update settings if provided
-        globals()["_rich_output"].verbose = verbose
-        globals()["_rich_output"].quiet = quiet
+def get_rich_output(
+    *,
+    verbose: bool | None = None,
+    quiet: bool | None = None,
+) -> RichOutput:
+    """Get or create the global RichOutput instance with thread-safe parameter updates."""
+    global _rich_output
+
+    # First check (no lock) - most common case
+    if _rich_output is not None:
+        # Update settings if provided using thread-safe method
+        if verbose is not None or quiet is not None:
+            _rich_output.update_settings(verbose=verbose, quiet=quiet)
+        return _rich_output
+
+    # Second check with lock - creation case
+    with _creation_lock:
+        if _rich_output is None:
+            # Use provided values or defaults
+            _rich_output = RichOutput(
+                verbose=verbose if verbose is not None else False,
+                quiet=quiet if quiet is not None else False,
+            )
+        elif verbose is not None or quiet is not None:
+            # Instance was created by another thread, update settings
+            _rich_output.update_settings(verbose=verbose, quiet=quiet)
+
+    return _rich_output
 
     return globals()["_rich_output"]
 

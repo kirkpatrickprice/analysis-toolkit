@@ -69,6 +69,11 @@ from kp_analysis_toolkit.process_scripts.models.program_config import ProgramCon
     help="Be verbose",
     is_flag=True,
 )
+@click.option(
+    "--max-workers",
+    type=int,
+    help="Maximum number of worker processes for parallel execution. Defaults to CPU count. Use 1 for single-threaded execution.",
+)
 def process_command_line(**cli_config: dict) -> None:
     """Process collector script results files (formerly adv-searchfor)."""
     """Convert the click config to a ProgramConfig object and perform validation."""
