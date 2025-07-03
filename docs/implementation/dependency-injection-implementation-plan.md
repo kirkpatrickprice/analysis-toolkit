@@ -102,6 +102,49 @@ This hierarchical approach provides several key benefits:
 5. **Performance**: Only necessary services are instantiated
 6. **Team Development**: Different teams can work on different containers without conflicts
 
+## Dependency Injection Wiring Strategy
+
+This implementation follows a **Distributed Wiring** approach, where each module is responsible for wiring its own dependencies. This approach provides the best balance of modularity, maintainability, and clear separation of concerns.
+
+### Architectural Rationale
+
+**Why Distributed Wiring?**
+
+1. **Module Independence**: Each module controls its own dependency wiring, making modules more self-contained and easier to understand
+2. **Reduced Coupling**: Modules don't need to know about the internal wiring details of other modules
+3. **Easier Testing**: Each module can be tested in isolation with its own container configuration
+4. **Team Development**: Different teams can work on different modules without interfering with each other's DI setup
+5. **Cleaner Architecture**: The application container focuses only on orchestrating high-level module composition
+
+**Cross-Module Dependency Handling:**
+
+- **Core Services**: Shared services (RichOutput, ParallelProcessing, FileProcessing, ExcelExport) are managed by the application container
+- **Module Services**: Each module wires its own internal dependencies and receives shared services as parameters
+- **Service Boundaries**: Clear interfaces define what services are shared vs. module-specific
+
+**Wiring Responsibility Distribution:**
+
+| Component | Wiring Responsibility | Purpose |
+|---|---|---|
+| **Application Container** | Cross-module service composition | Orchestrates core containers and module containers |
+| **Module Containers** | Module-specific service wiring | Wires internal module dependencies |
+| **Core Container** | Shared service wiring | Wires services used across multiple modules |
+
+### Wiring Function Patterns
+
+Each module follows a consistent pattern for dependency injection:
+
+1. **Container Definition**: Declarative container with all module dependencies
+2. **Wiring Function**: `wire_<module>_container()` - Wires the container to specific modules
+3. **Configuration Function**: `configure_<module>_container()` - Receives and configures cross-module dependencies
+4. **Orchestration**: Application container calls module wiring functions in correct order
+
+This pattern ensures that:
+- Module containers are self-contained and independently testable
+- Cross-module dependencies are explicitly managed by the application container
+- Wiring logic is distributed but coordinated
+- Each module can evolve its internal DI setup without affecting other modules
+
 ## Architecture Details
 
 Create a modular dependency injection system with clear separation of concerns:
@@ -405,6 +448,127 @@ class RtfToTextContainer(containers.DeclarativeContainer):
     )
 ```
 
+### Module-Level Wiring Functions (Distributed Wiring)
+
+Each module is responsible for wiring its own dependencies. These functions ensure that module containers are properly wired for dependency injection when the module is used.
+
+#### Process Scripts Module Wiring
+
+```python
+# src/kp_analysis_toolkit/process_scripts/container.py (additional wiring function)
+
+# Global container instance
+container = ProcessScriptsContainer()
+
+
+def wire_process_scripts_container() -> None:
+    """Wire the process scripts container for dependency injection.
+    
+    This function should be called when the process scripts module is initialized
+    to ensure all dependencies are properly wired for injection.
+    """
+    container.wire(modules=[
+        "kp_analysis_toolkit.process_scripts.cli",
+        "kp_analysis_toolkit.process_scripts.service",
+        "kp_analysis_toolkit.process_scripts.cli_functions",
+        "kp_analysis_toolkit.process_scripts.process_systems",
+        "kp_analysis_toolkit.process_scripts.search_engine",
+        "kp_analysis_toolkit.process_scripts.excel_exporter",
+    ])
+
+
+def configure_process_scripts_container(
+    core_container: CoreContainer,
+    file_processing_container: FileProcessingContainer,
+    excel_export_container: ExcelExportContainer,
+) -> None:
+    """Configure the process scripts container with its dependencies.
+    
+    Args:
+        core_container: The core services container
+        file_processing_container: The file processing container
+        excel_export_container: The excel export container
+    """
+    container.core.override(core_container)
+    container.file_processing.override(file_processing_container)
+    container.excel_export.override(excel_export_container)
+```
+
+#### Nipper Expander Module Wiring
+
+```python
+# src/kp_analysis_toolkit/nipper_expander/container.py (additional wiring function)
+
+# Global container instance  
+container = NipperExpanderContainer()
+
+
+def wire_nipper_expander_container() -> None:
+    """Wire the nipper expander container for dependency injection.
+    
+    This function should be called when the nipper expander module is initialized
+    to ensure all dependencies are properly wired for injection.
+    """
+    container.wire(modules=[
+        "kp_analysis_toolkit.nipper_expander.cli",
+        "kp_analysis_toolkit.nipper_expander.service",
+        "kp_analysis_toolkit.nipper_expander.process_nipper",
+    ])
+
+
+def configure_nipper_expander_container(
+    core_container: CoreContainer,
+    file_processing_container: FileProcessingContainer,
+    excel_export_container: ExcelExportContainer,
+) -> None:
+    """Configure the nipper expander container with its dependencies.
+    
+    Args:
+        core_container: The core services container
+        file_processing_container: The file processing container
+        excel_export_container: The excel export container
+    """
+    container.core.override(core_container)
+    container.file_processing.override(file_processing_container)
+    container.excel_export.override(excel_export_container)
+```
+
+#### RTF to Text Module Wiring
+
+```python
+# src/kp_analysis_toolkit/rtf_to_text/container.py (additional wiring function)
+
+# Global container instance
+container = RtfToTextContainer()
+
+
+def wire_rtf_to_text_container() -> None:
+    """Wire the RTF to text container for dependency injection.
+    
+    This function should be called when the RTF to text module is initialized
+    to ensure all dependencies are properly wired for injection.
+    """
+    container.wire(modules=[
+        "kp_analysis_toolkit.rtf_to_text.cli",
+        "kp_analysis_toolkit.rtf_to_text.service", 
+        "kp_analysis_toolkit.rtf_to_text.process_rtf",
+    ])
+
+
+def configure_rtf_to_text_container(
+    core_container: CoreContainer,
+    file_processing_container: FileProcessingContainer,
+) -> None:
+    """Configure the RTF to text container with its dependencies.
+    
+    Args:
+        core_container: The core services container
+        file_processing_container: The file processing container
+    """
+    container.core.override(core_container)
+    container.file_processing.override(file_processing_container)
+```
+
 #### Main Application Container
 
 ```python
@@ -461,6 +625,104 @@ class ApplicationContainer(containers.DeclarativeContainer):
 
 # Global container instance
 container = ApplicationContainer()
+
+
+def wire_application_container() -> None:
+    """Wire the main application container and all module containers.
+    
+    This function orchestrates the wiring of all containers in the application.
+    It ensures that the core containers are wired first, followed by module containers.
+    """
+    # Wire the main application container for CLI integration
+    container.wire(modules=[
+        "kp_analysis_toolkit.cli",
+    ])
+
+
+def wire_module_containers() -> None:
+    """Wire all module containers using their respective wiring functions.
+    
+    This function coordinates the wiring of individual module containers,
+    demonstrating Option B (Distributed Wiring) where each module is responsible
+    for its own dependency wiring.
+    """
+    from kp_analysis_toolkit.process_scripts.container import (
+        wire_process_scripts_container,
+        configure_process_scripts_container,
+    )
+    from kp_analysis_toolkit.nipper_expander.container import (
+        wire_nipper_expander_container,
+        configure_nipper_expander_container,
+    )
+    from kp_analysis_toolkit.rtf_to_text.container import (
+        wire_rtf_to_text_container,
+        configure_rtf_to_text_container,
+    )
+
+    # Configure module containers with their dependencies
+    configure_process_scripts_container(
+        core_container=container.core(),
+        file_processing_container=container.file_processing(),
+        excel_export_container=container.excel_export(),
+    )
+    
+    configure_nipper_expander_container(
+        core_container=container.core(),
+        file_processing_container=container.file_processing(),
+        excel_export_container=container.excel_export(),
+    )
+    
+    configure_rtf_to_text_container(
+        core_container=container.core(),
+        file_processing_container=container.file_processing(),
+    )
+
+    # Wire each module container
+    wire_process_scripts_container()
+    wire_nipper_expander_container()
+    wire_rtf_to_text_container()
+
+
+def configure_application_container(
+    verbose: bool = False,
+    quiet: bool = False,
+    max_workers: int | None = None,
+) -> None:
+    """Configure the application container with runtime settings.
+    
+    Args:
+        verbose: Enable verbose output
+        quiet: Enable quiet mode
+        max_workers: Maximum number of worker processes
+    """
+    container.core().config.verbose.from_value(verbose)
+    container.core().config.quiet.from_value(quiet)
+    container.core().config.max_workers.from_value(max_workers or 4)
+
+
+def initialize_dependency_injection(
+    verbose: bool = False,
+    quiet: bool = False,
+    max_workers: int | None = None,
+) -> None:
+    """Initialize the complete dependency injection system.
+    
+    This is the main entry point for setting up DI throughout the application.
+    It configures and wires all containers in the correct order.
+    
+    Args:
+        verbose: Enable verbose output
+        quiet: Enable quiet mode
+        max_workers: Maximum number of worker processes
+    """
+    # 1. Configure the application container
+    configure_application_container(verbose, quiet, max_workers)
+    
+    # 2. Wire the application container
+    wire_application_container()
+    
+    # 3. Wire all module containers
+    wire_module_containers()
 ```
 
 ### 3. Service Interfaces and Implementations
@@ -1402,141 +1664,91 @@ class NipperExpanderService:
             return []
 ```
 
-### 4. Wiring and Configuration
+### 4. Wiring and Configuration (Distributed Wiring)
+
+The application uses distributed wiring where each module is responsible for its own dependency injection setup. The application container orchestrates cross-module dependencies but does not directly wire individual module internals.
 
 ```python
 # src/kp_analysis_toolkit/core/containers/__init__.py
 from __future__ import annotations
 
-from kp_analysis_toolkit.core.containers.application import ApplicationContainer
+from kp_analysis_toolkit.core.containers.application import (
+    ApplicationContainer,
+    initialize_dependency_injection,
+    wire_application_container,
+    wire_module_containers,
+    configure_application_container,
+)
 from kp_analysis_toolkit.core.containers.core import CoreContainer
 
-__all__ = ["ApplicationContainer", "CoreContainer"]
+__all__ = [
+    "ApplicationContainer", 
+    "CoreContainer",
+    "initialize_dependency_injection",
+    "wire_application_container", 
+    "wire_module_containers",
+    "configure_application_container",
+]
+```
 
+#### Application-Level Wiring Configuration
 
-# src/kp_analysis_toolkit/core/containers/application.py (continued)
-from __future__ import annotations
+The application container provides orchestration functions that coordinate module wiring:
 
+```python
+# Example of how wiring is coordinated (from application.py above)
 
-def wire_container() -> None:
-    """Wire the container for dependency injection."""
-    container.wire(modules=[
-        "kp_analysis_toolkit.cli",
-        "kp_analysis_toolkit.process_scripts.cli",
-        "kp_analysis_toolkit.nipper_expander.cli",
-        "kp_analysis_toolkit.rtf_to_text.cli",
-    ])
-
-
-def configure_container(
+def initialize_dependency_injection(
     verbose: bool = False,
     quiet: bool = False,
     max_workers: int | None = None,
 ) -> None:
-    """Configure the container with runtime settings."""
-    container.core.config.verbose.from_value(verbose)
-    container.core.config.quiet.from_value(quiet)
-    container.core.config.max_workers.from_value(max_workers or 4)
+    """Initialize the complete dependency injection system.
+    
+    This is the main entry point for setting up DI throughout the application.
+    It configures and wires all containers in the correct order.
+    """
+    # 1. Configure the application container
+    configure_application_container(verbose, quiet, max_workers)
+    
+    # 2. Wire the application container
+    wire_application_container()
+    
+    # 3. Wire all module containers  
+    wire_module_containers()
 ```
 
-### 5. Updated CLI Integration with Hierarchical Containers
+#### Module-Level Wiring Pattern
 
-#### Main CLI with Hierarchical DI
+Each module follows the same wiring pattern for consistency:
 
 ```python
-# src/kp_analysis_toolkit/cli.py (hierarchical DI integration)
-from __future__ import annotations
+# Pattern followed by each module container (e.g., process_scripts/container.py)
 
-import platform
-import sys
-from collections.abc import Callable
-from pathlib import Path
+# 1. Container definition with dependencies
+class ModuleContainer(containers.DeclarativeContainer):
+    core = providers.DependenciesContainer()
+    # ... other dependencies and services
 
-import rich_click as click
-from dependency_injector.wiring import Provide, inject
+# 2. Global container instance
+container = ModuleContainer()
 
-from kp_analysis_toolkit import __version__ as cli_version
-from kp_analysis_toolkit.core.containers.application import ApplicationContainer, wire_container, configure_container
-from kp_analysis_toolkit.utils.rich_output import RichOutput
-from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
+# 3. Module wiring function
+def wire_module_container() -> None:
+    """Wire this module's container for dependency injection."""
+    container.wire(modules=[
+        "module.specific.modules",
+    ])
 
-# Initialize DI container
-container = ApplicationContainer()
-wire_container()
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
-@click.option("--max-workers", type=int, help="Maximum number of worker processes")
-@click.pass_context
-def cli(
-    ctx: click.Context,
-    verbose: bool,
-    quiet: bool,
-    max_workers: int | None,
-) -> None:
-    """KP Analysis Toolkit - Security analysis and data processing utilities."""
-    
-    # Configure DI container with runtime settings
-    configure_container(
-        verbose=verbose,
-        quiet=quiet,
-        max_workers=max_workers,
-    )
-    
-    # Store container in context for subcommands
-    ctx.ensure_object(dict)
-    ctx.obj['container'] = container
-
-
-@cli.command()
-@click.pass_context
-@inject
-def process_scripts(
-    ctx: click.Context,
-    service=Provide[container.process_scripts.process_scripts_service],
-    rich_output: RichOutput = Provide[container.core.rich_output],
-) -> None:
-    """Process configuration scripts and generate analysis reports."""
-    try:
-        rich_output.header("Process Scripts Module")
-        service.execute()
-    except Exception as e:
-        rich_output.error(f"Error in process scripts: {e}")
-        raise
-
-
-@cli.command()
-@click.pass_context
-@inject
-def nipper_expander(
-    ctx: click.Context,
-    service=Provide[container.nipper_expander.nipper_expander_service],
-    rich_output: RichOutput = Provide[container.core.rich_output],
-) -> None:
-    """Expand and process Nipper configuration files."""
-    try:
-        rich_output.header("Nipper Expander Module")
-        service.execute()
-    except Exception as e:
-        rich_output.error(f"Error in nipper expander: {e}")
-        raise
-
-
-@cli.command()
-@click.pass_context
-@inject
-def rtf_to_text(
-    ctx: click.Context,
-    service=Provide[container.rtf_to_text.rtf_to_text_service],
-    rich_output: RichOutput = Provide[container.core.rich_output],
-) -> None:
-    """Convert RTF files to text format."""
-    try:
-        rich_output.header("RTF to Text Module")
-        service.execute()
-    except Exception as e:
-        rich_output.error(f"Error in rtf to text: {e}")
-        raise
+# 4. Configuration function for cross-module dependencies
+def configure_module_container(core_container, other_containers) -> None:
+    """Configure this module's container with external dependencies."""
+    container.core.override(core_container)
+    # ... configure other dependencies
 ```
+
+This pattern ensures that:
+- Each module is self-contained and independently testable
+- Cross-module dependencies are explicitly managed by the application container
+- Module teams can modify their DI setup without affecting other modules
+- The wiring logic is distributed but follows consistent patterns
