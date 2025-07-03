@@ -6,7 +6,7 @@ This dependency injection implementation plan follows **Distributed Wiring**, wh
 
 #### 1. Architectural Decision: Distributed Wiring
 
-**Why Option B was chosen:**
+**Why Distributed Wiring was chosen:**
 - **Module Independence**: Each module (process_scripts, nipper_expander, rtf_to_text) controls its own dependency wiring
 - **Reduced Coupling**: Modules don't need to know internal wiring details of other modules
 - **Clear Separation**: Application container handles cross-module dependencies, module containers handle internal dependencies
@@ -28,7 +28,7 @@ This dependency injection implementation plan follows **Distributed Wiring**, wh
 **For each module container, ensure the following are implemented:**
 
 ✅ **Container Definition**
-- [ ] `class ModuleContainer(containers.DeclarativeContainer)` with proper dependencies
+- [ ] Define `class ModuleContainer(containers.DeclarativeContainer)` with proper dependencies
 - [ ] All module-specific services defined as providers
 - [ ] Cross-module dependencies declared as `providers.DependenciesContainer()`
 
@@ -112,7 +112,7 @@ def test_full_application():
 
 ### Benefits Realized
 
-With Option B implementation, the toolkit achieves:
+With a Dependency Injection, the toolkit achieves:
 
 1. **Maintainability**: Each module can evolve independently without affecting others
 2. **Testability**: Modules can be tested in isolation with mocked dependencies

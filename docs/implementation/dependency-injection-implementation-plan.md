@@ -643,7 +643,7 @@ def wire_module_containers() -> None:
     """Wire all module containers using their respective wiring functions.
     
     This function coordinates the wiring of individual module containers,
-    demonstrating Option B (Distributed Wiring) where each module is responsible
+    demonstrating Distributed Wiring where each module is responsible
     for its own dependency wiring.
     """
     from kp_analysis_toolkit.process_scripts.container import (
