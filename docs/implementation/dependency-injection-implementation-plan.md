@@ -104,11 +104,13 @@ This hierarchical approach provides several key benefits:
 
 ## Container Architecture Details
 
-### 1. Hierarchical Container Architecture
-
 Create a modular dependency injection system with clear separation of concerns:
 
-#### Core Container (Shared Services) {#core-container-shared-services}
+### 1. Core Containers
+
+Containers providing core services used throughout the application
+
+#### Core Container (Shared Services)
 
 ```python
 # src/kp_analysis_toolkit/core/containers/core.py
@@ -162,7 +164,7 @@ class CoreContainer(containers.DeclarativeContainer):
     )
 ```
 
-#### File Processing Container {#file-processing-container}
+#### File Processing Container
 
 ```python
 # src/kp_analysis_toolkit/core/containers/file_processing.py
@@ -202,7 +204,7 @@ class FileProcessingContainer(containers.DeclarativeContainer):
     )
 ```
 
-#### Excel Export Container {#excel-export-container}
+#### Excel Export Container
 
 ```python
 # src/kp_analysis_toolkit/core/containers/excel_export.py
@@ -242,7 +244,11 @@ class ExcelExportContainer(containers.DeclarativeContainer):
     )
 ```
 
-#### Module-Specific Containers {#process-scripts-container}
+### 2. Module-Specific Containers
+
+Containers to implement for specific modules
+
+#### Process Scripts Containers
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/container.py
@@ -341,8 +347,11 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         search_config=search_config_service,
         rich_output=core.rich_output,
     )
+```
 
+#### Nipper Expander Containers
 
+```python
 # src/kp_analysis_toolkit/nipper_expander/container.py
 from __future__ import annotations
 
@@ -367,8 +376,11 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
         file_processing=file_processing.file_processing_service,
         rich_output=core.rich_output,
     )
+```
 
+#### RTF to Text Containers
 
+```python
 # src/kp_analysis_toolkit/rtf_to_text/container.py
 from __future__ import annotations
 
@@ -451,7 +463,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
 container = ApplicationContainer()
 ```
 
-### 2. Wiring and Configuration
+### 3. Wiring and Configuration
 
 ```python
 # src/kp_analysis_toolkit/core/containers/__init__.py
@@ -488,9 +500,13 @@ def configure_container(
     container.core.config.max_workers.from_value(max_workers or 4)
 ```
 
-### 3. Service Interfaces and Implementations
+### 4. Service Interfaces and Implementations
 
 Define clean service interfaces for all major components:
+
+#### Core Services
+
+##### `__init__.py` Configuration
 
 ```python
 # src/kp_analysis_toolkit/core/services/__init__.py
@@ -509,107 +525,7 @@ __all__ = [
 ]
 ```
 
-### 4. Updated CLI Integration with Hierarchical Containers
-
-#### 1. Main CLI with Hierarchical DI
-
-```python
-# src/kp_analysis_toolkit/cli.py (hierarchical DI integration)
-from __future__ import annotations
-
-import platform
-import sys
-from collections.abc import Callable
-from pathlib import Path
-
-import rich_click as click
-from dependency_injector.wiring import Provide, inject
-
-from kp_analysis_toolkit import __version__ as cli_version
-from kp_analysis_toolkit.core.containers.application import ApplicationContainer, wire_container, configure_container
-from kp_analysis_toolkit.utils.rich_output import RichOutput
-from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
-
-# Initialize DI container
-container = ApplicationContainer()
-wire_container()
-
-
-@click.group(context_settings=CONTEXT_SETTINGS)
-@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.option("--quiet", "-q", is_flag=True, help="Suppress non-essential output")
-@click.option("--max-workers", type=int, help="Maximum number of worker processes")
-@click.pass_context
-def cli(
-    ctx: click.Context,
-    verbose: bool,
-    quiet: bool,
-    max_workers: int | None,
-) -> None:
-    """KP Analysis Toolkit - Security analysis and data processing utilities."""
-    
-    # Configure DI container with runtime settings
-    configure_container(
-        verbose=verbose,
-        quiet=quiet,
-        max_workers=max_workers,
-    )
-    
-    # Store container in context for subcommands
-    ctx.ensure_object(dict)
-    ctx.obj['container'] = container
-
-
-@cli.command()
-@click.pass_context
-@inject
-def process_scripts(
-    ctx: click.Context,
-    service=Provide[container.process_scripts.process_scripts_service],
-    rich_output: RichOutput = Provide[container.core.rich_output],
-) -> None:
-    """Process configuration scripts and generate analysis reports."""
-    try:
-        rich_output.header("Process Scripts Module")
-        service.execute()
-    except Exception as e:
-        rich_output.error(f"Error in process scripts: {e}")
-        raise
-
-
-@cli.command()
-@click.pass_context
-@inject
-def nipper_expander(
-    ctx: click.Context,
-    service=Provide[container.nipper_expander.nipper_expander_service],
-    rich_output: RichOutput = Provide[container.core.rich_output],
-) -> None:
-    """Expand and process Nipper configuration files."""
-    try:
-        rich_output.header("Nipper Expander Module")
-        service.execute()
-    except Exception as e:
-        rich_output.error(f"Error in nipper expander: {e}")
-        raise
-
-
-@cli.command()
-@click.pass_context
-@inject
-def rtf_to_text(
-    ctx: click.Context,
-    service=Provide[container.rtf_to_text.rtf_to_text_service],
-    rich_output: RichOutput = Provide[container.core.rich_output],
-) -> None:
-    """Convert RTF files to text format."""
-    try:
-        rich_output.header("RTF to Text Module")
-        service.execute()
-    except Exception as e:
-        rich_output.error(f"Error in rtf to text: {e}")
-        raise
-```
+##### File Processing Service
 
 ```python
 # src/kp_analysis_toolkit/core/services/file_processing.py
@@ -674,6 +590,8 @@ class FileProcessingService:
             "path": str(file_path),
         }
 ```
+
+##### Excel Exporter Service
 
 ```python
 # src/kp_analysis_toolkit/core/services/excel_export.py
@@ -740,7 +658,91 @@ class ExcelExportService:
             raise
 ```
 
-#### 2. Parallel Processing Service
+##### Parallel Processing Service
+
+```python
+# src/kp_analysis_toolkit/core/services/parallel_processing.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Protocol
+
+from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
+from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class ExecutorFactory(Protocol):
+    """Protocol for executor factory."""
+    
+    def create_executor(self, max_workers: int) -> Any: ...
+
+
+class ProgressTracker(Protocol):
+    """Protocol for progress tracking."""
+    
+    def track_progress(self, total: int, description: str) -> Any: ...
+
+
+class InterruptHandler(Protocol):
+    """Protocol for interrupt handling."""
+    
+    def setup(self) -> None: ...
+    def cleanup(self) -> None: ...
+    def is_interrupted(self) -> bool: ...
+
+
+class ParallelProcessingService:
+    """Service for parallel processing operations."""
+    
+    def __init__(
+        self,
+        executor_factory: ExecutorFactory,
+        progress_tracker: ProgressTracker,
+        interrupt_handler: InterruptHandler,
+        rich_output: RichOutput,
+    ) -> None:
+        self.executor_factory = executor_factory
+        self.progress_tracker = progress_tracker
+        self.interrupt_handler = interrupt_handler
+        self.rich_output = rich_output
+    
+    def search_configs_with_processes(
+        self,
+        search_configs: list[SearchConfig],
+        systems: list[Systems],
+        max_workers: int,
+    ) -> list[SearchResults]:
+        """Execute multiple search configurations in parallel using processes."""
+        if not search_configs:
+            return []
+
+        # Engine now uses injected RichOutput instead of global singleton
+        # Calculate the maximum width needed for search config names
+        max_name_width = max(
+            len(getattr(config, "name", "Unknown")) for config in search_configs
+        )
+
+        results: list[SearchResults] = []
+        
+        # Set up interrupt handling with injected RichOutput
+        self.interrupt_handler.setup()
+
+        try:
+            with self.rich_output.progress(
+                show_eta=True,
+                show_percentage=True,
+                show_time_elapsed=True,
+            ) as progress:
+                # Implementation details for parallel processing...
+                pass
+                
+        finally:
+            self.interrupt_handler.cleanup()
+
+        return results
+```
 
 #### 3. Wiring and Configuration
 
@@ -1029,92 +1031,6 @@ class ExcelExportService:
         except Exception as e:
             self.rich_output.error(f"Failed to export Excel file: {e}")
             raise
-```
-
-##### Parallel Processing Service
-
-```python
-# src/kp_analysis_toolkit/core/services/parallel_processing.py
-from __future__ import annotations
-
-from pathlib import Path
-from typing import Any, Protocol
-
-from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
-from kp_analysis_toolkit.utils.rich_output import RichOutput
-
-
-class ExecutorFactory(Protocol):
-    """Protocol for executor factory."""
-    
-    def create_executor(self, max_workers: int) -> Any: ...
-
-
-class ProgressTracker(Protocol):
-    """Protocol for progress tracking."""
-    
-    def track_progress(self, total: int, description: str) -> Any: ...
-
-
-class InterruptHandler(Protocol):
-    """Protocol for interrupt handling."""
-    
-    def setup(self) -> None: ...
-    def cleanup(self) -> None: ...
-    def is_interrupted(self) -> bool: ...
-
-
-class ParallelProcessingService:
-    """Service for parallel processing operations."""
-    
-    def __init__(
-        self,
-        executor_factory: ExecutorFactory,
-        progress_tracker: ProgressTracker,
-        interrupt_handler: InterruptHandler,
-        rich_output: RichOutput,
-    ) -> None:
-        self.executor_factory = executor_factory
-        self.progress_tracker = progress_tracker
-        self.interrupt_handler = interrupt_handler
-        self.rich_output = rich_output
-    
-    def search_configs_with_processes(
-        self,
-        search_configs: list[SearchConfig],
-        systems: list[Systems],
-        max_workers: int,
-    ) -> list[SearchResults]:
-        """Execute multiple search configurations in parallel using processes."""
-        if not search_configs:
-            return []
-
-        # Engine now uses injected RichOutput instead of global singleton
-        # Calculate the maximum width needed for search config names
-        max_name_width = max(
-            len(getattr(config, "name", "Unknown")) for config in search_configs
-        )
-
-        results: list[SearchResults] = []
-        
-        # Set up interrupt handling with injected RichOutput
-        self.interrupt_handler.setup()
-
-        try:
-            with self.rich_output.progress(
-                show_eta=True,
-                show_percentage=True,
-                show_time_elapsed=True,
-            ) as progress:
-                # Implementation details for parallel processing...
-                pass
-                
-        finally:
-            self.interrupt_handler.cleanup()
-
-        return results
 ```
 
 ##### Module-Specific Containers
