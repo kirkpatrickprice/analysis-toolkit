@@ -1315,7 +1315,7 @@ class CSVProcessorService:
 ###### Main Nipper Expander Service
 
 
-`python
+```python
 # src/kp_analysis_toolkit/nipper_expander/service.py
 from __future__ import annotations
 
