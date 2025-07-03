@@ -4,7 +4,18 @@
 
 This document outlines a comprehensive refactoring plan to implement dependency injection throughout the KP Analysis Toolkit codebase using the `dependency-injector` framework. This approach addresses not only the RichOutput global singleton pattern but also provides a holistic DI architecture for all major components.
 
-## Framework Selection: dependency-injector
+**Navigation Links:**
+- [Framework Selection - dependency-injector](#framework-selection-dependency-injector)
+- [Core Container Implementation](#core-container-shared-services)
+- [File Processing Container](#file-processing-container) 
+- [Excel Export Container](#excel-export-container)
+- [Application Container](#main-application-container)
+- [Process Scripts Container](#process-scripts-container)
+- [CLI Integration](#updated-cli-integration-with-hierarchical-containers)
+- [Testing Strategy](#testing-strategy)
+- [Implementation Timeline](#implementation-timeline-hierarchical-approach)
+
+## Framework Selection: `dependency-injector`
 
 We will use the `dependency-injector` framework for several key reasons:
 
@@ -67,17 +78,6 @@ src/kp_analysis_toolkit/
     └── shared_funcs.py                    # Hash & validation implementations
 ```
 
-**Key Directory Features:**
-
-- **`core/containers/`**: Hierarchical DI containers for shared services
-- **`core/services/`**: Service interfaces and implementations for core functionality  
-- **`core/parallel_engine/`**: Parallel processing component implementations
-- **`{module}/container.py`**: Module-specific dependency injection containers
-- **`{module}/service.py`**: Main service class for each module
-- **`{module}/services/`**: Module-specific service implementations
-- **Protocol Definitions**: Service protocols are co-located with implementations
-- **Implementation Classes**: Concrete implementations referenced by string in containers
-
 **File Organization Summary:**
 
 | Component Type | Location | Purpose |
@@ -88,8 +88,11 @@ src/kp_analysis_toolkit/
 | **Module Services** | `{module}/service.py` | Main module service classes |
 | **Module Utilities** | `{module}/services/` | Module-specific implementations |
 | **Global Utilities** | `utils/` | Shared utility implementations |
+| **Protocol Classes** | Embedded | Implemented in services |
+| **Implementation Classes** | Embdded | Concrete implementations included in containers |
 
 **Key Benefits:**
+
 This hierarchical approach provides several key benefits:
 
 1. **Separation of Concerns**: Each container has a single, clear responsibility
@@ -98,16 +101,6 @@ This hierarchical approach provides several key benefits:
 4. **Testing**: Each container can be tested independently
 5. **Performance**: Only necessary services are instantiated
 6. **Team Development**: Different teams can work on different containers without conflicts
-
-**Navigation Links:**
-- [Core Container Implementation](#core-container-shared-services)
-- [File Processing Container](#file-processing-container) 
-- [Excel Export Container](#excel-export-container)
-- [Application Container](#main-application-container)
-- [Process Scripts Container](#process-scripts-container)
-- [CLI Integration](#updated-cli-integration-with-hierarchical-containers)
-- [Testing Strategy](#testing-strategy)
-- [Implementation Timeline](#implementation-timeline-hierarchical-approach)
 
 ## Container Architecture Details
 
@@ -167,6 +160,7 @@ class CoreContainer(containers.DeclarativeContainer):
         interrupt_handler=interrupt_handler,
         rich_output=rich_output,
     )
+```
 
 #### File Processing Container {#file-processing-container}
 
@@ -206,6 +200,7 @@ class FileProcessingContainer(containers.DeclarativeContainer):
         file_validator=file_validator,
         rich_output=core.rich_output,
     )
+```
 
 #### Excel Export Container {#excel-export-container}
 
@@ -1124,6 +1119,8 @@ class ParallelProcessingService:
 
 ##### Module-Specific Containers
 
+###### `process_scripts` Containers
+
 ```python
 # src/kp_analysis_toolkit/process_scripts/container.py
 from __future__ import annotations
@@ -1221,8 +1218,11 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         search_config=search_config_service,
         rich_output=core.rich_output,
     )
+```
 
+###### `nipper_expander` Containers
 
+```python
 # src/kp_analysis_toolkit/nipper_expander/container.py
 from __future__ import annotations
 
@@ -1247,8 +1247,11 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
         file_processing=file_processing.file_processing_service,
         rich_output=core.rich_output,
     )
+```
 
+###### `rtf_to_text` Containers
 
+```python
 # src/kp_analysis_toolkit/rtf_to_text/container.py
 from __future__ import annotations
 
