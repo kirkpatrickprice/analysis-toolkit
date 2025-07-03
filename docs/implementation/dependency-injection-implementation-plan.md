@@ -26,7 +26,7 @@ We will use the `dependency-injector` framework for several key reasons:
 5. **Minimal Performance Overhead**: Optimized for production use
 6. **Type Safety**: Full mypy support with proper type annotations
 
-## Directory Structure and File Organization {#directory-structure}
+## Directory Structure and File Organization
 
 The following directory structure shows the complete organization of containers, services, and related files for the dependency injection implementation:
 
@@ -102,7 +102,7 @@ This hierarchical approach provides several key benefits:
 5. **Performance**: Only necessary services are instantiated
 6. **Team Development**: Different teams can work on different containers without conflicts
 
-## Container Architecture Details
+## Architecture Details
 
 Create a modular dependency injection system with clear separation of concerns:
 
@@ -469,7 +469,7 @@ Define clean service interfaces for all major components:
 
 #### Core Services
 
-##### `__init__.py` Configuration
+##### Moodule Initialization
 
 ```python
 # src/kp_analysis_toolkit/core/services/__init__.py
@@ -710,8 +710,7 @@ class ParallelProcessingService:
 #### Module-Specific Services
 
 ##### Process Scripts Services
-
-###### Search Engine Service
+##### Search Engine Service
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/services/search_engine.py
@@ -771,7 +770,7 @@ class SearchEngineService:
         pass
 ```
 
-###### Search Configuration Service
+##### Search Configuration Service
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/services/search_config.py
@@ -847,7 +846,7 @@ class SearchConfigService:
         pass
 ```
 
-###### System Detection Service
+##### System Detection Service
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/services/system_detection.py
@@ -932,7 +931,7 @@ class SystemDetectionService:
             raise
 ```
 
-###### Main Process Scripts Service
+###### Mai#n Process Scripts Service
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/service.py
@@ -1315,7 +1314,8 @@ class CSVProcessorService:
 
 ###### Main Nipper Expander Service
 
-```python
+
+`python
 # src/kp_analysis_toolkit/nipper_expander/service.py
 from __future__ import annotations
 
