@@ -463,44 +463,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
 container = ApplicationContainer()
 ```
 
-### 3. Wiring and Configuration
-
-```python
-# src/kp_analysis_toolkit/core/containers/__init__.py
-from __future__ import annotations
-
-from kp_analysis_toolkit.core.containers.application import ApplicationContainer
-from kp_analysis_toolkit.core.containers.core import CoreContainer
-
-__all__ = ["ApplicationContainer", "CoreContainer"]
-
-
-# src/kp_analysis_toolkit/core/containers/application.py (continued)
-from __future__ import annotations
-
-
-def wire_container() -> None:
-    """Wire the container for dependency injection."""
-    container.wire(modules=[
-        "kp_analysis_toolkit.cli",
-        "kp_analysis_toolkit.process_scripts.cli",
-        "kp_analysis_toolkit.nipper_expander.cli",
-        "kp_analysis_toolkit.rtf_to_text.cli",
-    ])
-
-
-def configure_container(
-    verbose: bool = False,
-    quiet: bool = False,
-    max_workers: int | None = None,
-) -> None:
-    """Configure the container with runtime settings."""
-    container.core.config.verbose.from_value(verbose)
-    container.core.config.quiet.from_value(quiet)
-    container.core.config.max_workers.from_value(max_workers or 4)
-```
-
-### 4. Service Interfaces and Implementations
+### 3. Service Interfaces and Implementations
 
 Define clean service interfaces for all major components:
 
@@ -742,6 +705,43 @@ class ParallelProcessingService:
             self.interrupt_handler.cleanup()
 
         return results
+```
+
+### 4. Wiring and Configuration
+
+```python
+# src/kp_analysis_toolkit/core/containers/__init__.py
+from __future__ import annotations
+
+from kp_analysis_toolkit.core.containers.application import ApplicationContainer
+from kp_analysis_toolkit.core.containers.core import CoreContainer
+
+__all__ = ["ApplicationContainer", "CoreContainer"]
+
+
+# src/kp_analysis_toolkit/core/containers/application.py (continued)
+from __future__ import annotations
+
+
+def wire_container() -> None:
+    """Wire the container for dependency injection."""
+    container.wire(modules=[
+        "kp_analysis_toolkit.cli",
+        "kp_analysis_toolkit.process_scripts.cli",
+        "kp_analysis_toolkit.nipper_expander.cli",
+        "kp_analysis_toolkit.rtf_to_text.cli",
+    ])
+
+
+def configure_container(
+    verbose: bool = False,
+    quiet: bool = False,
+    max_workers: int | None = None,
+) -> None:
+    """Configure the container with runtime settings."""
+    container.core.config.verbose.from_value(verbose)
+    container.core.config.quiet.from_value(quiet)
+    container.core.config.max_workers.from_value(max_workers or 4)
 ```
 
 ### 5. Updated CLI Integration with Hierarchical Containers
