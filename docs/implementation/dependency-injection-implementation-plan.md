@@ -43,8 +43,7 @@ src/kp_analysis_toolkit/
 │   │   ├── __init__.py                    # Service exports
 │   │   ├── file_processing.py             # File processing service & protocols
 │   │   ├── excel_export.py                # Excel export service & protocols
-│   │   ├── parallel_processing.py         # Parallel processing service & protocols
-│   │   └── search_engine.py               # Search engine service & protocols
+│   │   └── parallel_processing.py         # Parallel processing service & protocols
 │   └── parallel_engine/                   # Parallel processing implementations
 │       ├── __init__.py
 │       ├── executor_factory.py            # ProcessPoolExecutorFactory
@@ -56,6 +55,7 @@ src/kp_analysis_toolkit/
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── search_config.py               # YAML search config service & protocols
+│   │   ├── search_engine.py               # Search engine service & protocols
 │   │   └── system_detection.py            # System detection service & protocols
 │   └── utils/                            # Process scripts utilities
 │       ├── os_detection.py               # OS detection implementations
@@ -705,6 +705,701 @@ class ParallelProcessingService:
             self.interrupt_handler.cleanup()
 
         return results
+```
+
+#### Module-Specific Services
+
+##### Process Scripts Services
+
+###### Search Engine Service
+
+```python
+# src/kp_analysis_toolkit/process_scripts/services/search_engine.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Protocol
+
+from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
+from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class PatternCompiler(Protocol):
+    """Protocol for regex pattern compilation."""
+    
+    def compile_pattern(self, pattern: str) -> Any: ...
+    def validate_pattern(self, pattern: str) -> bool: ...
+
+
+class FieldExtractor(Protocol):
+    """Protocol for field extraction from search results."""
+    
+    def extract_fields(self, line: str, config: SearchConfig) -> dict[str, str]: ...
+
+
+class ResultProcessor(Protocol):
+    """Protocol for processing search results."""
+    
+    def process_results(self, raw_results: list[dict[str, str]], config: SearchConfig) -> SearchResults: ...
+
+
+class SearchEngineService:
+    """Service for search engine operations."""
+    
+    def __init__(
+        self,
+        pattern_compiler: PatternCompiler,
+        field_extractor: FieldExtractor,
+        result_processor: ResultProcessor,
+        rich_output: RichOutput,
+    ) -> None:
+        self.pattern_compiler = pattern_compiler
+        self.field_extractor = field_extractor
+        self.result_processor = result_processor
+        self.rich_output = rich_output
+    
+    def search_file(
+        self,
+        file_path: Path,
+        search_config: SearchConfig,
+    ) -> SearchResults:
+        """Search a file using the provided configuration."""
+        # Implementation would handle file searching with pattern matching
+        # and field extraction using injected dependencies
+        pass
+```
+
+###### Search Configuration Service
+
+```python
+# src/kp_analysis_toolkit/process_scripts/services/search_config.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Protocol
+
+from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class YamlParser(Protocol):
+    """Protocol for YAML parsing operations."""
+    
+    def load_yaml(self, file_path: Path) -> dict[str, Any]: ...
+    def validate_yaml_structure(self, data: dict[str, Any]) -> bool: ...
+
+
+class FileResolver(Protocol):
+    """Protocol for resolving file paths and includes."""
+    
+    def resolve_path(self, base_path: Path, relative_path: str) -> Path: ...
+    def find_include_files(self, config_dir: Path, pattern: str) -> list[Path]: ...
+
+
+class IncludeProcessor(Protocol):
+    """Protocol for processing YAML includes."""
+    
+    def process_includes(self, config_data: dict[str, Any], base_path: Path) -> dict[str, Any]: ...
+
+
+class SearchConfigService:
+    """Service for loading and processing YAML search configurations."""
+    
+    def __init__(
+        self,
+        yaml_parser: YamlParser,
+        file_resolver: FileResolver,
+        include_processor: IncludeProcessor,
+        rich_output: RichOutput,
+    ) -> None:
+        self.yaml_parser = yaml_parser
+        self.file_resolver = file_resolver
+        self.include_processor = include_processor
+        self.rich_output = rich_output
+    
+    def load_search_configs(self, config_path: Path) -> list[SearchConfig]:
+        """Load search configurations from YAML files with include processing."""
+        try:
+            # Load main configuration file
+            config_data = self.yaml_parser.load_yaml(config_path)
+            
+            # Process any includes
+            processed_data = self.include_processor.process_includes(
+                config_data, 
+                config_path.parent
+            )
+            
+            # Convert to SearchConfig models
+            configs = self._convert_to_search_configs(processed_data)
+            
+            self.rich_output.info(f"Loaded {len(configs)} search configurations")
+            return configs
+            
+        except Exception as e:
+            self.rich_output.error(f"Failed to load search configurations: {e}")
+            raise
+    
+    def _convert_to_search_configs(self, data: dict[str, Any]) -> list[SearchConfig]:
+        """Convert YAML data to SearchConfig models."""
+        # Implementation would convert YAML data to Pydantic models
+        pass
+```
+
+###### System Detection Service
+
+```python
+# src/kp_analysis_toolkit/process_scripts/services/system_detection.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Protocol
+
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class OSDetector(Protocol):
+    """Protocol for operating system detection."""
+    
+    def detect_os(self, file_content: str) -> str | None: ...
+    def get_supported_os_types(self) -> list[str]: ...
+
+
+class ProducerDetector(Protocol):
+    """Protocol for detecting system/software producers."""
+    
+    def detect_producer(self, file_content: str, file_path: Path) -> str | None: ...
+    def get_known_producers(self) -> list[str]: ...
+
+
+class DistroClassifier(Protocol):
+    """Protocol for Linux distribution classification."""
+    
+    def classify_distribution(self, os_info: str, file_content: str) -> str | None: ...
+    def get_supported_distributions(self) -> list[str]: ...
+
+
+class SystemDetectionService:
+    """Service for detecting system information from configuration files."""
+    
+    def __init__(
+        self,
+        os_detector: OSDetector,
+        producer_detector: ProducerDetector,
+        distro_classifier: DistroClassifier,
+        rich_output: RichOutput,
+    ) -> None:
+        self.os_detector = os_detector
+        self.producer_detector = producer_detector
+        self.distro_classifier = distro_classifier
+        self.rich_output = rich_output
+    
+    def analyze_system_file(self, file_path: Path, file_content: str) -> Systems:
+        """Analyze a system file and extract system information."""
+        try:
+            # Detect operating system
+            detected_os = self.os_detector.detect_os(file_content)
+            if detected_os is None:
+                self.rich_output.warning(f"Could not detect OS for: {file_path}")
+                detected_os = "Unknown"
+            
+            # Detect producer/vendor
+            producer = self.producer_detector.detect_producer(file_content, file_path)
+            if producer is None:
+                self.rich_output.warning(f"Could not detect producer for: {file_path}")
+                producer = "Unknown"
+            
+            # Classify distribution (for Linux systems)
+            distribution = None
+            if detected_os.lower() == "linux":
+                distribution = self.distro_classifier.classify_distribution(
+                    detected_os, 
+                    file_content
+                )
+            
+            return Systems(
+                file_path=str(file_path),
+                operating_system=detected_os,
+                producer=producer,
+                distribution=distribution,
+                file_hash=None,  # Would be populated by file processing service
+            )
+            
+        except Exception as e:
+            self.rich_output.error(f"Failed to analyze system file {file_path}: {e}")
+            raise
+```
+
+###### Main Process Scripts Service
+
+```python
+# src/kp_analysis_toolkit/process_scripts/service.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from kp_analysis_toolkit.core.services.excel_export import ExcelExportService
+from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
+from kp_analysis_toolkit.core.services.parallel_processing import ParallelProcessingService
+from kp_analysis_toolkit.process_scripts.services.search_engine import SearchEngineService
+from kp_analysis_toolkit.process_scripts.services.search_config import SearchConfigService
+from kp_analysis_toolkit.process_scripts.services.system_detection import SystemDetectionService
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class ProcessScriptsService:
+    """Main service for the process scripts module."""
+    
+    def __init__(
+        self,
+        search_engine: SearchEngineService,
+        parallel_processing: ParallelProcessingService,
+        system_detection: SystemDetectionService,
+        excel_export: ExcelExportService,
+        file_processing: FileProcessingService,
+        search_config: SearchConfigService,
+        rich_output: RichOutput,
+    ) -> None:
+        self.search_engine = search_engine
+        self.parallel_processing = parallel_processing
+        self.system_detection = system_detection
+        self.excel_export = excel_export
+        self.file_processing = file_processing
+        self.search_config = search_config
+        self.rich_output = rich_output
+    
+    def execute(
+        self,
+        input_directory: Path,
+        config_file: Path,
+        output_path: Path,
+        max_workers: int = 4,
+    ) -> None:
+        """Execute the complete process scripts workflow."""
+        try:
+            self.rich_output.header("Starting Process Scripts Analysis")
+            
+            # Load search configurations
+            search_configs = self.search_config.load_search_configs(config_file)
+            
+            # Discover and analyze system files
+            system_files = self._discover_system_files(input_directory)
+            systems = self._analyze_systems(system_files)
+            
+            # Execute search configurations in parallel
+            search_results = self.parallel_processing.search_configs_with_processes(
+                search_configs,
+                systems,
+                max_workers,
+            )
+            
+            # Export results to Excel
+            self._export_results(search_results, output_path)
+            
+            self.rich_output.success("Process Scripts analysis completed successfully")
+            
+        except Exception as e:
+            self.rich_output.error(f"Process Scripts execution failed: {e}")
+            raise
+    
+    def _discover_system_files(self, directory: Path) -> list[Path]:
+        """Discover system configuration files in the input directory."""
+        # Implementation would scan directory for supported file types
+        pass
+    
+    def _analyze_systems(self, file_paths: list[Path]) -> list[Any]:
+        """Analyze system files to extract system information."""
+        # Implementation would process files using system detection service
+        pass
+    
+    def _export_results(self, results: list[Any], output_path: Path) -> None:
+        """Export search results to Excel format."""
+        # Implementation would format and export results
+        pass
+```
+
+##### RTF to Text Services
+
+###### RTF Parser Service
+
+```python
+# src/kp_analysis_toolkit/rtf_to_text/services/rtf_parser.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Protocol
+
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class RTFDecoder(Protocol):
+    """Protocol for RTF decoding operations."""
+    
+    def decode_rtf(self, rtf_content: bytes) -> str: ...
+    def validate_rtf_format(self, file_path: Path) -> bool: ...
+
+
+class TextCleaner(Protocol):
+    """Protocol for text cleaning operations."""
+    
+    def clean_text(self, raw_text: str) -> str: ...
+    def remove_control_characters(self, text: str) -> str: ...
+
+
+class EncodingConverter(Protocol):
+    """Protocol for encoding conversion."""
+    
+    def convert_encoding(self, text: str, target_encoding: str) -> str: ...
+    def detect_text_encoding(self, text: str) -> str: ...
+
+
+class RTFParserService:
+    """Service for parsing RTF files and converting to text."""
+    
+    def __init__(
+        self,
+        rtf_decoder: RTFDecoder,
+        text_cleaner: TextCleaner,
+        encoding_converter: EncodingConverter,
+        rich_output: RichOutput,
+    ) -> None:
+        self.rtf_decoder = rtf_decoder
+        self.text_cleaner = text_cleaner
+        self.encoding_converter = encoding_converter
+        self.rich_output = rich_output
+    
+    def convert_rtf_to_text(
+        self,
+        rtf_file_path: Path,
+        output_encoding: str = "utf-8",
+    ) -> str:
+        """Convert RTF file to clean text format."""
+        try:
+            # Validate RTF format
+            if not self.rtf_decoder.validate_rtf_format(rtf_file_path):
+                raise ValueError(f"Invalid RTF format: {rtf_file_path}")
+            
+            # Read and decode RTF content
+            with open(rtf_file_path, 'rb') as f:
+                rtf_content = f.read()
+            
+            raw_text = self.rtf_decoder.decode_rtf(rtf_content)
+            
+            # Clean the extracted text
+            cleaned_text = self.text_cleaner.clean_text(raw_text)
+            
+            # Convert encoding if needed
+            final_text = self.encoding_converter.convert_encoding(
+                cleaned_text, 
+                output_encoding
+            )
+            
+            self.rich_output.success(f"Successfully converted RTF: {rtf_file_path}")
+            return final_text
+            
+        except Exception as e:
+            self.rich_output.error(f"Failed to convert RTF file {rtf_file_path}: {e}")
+            raise
+```
+
+###### Main RTF to Text Service
+
+```python
+# src/kp_analysis_toolkit/rtf_to_text/service.py
+from __future__ import annotations
+
+from pathlib import Path
+
+from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
+from kp_analysis_toolkit.rtf_to_text.services.rtf_parser import RTFParserService
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class RtfToTextService:
+    """Main service for the RTF to text module."""
+    
+    def __init__(
+        self,
+        rtf_parser: RTFParserService,
+        file_processing: FileProcessingService,
+        rich_output: RichOutput,
+    ) -> None:
+        self.rtf_parser = rtf_parser
+        self.file_processing = file_processing
+        self.rich_output = rich_output
+    
+    def execute(
+        self,
+        input_path: Path,
+        output_directory: Path,
+        preserve_structure: bool = True,
+    ) -> None:
+        """Execute RTF to text conversion workflow."""
+        try:
+            self.rich_output.header("Starting RTF to Text Conversion")
+            
+            # Discover RTF files
+            rtf_files = self._discover_rtf_files(input_path)
+            
+            if not rtf_files:
+                self.rich_output.warning("No RTF files found")
+                return
+            
+            # Process each RTF file
+            for rtf_file in rtf_files:
+                self._convert_single_file(
+                    rtf_file, 
+                    output_directory, 
+                    preserve_structure
+                )
+            
+            self.rich_output.success(
+                f"Successfully converted {len(rtf_files)} RTF files"
+            )
+            
+        except Exception as e:
+            self.rich_output.error(f"RTF to Text conversion failed: {e}")
+            raise
+    
+    def _discover_rtf_files(self, path: Path) -> list[Path]:
+        """Discover RTF files in the input path."""
+        if path.is_file() and path.suffix.lower() == '.rtf':
+            return [path]
+        elif path.is_dir():
+            return list(path.rglob('*.rtf'))
+        else:
+            return []
+    
+    def _convert_single_file(
+        self,
+        rtf_file: Path,
+        output_directory: Path,
+        preserve_structure: bool,
+    ) -> None:
+        """Convert a single RTF file to text."""
+        try:
+            # Convert RTF to text
+            text_content = self.rtf_parser.convert_rtf_to_text(rtf_file)
+            
+            # Determine output path
+            output_path = self._determine_output_path(
+                rtf_file, 
+                output_directory, 
+                preserve_structure
+            )
+            
+            # Ensure output directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Write text file
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(text_content)
+            
+            self.rich_output.info(f"Converted: {rtf_file} -> {output_path}")
+            
+        except Exception as e:
+            self.rich_output.error(f"Failed to convert {rtf_file}: {e}")
+            raise
+    
+    def _determine_output_path(
+        self,
+        rtf_file: Path,
+        output_directory: Path,
+        preserve_structure: bool,
+    ) -> Path:
+        """Determine the output path for the converted text file."""
+        if preserve_structure:
+            # Maintain directory structure
+            relative_path = rtf_file.relative_to(rtf_file.anchor)
+            output_path = output_directory / relative_path
+        else:
+            # Flat structure
+            output_path = output_directory / rtf_file.name
+        
+        # Change extension to .txt
+        return output_path.with_suffix('.txt')
+```
+
+##### Nipper Expander Services
+
+###### CSV Processing Service
+
+```python
+# src/kp_analysis_toolkit/nipper_expander/services/csv_processor.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Protocol
+
+import pandas as pd
+
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class CSVReader(Protocol):
+    """Protocol for CSV reading operations."""
+    
+    def read_csv(self, file_path: Path, **kwargs: Any) -> pd.DataFrame: ...
+    def validate_csv_structure(self, df: pd.DataFrame) -> bool: ...
+
+
+class DataExpander(Protocol):
+    """Protocol for data expansion operations."""
+    
+    def expand_ranges(self, df: pd.DataFrame, range_columns: list[str]) -> pd.DataFrame: ...
+    def expand_lists(self, df: pd.DataFrame, list_columns: list[str]) -> pd.DataFrame: ...
+
+
+class DataValidator(Protocol):
+    """Protocol for data validation."""
+    
+    def validate_required_columns(self, df: pd.DataFrame, required_columns: list[str]) -> bool: ...
+    def validate_data_types(self, df: pd.DataFrame, column_types: dict[str, type]) -> bool: ...
+
+
+class CSVProcessorService:
+    """Service for processing Nipper CSV files."""
+    
+    def __init__(
+        self,
+        csv_reader: CSVReader,
+        data_expander: DataExpander,
+        data_validator: DataValidator,
+        rich_output: RichOutput,
+    ) -> None:
+        self.csv_reader = csv_reader
+        self.data_expander = data_expander
+        self.data_validator = data_validator
+        self.rich_output = rich_output
+    
+    def process_nipper_csv(
+        self,
+        csv_file_path: Path,
+        expand_ranges: bool = True,
+        expand_lists: bool = True,
+    ) -> pd.DataFrame:
+        """Process Nipper CSV file with expansion options."""
+        try:
+            # Read CSV file
+            df = self.csv_reader.read_csv(csv_file_path)
+            
+            # Validate basic structure
+            if not self.csv_reader.validate_csv_structure(df):
+                raise ValueError(f"Invalid CSV structure: {csv_file_path}")
+            
+            # Validate required columns for Nipper format
+            required_columns = ['Source', 'Destination', 'Service', 'Action']
+            if not self.data_validator.validate_required_columns(df, required_columns):
+                raise ValueError(f"Missing required columns in: {csv_file_path}")
+            
+            # Expand ranges if requested
+            if expand_ranges:
+                range_columns = ['Source', 'Destination']
+                df = self.data_expander.expand_ranges(df, range_columns)
+            
+            # Expand lists if requested
+            if expand_lists:
+                list_columns = ['Service']
+                df = self.data_expander.expand_lists(df, list_columns)
+            
+            self.rich_output.success(f"Processed Nipper CSV: {csv_file_path}")
+            return df
+            
+        except Exception as e:
+            self.rich_output.error(f"Failed to process CSV {csv_file_path}: {e}")
+            raise
+```
+
+###### Main Nipper Expander Service
+
+```python
+# src/kp_analysis_toolkit/nipper_expander/service.py
+from __future__ import annotations
+
+from pathlib import Path
+
+from kp_analysis_toolkit.core.services.excel_export import ExcelExportService
+from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
+from kp_analysis_toolkit.nipper_expander.services.csv_processor import CSVProcessorService
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+
+class NipperExpanderService:
+    """Main service for the Nipper Expander module."""
+    
+    def __init__(
+        self,
+        csv_processor: CSVProcessorService,
+        excel_export: ExcelExportService,
+        file_processing: FileProcessingService,
+        rich_output: RichOutput,
+    ) -> None:
+        self.csv_processor = csv_processor
+        self.excel_export = excel_export
+        self.file_processing = file_processing
+        self.rich_output = rich_output
+    
+    def execute(
+        self,
+        input_path: Path,
+        output_path: Path,
+        expand_ranges: bool = True,
+        expand_lists: bool = True,
+    ) -> None:
+        """Execute Nipper expansion workflow."""
+        try:
+            self.rich_output.header("Starting Nipper Expansion")
+            
+            # Discover CSV files
+            csv_files = self._discover_csv_files(input_path)
+            
+            if not csv_files:
+                self.rich_output.warning("No CSV files found")
+                return
+            
+            # Process each CSV file
+            all_expanded_data = []
+            for csv_file in csv_files:
+                expanded_data = self.csv_processor.process_nipper_csv(
+                    csv_file,
+                    expand_ranges=expand_ranges,
+                    expand_lists=expand_lists,
+                )
+                all_expanded_data.append(expanded_data)
+            
+            # Combine all data if multiple files
+            if len(all_expanded_data) > 1:
+                import pandas as pd
+                combined_data = pd.concat(all_expanded_data, ignore_index=True)
+            else:
+                combined_data = all_expanded_data[0]
+            
+            # Export to Excel
+            self.excel_export.export_dataframe(
+                combined_data,
+                output_path,
+                sheet_name="Expanded_Rules",
+            )
+            
+            self.rich_output.success(
+                f"Successfully expanded {len(csv_files)} CSV files to {output_path}"
+            )
+            
+        except Exception as e:
+            self.rich_output.error(f"Nipper Expansion failed: {e}")
+            raise
+    
+    def _discover_csv_files(self, path: Path) -> list[Path]:
+        """Discover CSV files in the input path."""
+        if path.is_file() and path.suffix.lower() == '.csv':
+            return [path]
+        elif path.is_dir():
+            return list(path.glob('*.csv'))
+        else:
+            return []
 ```
 
 ### 4. Wiring and Configuration
