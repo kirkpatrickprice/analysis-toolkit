@@ -15,8 +15,6 @@ We will use the `dependency-injector` framework for several key reasons:
 5. **Minimal Performance Overhead**: Optimized for production use
 6. **Type Safety**: Full mypy support with proper type annotations
 
-## Proposed Architecture
-
 ## Directory Structure and File Organization {#directory-structure}
 
 The following directory structure shows the complete organization of containers, services, and related files for the dependency injection implementation:
@@ -458,7 +456,7 @@ class ApplicationContainer(containers.DeclarativeContainer):
 container = ApplicationContainer()
 ```
 
-### 3. Wiring and Configuration
+### 2. Wiring and Configuration
 
 ```python
 # src/kp_analysis_toolkit/core/containers/__init__.py
@@ -495,7 +493,7 @@ def configure_container(
     container.core.config.max_workers.from_value(max_workers or 4)
 ```
 
-### 4. Service Interfaces and Implementations
+### 3. Service Interfaces and Implementations
 
 Define clean service interfaces for all major components:
 
@@ -516,9 +514,9 @@ __all__ = [
 ]
 ```
 
-### 5. Updated CLI Integration with Hierarchical Containers
+### 4. Updated CLI Integration with Hierarchical Containers
 
-#### Main CLI with Hierarchical DI
+#### 1. Main CLI with Hierarchical DI
 
 ```python
 # src/kp_analysis_toolkit/cli.py (hierarchical DI integration)
@@ -747,97 +745,9 @@ class ExcelExportService:
             raise
 ```
 
-### Parallel Processing Service
+#### 2. Parallel Processing Service
 
-```python
-# src/kp_analysis_toolkit/core/services/parallel_processing.py
-from __future__ import annotations
-
-from pathlib import Path
-from typing import Any, Protocol
-
-from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
-from kp_analysis_toolkit.utils.rich_output import RichOutput
-
-
-class ExecutorFactory(Protocol):
-    """Protocol for executor factory."""
-    
-    def create_executor(self, max_workers: int) -> Any: ...
-
-
-class ProgressTracker(Protocol):
-    """Protocol for progress tracking."""
-    
-    def track_progress(self, total: int, description: str) -> Any: ...
-
-
-class InterruptHandler(Protocol):
-    """Protocol for interrupt handling."""
-    
-    def setup(self) -> None: ...
-    def cleanup(self) -> None: ...
-    def is_interrupted(self) -> bool: ...
-
-
-class ParallelProcessingService:
-    """Service for parallel processing operations."""
-    
-    def __init__(
-        self,
-        executor_factory: ExecutorFactory,
-        progress_tracker: ProgressTracker,
-        interrupt_handler: InterruptHandler,
-        rich_output: RichOutput,
-    ) -> None:
-        self.executor_factory = executor_factory
-        self.progress_tracker = progress_tracker
-        self.interrupt_handler = interrupt_handler
-        self.rich_output = rich_output
-    
-    def search_configs_with_processes(
-        self,
-        search_configs: list[SearchConfig],
-        systems: list[Systems],
-        max_workers: int,
-    ) -> list[SearchResults]:
-        """Execute multiple search configurations in parallel using processes."""
-        if not search_configs:
-            return []
-
-        # Engine now uses injected RichOutput instead of global singleton
-        # Calculate the maximum width needed for search config names
-        max_name_width = max(
-            len(getattr(config, "name", "Unknown")) for config in search_configs
-        )
-
-        results: list[SearchResults] = []
-        
-        # Set up interrupt handling with injected RichOutput
-        self.interrupt_handler.setup()
-
-        try:
-            with self.rich_output.progress(
-                show_eta=True,
-                show_percentage=True,
-                show_time_elapsed=True,
-            ) as progress:
-                # Implementation details for parallel processing...
-                pass
-                
-        finally:
-            self.interrupt_handler.cleanup()
-
-        return results
-```
-
-### 2. Container Directory Structure
-
-See the comprehensive [Directory Structure and File Organization](#directory-structure) section for complete details.
-
-### 3. Wiring and Configuration
+#### 3. Wiring and Configuration
 
 ```python
 # src/kp_analysis_toolkit/core/containers/__init__.py
@@ -874,7 +784,7 @@ def configure_container(
     container.core.config.max_workers.from_value(max_workers or 4)
 ```
 
-### 4. Service Interfaces and Implementations
+#### 4. Service Interfaces and Implementations
 
 Define clean service interfaces for all major components:
 
@@ -895,9 +805,9 @@ __all__ = [
 ]
 ```
 
-### 5. Updated CLI Integration with Hierarchical Containers
+#### 5. Updated CLI Integration with Hierarchical Containers
 
-#### Main CLI with Hierarchical DI
+##### Main CLI with Hierarchical DI
 
 ```python
 # src/kp_analysis_toolkit/cli.py (hierarchical DI integration)
@@ -1126,7 +1036,7 @@ class ExcelExportService:
             raise
 ```
 
-### Parallel Processing Service
+##### Parallel Processing Service
 
 ```python
 # src/kp_analysis_toolkit/core/services/parallel_processing.py
@@ -1212,7 +1122,7 @@ class ParallelProcessingService:
         return results
 ```
 
-#### Module-Specific Containers
+##### Module-Specific Containers
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/container.py
@@ -1363,7 +1273,7 @@ class RtfToTextContainer(containers.DeclarativeContainer):
     )
 ```
 
-#### Main Application Container
+##### Main Application Container
 
 ```python
 # src/kp_analysis_toolkit/core/containers/application.py
@@ -1420,17 +1330,6 @@ class ApplicationContainer(containers.DeclarativeContainer):
 # Global container instance
 container = ApplicationContainer()
 ```
-
-#### Container Organization and Benefits
-
-This hierarchical approach provides several key benefits:
-
-1. **Separation of Concerns**: Each container has a single, clear responsibility
-2. **Module Independence**: Process scripts services are only loaded when the process scripts module is used
-3. **Maintainability**: Changes to one module don't affect others
-4. **Testing**: Each container can be tested independently
-5. **Performance**: Only necessary services are instantiated
-6. **Team Development**: Different teams can work on different containers without conflicts
 
 ### 3. Wiring and Configuration
 
