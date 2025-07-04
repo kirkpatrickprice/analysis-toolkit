@@ -220,7 +220,11 @@ Create a modular dependency injection system with clear separation of concerns:
 
 ### 1. Core Containers
 
-Containers providing core services used throughout the application
+Containers providing core services used throughout the application, including:
+* `ExcelExportService` for basic Excel output handling common to all modules
+* `FileProcessingService` for file-related services common to all modules
+* `ParallelProcessingService` for concurrency services which could be used by specific modules
+* `RichOutput` for handling enhanced text display throughout the entire toolkit
 
 #### Core Container (Shared Services)
 
@@ -362,6 +366,12 @@ Containers to implement for specific modules
 
 #### Process Scripts Containers
 
+Process Scripts-specific services include:
+* SystemDetectionService to identify the operating system, producer and other key details about discovered collection script result files
+* SearchConfigService to process search configurations as defined in the module
+* SearchEngineService to conduct searches on collection script result files
+* EnhancedExcelExportService to extend the `core` ExcelExportService' capabilities with additional functionality required by `process_scripts`
+
 ```python
 # src/kp_analysis_toolkit/process_scripts/container.py
 from __future__ import annotations
@@ -493,6 +503,9 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
 
 #### Nipper Expander Containers
 
+Nipper Expander provides the following capabilities:
+
+
 ```python
 # src/kp_analysis_toolkit/nipper_expander/container.py
 from __future__ import annotations
@@ -521,6 +534,8 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
 ```
 
 #### RTF to Text Containers
+
+
 
 ```python
 # src/kp_analysis_toolkit/rtf_to_text/container.py
