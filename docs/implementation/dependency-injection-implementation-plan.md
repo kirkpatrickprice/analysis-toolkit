@@ -1325,7 +1325,7 @@ class SystemDetectionService:
             raise
 ```
 
-###### Mai#n Process Scripts Service
+###### Main Process Scripts Service
 
 ```python
 # src/kp_analysis_toolkit/process_scripts/service.py
