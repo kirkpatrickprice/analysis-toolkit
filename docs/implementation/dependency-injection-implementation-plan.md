@@ -149,6 +149,75 @@ This pattern ensures that:
 
 Create a modular dependency injection system with clear separation of concerns:
 
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                APPLICATION CONTAINER                                    │
+│                                                                                         │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐                      │
+│  │   CORE          │    │ FILE PROCESSING │    │  EXCEL EXPORT   │                      │
+│  │   CONTAINER     │    │   CONTAINER     │    │   CONTAINER     │                      │
+│  │                 │    │                 │    │                 │                      │
+│  │ ┌─────────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │                      │
+│  │ │RichOutput   │ │    │ │FileProcess  │ │    │ │ExcelExport  │ │                      │
+│  │ │Service      │ │    │ │Service      │ │    │ │Service      │ │                      │
+│  │ └─────────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │                      │
+│  │ ┌─────────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │                      │
+│  │ │Parallel     │ │    │ │Encoding     │ │    │ │Workbook     │ │                      │
+│  │ │Processing   │ │    │ │Detector     │ │    │ │Engine       │ │                      │
+│  │ │Service      │ │    │ │             │ │    │ │             │ │                      │
+│  │ └─────────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │                      │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘                      │
+│             │                       │                       │                           │
+│             └───────────────────────┼───────────────────────┼────────────────────────┐  │
+│                                     │                       │                        │  │
+└─────────────────────────────────────┼───────────────────────┼────────────────────────┼──┘
+                                      │                       │                        │
+              ┌───────────────────────┼───────────────────────┼────────────────────────┼─────┐
+              │                       │                       │                        │     │
+              │                       ▼                       ▼                        ▼     │
+              │  ┌───────────────────────────────────────────────────────────────────────────┴┐
+              │  │                     MODULE CONTAINERS                                   |  │
+              │  │                                                                         |  │
+              │  │ ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐        │  │
+              │  │ │ PROCESS SCRIPTS  │  │ NIPPER EXPANDER  │  │   RTF TO TEXT    │        │  │
+              │  │ │    CONTAINER     │  │    CONTAINER     │  │    CONTAINER     │        │  │
+              │  │ │                  │  │                  │  │                  │        │  │
+              │  │ │ ┌──────────────┐ │  │ ┌──────────────┐ │  │ ┌──────────────┐ │        │  │
+              │  │ │ │ProcessScripts│ │  │ │NipperExpander│ │  │ │RtfToText     │ │        │  │
+              │  │ │ │Service       │ │  │ │Service       │ │  │ │Service       │ │        │  │
+              │  │ │ └──────────────┘ │  │ └──────────────┘ │  │ └──────────────┘ │        │  │
+              │  │ │ ┌──────────────┐ │  │                  │  │ ┌──────────────┐ │        │  │
+              │  │ │ │SearchEngine  │ │  │                  │  │ │RTFParser     │ │        │  │
+              │  │ │ │Service       │ │  │                  │  │ │Service       │ │        │  │
+              │  │ │ └──────────────┘ │  │                  │  │ └──────────────┘ │        │  │
+              │  │ │ ┌──────────────┐ │  │                  │  │                  │        │  │
+              │  │ │ │Enhanced      │ │  │                  │  │                  │        │  │
+              │  │ │ │ExcelExport   │ │  │                  │  │                  │        │  │
+              │  │ │ │Service       │ │  │                  │  │                  │        │  │
+              │  │ │ └──────────────┘ │  │                  │  │                  │        │  │
+              │  │ └──────────────────┘  └──────────────────┘  └──────────────────┘        │  │
+              │  └─────────────────────────────────────────────────────────────────────────┘  │
+              │                                                                               │
+              └───────────────────────────────────────────────────────────────────────────────┘
+```
+
+```
+                                         DEPENDENCY FLOW
+                                            
+                    CLI ──► Application Container ──► Core Containers ──► Module Containers
+                     │                   │                    │                    │
+                     │                   │                    │                    │
+                     ▼                   ▼                    ▼                    ▼
+                Configuration      Cross-Module          Shared Service      Module Service
+                   Setup            Wiring              Instantiation        Instantiation
+                     │                   │                    │                    │
+                     │                   │                    │                    │
+                     └───────────────────┴────────────────────┴────────────────────┘
+                                                      │
+                                                      ▼
+                                             Ready for Execution
+```
+
 ### 1. Core Containers
 
 Containers providing core services used throughout the application
@@ -481,6 +550,24 @@ class RtfToTextContainer(containers.DeclarativeContainer):
 ### Module-Level Wiring Functions (Distributed Wiring)
 
 Each module is responsible for wiring its own dependencies. These functions ensure that module containers are properly wired for dependency injection when the module is used.
+
+```
+                                        WIRING STRATEGY
+                                            
+              ┌────────────────────────────────────────────────────────────────────────────────┐
+              │                          DISTRIBUTED WIRING                                    │
+              │                                                                                │
+              │  Application Container      │  Module Containers    │  Core Containers         │
+              │  ─────────────────────      │  ─────────────────    │  ───────────────         │
+              │                             │                       │                          │
+              │  • Orchestrates modules     │  • Wire own services  │  • Wire shared services  │
+              │  • Manages cross-module     │  • Internal DI setup  │  • Provide protocols     │
+              │    dependencies             │  • Module-specific    │  • Singleton management  │
+              │  • Calls module wiring      │    implementations    │  • Configuration mgmt    │
+              │    functions                │  • Self-contained     │                          │
+              │                             │    testing            │                          │
+              └────────────────────────────────────────────────────────────────────────────────┘
+```
 
 #### Process Scripts Module Wiring
 
@@ -1718,63 +1805,6 @@ class NipperExpanderService:
             return []
 ```
 
-##### Service Extension Pattern for Module-Specific Requirements
-
-The distributed wiring architecture supports elegant extension of core services for module-specific requirements. This pattern demonstrates how `process_scripts` extends the basic Excel export capabilities without modifying core services.
-
-###### Extension Strategy
-
-**✅ Core Service Provides Foundation:**
-- `ExcelExportService` in core provides basic Excel functionality
-- Uses protocols for extensibility points
-- Handles common use cases for all modules
-
-**✅ Module Service Extends Capabilities:**
-- `EnhancedExcelExportService` in process_scripts adds specialized features
-- Composes the base service rather than inheriting from it
-- Adds process_scripts-specific functionality through dependency injection
-
-**✅ Container Orchestration:**
-- Process scripts container wires enhanced service with base service as dependency
-- Other modules continue using base service directly
-- No breaking changes to core architecture
-
-###### Key Benefits
-
-1. **Separation of Concerns**: Core services remain focused on common functionality
-2. **Module Independence**: Each module can extend services without affecting others  
-3. **Composition over Inheritance**: Uses dependency injection for flexible service composition
-4. **Testability**: Enhanced services can be tested independently with mocked base services
-5. **Backward Compatibility**: Base service interface remains unchanged
-
-###### Implementation Pattern
-
-```python
-# Core service provides foundation
-class CoreExcelService:
-    def basic_export(self, data, path): ...
-
-# Module extends through composition
-class EnhancedExcelService:
-    def __init__(self, base_service: CoreExcelService):
-        self.base_service = base_service
-    
-    def enhanced_export(self, data, path, **advanced_options):
-        # Use base service + add enhancements
-        ...
-
-# Container wires the composition
-enhanced_service = providers.Factory(
-    EnhancedExcelService,
-    base_service=core_excel_service  # Inject base service
-)
-```
-
-This pattern can be applied to any core service that needs module-specific enhancements, such as:
-- Enhanced file processing for specific file types
-- Specialized progress tracking for long-running operations  
-- Module-specific validation or transformation logic
-
 ### 4. Wiring and Configuration (Distributed Wiring)
 
 The application uses distributed wiring where each module is responsible for its own dependency injection setup. The application container orchestrates cross-module dependencies but does not directly wire individual module internals.
@@ -1863,3 +1893,112 @@ This pattern ensures that:
 - Cross-module dependencies are explicitly managed by the application container
 - Module teams can modify their DI setup without affecting other modules
 - The wiring logic is distributed but follows consistent patterns
+
+#### Service Extension Pattern for Module-Specific Requirements
+
+The distributed wiring architecture supports elegant extension of core services for module-specific requirements. To demonstrate, below we use this pattern to extend the `core` Excel export capabilities for use in `process_scripts` without modifying core services.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                              Service Extension Example                              │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────┐         ┌───────────────────────────────────────────────┐
+│       Core Layer        │         │              Process Scripts Layer            │
+│                         │         │                                               │
+│  ┌─────────────────┐    │         │  ┌─────────────────────────────────────────┐  │
+│  │ ExcelExportSvc  │    │         │  │    EnhancedExcelExportService           │  │
+│  │                 │    │         │  │                                         │  │
+│  │ • basic_export()│◄───┼─────────┼──┤ • base_service: ExcelExportService      │  │
+│  │ • format_sheet()│    │         │  │ • export_search_results()               │  │
+│  │ • create_table()│    │         │  │ • export_comparison_report()            │  │
+│  └─────────────────┘    │         │  │ • create_summary_data()                 │  │
+│                         │         │  │ • apply_conditional_formatting()        │  │
+│  ┌─────────────────┐    │         │  └─────────────────────────────────────────┘  │
+│  │ WorkbookEngine  │    │         │                        ▲                      │
+│  └─────────────────┘    │         │                        │                      │
+│                         │         │                        │ Dependency           │
+│  ┌─────────────────┐    │         │  ┌─────────────────────────────────────────┐  │
+│  │ ExcelFormatter  │    │         │  │    AdvancedWorksheetBuilder             │  │
+│  └─────────────────┘    │         │  │                                         │  │
+│                         │         │  │ • create_summary_worksheet()            │  │
+│  ┌─────────────────┐    │         │  │ • create_detailed_worksheet()           │  │
+│  │ TableGenerator  │    │         │  │ • add_charts_and_graphs()               │  │
+│  └─────────────────┘    │         │  └─────────────────────────────────────────┘  │
+└─────────────────────────┘         │                                               │
+                                    │  ┌─────────────────────────────────────────┐  │
+    Used by ALL modules             │  │    ConditionalFormattingEngine          │  │
+                                    │  │                                         │  │
+                                    │  │ • apply_severity_formatting()           │  │
+                                    │  │ • apply_status_formatting()             │  │
+                                    │  │ • apply_threshold_highlighting()        │  │
+                                    │  └─────────────────────────────────────────┘  │
+                                    │                                               │
+                                    │           Used ONLY by process_scripts        │
+                                    └───────────────────────────────────────────────┘
+
+                                    ┌─────────────────────────────────────┐
+                                    │          Dependency Injection       │
+                                    │                                     │
+                                    │   enhanced_service = Factory(       │
+                                    │     EnhancedExcelExportService,     │
+                                    │     base_service=core.excel_export, │
+                                    │     worksheet_builder=...,          │
+                                    │     conditional_formatter=...       │
+                                    │   )                                 │
+                                    └─────────────────────────────────────┘
+```
+
+
+##### Extension Strategy
+
+**✅ Core Service Provides Foundation:**
+- `ExcelExportService` in core provides basic Excel functionality
+- Uses protocols for extensibility points
+- Handles common use cases for all modules
+
+**✅ Module Service Extends Capabilities:**
+- `EnhancedExcelExportService` in process_scripts adds specialized features
+- Composes the base service rather than inheriting from it
+- Adds process_scripts-specific functionality through dependency injection
+
+**✅ Container Orchestration:**
+- Process scripts container wires enhanced service with base service as dependency
+- Other modules continue using base service directly
+- No breaking changes to core architecture
+
+##### Key Benefits
+
+1. **Separation of Concerns**: Core services remain focused on common functionality
+2. **Module Independence**: Each module can extend services without affecting others  
+3. **Composition over Inheritance**: Uses dependency injection for flexible service composition
+4. **Testability**: Enhanced services can be tested independently with mocked base services
+5. **Backward Compatibility**: Base service interface remains unchanged
+
+##### Implementation Pattern
+
+```python
+# Core service provides foundation
+class CoreExcelService:
+    def basic_export(self, data, path): ...
+
+# Module extends through composition
+class EnhancedExcelService:
+    def __init__(self, base_service: CoreExcelService):
+        self.base_service = base_service
+    
+    def enhanced_export(self, data, path, **advanced_options):
+        # Use base service + add enhancements
+        ...
+
+# Container wires the composition
+enhanced_service = providers.Factory(
+    EnhancedExcelService,
+    base_service=core_excel_service  # Inject base service
+)
+```
+
+This pattern can be applied to any core service that needs module-specific enhancements, such as:
+- Enhanced file processing for specific file types
+- Specialized progress tracking for long-running operations  
+- Module-specific validation or transformation logic
