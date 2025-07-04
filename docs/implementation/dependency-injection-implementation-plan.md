@@ -379,13 +379,43 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         rich_output=core.rich_output,
     )
 
+    # Enhanced Excel Export Services (process_scripts specific)
+    advanced_worksheet_builder = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.excel_export.AdvancedWorksheetBuilder",
+        base_workbook_engine=excel_export.workbook_engine,
+        rich_output=core.rich_output,
+    )
+    
+    multi_sheet_formatter = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.excel_export.MultiSheetFormatter",
+        base_formatter=excel_export.excel_formatter,
+    )
+    
+    conditional_formatting_engine = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.excel_export.ConditionalFormattingEngine"
+    )
+    
+    data_validation_engine = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.excel_export.DataValidationEngine"
+    )
+    
+    enhanced_excel_export_service = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.excel_export.EnhancedExcelExportService",
+        base_excel_service=excel_export.excel_export_service,
+        worksheet_builder=advanced_worksheet_builder,
+        multi_sheet_formatter=multi_sheet_formatter,
+        conditional_formatter=conditional_formatting_engine,
+        data_validator=data_validation_engine,
+        rich_output=core.rich_output,
+    )
+
     # Main Module Service
     process_scripts_service = providers.Factory(
         "kp_analysis_toolkit.process_scripts.service.ProcessScriptsService",
         search_engine=search_engine_service,
         parallel_processing=core.parallel_processing_service,
         system_detection=system_detection_service,
-        excel_export=excel_export.excel_export_service,
+        excel_export=enhanced_excel_export_service,  # Use enhanced service instead of base
         file_processing=file_processing.file_processing_service,
         search_config=search_config_service,
         rich_output=core.rich_output,
@@ -721,7 +751,7 @@ def initialize_dependency_injection(
     # 2. Wire the application container
     wire_application_container()
     
-    # 3. Wire all module containers
+    # 3. Wire all module containers  
     wire_module_containers()
 ```
 
@@ -1208,6 +1238,7 @@ from kp_analysis_toolkit.core.services.parallel_processing import ParallelProces
 from kp_analysis_toolkit.process_scripts.services.search_engine import SearchEngineService
 from kp_analysis_toolkit.process_scripts.services.search_config import SearchConfigService
 from kp_analysis_toolkit.process_scripts.services.system_detection import SystemDetectionService
+from kp_analysis_toolkit.process_scripts.services.excel_export import EnhancedExcelExportService
 from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
@@ -1219,7 +1250,7 @@ class ProcessScriptsService:
         search_engine: SearchEngineService,
         parallel_processing: ParallelProcessingService,
         system_detection: SystemDetectionService,
-        excel_export: ExcelExportService,
+        excel_export: EnhancedExcelExportService,  # Use enhanced service
         file_processing: FileProcessingService,
         search_config: SearchConfigService,
         rich_output: RichOutput,
@@ -1277,8 +1308,31 @@ class ProcessScriptsService:
         pass
     
     def _export_results(self, results: list[Any], output_path: Path) -> None:
-        """Export search results to Excel format."""
-        # Implementation would format and export results
+        """Export search results to Excel format using enhanced capabilities."""
+        try:
+            # Use enhanced Excel export service with process scripts specific features
+            self.excel_export.export_search_results(
+                search_results=results,
+                output_path=output_path,
+                include_summary=True,  # Create summary sheet
+                apply_formatting=True,  # Apply conditional formatting
+            )
+            
+            # Also create a simplified version for quick review
+            simplified_path = output_path.with_name(f"simplified_{output_path.name}")
+            self.excel_export.base_excel_service.export_dataframe(
+                data=self._create_simplified_dataframe(results),
+                output_path=simplified_path,
+                sheet_name="Quick View"
+            )
+            
+        except Exception as e:
+            self.rich_output.error(f"Failed to export results: {e}")
+            raise
+    
+    def _create_simplified_dataframe(self, results: list[Any]) -> Any:
+        """Create a simplified DataFrame for quick review."""
+        # Implementation would create a condensed view of the results
         pass
 ```
 
@@ -1663,6 +1717,63 @@ class NipperExpanderService:
         else:
             return []
 ```
+
+## Service Extension Pattern for Module-Specific Requirements
+
+The distributed wiring architecture supports elegant extension of core services for module-specific requirements. This pattern demonstrates how `process_scripts` extends the basic Excel export capabilities without modifying core services.
+
+### Extension Strategy
+
+**✅ Core Service Provides Foundation:**
+- `ExcelExportService` in core provides basic Excel functionality
+- Uses protocols for extensibility points
+- Handles common use cases for all modules
+
+**✅ Module Service Extends Capabilities:**
+- `EnhancedExcelExportService` in process_scripts adds specialized features
+- Composes the base service rather than inheriting from it
+- Adds process_scripts-specific functionality through dependency injection
+
+**✅ Container Orchestration:**
+- Process scripts container wires enhanced service with base service as dependency
+- Other modules continue using base service directly
+- No breaking changes to core architecture
+
+### Key Benefits
+
+1. **Separation of Concerns**: Core services remain focused on common functionality
+2. **Module Independence**: Each module can extend services without affecting others  
+3. **Composition over Inheritance**: Uses dependency injection for flexible service composition
+4. **Testability**: Enhanced services can be tested independently with mocked base services
+5. **Backward Compatibility**: Base service interface remains unchanged
+
+### Implementation Pattern
+
+```python
+# Core service provides foundation
+class CoreExcelService:
+    def basic_export(self, data, path): ...
+
+# Module extends through composition
+class EnhancedExcelService:
+    def __init__(self, base_service: CoreExcelService):
+        self.base_service = base_service
+    
+    def enhanced_export(self, data, path, **advanced_options):
+        # Use base service + add enhancements
+        ...
+
+# Container wires the composition
+enhanced_service = providers.Factory(
+    EnhancedExcelService,
+    base_service=core_excel_service  # Inject base service
+)
+```
+
+This pattern can be applied to any core service that needs module-specific enhancements, such as:
+- Enhanced file processing for specific file types
+- Specialized progress tracking for long-running operations  
+- Module-specific validation or transformation logic
 
 ### 4. Wiring and Configuration (Distributed Wiring)
 
