@@ -1718,11 +1718,11 @@ class NipperExpanderService:
             return []
 ```
 
-## Service Extension Pattern for Module-Specific Requirements
+##### Service Extension Pattern for Module-Specific Requirements
 
 The distributed wiring architecture supports elegant extension of core services for module-specific requirements. This pattern demonstrates how `process_scripts` extends the basic Excel export capabilities without modifying core services.
 
-### Extension Strategy
+###### Extension Strategy
 
 **✅ Core Service Provides Foundation:**
 - `ExcelExportService` in core provides basic Excel functionality
@@ -1739,7 +1739,7 @@ The distributed wiring architecture supports elegant extension of core services 
 - Other modules continue using base service directly
 - No breaking changes to core architecture
 
-### Key Benefits
+###### Key Benefits
 
 1. **Separation of Concerns**: Core services remain focused on common functionality
 2. **Module Independence**: Each module can extend services without affecting others  
@@ -1747,7 +1747,7 @@ The distributed wiring architecture supports elegant extension of core services 
 4. **Testability**: Enhanced services can be tested independently with mocked base services
 5. **Backward Compatibility**: Base service interface remains unchanged
 
-### Implementation Pattern
+###### Implementation Pattern
 
 ```python
 # Core service provides foundation
