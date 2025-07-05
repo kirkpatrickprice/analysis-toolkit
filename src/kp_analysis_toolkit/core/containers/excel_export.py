@@ -12,20 +12,20 @@ class ExcelExportContainer(containers.DeclarativeContainer):
     core = providers.DependenciesContainer()
 
     # Excel Components
-    workbook_engine = providers.Factory(
+    workbook_engine: providers.Factory = providers.Factory(
         "kp_analysis_toolkit.utils.excel_utils.OpenpyxlEngine",
     )
 
-    excel_formatter = providers.Factory(
+    excel_formatter: providers.Factory = providers.Factory(
         "kp_analysis_toolkit.utils.excel_utils.StandardExcelFormatter",
     )
 
-    table_generator = providers.Factory(
+    table_generator: providers.Factory = providers.Factory(
         "kp_analysis_toolkit.utils.excel_utils.StandardTableGenerator",
     )
 
     # Main Service
-    excel_export_service = providers.Factory(
+    excel_export_service: providers.Factory[ExcelExportService] = providers.Factory(
         ExcelExportService,
         workbook_engine=workbook_engine,
         formatter=excel_formatter,

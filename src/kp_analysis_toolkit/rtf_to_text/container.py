@@ -1,6 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dependency_injector import containers, providers
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.containers.core import CoreContainer
+    from kp_analysis_toolkit.core.containers.file_processing import (
+        FileProcessingContainer,
+    )
 
 
 class RtfToTextContainer(containers.DeclarativeContainer):
@@ -37,7 +45,7 @@ def wire_rtf_to_text_container() -> None:
             "kp_analysis_toolkit.rtf_to_text.cli",
             "kp_analysis_toolkit.rtf_to_text.service",
             "kp_analysis_toolkit.rtf_to_text.process_rtf",
-        ]
+        ],
     )
 
 

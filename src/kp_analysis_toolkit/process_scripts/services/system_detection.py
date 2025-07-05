@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
-from kp_analysis_toolkit.utils.rich_output import RichOutput
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
 class OSDetector(Protocol):

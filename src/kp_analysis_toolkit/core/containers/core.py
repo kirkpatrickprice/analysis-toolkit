@@ -12,7 +12,7 @@ class CoreContainer(containers.DeclarativeContainer):
     config = providers.Configuration()
 
     # Core Services
-    rich_output = providers.Singleton(
+    rich_output: providers.Singleton[RichOutput] = providers.Singleton(
         RichOutput,
         verbose=config.verbose,
         quiet=config.quiet,

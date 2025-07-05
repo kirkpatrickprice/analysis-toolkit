@@ -14,34 +14,34 @@ class ApplicationContainer(containers.DeclarativeContainer):
     """Main application container that wires all module containers together."""
 
     # Core containers
-    core = providers.Container(CoreContainer)
+    core: providers.Container[CoreContainer] = providers.Container(CoreContainer)
 
-    file_processing = providers.Container(
+    file_processing: providers.Container[FileProcessingContainer] = providers.Container(
         FileProcessingContainer,
         core=core,
     )
 
-    excel_export = providers.Container(
+    excel_export: providers.Container[ExcelExportContainer] = providers.Container(
         ExcelExportContainer,
         core=core,
     )
 
     # Module containers
-    process_scripts = providers.Container(
+    process_scripts: providers.Container[ProcessScriptsContainer] = providers.Container(
         ProcessScriptsContainer,
         core=core,
         file_processing=file_processing,
         excel_export=excel_export,
     )
 
-    nipper_expander = providers.Container(
+    nipper_expander: providers.Container[NipperExpanderContainer] = providers.Container(
         NipperExpanderContainer,
         core=core,
         file_processing=file_processing,
         excel_export=excel_export,
     )
 
-    rtf_to_text = providers.Container(
+    rtf_to_text: providers.Container[RtfToTextContainer] = providers.Container(
         RtfToTextContainer,
         core=core,
         file_processing=file_processing,
@@ -151,7 +151,9 @@ def initialize_dependency_injection(
 
     """
     # 1. Configure the application container
-    configure_application_container(verbose, quiet, max_workers)
+    configure_application_container(
+        verbose=verbose, quiet=quiet, max_workers=max_workers
+    )
 
     # 2. Wire the application container
     wire_application_container()

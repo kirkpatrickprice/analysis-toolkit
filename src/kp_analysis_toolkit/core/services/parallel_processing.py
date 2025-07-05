@@ -53,5 +53,5 @@ class ParallelProcessingService:
         tasks: list[Callable],
         max_workers: int,
         description: str = "Processing...",
-    ) -> list[Any]:
+    ) -> None:
         """Generic parallel execution with progress tracking."""

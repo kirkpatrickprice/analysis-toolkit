@@ -31,13 +31,13 @@ from kp_analysis_toolkit.utils.rich_output import RichOutput, get_rich_output
 )
 def process_command_line(_infile: str, source_files_path: str) -> None:
     """Process a Nipper CSV file and expand it into a more readable format."""
-    rich_output = get_rich_output()
+    rich_output: RichOutput = get_rich_output()
 
     # Create a program configuration object
     try:
         program_config: ProgramConfig = ProgramConfig(
             input_file=get_input_file(_infile, source_files_path),
-            source_files_path=source_files_path,
+            source_files_path=source_files_path,  # type: ignore  # noqa: PGH003
         )
     except ValueError as e:
         rich_output.error(f"Error validating configuration: {e}")

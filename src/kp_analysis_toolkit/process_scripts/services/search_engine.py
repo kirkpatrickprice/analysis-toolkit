@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
+
+from kp_analysis_toolkit.core.services.parallel_processing import (
+    ParallelProcessingService,
+)
+from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 if TYPE_CHECKING:
+    import re
     from pathlib import Path
 
     from kp_analysis_toolkit.core.services.parallel_processing import (
@@ -17,7 +23,7 @@ if TYPE_CHECKING:
 class PatternCompiler(Protocol):
     """Protocol for regex pattern compilation."""
 
-    def compile_pattern(self, pattern: str) -> Any: ...
+    def compile_pattern(self, pattern: str) -> re.Pattern[str]: ...
     def validate_pattern(self, pattern: str) -> bool: ...
 
 
@@ -48,11 +54,11 @@ class SearchEngineService:
         parallel_processing: ParallelProcessingService,
         rich_output: RichOutput,
     ) -> None:
-        self.pattern_compiler = pattern_compiler
-        self.field_extractor = field_extractor
-        self.result_processor = result_processor
-        self.parallel_processing = parallel_processing
-        self.rich_output = rich_output
+        self.pattern_compiler: PatternCompiler = pattern_compiler
+        self.field_extractor: FieldExtractor = field_extractor
+        self.result_processor: ResultProcessor = result_processor
+        self.parallel_processing: ParallelProcessingService = parallel_processing
+        self.rich_output: RichOutput = rich_output
 
     def search_file(
         self,
@@ -63,7 +69,7 @@ class SearchEngineService:
         # Implementation would handle file searching with pattern matching
         # and field extraction using injected dependencies
 
-    def search_configs_with_processes(
+    def search_configs_in_parallel(
         self,
         search_configs: list[SearchConfig],
         systems: list[Systems],

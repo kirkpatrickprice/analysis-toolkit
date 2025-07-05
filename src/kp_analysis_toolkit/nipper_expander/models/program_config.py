@@ -26,6 +26,9 @@ class ProgramConfig(KPATBaseModel):
     @property
     def output_file(self) -> Path:
         """Return the path for the expanded XLSX output file."""
+        # Type assertion since validator ensures input_file is never None
+        assert self.input_file is not None, "input_file is None"
+
         # Get the input file's stem (filename without extension)
         stem: str = self.input_file.stem
 

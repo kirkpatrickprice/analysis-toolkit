@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from kp_analysis_toolkit.utils.rich_output import RichOutput
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
 class RTFDecoder(Protocol):
@@ -37,10 +39,10 @@ class RTFParserService:
         encoding_converter: EncodingConverter,
         rich_output: RichOutput,
     ) -> None:
-        self.rtf_decoder = rtf_decoder
-        self.text_cleaner = text_cleaner
-        self.encoding_converter = encoding_converter
-        self.rich_output = rich_output
+        self.rtf_decoder: RTFDecoder = rtf_decoder
+        self.text_cleaner: TextCleaner = text_cleaner
+        self.encoding_converter: EncodingConverter = encoding_converter
+        self.rich_output: RichOutput = rich_output
 
     def convert_rtf_to_text(
         self,
@@ -51,26 +53,28 @@ class RTFParserService:
         try:
             # Validate RTF format
             if not self.rtf_decoder.validate_rtf_format(rtf_file_path):
-                raise ValueError(f"Invalid RTF format: {rtf_file_path}")
+                message: str = f"Invalid RTF format: {rtf_file_path}"
+                raise ValueError(message)  # noqa: TRY301
 
             # Read and decode RTF content
-            with open(rtf_file_path, "rb") as f:
-                rtf_content = f.read()
+            with rtf_file_path.open("rb") as f:
+                rtf_content: bytes = f.read()
 
-            raw_text = self.rtf_decoder.decode_rtf(rtf_content)
+            raw_text: str = self.rtf_decoder.decode_rtf(rtf_content)
 
             # Clean the extracted text
-            cleaned_text = self.text_cleaner.clean_text(raw_text)
+            cleaned_text: str = self.text_cleaner.clean_text(raw_text)
 
             # Convert encoding if needed
-            final_text = self.encoding_converter.convert_encoding(
+            final_text: str = self.encoding_converter.convert_encoding(
                 cleaned_text,
                 output_encoding,
             )
 
             self.rich_output.success(f"Successfully converted RTF: {rtf_file_path}")
-            return final_text
 
         except Exception as e:
             self.rich_output.error(f"Failed to convert RTF file {rtf_file_path}: {e}")
             raise
+        else:
+            return final_text

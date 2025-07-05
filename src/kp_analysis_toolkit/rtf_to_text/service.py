@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
-from kp_analysis_toolkit.rtf_to_text.services.rtf_parser import RTFParserService
-from kp_analysis_toolkit.utils.rich_output import RichOutput
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
+    from kp_analysis_toolkit.rtf_to_text.services.rtf_parser import RTFParserService
+    from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
 class RtfToTextService:
@@ -24,6 +28,7 @@ class RtfToTextService:
         self,
         input_path: Path,
         output_directory: Path,
+        *,
         preserve_structure: bool = True,
     ) -> None:
         """Execute RTF to text conversion workflow."""
@@ -65,15 +70,16 @@ class RtfToTextService:
         self,
         rtf_file: Path,
         output_directory: Path,
+        *,
         preserve_structure: bool,
     ) -> None:
         """Convert a single RTF file to text."""
         try:
             # Convert RTF to text
-            text_content = self.rtf_parser.convert_rtf_to_text(rtf_file)
+            text_content: str = self.rtf_parser.convert_rtf_to_text(rtf_file)
 
             # Determine output path
-            output_path = self._determine_output_path(
+            output_path: Path = self._determine_output_path(
                 rtf_file,
                 output_directory,
                 preserve_structure,
@@ -83,7 +89,7 @@ class RtfToTextService:
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Write text file
-            with open(output_path, "w", encoding="utf-8") as f:
+            with output_path.open("w", encoding="utf-8") as f:
                 f.write(text_content)
 
             self.rich_output.info(f"Converted: {rtf_file} -> {output_path}")
@@ -96,16 +102,17 @@ class RtfToTextService:
         self,
         rtf_file: Path,
         output_directory: Path,
+        *,
         preserve_structure: bool,
     ) -> Path:
         """Determine the output path for the converted text file."""
         if preserve_structure:
             # Maintain directory structure
-            relative_path = rtf_file.relative_to(rtf_file.anchor)
-            output_path = output_directory / relative_path
+            relative_path: Path = rtf_file.relative_to(rtf_file.anchor)
+            output_path: Path = output_directory / relative_path
         else:
             # Flat structure
-            output_path = output_directory / rtf_file.name
+            output_path: Path = output_directory / rtf_file.name
 
         # Change extension to .txt
         return output_path.with_suffix(".txt")

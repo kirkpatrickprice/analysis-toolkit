@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from kp_analysis_toolkit.utils.rich_output import RichOutput
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -37,10 +39,10 @@ class FileProcessingService:
         file_validator: FileValidator,
         rich_output: RichOutput,
     ) -> None:
-        self.encoding_detector = encoding_detector
-        self.hash_generator = hash_generator
-        self.file_validator = file_validator
-        self.rich_output = rich_output
+        self.encoding_detector: EncodingDetector = encoding_detector
+        self.hash_generator: HashGenerator = hash_generator
+        self.file_validator: FileValidator = file_validator
+        self.rich_output: RichOutput = rich_output
 
     def process_file(self, file_path: Path) -> dict[str, str | None]:
         """Process a file and return metadata."""
@@ -48,12 +50,12 @@ class FileProcessingService:
             self.rich_output.error(f"File not found: {file_path}")
             return {}
 
-        encoding = self.encoding_detector.detect_encoding(file_path)
+        encoding: str | None = self.encoding_detector.detect_encoding(file_path)
         if encoding is None:
             self.rich_output.warning(f"Could not detect encoding for: {file_path}")
             return {}
 
-        file_hash = self.hash_generator.generate_hash(file_path)
+        file_hash: str = self.hash_generator.generate_hash(file_path)
 
         return {
             "encoding": encoding,

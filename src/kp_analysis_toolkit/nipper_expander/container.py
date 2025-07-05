@@ -1,6 +1,15 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dependency_injector import containers, providers
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.containers.core import CoreContainer
+    from kp_analysis_toolkit.core.containers.excel_export import ExcelExportContainer
+    from kp_analysis_toolkit.core.containers.file_processing import (
+        FileProcessingContainer,
+    )
 
 
 class NipperExpanderContainer(containers.DeclarativeContainer):
@@ -15,7 +24,7 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
     # (Currently nipper expander only uses shared services)
 
     # Main Module Service
-    nipper_expander_service = providers.Factory(
+    nipper_expander_service: providers.Factory = providers.Factory(
         "kp_analysis_toolkit.nipper_expander.service.NipperExpanderService",
         excel_export=excel_export.excel_export_service,
         file_processing=file_processing.file_processing_service,
