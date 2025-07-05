@@ -13,6 +13,18 @@
             "preLaunchTask": "uv_sync"
         },
         {
+            "name": "KPAT CLI (Version)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/kp_analysis_toolkit/cli.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "uv_sync",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--version",
+            ]
+        },
+        {
             "name": "KPAT CLI (Scripts)",
             "type": "debugpy",
             "request": "launch",

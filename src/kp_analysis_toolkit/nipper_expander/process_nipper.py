@@ -17,6 +17,9 @@ def process_nipper_csv(program_config: ProgramConfig) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame containing the processed data
 
+    Raises:
+        KeyError: If the required 'Devices' column is not found in the CSV file
+
     """
     # Type assertion since validator ensures input_file is never None
     assert program_config.input_file is not None, "input_file is None"
@@ -24,13 +27,19 @@ def process_nipper_csv(program_config: ProgramConfig) -> pd.DataFrame:
     # Read the CSV file
     data_frame: pd.DataFrame = pd.read_csv(program_config.input_file)
 
+    # Validate that the required 'Devices' column exists
+    if "Devices" not in data_frame.columns:
+        error_msg = "'Devices' column is required but not found in CSV file"
+        raise KeyError(error_msg)
+
     # Create a list to hold the expanded rows
     expanded_rows: list[dict[str, Any]] = []
 
     for _, row in data_frame.iterrows():
         # Validate and clean the devices data
+        # Since we've validated the column exists, we can use direct access
         try:
-            row_data = NipperRowData(devices=row.get("Devices", ""))
+            row_data = NipperRowData(devices=row["Devices"])
             devices_str: str = row_data.devices
         except Exception:  # noqa: BLE001
             # Handle invalid data gracefully

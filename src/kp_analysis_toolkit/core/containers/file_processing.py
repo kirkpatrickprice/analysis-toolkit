@@ -1,3 +1,5 @@
+"""File processing container for encoding detection, validation, and hashing."""
+
 from __future__ import annotations
 
 from dependency_injector import containers, providers
@@ -28,9 +30,9 @@ class FileProcessingContainer(containers.DeclarativeContainer):
     file_processing_service: providers.Factory[FileProcessingService] = (
         providers.Factory(
             FileProcessingService,
+            rich_output=core.rich_output,
             encoding_detector=encoding_detector,
             hash_generator=hash_generator,
             file_validator=file_validator,
-            rich_output=core.rich_output,
         )
     )

@@ -1,65 +1,41 @@
+"""Main application container that orchestrates all other containers."""
+
 from __future__ import annotations
 
 from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.core.containers.core import CoreContainer
-from kp_analysis_toolkit.core.containers.excel_export import ExcelExportContainer
-from kp_analysis_toolkit.core.containers.file_processing import FileProcessingContainer
-from kp_analysis_toolkit.nipper_expander.container import NipperExpanderContainer
-from kp_analysis_toolkit.process_scripts.container import ProcessScriptsContainer
-from kp_analysis_toolkit.rtf_to_text.container import RtfToTextContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
-    """Main application container that wires all module containers together."""
+    """Main application container - Rich Output DI only for now."""
 
-    # Core containers
+    # Core containers - only what's needed for Rich Output
     core: providers.Container[CoreContainer] = providers.Container(CoreContainer)
-
-    file_processing: providers.Container[FileProcessingContainer] = providers.Container(
-        FileProcessingContainer,
-        core=core,
-    )
-
-    excel_export: providers.Container[ExcelExportContainer] = providers.Container(
-        ExcelExportContainer,
-        core=core,
-    )
-
-    # Module containers
-    process_scripts: providers.Container[ProcessScriptsContainer] = providers.Container(
-        ProcessScriptsContainer,
-        core=core,
-        file_processing=file_processing,
-        excel_export=excel_export,
-    )
-
-    nipper_expander: providers.Container[NipperExpanderContainer] = providers.Container(
-        NipperExpanderContainer,
-        core=core,
-        file_processing=file_processing,
-        excel_export=excel_export,
-    )
-
-    rtf_to_text: providers.Container[RtfToTextContainer] = providers.Container(
-        RtfToTextContainer,
-        core=core,
-        file_processing=file_processing,
-    )
 
 
 # Global container instance
 container = ApplicationContainer()
 
 
-def wire_application_container() -> None:
-    """
-    Wire the main application container and all module containers.
+def configure_application_container(
+    *,
+    verbose: bool = False,
+    quiet: bool = False,
+    console_width: int = 120,
+    force_terminal: bool = True,
+    stderr_enabled: bool = True,
+) -> None:
+    """Configure the application container with Rich Output settings only."""
+    container.core().config.verbose.from_value(verbose)
+    container.core().config.quiet.from_value(quiet)
+    container.core().config.console_width.from_value(console_width)
+    container.core().config.force_terminal.from_value(force_terminal)
+    container.core().config.stderr_enabled.from_value(stderr_enabled)
 
-    This function orchestrates the wiring of all containers in the application.
-    It ensures that the core containers are wired first, followed by module containers.
-    """
-    # Wire the main application container for CLI integration
+
+def wire_application_container() -> None:
+    """Wire the main application container for CLI integration."""
     container.wire(
         modules=[
             "kp_analysis_toolkit.cli",
@@ -68,95 +44,31 @@ def wire_application_container() -> None:
 
 
 def wire_module_containers() -> None:
-    """
-    Wire all module containers using their respective wiring functions.
-
-    This function coordinates the wiring of individual module containers,
-    demonstrating Distributed Wiring where each module is responsible
-    for its own dependency wiring.
-    """
-    from kp_analysis_toolkit.nipper_expander.container import (
-        configure_nipper_expander_container,
-        wire_nipper_expander_container,
-    )
-    from kp_analysis_toolkit.process_scripts.container import (
-        configure_process_scripts_container,
-        wire_process_scripts_container,
-    )
-    from kp_analysis_toolkit.rtf_to_text.container import (
-        configure_rtf_to_text_container,
-        wire_rtf_to_text_container,
-    )
-
-    # Configure module containers with their dependencies
-    configure_process_scripts_container(
-        core_container=container.core(),
-        file_processing_container=container.file_processing(),
-        excel_export_container=container.excel_export(),
-    )
-
-    configure_nipper_expander_container(
-        core_container=container.core(),
-        file_processing_container=container.file_processing(),
-        excel_export_container=container.excel_export(),
-    )
-
-    configure_rtf_to_text_container(
-        core_container=container.core(),
-        file_processing_container=container.file_processing(),
-    )
-
-    # Wire each module container
-    wire_process_scripts_container()
-    wire_nipper_expander_container()
-    wire_rtf_to_text_container()
-
-
-def configure_application_container(
-    *,  # Require keyword arguments for clarity
-    verbose: bool = False,
-    quiet: bool = False,
-    max_workers: int | None = None,
-) -> None:
-    """
-    Configure the application container with runtime settings.
-
-    Args:
-        verbose: Enable verbose output
-        quiet: Enable quiet mode
-        max_workers: Maximum number of worker processes
-
-    """
-    container.core().config.verbose.from_value(verbose)
-    container.core().config.quiet.from_value(quiet)
-    container.core().config.max_workers.from_value(max_workers or 4)
+    """Wire module containers - currently no modules use DI yet."""
+    # TODO @flyguy62n: Add module container wiring as modules are migrated to DI  # noqa: FIX002, TD003
+    pass  # noqa: PIE790
 
 
 def initialize_dependency_injection(
-    *,  # Require keyword arguments for clarity
+    *,
     verbose: bool = False,
     quiet: bool = False,
-    max_workers: int | None = None,
+    console_width: int = 120,
+    force_terminal: bool = True,
+    stderr_enabled: bool = True,
 ) -> None:
-    """
-    Initialize the complete dependency injection system.
-
-    This is the main entry point for setting up DI throughout the application.
-    It configures and wires all containers in the correct order.
-
-    Args:
-        verbose: Enable verbose output
-        quiet: Enable quiet mode
-        max_workers: Maximum number of worker processes
-
-    """
+    """Initialize dependency injection for Rich Output only."""
     # 1. Configure the application container
     configure_application_container(
-        verbose=verbose, quiet=quiet, max_workers=max_workers
+        verbose=verbose,
+        quiet=quiet,
+        console_width=console_width,
+        force_terminal=force_terminal,
+        stderr_enabled=stderr_enabled,
     )
 
     # 2. Wire the application container
     wire_application_container()
 
-    # 3. Wire all module containers
-    wire_module_containers()
+    # 3. Module containers - not implemented yet
+    # wire_module_containers()  # Skip for now
