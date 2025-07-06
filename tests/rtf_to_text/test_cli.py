@@ -125,11 +125,11 @@ class TestProcessCommandLine:
             runner = CliRunner()
 
             # First, test that both files would be found
-            from kp_analysis_toolkit.cli.common.file_selection import (
-                get_all_files_matching_pattern,
+            from kp_analysis_toolkit.cli.utils.path_helpers import (
+                discover_files_by_pattern,
             )
 
-            files = get_all_files_matching_pattern(tmpdir_path, "*.rtf")
+            files = discover_files_by_pattern(tmpdir_path, "*.rtf")
             expected_file_count = 2
             assert len(files) == expected_file_count
 

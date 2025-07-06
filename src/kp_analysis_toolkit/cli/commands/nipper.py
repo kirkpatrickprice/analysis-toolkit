@@ -6,10 +6,8 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     handle_fatal_error,
     validate_program_config,
 )
-from kp_analysis_toolkit.cli.common.file_selection import (
-    get_all_files_matching_pattern,
-    get_input_file,
-)
+from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
 from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_csv
@@ -54,7 +52,7 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
 
     # If None is returned, user chose "process all files"
     if selected_file is None:
-        file_list = get_all_files_matching_pattern(source_files_path, "*.csv")
+        file_list = discover_files_by_pattern(source_files_path, "*.csv")
         _process_all_csv_files(file_list)
         return
 

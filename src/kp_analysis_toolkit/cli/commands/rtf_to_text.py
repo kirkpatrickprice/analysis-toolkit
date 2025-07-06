@@ -6,10 +6,8 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     handle_fatal_error,
     validate_program_config,
 )
-from kp_analysis_toolkit.cli.common.file_selection import (
-    get_all_files_matching_pattern,
-    get_input_file,
-)
+from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
 from kp_analysis_toolkit.rtf_to_text.process_rtf import process_rtf_file
@@ -55,7 +53,7 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
 
     # Handle "process all files" case
     if selected_file is None:
-        file_list = get_all_files_matching_pattern(source_files_path, "*.rtf")
+        file_list = discover_files_by_pattern(source_files_path, "*.rtf")
         _process_all_files(file_list)
         return
 

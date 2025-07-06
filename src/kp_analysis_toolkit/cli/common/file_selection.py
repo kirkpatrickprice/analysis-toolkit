@@ -51,13 +51,13 @@ def get_input_file(
 
     if len(dirlist) == 1 and not include_process_all_option:
         rich_output.debug(
-            f"Auto-selecting the only {file_type_description} file found: {dirlist[0]}"
+            f"Auto-selecting the only {file_type_description} file found: {dirlist[0]}",
         )
         return dirlist[0]
 
     # Multiple files found or process all option enabled - create an interactive selection menu
     rich_output.warning(
-        f'Multiple {file_type_description} files found. Use the "--in-file <filename>" option to specify the input file or choose from below.',
+        f"Multiple {file_type_description} files found. Choose from below.",
     )
 
     title = f"Available {file_type_description} Files"
@@ -68,7 +68,9 @@ def get_input_file(
         include_process_all_option=include_process_all_option,
     )
     choice = _get_user_choice(
-        dirlist, rich_output, include_process_all_option=include_process_all_option
+        dirlist,
+        rich_output,
+        include_process_all_option=include_process_all_option,
     )
 
     if include_process_all_option and choice == len(dirlist) + 1:
@@ -148,22 +150,3 @@ def _get_user_choice(
             continue  # Continue the loop instead of exiting
 
     return choice
-
-
-def get_all_files_matching_pattern(
-    source_files_path: str | Path,
-    file_pattern: str = "*.csv",
-) -> list[Path]:
-    """
-    Get all files matching the specified pattern from the given directory.
-
-    Args:
-        source_files_path: Directory to search for files
-        file_pattern: Glob pattern to match files (default: "*.csv")
-
-    Returns:
-        List of Path objects for all matching files
-
-    """
-    source_files_path = Path(source_files_path).resolve()
-    return [Path(source_files_path / f) for f in source_files_path.glob(file_pattern)]

@@ -6,10 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kp_analysis_toolkit.cli.common.file_selection import (
-    get_all_files_matching_pattern,
-    get_input_file,
-)
+from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 
 
 class TestEnhancedFileSelection:
@@ -91,8 +89,8 @@ class TestEnhancedFileSelection:
                 file_type_description="XML",
             )
 
-    def test_get_all_files_matching_pattern(self) -> None:
-        """Test the get_all_files_matching_pattern helper function."""
+    def test_discover_files_by_pattern(self) -> None:
+        """Test the discover_files_by_pattern helper function."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
 
@@ -106,20 +104,20 @@ class TestEnhancedFileSelection:
             txt_file.write_text("This is a readme file")
 
             # Test CSV pattern
-            csv_files = get_all_files_matching_pattern(tmpdir, "*.csv")
+            csv_files = discover_files_by_pattern(tmpdir, "*.csv")
             expected_csv_count = 2
             assert len(csv_files) == expected_csv_count
             csv_names = {f.name for f in csv_files}
             assert csv_names == {"data1.csv", "data2.csv"}
 
             # Test TXT pattern
-            txt_files = get_all_files_matching_pattern(tmpdir, "*.txt")
+            txt_files = discover_files_by_pattern(tmpdir, "*.txt")
             expected_txt_count = 1
             assert len(txt_files) == expected_txt_count
             assert txt_files[0].name == "readme.txt"
 
             # Test pattern with no matches
-            log_files = get_all_files_matching_pattern(tmpdir, "*.log")
+            log_files = discover_files_by_pattern(tmpdir, "*.log")
             assert len(log_files) == 0
 
     def test_single_file_auto_selection_with_process_all_disabled(self) -> None:
@@ -174,3 +172,52 @@ class TestEnhancedFileSelection:
 
             # Should return None for "process all"
             assert result is None
+
+    def test_discover_files_by_pattern_recursive(self) -> None:
+        """Test recursive file discovery functionality."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+
+            # Create files in root directory
+            root_csv = tmpdir_path / "root.csv"
+            root_csv.write_text("root,data\n1,2\n")
+
+            # Create subdirectory with files
+            subdir = tmpdir_path / "subdir"
+            subdir.mkdir()
+            sub_csv = subdir / "sub.csv"
+            sub_csv.write_text("sub,data\n3,4\n")
+
+            # Test non-recursive (default)
+            non_recursive_files = discover_files_by_pattern(
+                tmpdir, "*.csv", recursive=False
+            )
+            assert len(non_recursive_files) == 1
+            assert non_recursive_files[0].name == "root.csv"
+
+            # Test recursive
+            recursive_files = discover_files_by_pattern(tmpdir, "*.csv", recursive=True)
+            assert len(recursive_files) == 2
+            file_names = {f.name for f in recursive_files}
+            assert file_names == {"root.csv", "sub.csv"}
+
+    def test_discover_files_by_pattern_error_handling(self) -> None:
+        """Test error handling for invalid paths."""
+        # Test non-existent path
+        with pytest.raises(ValueError, match="Path does not exist"):
+            discover_files_by_pattern("/non/existent/path", "*.csv")
+
+        # Test file instead of directory
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+            tmpfile.write(b"test data")
+            tmpfile_path = tmpfile.name
+
+        try:
+            with pytest.raises(ValueError, match="Path is not a directory"):
+                discover_files_by_pattern(tmpfile_path, "*.csv")
+        finally:
+            # Clean up - use try/except for Windows file locking issues
+            try:
+                Path(tmpfile_path).unlink()
+            except (PermissionError, FileNotFoundError):
+                pass  # File cleanup best effort on Windows

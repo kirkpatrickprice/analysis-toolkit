@@ -15,7 +15,6 @@ This document analyzes opportunities to use the newly created shared utilities (
 
 ### `cli.common.file_selection`
 - `get_input_file()` - Interactive file selection with pattern matching
-- `get_all_files_matching_pattern()` - Directory file discovery
 
 ### `cli.utils.batch_processing`
 - `process_files_batch()` - Core batch processing with progress tracking
@@ -26,6 +25,7 @@ This document analyzes opportunities to use the newly created shared utilities (
 
 ### `cli.utils.path_helpers`
 - `create_results_directory()` - Results directory creation with messaging
+- `discover_files_by_pattern()` - Enhanced file discovery with validation and recursive option
 - `create_unique_output_filename()` - Timestamped filename generation
 - `safe_path_join()` - Secure path joining
 
