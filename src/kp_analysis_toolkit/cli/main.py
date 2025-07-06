@@ -1,7 +1,5 @@
-import platform
 import sys
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 import rich_click as click
@@ -16,12 +14,17 @@ from kp_analysis_toolkit.cli.commands.rtf_to_text import (
 from kp_analysis_toolkit.cli.commands.scripts import (
     process_command_line as scripts_process_command_line,
 )
+from kp_analysis_toolkit.cli.utils.system_utils import (
+    get_architecture_info,
+    get_installation_path,
+    get_module_versions,
+    get_platform_info,
+    get_python_version_string,
+)
+from kp_analysis_toolkit.cli.utils.table_layouts import create_version_info_table
 from kp_analysis_toolkit.core.containers.application import (
     initialize_dependency_injection,
 )
-from kp_analysis_toolkit.nipper_expander import __version__ as nipper_version
-from kp_analysis_toolkit.process_scripts import __version__ as scripts_version
-from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_version
 from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
@@ -63,59 +66,19 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
         force=True,
     )
 
-    # Module versions table
-    table = console.table(
-        title="📦 Module Versions",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
-        force=True,
-    )
-
+    # Module versions table using standardized layout
+    table = create_version_info_table(console)
     if table is not None:
-        table.add_column("Module", style="bold white", min_width=20)
-        table.add_column("Version", style="bold green", min_width=10)
-        table.add_column("Description", style="cyan", min_width=40)
-
-        table.add_row(
-            "kp-analysis-toolkit",
-            cli_version,
-            "Main toolkit package",
-        )
-        table.add_row(
-            "process-scripts",
-            scripts_version,
-            "Collector script results processor",
-        )
-        table.add_row(
-            "nipper-expander",
-            nipper_version,
-            "Nipper CSV file expander",
-        )
-        table.add_row(
-            "rtf-to-text",
-            rtf_version,
-            "RTF to plain text converter",
-        )
-
+        for module_name, version, description in get_module_versions():
+            table.add_row(module_name, version, description)
         console.display_table(table, force=True)
 
-    # System information
+    # System information using utility functions
     console.print("")
-
-    # Get system information
-    python_version = (
-        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
-    platform_info = platform.platform()
-    architecture = platform.architecture()[0]
-
-    # Installation path
-    install_path: Path | str
-    try:
-        install_path = Path(__file__).parent.parent.parent
-    except (AttributeError, OSError):
-        install_path = "Unknown"
+    python_version = get_python_version_string()
+    platform_info = get_platform_info()
+    architecture = get_architecture_info()
+    install_path = get_installation_path()
 
     console.info(
         f"💻 Environment: Python {python_version} on {platform_info} ({architecture})",

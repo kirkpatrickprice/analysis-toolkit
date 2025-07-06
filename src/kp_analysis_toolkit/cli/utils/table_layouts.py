@@ -208,3 +208,41 @@ def create_config_display_table(
         )
 
     return table
+
+
+def create_version_info_table(
+    rich_output: "RichOutputService",
+    *,
+    title: str = "📦 Module Versions",
+) -> "Table | None":
+    """
+    Create a standardized version information table layout.
+
+    Args:
+        rich_output: The RichOutputService instance
+        title: Table title
+
+    Returns:
+        Table instance or None if in quiet mode
+
+    Example:
+        table = create_version_info_table(rich_output)
+        if table is not None:
+            table.add_row("package-name", "1.0.0", "Package description")
+            rich_output.display_table(table, force=True)
+
+    """
+    table = rich_output.table(
+        title=title,
+        show_header=True,
+        header_style="bold cyan",
+        border_style="blue",
+        force=True,
+    )
+
+    if table is not None:  # Not in quiet mode
+        table.add_column("Module", style="bold white", min_width=20)
+        table.add_column("Version", style="bold green", min_width=10)
+        table.add_column("Description", style="cyan", min_width=40)
+
+    return table

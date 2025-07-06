@@ -1,5 +1,6 @@
 """System-related utility functions for CLI operations."""
 
+import platform
 import sys
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,104 @@ from kp_analysis_toolkit.models.types import PathLike
 
 # Constants
 BYTES_PER_KB = 1024
+
+
+def get_python_version_string() -> str:
+    """
+    Get formatted Python version string.
+
+    Returns:
+        Python version in format "major.minor.micro"
+
+    Example:
+        version = get_python_version_string()
+        print(f"Python {version}")  # "Python 3.12.10"
+
+    """
+    return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+
+def get_platform_info() -> str:
+    """
+    Get platform information string.
+
+    Returns:
+        Platform information string
+
+    Example:
+        info = get_platform_info()
+        print(info)  # "Windows-10-10.0.19041-SP0"
+
+    """
+    return platform.platform()
+
+
+def get_architecture_info() -> str:
+    """
+    Get system architecture information.
+
+    Returns:
+        Architecture string (e.g., "64bit", "32bit")
+
+    Example:
+        arch = get_architecture_info()
+        print(f"Architecture: {arch}")  # "Architecture: 64bit"
+
+    """
+    return platform.architecture()[0]
+
+
+def get_installation_path() -> Path | str:
+    """
+    Get the installation path of the current package.
+
+    Returns:
+        Path to installation directory or "Unknown" if cannot be determined
+
+    Example:
+        path = get_installation_path()
+        print(f"Installed at: {path}")
+
+    """
+    try:
+        # Get path relative to this file's location in the package
+        return Path(__file__).parent.parent.parent
+    except (AttributeError, OSError):
+        return "Unknown"
+
+
+def get_module_versions() -> list[tuple[str, str, str]]:
+    """
+    Get version information for all toolkit modules.
+
+    Returns:
+        List of tuples containing (module_name, version, description)
+
+    Example:
+        versions = get_module_versions()
+        for name, version, desc in versions:
+            print(f"{name} v{version}: {desc}")
+
+    """
+    # Import versions dynamically to avoid circular imports
+    try:
+        from kp_analysis_toolkit import __version__ as cli_version
+        from kp_analysis_toolkit.nipper_expander import __version__ as nipper_version
+        from kp_analysis_toolkit.process_scripts import __version__ as scripts_version
+        from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_version
+    except ImportError:
+        # Fallback if imports fail
+        cli_version = "Unknown"
+        scripts_version = "Unknown"
+        nipper_version = "Unknown"
+        rtf_version = "Unknown"
+
+    return [
+        ("kp-analysis-toolkit", cli_version, "Main toolkit package"),
+        ("process-scripts", scripts_version, "Collector script results processor"),
+        ("nipper-expander", nipper_version, "Nipper CSV file expander"),
+        ("rtf-to-text", rtf_version, "RTF to plain text converter"),
+    ]
 
 
 def get_object_size(obj: Any, seen: set[int] | None = None) -> int:  # noqa: ANN401

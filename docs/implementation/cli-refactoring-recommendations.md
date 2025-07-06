@@ -209,6 +209,42 @@ get_input_file(
 
 ---
 
+## 7. Version Callback Refactoring - ✅ COMPLETED
+
+### Current State - COMPLETED
+**Date Completed:** July 6, 2025
+
+The `_version_callback` function has been successfully refactored to use shared CLI utilities, improving code organization and reusability.
+
+**Refactoring Completed:**
+- Extracted system information gathering to `cli.utils.system_utils.py`
+- Created standardized version table layout in `cli.utils.table_layouts.py`
+- Centralized module version information management
+- Reduced function complexity by ~50% (from ~70 lines to ~35 lines)
+
+**New Utility Functions Added:**
+- `get_python_version_string()` - Formatted Python version
+- `get_platform_info()` - Platform information
+- `get_architecture_info()` - System architecture
+- `get_installation_path()` - Installation directory
+- `get_module_versions()` - Structured module version data
+- `create_version_info_table()` - Standardized table layout
+
+**Benefits Achieved:**
+- ✅ Improved code reusability across CLI commands
+- ✅ Consistent table formatting using shared utilities
+- ✅ Centralized system information gathering
+- ✅ Enhanced testability with focused utility functions
+- ✅ Better separation of concerns (UI vs data gathering)
+- ✅ Eliminated hardcoded system information collection
+
+**Test Results:** All CLI integration tests passed (7/7)
+
+### Implementation Priority
+**Medium** - ✅ **COMPLETED** - Improves code organization and reusability
+
+---
+
 ## Implementation Plan
 
 ### Phase 1: High Priority (Immediate)
