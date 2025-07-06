@@ -103,35 +103,30 @@ def _create_rtf_config(file_path: Path) -> ProgramConfig:
 
 
 def _process_all_files(file_list: list[Path]) -> None:
-    """Process all RTF files in the list."""
-    console = get_rich_output()
+    """Process all RTF files in the list using the batch processing utility."""
+    from kp_analysis_toolkit.cli.utils.batch_processing import (
+        BatchProcessingConfig,
+        ErrorHandlingStrategy,
+        process_files_with_config,
+    )
 
-    total_files = len(file_list)
-    successful = 0
-    failed = 0
+    def format_rtf_success(file_path: Path, result: tuple) -> str:
+        """Format success message for RTF conversion."""
+        program_config, _ = result
+        return f"Converted: {file_path.name} -> {program_config.output_file.name}"
 
-    console.info(f"Processing {total_files} RTF files...")
+    # Configure batch processing
+    batch_config = BatchProcessingConfig(
+        operation_description="Converting RTF files",
+        progress_description="Converting RTF files...",
+        error_handling=ErrorHandlingStrategy.CONTINUE_ON_ERROR,
+        success_message_formatter=format_rtf_success,
+    )
 
-    # Create progress bar
-    with console.progress() as progress:
-        task = progress.add_task("Converting RTF files...", total=total_files)
-
-        for file_path in file_list:
-            try:
-                program_config = _create_rtf_config(file_path)
-                process_rtf_file(program_config)
-                console.success(
-                    f"Converted: {file_path.name} -> {program_config.output_file.name}",
-                )
-                successful += 1
-            except ValueError as e:
-                console.error(f"Configuration error for {file_path.name}: {e}")
-                failed += 1
-            except (FileNotFoundError, OSError) as e:
-                console.error(f"Failed to convert {file_path.name}: {e}")
-                failed += 1
-
-            progress.update(task, advance=1)
-
-    # Display summary
-    console.info(f"Processing complete: {successful} successful, {failed} failed")
+    # Process files using the batch processing utility
+    process_files_with_config(
+        file_list=file_list,
+        config_creator=_create_rtf_config,
+        processor=process_rtf_file,
+        config=batch_config,
+    )
