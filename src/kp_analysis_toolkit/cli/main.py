@@ -7,13 +7,13 @@ from typing import Any
 import rich_click as click
 
 from kp_analysis_toolkit import __version__ as cli_version
+from kp_analysis_toolkit.cli.commands.nipper import (
+    process_command_line as nipper_process_command_line,
+)
 from kp_analysis_toolkit.core.containers.application import (
     initialize_dependency_injection,
 )
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_version
-from kp_analysis_toolkit.nipper_expander.cli import (
-    process_command_line as nipper_process_command_line,
-)
 from kp_analysis_toolkit.process_scripts import __version__ as scripts_version
 from kp_analysis_toolkit.process_scripts.cli import (
     process_command_line as scripts_process_command_line,

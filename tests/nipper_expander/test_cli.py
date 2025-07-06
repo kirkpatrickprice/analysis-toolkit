@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from kp_analysis_toolkit.nipper_expander.cli import process_command_line
+from kp_analysis_toolkit.cli.commands.nipper import process_command_line
 
 
 class TestNipperExpanderCLI:

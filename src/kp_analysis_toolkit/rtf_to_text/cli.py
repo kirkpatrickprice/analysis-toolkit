@@ -87,24 +87,34 @@ def get_input_file(
         'Multiple RTF files found. Use the "--in-file <filename>" option to specify the input file or choose from below.',
     )
 
-    # Create a table for file selection
-    from rich.table import Table
+    # Create a table for file selection using the centralized utility
+    from kp_analysis_toolkit.cli.utils.table_layouts import create_file_selection_table
 
-    table = Table(
+    rich_output = get_rich_output()
+    table = create_file_selection_table(
+        rich_output,
         title="Available RTF Files",
-        show_header=True,
-        header_style="bold blue",
+        include_size=False,
+        include_choice_column=True,
     )
-    table.add_column("Option", style="cyan", width=8)
-    table.add_column("Filename", style="green")
 
-    for index, filename in enumerate(dirlist, 1):
-        table.add_row(str(index), str(filename.name))
+    if table is not None:
+        for index, filename in enumerate(dirlist, 1):
+            table.add_row(str(index), str(filename.name))
 
-    # Add option to process all files
-    table.add_row(str(len(dirlist) + 1), "[bold yellow]Process all files[/bold yellow]")
+        # Add option to process all files
+        table.add_row(
+            str(len(dirlist) + 1), "[bold yellow]Process all files[/bold yellow]"
+        )
 
-    console.print(table)
+        rich_output.display_table(table)
+    else:
+        # Fallback for quiet mode
+        for index, filename in enumerate(dirlist, 1):
+            console.print(f"{index} - {filename.name}")
+        console.print(
+            f"{len(dirlist) + 1} - [bold yellow]Process all files[/bold yellow]"
+        )
 
     choice: int = 0
     while choice < 1 or choice > len(dirlist) + 1:

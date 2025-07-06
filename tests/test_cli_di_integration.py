@@ -10,7 +10,7 @@ from kp_analysis_toolkit.cli import cli
 class TestCLIDependencyInjection:
     """Test CLI integration with dependency injection system."""
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_initializes_di_on_startup(self, mock_init_di: MagicMock) -> None:
         """Test that CLI initializes dependency injection on startup."""
         runner = CliRunner()
@@ -20,7 +20,7 @@ class TestCLIDependencyInjection:
         # CLI might call DI initialization once for the command, check it was called
         assert mock_init_di.called
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_passes_verbose_to_di(self, mock_init_di: MagicMock) -> None:
         """Test that CLI passes verbose flag to DI initialization."""
         runner = CliRunner()
@@ -30,7 +30,7 @@ class TestCLIDependencyInjection:
         # Check that verbose=True was passed at least once
         mock_init_di.assert_called_with(verbose=True, quiet=False)
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_passes_quiet_to_di(self, mock_init_di: MagicMock) -> None:
         """Test that CLI passes quiet flag to DI initialization."""
         runner = CliRunner()
@@ -68,8 +68,8 @@ class TestCLIDependencyInjection:
         assert "-q" in result.output
         assert "Suppress non-essential output" in result.output
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
-    @patch("kp_analysis_toolkit.cli.check_and_prompt_update")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
     def test_cli_initialization_order(
         self,
         mock_check_update: MagicMock,
@@ -85,7 +85,7 @@ class TestCLIDependencyInjection:
         assert mock_init_di.called
         assert mock_check_update.called
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_skips_version_check_but_initializes_di(
         self, mock_init_di: MagicMock
     ) -> None:
@@ -100,8 +100,8 @@ class TestCLIDependencyInjection:
 class TestCLIRichOutputIntegration:
     """Test CLI integration with Rich Output."""
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
-    @patch("kp_analysis_toolkit.cli.get_rich_output")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.get_rich_output")
     def test_cli_uses_rich_output_for_help(
         self,
         mock_get_rich_output: MagicMock,
@@ -118,7 +118,7 @@ class TestCLIRichOutputIntegration:
         assert mock_init_di.called
         mock_get_rich_output.assert_called()
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_version_callback_uses_rich_output(self, mock_init_di: MagicMock) -> None:  # noqa: ARG002
         """Test that version callback uses Rich Output for formatting."""
         runner = CliRunner()
@@ -128,7 +128,7 @@ class TestCLIRichOutputIntegration:
         assert result.exit_code == 0
         assert "kpat_cli version" in result.output
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_backward_compatibility_with_rich_output(
         self, mock_init_di: MagicMock
     ) -> None:  # noqa: ARG002
@@ -145,7 +145,7 @@ class TestCLIRichOutputIntegration:
 class TestCLIErrorHandling:
     """Test CLI error handling with dependency injection."""
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_handles_di_initialization_error(self, mock_init_di: MagicMock) -> None:
         """Test that CLI handles DI initialization errors gracefully."""
         mock_init_di.side_effect = Exception("DI initialization failed")
@@ -193,7 +193,7 @@ class TestCLISubcommandIntegration:
 
         assert result.exit_code == 0
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_subcommands_benefit_from_di_initialization(
         self, mock_init_di: MagicMock
     ) -> None:
@@ -211,7 +211,7 @@ class TestCLISubcommandIntegration:
 class TestCLIConfigurationPropagation:
     """Test that CLI configuration properly propagates to dependency injection."""
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_default_configuration_propagation(self, mock_init_di: MagicMock) -> None:
         """Test that default configuration is properly propagated."""
         runner = CliRunner()
@@ -220,7 +220,7 @@ class TestCLIConfigurationPropagation:
         # Should be called with default values at least once
         mock_init_di.assert_called_with(verbose=False, quiet=False)
 
-    @patch("kp_analysis_toolkit.cli.initialize_dependency_injection")
+    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_custom_configuration_propagation(self, mock_init_di: MagicMock) -> None:
         """Test that custom configuration is properly propagated."""
         runner = CliRunner()

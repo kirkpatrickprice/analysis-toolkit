@@ -12,7 +12,6 @@ from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
 # Re-export the main class for backward compatibility
 RichOutput = RichOutputService
-RichOutput = RichOutputService
 
 # Global instance for backward compatibility (will be deprecated)
 _rich_output: RichOutputService | None = None

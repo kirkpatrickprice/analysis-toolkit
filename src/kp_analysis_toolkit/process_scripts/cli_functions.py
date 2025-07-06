@@ -1,7 +1,12 @@
-import sys
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
+from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
+from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
+from kp_analysis_toolkit.cli.utils.table_layouts import (
+    create_file_listing_table,
+    create_system_info_table,
+)
 from kp_analysis_toolkit.process_scripts import process_systems
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_search_results_to_excel,
@@ -27,66 +32,6 @@ if TYPE_CHECKING:
         SearchResults,
     )
     from kp_analysis_toolkit.process_scripts.models.systems import Systems
-
-
-def create_results_path(program_config: ProgramConfig) -> None:
-    """Create the results path if it does not exist."""
-    import os
-
-    # Check if we're in a testing environment (for backward compatibility with existing tests)
-    is_testing = (
-        "pytest" in sys.modules
-        or "unittest" in sys.modules
-        or os.environ.get("TESTING", "").lower() in ("true", "1", "yes")
-    )
-
-    if program_config.results_path.exists():
-        message = f"Reusing results path: {program_config.results_path}"
-        if is_testing:
-            # Use click.echo for test compatibility
-            import click
-
-            click.echo(message)
-        else:
-            # Use Rich output for normal operation
-            rich_output = get_rich_output()
-            rich_output.info(message)
-        return
-
-    if program_config.verbose:
-        message = f"Creating results path: {program_config.results_path}"
-        if is_testing:
-            # Use click.echo for test compatibility
-            import click
-
-            click.echo(message)
-        else:
-            # Use Rich output for normal operation
-            rich_output = get_rich_output()
-            rich_output.debug(message)
-
-    program_config.results_path.mkdir(parents=True, exist_ok=False)
-
-
-def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
-    """Recursively find the size of an object and its contents in bytes."""
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Mark object as seen
-    seen.add(obj_id)
-    size = sys.getsizeof(obj)
-
-    # Handle iterables
-    if isinstance(obj, list | tuple | set | dict):
-        if isinstance(obj, list | tuple | set):
-            size += sum(get_size(i, seen) for i in obj)
-        else:  # dict
-            size += sum(get_size(k, seen) + get_size(v, seen) for k, v in obj.items())
-
-    return size
 
 
 def list_audit_configs(program_config: ProgramConfig) -> None:
@@ -149,33 +94,18 @@ def list_source_files(program_config: ProgramConfig) -> None:
         rich_output.warning("No source files found")
         return
 
-    # Create a Rich table for source files
-    table = rich_output.table(
+    # Create a Rich table for source files using the centralized utility
+    table = create_file_listing_table(
+        rich_output,
         title="📁 Source Files",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
+        file_column_name="File Path",
     )
 
     if table is None:  # Quiet mode
         return
 
-    table.add_column("File Path", style="cyan", min_width=40)
-    table.add_column("Size", style="white", justify="right", min_width=10)
-
-    bytes_per_kb = 1024  # Standard byte to KB conversion
-
     for file in source_files:
-        try:
-            file_size = file.stat().st_size
-            size_str = (
-                f"{file_size:,} bytes"
-                if file_size < bytes_per_kb
-                else f"{file_size / bytes_per_kb:.1f} KB"
-            )
-        except OSError:
-            size_str = "Unknown"
-
+        size_str = get_file_size(file)
         table.add_row(str(file), size_str)
 
     rich_output.display_table(table)
@@ -193,21 +123,15 @@ def list_systems(program_config: ProgramConfig) -> None:
         rich_output.warning("No systems found")
         return
 
-    # Create a Rich table for systems
-    table = rich_output.table(
+    # Create a Rich table for systems using the centralized utility
+    table = create_system_info_table(
+        rich_output,
         title="🖥️ Systems",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
+        include_details=program_config.verbose,
     )
 
     if table is None:  # Quiet mode
         return
-
-    table.add_column("System Name", style="bold white", min_width=25)
-    table.add_column("File Hash", style="dim white", min_width=16)
-    if program_config.verbose:
-        table.add_column("Details", style="white", min_width=40)
 
     max_detail_fields = 5  # Limit displayed details in verbose mode
     hash_display_length = 16  # Length of hash to display
@@ -273,7 +197,10 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     rich_output.header("Processing Source Files")
 
     # Create results path
-    create_results_path(program_config)
+    create_results_directory(
+        program_config.results_path,
+        verbose=program_config.verbose,
+    )
 
     # Load systems
     systems: list[Systems] = list(
