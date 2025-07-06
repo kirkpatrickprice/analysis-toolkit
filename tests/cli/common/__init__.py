@@ -1,0 +1,1 @@
+"""CLI common module tests."""

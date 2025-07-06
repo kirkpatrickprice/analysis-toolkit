@@ -10,18 +10,18 @@ from kp_analysis_toolkit import __version__ as cli_version
 from kp_analysis_toolkit.cli.commands.nipper import (
     process_command_line as nipper_process_command_line,
 )
+from kp_analysis_toolkit.cli.commands.rtf_to_text import (
+    process_command_line as rtf_process_command_line,
+)
+from kp_analysis_toolkit.cli.commands.scripts import (
+    process_command_line as scripts_process_command_line,
+)
 from kp_analysis_toolkit.core.containers.application import (
     initialize_dependency_injection,
 )
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_version
 from kp_analysis_toolkit.process_scripts import __version__ as scripts_version
-from kp_analysis_toolkit.process_scripts.cli import (
-    process_command_line as scripts_process_command_line,
-)
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_version
-from kp_analysis_toolkit.rtf_to_text.cli import (
-    process_command_line as rtf_process_command_line,
-)
 from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
