@@ -1,7 +1,9 @@
-import sys
-
 import rich_click as click
 
+from kp_analysis_toolkit.cli.common.config_validation import (
+    handle_fatal_error,
+    validate_program_config,
+)
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
@@ -35,13 +37,13 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
 
     # Create a program configuration object
     try:
-        program_config: ProgramConfig = ProgramConfig(
+        program_config = validate_program_config(
+            ProgramConfig,
             input_file=get_input_file(_infile, source_files_path),
             source_files_path=source_files_path,  # type: ignore  # noqa: PGH003
         )
     except ValueError as e:
-        rich_output.error(f"Error validating configuration: {e}")
-        sys.exit(1)
+        handle_fatal_error(e, error_prefix="Configuration validation failed")
 
     rich_output.info(f"Processing Nipper CSV file: {program_config.input_file!s}")
 
@@ -54,5 +56,4 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
             f"Processed {program_config.input_file} and saved results to {program_config.output_file}",
         )
     except (ValueError, FileNotFoundError, KeyError) as e:
-        rich_output.error(f"Error processing CSV file: {e}")
-        sys.exit(1)
+        handle_fatal_error(e, error_prefix="Error processing CSV file")

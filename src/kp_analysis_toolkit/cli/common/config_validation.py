@@ -27,7 +27,7 @@ def validate_program_config(config_class: type[T], **kwargs: ConfigValue) -> T:
         try:
             config = validate_program_config(ProgramConfig, input_file=file_path)
         except ValueError as e:
-            handle_config_error(e)
+            handle_fatal_error(e)
 
     """
     try:
@@ -49,17 +49,19 @@ def validate_program_config(config_class: type[T], **kwargs: ConfigValue) -> T:
         raise ValueError(message) from e
 
 
-def handle_config_error(
+def handle_fatal_error(
     error: Exception,
     *,
+    error_prefix: str = "Error",
     exit_on_error: bool = True,
     rich_output: RichOutputService | None = None,
 ) -> None:
     """
-    Handle configuration validation errors with consistent messaging.
+    Handle fatal errors with consistent messaging and exit behavior.
 
     Args:
-        error: The exception that occurred during validation
+        error: The exception that occurred
+        error_prefix: Custom prefix for the error message (default: "Error")
         exit_on_error: Whether to exit the program after displaying the error
         rich_output: Optional RichOutput instance (will create one if not provided)
 
@@ -67,13 +69,18 @@ def handle_config_error(
         try:
             config = validate_program_config(ProgramConfig, **cli_args)
         except ValueError as e:
-            handle_config_error(e)  # Will exit with error message
+            handle_fatal_error(e, error_prefix="Configuration validation failed")
+
+        try:
+            selected_file = get_input_file(...)
+        except ValueError as e:
+            handle_fatal_error(e, error_prefix="File selection failed")
 
     """
     if rich_output is None:
         rich_output = get_rich_output()
 
-    rich_output.error(f"Error validating configuration: {error}")
+    rich_output.error(f"{error_prefix}: {error}")
 
     if exit_on_error:
         sys.exit(1)

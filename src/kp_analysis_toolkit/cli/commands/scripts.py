@@ -3,6 +3,10 @@ from typing import TYPE_CHECKING, Any
 
 import rich_click as click
 
+from kp_analysis_toolkit.cli.common.config_validation import (
+    handle_fatal_error,
+    validate_program_config,
+)
 from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
 from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
 from kp_analysis_toolkit.cli.utils.table_layouts import (
@@ -101,12 +105,9 @@ def process_command_line(**cli_config: dict) -> None:
     """Process collector script results files (formerly adv-searchfor)."""
     """Convert the click config to a ProgramConfig object and perform validation."""
     try:
-        program_config: ProgramConfig = ProgramConfig(**cli_config)
+        program_config = validate_program_config(ProgramConfig, **cli_config)
     except ValueError as e:
-        from kp_analysis_toolkit.utils.rich_output import error
-
-        error(f"Error validating configuration: {e}")
-        return
+        handle_fatal_error(e, error_prefix="Configuration validation failed")
 
     # Echo the program configuration to the screen
     if program_config.verbose:

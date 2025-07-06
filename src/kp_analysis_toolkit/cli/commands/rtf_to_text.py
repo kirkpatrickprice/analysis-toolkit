@@ -1,8 +1,11 @@
-import sys
 from pathlib import Path
 
 import rich_click as click
 
+from kp_analysis_toolkit.cli.common.config_validation import (
+    handle_fatal_error,
+    validate_program_config,
+)
 from kp_analysis_toolkit.cli.common.file_selection import (
     get_all_files_matching_pattern,
     get_input_file,
@@ -48,8 +51,7 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
             include_process_all_option=True,
         )
     except ValueError as e:
-        console.error(f"Error finding input files: {e}")
-        sys.exit(1)
+        handle_fatal_error(e, error_prefix="Error finding input files")
 
     # Handle "process all files" case
     if selected_file is None:
@@ -59,13 +61,13 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
 
     # Process single file
     try:
-        program_config: ProgramConfig = ProgramConfig(
+        program_config = validate_program_config(
+            ProgramConfig,
             input_file=selected_file,
             source_files_path=source_files_path,
         )
     except ValueError as e:
-        console.error(f"Error validating configuration: {e}")
-        sys.exit(1)
+        handle_fatal_error(e, error_prefix="Configuration validation failed")
 
     console.info(f"Converting RTF file: {program_config.input_file!s}")
 
@@ -76,8 +78,28 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
             f"Converted {program_config.input_file} and saved results to {program_config.output_file}",
         )
     except (ValueError, FileNotFoundError, OSError) as e:
-        console.error(f"Error processing RTF file: {e}")
-        sys.exit(1)
+        handle_fatal_error(e, error_prefix="Error processing RTF file")
+
+
+def _create_rtf_config(file_path: Path) -> ProgramConfig:
+    """
+    Create RTF program config with validation.
+
+    Args:
+        file_path: Path to the RTF file to process
+
+    Returns:
+        Validated ProgramConfig object
+
+    Raises:
+        ValueError: If configuration validation fails
+
+    """
+    return validate_program_config(
+        ProgramConfig,
+        input_file=file_path,
+        source_files_path=file_path.parent,
+    )
 
 
 def _process_all_files(file_list: list[Path]) -> None:
@@ -96,16 +118,16 @@ def _process_all_files(file_list: list[Path]) -> None:
 
         for file_path in file_list:
             try:
-                program_config = ProgramConfig(
-                    input_file=file_path,
-                    source_files_path=file_path.parent,
-                )
+                program_config = _create_rtf_config(file_path)
                 process_rtf_file(program_config)
                 console.success(
                     f"Converted: {file_path.name} -> {program_config.output_file.name}",
                 )
                 successful += 1
-            except (ValueError, FileNotFoundError, OSError) as e:
+            except ValueError as e:
+                console.error(f"Configuration error for {file_path.name}: {e}")
+                failed += 1
+            except (FileNotFoundError, OSError) as e:
                 console.error(f"Failed to convert {file_path.name}: {e}")
                 failed += 1
 

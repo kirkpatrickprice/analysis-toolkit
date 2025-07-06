@@ -11,7 +11,7 @@ Analysis focused on `cli.commands.rtf_to_text.py` and `cli.commands.scripts.py` 
 
 ---
 
-## 1. Configuration Validation Patterns
+## 1. Configuration Validation Patterns - COMPLETED ✅
 
 ### Current State
 Multiple CLI commands implement their own try/catch blocks for configuration validation:
@@ -40,63 +40,83 @@ except ValueError as e:
 
 ---
 
-## 2. Error Handling Standardization
+## 2. Error Handling Standardization - COMPLETED ✅
 
-### Current State
-Inconsistent error handling patterns across commands:
+### Implementation Status: **COMPLETED**
 
+All CLI commands now use standardized error handling functions from `cli.common.config_validation` for consistent fatal error management.
+
+### Enhanced Solution Implemented
+
+**New Generic Function:** `handle_fatal_error()`
+- Accepts any exception type with customizable error prefix
+- Consistent error display and exit behavior
+- Supports all types of fatal CLI errors
+
+### Updated Error Handling Patterns
+
+#### Before (Inconsistent):
 ```python
-# RTF command example
+# RTF command file input errors
 try:
     selected_file = get_input_file(...)
 except ValueError as e:
     console.error(f"Error finding input files: {e}")
     sys.exit(1)
 
-# Similar patterns with slight variations exist in multiple locations
+# Nipper command processing errors  
+except (ValueError, FileNotFoundError, KeyError) as e:
+    rich_output.error(f"Error processing CSV file: {e}")
+    sys.exit(1)
+
+# Configuration validation errors
+except ValueError as e:
+    console.error(f"Error validating configuration: {e}")
+    sys.exit(1)
 ```
 
-### Recommendation
-**Standardize using `cli.common.config_validation.handle_config_error()`:**
+#### After (Standardized):
+```python
+from kp_analysis_toolkit.cli.common.config_validation import (
+    handle_fatal_error,
+    handle_config_error,  # Convenience wrapper
+)
 
-- Single point of control for error message formatting
-- Consistent exit behavior
-- Easier to modify error handling behavior globally
+# File input errors
+try:
+    selected_file = get_input_file(...)
+except ValueError as e:
+    handle_fatal_error(e, error_prefix="Error finding input files")
+
+# Processing errors
+except (ValueError, FileNotFoundError, KeyError) as e:
+    handle_fatal_error(e, error_prefix="Error processing CSV file")
+
+# Configuration validation errors (two options)
+except ValueError as e:
+    handle_config_error(e)  # Uses "Error validating configuration" prefix
+    # OR
+    handle_fatal_error(e, error_prefix="Error validating configuration")
+```
+
+### Benefits Achieved
+
+✅ **Universal Error Handling**: Single function handles all fatal CLI errors  
+✅ **Consistent Messaging**: Customizable prefixes with standard format  
+✅ **Reduced Duplication**: Eliminated repeated `console.error()` + `sys.exit(1)` patterns  
+✅ **Centralized Control**: Single point for modifying error behavior across all commands  
+✅ **Backward Compatibility**: Existing `handle_config_error()` calls continue to work  
+✅ **Cleaner Code**: Removed manual `sys` imports and error handling boilerplate
 
 ### Implementation Priority
-**High** - Improves user experience consistency
+**High** - ✅ **COMPLETED** - Improves user experience consistency
 
 ---
 
-## 3. Text Utility Functions
+## 3. Text Utility Functions -- NOT IMPLEMENTED
 
 ### Current State
-`summarize_text()` function in `cli.commands.scripts.py`:
-
-```python
-def summarize_text(
-    text: str,
-    *,
-    first_x_chars: int = 10,
-    max_length: int = 50,
-    replace_with: str = "...",
-) -> str:
-    """Summarize text to a maximum length."""
-    # Implementation details...
-```
-
-### Recommendation
-**Move to `cli.utils.text_utils.py` (new file):**
-
-- Create dedicated text processing utilities module
-- Make function available to all CLI commands
-- Follow established pattern of utility organization
-- Alternative: Remove if unused and leverage existing `RichOutputService.format_value()`
-
-### Implementation Priority
-**Medium** - Organizational improvement, future-proofing
-
----
+Removed this function as the Rich Output capabilities in this regard are sufficient.
 
 ## 4. Batch Processing Patterns
 
@@ -225,9 +245,86 @@ get_input_file(
 
 ---
 
+## Implementation Status Summary
+
+### ✅ **COMPLETED: Configuration Validation Standardization**
+
+**Date Completed:** July 6, 2025
+
+All CLI commands (`nipper.py`, `scripts.py`, `rtf_to_text.py`) have been successfully refactored to use the standardized configuration validation pattern from `cli.common.config_validation`.
+
+**Key Changes:**
+- Replaced manual try/catch blocks with `validate_program_config()` and `handle_config_error()`
+- Fixed critical bug in scripts command that used `return` instead of proper exit behavior
+- Added dedicated helper function for RTF batch processing configuration
+- Separated configuration errors from processing errors in batch mode
+- All commands now use consistent error messaging and exit behavior
+
+**Test Results:** 555 tests passed, core functionality confirmed working
+
+**Benefits Achieved:**
+- ✅ Consistent error handling across all CLI commands
+- ✅ Centralized error message formatting
+- ✅ Better Pydantic ValidationError handling
+- ✅ Easier testing and maintenance
+- ✅ Fixed critical exit behavior bug
+
+### ✅ **COMPLETED: Error Handling Standardization**
+
+**Date Completed:** July 6, 2025
+
+Enhanced the `cli.common.config_validation` module with a generic `handle_fatal_error()` function that can handle all types of fatal CLI errors, not just configuration validation errors.
+
+**Key Changes:**
+- Added `handle_fatal_error()` function with customizable error prefixes
+- Maintained `handle_config_error()` as backward-compatible convenience wrapper
+- Updated all CLI commands to use standardized error handling for all error types
+- Eliminated all manual `console.error()` + `sys.exit(1)` patterns
+- Removed unnecessary `sys` imports from CLI command files
+
+**Function Signatures:**
+```python
+def handle_fatal_error(
+    error: Exception,
+    *,
+    error_prefix: str = "Error",
+    exit_on_error: bool = True,
+    rich_output: RichOutputService | None = None,
+) -> None
+
+def handle_config_error(
+    error: Exception,
+    *,
+    exit_on_error: bool = True,
+    rich_output: RichOutputService | None = None,
+) -> None  # Calls handle_fatal_error() with config-specific prefix
+```
+
+**Benefits Achieved:**
+- ✅ Universal error handling for all fatal CLI errors
+- ✅ Customizable error message prefixes
+- ✅ Eliminated code duplication across different error types
+- ✅ Backward compatibility maintained
+- ✅ Cleaner CLI command code
+
+### 🔄 **PENDING: Text Utilities Organization**
+- Move `summarize_text()` function to shared utilities
+- Create `cli.utils.text_utils.py`
+
+### 🔄 **PENDING: Batch Processing Abstraction**  
+- Extract batch processing patterns from RTF command
+- Create `cli.utils.batch_processing.py`
+
+### 🔄 **PENDING: Results Display Enhancement**
+- Add batch results table layouts
+- Standardize success/failure formatting
+
+---
+
 ## Notes
 
 - The RTF command already effectively uses `cli.common.file_selection` utilities
 - Most recommendations involve moving existing patterns to shared utilities rather than creating new functionality
 - Implementation can be done incrementally without breaking existing functionality
-- Consider creating migration guide for developers working on other CLI commands
+- Configuration validation standardization provides immediate benefits and improves code quality significantly
+- Future CLI commands can now follow the established validation pattern for consistency
