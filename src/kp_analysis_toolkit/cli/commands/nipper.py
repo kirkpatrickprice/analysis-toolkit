@@ -20,6 +20,7 @@ from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_cs
 from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
 # Configure option groups for this command
+# Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
 setup_command_option_groups("nipper")
 
 

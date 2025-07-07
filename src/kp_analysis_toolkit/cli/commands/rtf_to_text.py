@@ -20,6 +20,7 @@ from kp_analysis_toolkit.rtf_to_text.process_rtf import process_rtf_file
 from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 # Configure option groups for this command
+# Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
 setup_command_option_groups("rtf-to-text")
 
 

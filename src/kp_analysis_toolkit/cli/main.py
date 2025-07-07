@@ -140,6 +140,58 @@ def cli(
 
 
 # Add module commands to the CLI
+# Configure option groups for multi-command CLI structure
+click.rich_click.OPTION_GROUPS = getattr(click.rich_click, "OPTION_GROUPS", {})
+
+# Scripts command option groups
+click.rich_click.OPTION_GROUPS["scripts"] = [
+    {
+        "name": "Configuration & Input",
+        "options": ["--conf", "--start-dir", "--filespec"],
+    },
+    {
+        "name": "Information Options",
+        "options": [
+            "--list-audit-configs",
+            "--list-sections",
+            "--list-source-files",
+            "--list-systems",
+        ],
+    },
+    {
+        "name": "Output & Control",
+        "options": ["--out-path", "--verbose"],
+    },
+    {
+        "name": "Information & Control",
+        "options": ["--version"],
+    },
+]
+
+# RTF-to-text command option groups
+click.rich_click.OPTION_GROUPS["rtf-to-text"] = [
+    {
+        "name": "Input & Processing Options",
+        "options": ["--in-file", "--start-dir"],
+    },
+    {
+        "name": "Information & Control",
+        "options": ["--version"],
+    },
+]
+
+# Nipper command option groups
+click.rich_click.OPTION_GROUPS["nipper"] = [
+    {
+        "name": "Input & Processing Options",
+        "options": ["--in-file", "--start-dir"],
+    },
+    {
+        "name": "Information & Control",
+        "options": ["--version"],
+    },
+]
+
 cli.add_command(scripts_process_command_line, name="scripts")
 cli.add_command(nipper_process_command_line, name="nipper")
 cli.add_command(rtf_process_command_line, name="rtf-to-text")

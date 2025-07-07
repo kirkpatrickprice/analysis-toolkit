@@ -48,6 +48,8 @@ if TYPE_CHECKING:
     from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
 # Configure option groups for this command
+# Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
+# This configuration is ready for future use when the issue is resolved
 setup_command_option_groups("scripts")
 
 
