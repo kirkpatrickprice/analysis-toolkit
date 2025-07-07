@@ -21,16 +21,6 @@ class TestCLIDependencyInjection:
         assert mock_init_di.called
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
-    def test_cli_passes_verbose_to_di(self, mock_init_di: MagicMock) -> None:
-        """Test that CLI passes verbose flag to DI initialization."""
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--verbose", "--skip-update-check"])
-
-        assert result.exit_code == 0
-        # Check that verbose=True was passed at least once
-        mock_init_di.assert_called_with(verbose=True, quiet=False)
-
-    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_passes_quiet_to_di(self, mock_init_di: MagicMock) -> None:
         """Test that CLI passes quiet flag to DI initialization."""
         runner = CliRunner()
@@ -40,23 +30,21 @@ class TestCLIDependencyInjection:
         # Check that quiet=True was passed at least once
         mock_init_di.assert_called_with(verbose=False, quiet=True)
 
-    def test_cli_rejects_conflicting_verbose_quiet_flags(self) -> None:
-        """Test that CLI rejects both verbose and quiet flags."""
+    def test_cli_rejects_verbose_option_not_available(self) -> None:
+        """Test that CLI rejects verbose option since it's no longer available."""
         runner = CliRunner()
-        result = runner.invoke(cli, ["--verbose", "--quiet", "--skip-update-check"])
+        result = runner.invoke(cli, ["--verbose", "--skip-update-check"])
 
-        assert result.exit_code == 1
-        assert "mutually exclusive" in result.output
+        assert result.exit_code == 2  # Invalid option
+        assert "No such option: --verbose" in result.output
 
-    def test_cli_has_verbose_option(self) -> None:
-        """Test that CLI has verbose option available."""
+    def test_cli_rejects_verbose_option_not_available(self) -> None:
+        """Test that CLI rejects verbose option since it's no longer available."""
         runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
+        result = runner.invoke(cli, ["--verbose", "--skip-update-check"])
 
-        assert result.exit_code == 0
-        assert "--verbose" in result.output
-        assert "-v" in result.output
-        assert "Enable verbose output" in result.output
+        assert result.exit_code == 2  # Invalid option
+        assert "No such option: --verbose" in result.output
 
     def test_cli_has_quiet_option(self) -> None:
         """Test that CLI has quiet option available."""
@@ -87,7 +75,8 @@ class TestCLIDependencyInjection:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_skips_version_check_but_initializes_di(
-        self, mock_init_di: MagicMock
+        self,
+        mock_init_di: MagicMock,
     ) -> None:
         """Test that DI is initialized even when version check is skipped."""
         runner = CliRunner()
@@ -130,8 +119,9 @@ class TestCLIRichOutputIntegration:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_backward_compatibility_with_rich_output(
-        self, mock_init_di: MagicMock
-    ) -> None:  # noqa: ARG002
+        self,
+        mock_init_di: MagicMock,
+    ) -> None:
         """Test that CLI maintains backward compatibility with Rich Output usage."""
         # This test ensures existing Rich Output usage still works
         runner = CliRunner()
@@ -195,7 +185,8 @@ class TestCLISubcommandIntegration:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_subcommands_benefit_from_di_initialization(
-        self, mock_init_di: MagicMock
+        self,
+        mock_init_di: MagicMock,
     ) -> None:
         """Test that subcommands benefit from DI initialization done at CLI level."""
         runner = CliRunner()
@@ -225,12 +216,12 @@ class TestCLIConfigurationPropagation:
         """Test that custom configuration is properly propagated."""
         runner = CliRunner()
 
-        # Test verbose
-        runner.invoke(cli, ["--verbose", "--skip-update-check"])
-        mock_init_di.assert_called_with(verbose=True, quiet=False)
+        # Test quiet flag
+        runner.invoke(cli, ["--quiet", "--skip-update-check"])
+        mock_init_di.assert_called_with(verbose=False, quiet=True)
 
         mock_init_di.reset_mock()
 
-        # Test quiet
-        runner.invoke(cli, ["--quiet", "--skip-update-check"])
-        mock_init_di.assert_called_with(verbose=False, quiet=True)
+        # Test default behavior (no flags)
+        runner.invoke(cli, ["--skip-update-check"])
+        mock_init_di.assert_called_with(verbose=False, quiet=False)

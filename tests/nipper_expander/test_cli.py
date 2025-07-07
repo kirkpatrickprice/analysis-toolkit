@@ -18,7 +18,7 @@ class TestNipperExpanderCLI:
             # Create a test CSV file
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text(
-                "column1,devices,column3\nvalue1,device1;device2,value3\n",
+                "column1,Devices,column3\nvalue1,device1;device2,value3\n",
             )
 
             runner = CliRunner()
@@ -45,14 +45,20 @@ class TestNipperExpanderCLI:
             # Create a test CSV file
             test_csv = Path(temp_dir) / "nipper_output.csv"
             test_csv.write_text(
-                "column1,devices,column3\nvalue1,device1;device2,value3\n",
+                "column1,Devices,column3\nvalue1,device1;device2,value3\n",
             )
 
             runner = CliRunner()
 
-            with patch(
-                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
-            ) as mock_process:
+            with (
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
+                ) as mock_process,
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
+                    return_value=test_csv,
+                ) as mock_get_file,
+            ):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -63,6 +69,7 @@ class TestNipperExpanderCLI:
 
                 assert result.exit_code == 0
                 mock_process.assert_called_once()
+                mock_get_file.assert_called_once()
 
     def test_cli_no_csv_files_found(self) -> None:
         """Test CLI behavior when no CSV files are found."""
@@ -85,7 +92,7 @@ class TestNipperExpanderCLI:
                 )
 
                 assert result.exit_code == 1  # CLI should exit with error code
-                assert "Error validating configuration" in result.output
+                assert "File selection failed: No CSV files found" in result.output
 
     def test_cli_invalid_input_file(self) -> None:
         """Test CLI behavior with invalid input file."""
@@ -104,7 +111,7 @@ class TestNipperExpanderCLI:
                 ],
             )
 
-            assert "Error validating configuration" in result.output
+            assert "File selection failed: Invalid file specified" in result.output
 
     def test_cli_with_custom_start_directory(self) -> None:
         """Test CLI with custom start directory."""
@@ -114,13 +121,19 @@ class TestNipperExpanderCLI:
 
             # Create CSV in subdirectory
             test_csv = subdir / "test.csv"
-            test_csv.write_text("column1,devices,column3\nvalue1,device1,value3\n")
+            test_csv.write_text("column1,Devices,column3\nvalue1,device1,value3\n")
 
             runner = CliRunner()
 
-            with patch(
-                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
-            ) as mock_process:
+            with (
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
+                ) as mock_process,
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
+                    return_value=test_csv,
+                ) as mock_get_file,
+            ):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -131,13 +144,14 @@ class TestNipperExpanderCLI:
 
                 assert result.exit_code == 0
                 mock_process.assert_called_once()
+                mock_get_file.assert_called_once()
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
     def test_program_config_creation(self, mock_process: MagicMock) -> None:
         """Test that ProgramConfig is created correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1;device2\n")
+            test_csv.write_text("Devices\ndevice1;device2\n")
 
             runner = CliRunner()
 
@@ -186,7 +200,7 @@ class TestNipperExpanderCLI:
         """Test success message is displayed."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
@@ -206,7 +220,7 @@ class TestNipperExpanderCLI:
         """Test error handling during CSV processing."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
@@ -238,7 +252,7 @@ class TestGetInputFileFunction:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
@@ -328,8 +342,8 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
             # Create multiple CSV files
             csv1 = Path(temp_dir) / "file1.csv"
             csv2 = Path(temp_dir) / "file2.csv"
-            csv1.write_text("devices\ndevice1\n")
-            csv2.write_text("devices\ndevice2\n")
+            csv1.write_text("Devices\ndevice1\n")
+            csv2.write_text("Devices\ndevice2\n")
 
             runner = CliRunner()
 
@@ -401,7 +415,7 @@ class TestCLIParameterValidation:
         """Test that valid parameters are accepted."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
@@ -423,7 +437,7 @@ class TestCLIParameterValidation:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create CSV in current directory simulation
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
@@ -439,4 +453,10 @@ class TestCLIParameterValidation:
                 result = runner.invoke(process_command_line, [])
 
                 assert result.exit_code == 0
-                mock_get_file.assert_called_once_with(None, "./")  # Default start dir
+                mock_get_file.assert_called_once_with(
+                    None,
+                    "./",
+                    file_pattern="*.csv",
+                    file_type_description="CSV",
+                    include_process_all_option=True,
+                )
