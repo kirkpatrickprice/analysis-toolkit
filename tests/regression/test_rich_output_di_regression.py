@@ -102,7 +102,7 @@ class TestRichOutputDIRegression:
         # CLI should start without errors
         result = cli_runner.invoke(cli, ["--help"])
         assert result.exit_code == 0
-        assert "Command line interface" in result.output
+        assert "KP Analysis Toolkit" in result.output
 
         # Version command should work
         result = cli_runner.invoke(cli, ["--version"])

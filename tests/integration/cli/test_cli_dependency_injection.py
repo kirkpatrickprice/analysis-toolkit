@@ -44,7 +44,9 @@ class TestCLIDependencyInjection:
         result = cli_runner.invoke(cli, ["--verbose", "--skip-update-check"])
 
         assert result.exit_code == 2  # Invalid option  # noqa: PLR2004
-        assert "No such option: --verbose" in result.output
+        # Check for the error message, accounting for Rich formatting/ANSI codes
+        assert "No such option:" in result.output
+        assert "--verbose" in result.output
 
     def test_cli_has_quiet_option(self, cli_runner: CliRunner) -> None:
         """Test that CLI has quiet option available."""
@@ -127,12 +129,13 @@ class TestCLIRichOutputIntegration:
     ) -> None:
         """Test that CLI maintains backward compatibility with Rich Output usage."""
         # This test ensures existing Rich Output usage still works
-        result = cli_runner.invoke(cli, ["--help"])
+        # Use --skip-update-check to ensure we actually enter the main CLI function
+        result = cli_runner.invoke(cli, ["--skip-update-check"])
 
         assert result.exit_code == 0
-        # Should not crash due to Rich Output changes
-        assert "Command line interface" in result.output
-        # DI should be initialized for help command
+        # Should not crash due to Rich Output changes - check for help content
+        assert "KP Analysis Toolkit" in result.output
+        # DI should be initialized when we actually invoke the CLI function
         assert mock_init_di.called
 
 
@@ -160,7 +163,7 @@ class TestCLIErrorHandling:
 
         # Help should always work
         assert result.exit_code == 0
-        assert "Command line interface" in result.output
+        assert "KP Analysis Toolkit" in result.output
 
 
 class TestCLISubcommandIntegration:
