@@ -1,1 +1,0 @@
-"""Linux regex testing module."""
