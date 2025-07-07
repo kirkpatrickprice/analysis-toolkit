@@ -265,7 +265,7 @@ class WindowsRegexTestBase:
             compiled_pattern = re.compile(pattern, flags)
         except re.error as e:
             pytest.fail(
-                f"Pattern compilation failed for {config_name} in {yaml_name}: {e}"
+                f"Pattern compilation failed for {config_name} in {yaml_name}: {e}",
             )
 
         # Test pattern against all test files
@@ -418,11 +418,12 @@ class WindowsRegexTestBase:
             else:
                 # Some fields missing - might be acceptable for optional fields
                 print(
-                    f"\nINFO: Config {config_name} in {yaml_name} has some optional fields:"
+                    f"\nINFO: Config {config_name} in {yaml_name} has some optional fields:",
                 )
                 print(f"  Missing groups: {sorted(missing_groups)}")
                 print(f"  Available groups: {sorted(named_groups)}")
 
+    @pytest.mark.performance
     def test_pattern_performance(
         self,
         config_name: str,

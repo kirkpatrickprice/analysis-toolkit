@@ -94,4 +94,97 @@ def isolated_cli_runner(tmp_path: Path) -> CliRunner:
     return CliRunner(env={"HOME": str(tmp_path)})
 
 
-# Add other shared fixtures as needed
+# Automatic test marking based on directory structure
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:  # noqa: ARG001
+    """
+    Automatically mark tests based on their directory structure.
+
+    This function automatically applies pytest markers to tests based on their location
+    within the test directory structure. It's designed to be easily extensible for
+    future marking needs.
+
+    Args:
+        config: pytest configuration object (unused but required by pytest)
+        items: list of collected test items
+
+    """
+    # Define directory-based marking rules
+    # Each entry maps a directory path pattern to a list of markers to apply
+    directory_markers = {
+        # Mark all regex tests as slow (they take ~54 seconds for 169 tests)
+        "unit/process_scripts/regex": ["slow"],
+        # Future extensions can be added here:
+        # "integration/workflows": ["integration", "slow"],
+        # "e2e": ["e2e", "slow"],
+        # "performance": ["performance", "slow"],
+        # "unit/large_datasets": ["slow"],
+    }
+
+    # Process each test item
+    for item in items:
+        # Get the test file path relative to the tests directory
+        test_file_path = Path(item.fspath)
+        tests_dir = Path(__file__).parent  # This is the tests/ directory
+
+        try:
+            # Get relative path from tests/ directory
+            relative_path = test_file_path.relative_to(tests_dir)
+            relative_dir = str(relative_path.parent)
+
+            # Normalize path separators for cross-platform compatibility
+            relative_dir = relative_dir.replace("\\", "/")
+
+            # Apply markers based on directory patterns
+            for dir_pattern, markers in directory_markers.items():
+                if _path_matches_pattern(relative_dir, dir_pattern):
+                    for marker_name in markers:
+                        # Add the marker to the test item
+                        marker = getattr(pytest.mark, marker_name)
+                        item.add_marker(marker)
+
+        except ValueError:
+            # Path is not relative to tests directory - skip marking
+            continue
+
+
+def _path_matches_pattern(path: str, pattern: str) -> bool:
+    """
+    Check if a path matches a given pattern.
+
+    This function supports exact matches and can be extended to support
+    more sophisticated pattern matching in the future.
+
+    Args:
+        path: The path to check (e.g., "unit/process_scripts/regex/windows")
+        pattern: The pattern to match against (e.g., "unit/process_scripts/regex")
+
+    Returns:
+        True if the path matches the pattern, False otherwise
+
+    """
+    # For now, use startswith for directory matching
+    # This allows subdirectories to inherit markers from parent directories
+    return path.startswith(pattern)
+
+
+# Alternative implementation for exact directory matching:
+def _path_matches_pattern_exact(path: str, pattern: str) -> bool:
+    """
+    Check if a path exactly matches a pattern or is a subdirectory of it.
+
+    This is an alternative implementation that can be used if more precise
+    control over directory matching is needed.
+    """
+    path_parts = path.split("/")
+    pattern_parts = pattern.split("/")
+
+    # Pattern must be shorter or equal length to path
+    if len(pattern_parts) > len(path_parts):
+        return False
+
+    # All pattern parts must match the beginning of the path
+    return path_parts[: len(pattern_parts)] == pattern_parts

@@ -145,6 +145,7 @@ class TestRichOutputDIRegression:
                 f"get_rich_output should handle uninitialized DI gracefully: {e}",
             )
 
+    @pytest.mark.performance
     def test_performance_characteristics(self) -> None:
         """Test that performance characteristics are acceptable."""
         import time

@@ -234,6 +234,7 @@ class RegexTestBase:
                     print(f"  Missing groups: {sorted(missing_groups)}")
                     print(f"  Available groups: {sorted(named_groups)}")
 
+    @pytest.mark.performance
     def test_pattern_performance(
         self,
         config_name: str,
