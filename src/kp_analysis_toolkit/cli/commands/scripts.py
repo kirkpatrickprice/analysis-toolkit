@@ -7,6 +7,13 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     handle_fatal_error,
     validate_program_config,
 )
+from kp_analysis_toolkit.cli.common.decorators import (
+    module_version_option,
+    output_directory_option,
+    start_directory_option,
+    verbose_option,
+)
+from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
 from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
 from kp_analysis_toolkit.cli.utils.table_layouts import (
@@ -40,26 +47,21 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
+# Configure option groups for this command
+setup_command_option_groups("scripts")
+
 
 @click.command(name="scripts")
-@click.version_option(
-    version=process_scripts_version,
-    prog_name="kpat_cli scripts",
-    message="%(prog)s version %(version)s",
-)
+@module_version_option(process_scripts_version, "scripts")
+@start_directory_option()
+@output_directory_option()
+@verbose_option()
 @click.option(
     "audit_config_file",
     "--conf",
     "-c",
     default="audit-all.yaml",
     help="Default: audit-all.yaml. Provide a YAML configuration file to specify the options. If only a file name, assumes analysis-toolit/conf.d location. Forces quiet mode.",
-)
-@click.option(
-    "source_files_path",
-    "--start-dir",
-    "-d",
-    default="./",
-    help="Default: the current working directory (./). Specify the path to start searching for files.  Will walk the directory tree from this path.",
 )
 @click.option(
     "source_files_spec",
@@ -86,19 +88,6 @@ if TYPE_CHECKING:
 @click.option(
     "--list-systems",
     help="Print system details found in FILESPEC and then exit",
-    is_flag=True,
-)
-@click.option(
-    "--out-path",
-    "-o",
-    default="results/",
-    help="Default: results/. Specify the output directory for the results files.",
-)
-@click.option(
-    "--verbose",
-    "-v",
-    default=False,
-    help="Be verbose",
     is_flag=True,
 )
 def process_command_line(**cli_config: dict) -> None:

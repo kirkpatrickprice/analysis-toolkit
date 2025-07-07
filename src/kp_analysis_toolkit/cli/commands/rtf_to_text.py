@@ -6,34 +6,27 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     handle_fatal_error,
     validate_program_config,
 )
+from kp_analysis_toolkit.cli.common.decorators import (
+    input_file_option,
+    module_version_option,
+    start_directory_option,
+)
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
 from kp_analysis_toolkit.rtf_to_text.process_rtf import process_rtf_file
 from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
+# Configure option groups for this command
+setup_command_option_groups("rtf-to-text")
+
 
 @click.command(name="rtf-to-text")
-@click.version_option(
-    version=rtf_to_text_version,
-    prog_name="kpat_cli rtf-to-text",
-    message="%(prog)s version %(version)s",
-)
-@click.option(
-    "_infile",
-    "--in-file",
-    "-f",
-    default=None,
-    help="Input RTF file to process. If not specified, will search the current directory for RTF files.",
-)
-@click.option(
-    "source_files_path",
-    "--start-dir",
-    "-d",
-    default="./",
-    help="Default: the current working directory (./). Specify the path to start searching for files. Will walk the directory tree from this path.",
-)
+@module_version_option(rtf_to_text_version, "rtf-to-text")
+@input_file_option(file_type="RTF")
+@start_directory_option()
 def process_command_line(_infile: str, source_files_path: str) -> None:
     """Convert RTF files to plain text format with ASCII encoding."""
     # Get the rich output console

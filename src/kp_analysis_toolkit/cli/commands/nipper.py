@@ -6,34 +6,27 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     handle_fatal_error,
     validate_program_config,
 )
+from kp_analysis_toolkit.cli.common.decorators import (
+    input_file_option,
+    module_version_option,
+    start_directory_option,
+)
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
 from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_csv
 from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
+# Configure option groups for this command
+setup_command_option_groups("nipper")
+
 
 @click.command(name="nipper")
-@click.version_option(
-    version=nipper_expander_version,
-    prog_name="kpat_cli scripts",
-    message="%(prog)s version %(version)s",
-)
-@click.option(
-    "_infile",
-    "--in-file",
-    "-f",
-    default=None,
-    help="Input file to process. If not specified, will search the current directory for CSV files.",
-)
-@click.option(
-    "source_files_path",
-    "--start-dir",
-    "-d",
-    default="./",
-    help="Default: the current working directory (./). Specify the path to start searching for files.  Will walk the directory tree from this path.",
-)
+@module_version_option(nipper_expander_version, "nipper")
+@input_file_option(file_type="CSV")
+@start_directory_option()
 def process_command_line(_infile: str, source_files_path: str) -> None:
     """Process a Nipper CSV file and expand it into a more readable format."""
     rich_output: RichOutputService = get_rich_output()

@@ -41,6 +41,9 @@ click.rich_click.STYLE_COMMAND = "bold cyan"
 click.rich_click.STYLE_SWITCH = "bold green"
 click.rich_click.MAX_WIDTH = 100
 
+# Note: Global option groups are set up via individual command configuration
+# to avoid wildcard conflicts with specific command configurations
+
 CONTEXT_SETTINGS: dict[str, Any] = {
     "max_content_width": 120,
     "terminal_width": 120,
@@ -105,13 +108,6 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
     help="Skip checking for updates at startup.",
 )
 @click.option(
-    "--verbose",
-    "-v",
-    is_flag=True,
-    default=False,
-    help="Enable verbose output including debug messages",
-)
-@click.option(
     "--quiet",
     "-q",
     is_flag=True,
@@ -123,25 +119,15 @@ def cli(
     ctx: click.Context,
     *,
     skip_update_check: bool,
-    verbose: bool,
     quiet: bool,
 ) -> None:
     """Command line interface for the KP Analysis Toolkit."""
     # Store DI settings in context for all subcommands
     ctx.ensure_object(dict)
-    ctx.obj["verbose"] = verbose
     ctx.obj["quiet"] = quiet
 
-    # Validate conflicting options
-    if verbose and quiet:
-        click.echo(
-            "Error: --verbose and --quiet options are mutually exclusive",
-            err=True,
-        )
-        ctx.exit(1)
-
     # Initialize dependency injection once for all commands
-    initialize_dependency_injection(verbose=verbose, quiet=quiet)
+    initialize_dependency_injection(verbose=False, quiet=quiet)
 
     # Always run version check unless explicitly skipped
     if not skip_update_check:
