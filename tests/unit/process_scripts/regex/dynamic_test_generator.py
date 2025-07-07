@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from tests.process_scripts.regex.common_base import RegexTestBase
+from tests.unit.process_scripts.regex.common_base import RegexTestBase
 
 
 class DynamicYamlTestMixin(RegexTestBase):
@@ -278,7 +278,7 @@ def discover_yaml_files(platform: str) -> list[str]:
     from pathlib import Path
 
     yaml_dir = (
-        Path(__file__).parent.parent.parent.parent
+        Path(__file__).parent.parent.parent.parent.parent
         / "src"
         / "kp_analysis_toolkit"
         / "process_scripts"

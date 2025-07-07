@@ -15,7 +15,9 @@ from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 
 def custom_help_callback(
-    ctx: click.Context, param: click.Parameter, value: bool
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
 ) -> None:
     """Custom help callback that intercepts --help and shows grouped options."""
     if not value or ctx.resilient_parsing:
@@ -75,10 +77,10 @@ def custom_help_callback(
     callback=custom_help_callback,
     help="Show this message and exit",
 )
-def test_scripts_command(**kwargs):
+def demo_scripts_command(**kwargs):
     """Test command with custom help callback to demonstrate option grouping."""
     print("Command executed!")
 
 
 if __name__ == "__main__":
-    test_scripts_command()
+    demo_scripts_command()

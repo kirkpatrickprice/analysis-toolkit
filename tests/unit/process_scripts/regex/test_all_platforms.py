@@ -7,7 +7,7 @@ Windows, Linux, and macOS YAML configuration files.
 
 import pytest
 
-from tests.process_scripts.regex.dynamic_test_generator import discover_yaml_files
+from tests.unit.process_scripts.regex.dynamic_test_generator import discover_yaml_files
 
 
 def test_all_platforms() -> None:
@@ -46,3 +46,4 @@ if __name__ == "__main__":
 
     print("\nRunning comprehensive tests across all platforms...")
     pytest.main(["-v", *test_patterns])
+

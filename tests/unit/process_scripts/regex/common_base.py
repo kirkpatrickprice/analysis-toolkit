@@ -23,7 +23,7 @@ class RegexTestBase:
     def get_test_data_dir(self) -> Path:
         """Get the test data directory for this platform."""
         return (
-            Path(__file__).parent.parent.parent.parent
+            Path(__file__).parent.parent.parent.parent.parent
             / "testdata"
             / "process_scripts"
             / self.TEST_DATA_SUBDIR
@@ -32,7 +32,7 @@ class RegexTestBase:
     def get_yaml_config_dir(self) -> Path:
         """Get the YAML configuration directory."""
         return (
-            Path(__file__).parent.parent.parent.parent
+            Path(__file__).parent.parent.parent.parent.parent
             / "src"
             / "kp_analysis_toolkit"
             / "process_scripts"

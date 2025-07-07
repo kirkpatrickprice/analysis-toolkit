@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.process_scripts.regex.dynamic_test_generator import (
+from tests.unit.process_scripts.regex.dynamic_test_generator import (
     DynamicYamlTestMixin,
     create_platform_test_class,
     discover_yaml_files,
@@ -69,3 +69,4 @@ TestLinuxWorldfilesPatterns = globals().get("TestLinuxWorldfilesPatterns")
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
