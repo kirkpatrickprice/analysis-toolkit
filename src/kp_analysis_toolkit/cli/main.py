@@ -14,6 +14,9 @@ from kp_analysis_toolkit.cli.commands.rtf_to_text import (
 from kp_analysis_toolkit.cli.commands.scripts import (
     process_command_line as scripts_process_command_line,
 )
+from kp_analysis_toolkit.cli.common.output_formatting import (
+    create_commands_help_table,
+)
 from kp_analysis_toolkit.cli.utils.system_utils import (
     get_architecture_info,
     get_installation_path,
@@ -205,30 +208,17 @@ def _show_enhanced_help(console: RichOutputService) -> None:
     console.print("")
 
     # Create a table for available commands
-    table = console.table(
-        title="📋 Available Commands",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
-    )
-
-    if table is not None:  # Not in quiet mode
-        table.add_column("Command", style="bold white", min_width=15)
-        table.add_column("Description", style="cyan", min_width=50)
-
-        table.add_row(
-            "scripts",
-            "Process collector script results files (formerly adv-searchfor)",
-        )
-        table.add_row(
+    commands = [
+        ("scripts", "Process collector script results files (formerly adv-searchfor)"),
+        (
             "nipper",
             "Process a Nipper CSV file and expand it into a more readable format",
-        )
-        table.add_row(
-            "rtf-to-text",
-            "Convert RTF files to plain text format with ASCII encoding",
-        )
+        ),
+        ("rtf-to-text", "Convert RTF files to plain text format with ASCII encoding"),
+    ]
 
+    table = create_commands_help_table(console, commands)
+    if table is not None:  # Not in quiet mode
         console.display_table(table)
 
     console.print("")

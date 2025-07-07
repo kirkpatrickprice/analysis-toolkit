@@ -196,10 +196,12 @@ def grouped_option_decorator(group_name: str) -> Callable[[Callable], Callable]:
             pass
 
     """
+
     def decorator(func: Callable) -> Callable:
         if not hasattr(func, "rich_click_group"):
             func.rich_click_group = group_name  # type: ignore[attr-defined]
         return func
+
     return decorator
 
 
@@ -222,14 +224,18 @@ def custom_help_option(command_name: str) -> Callable[[Callable], Callable]:
         @click.command(name="scripts")
         def scripts_command():
             pass
+
     """
+
     def help_callback(ctx: click.Context, param: click.Parameter, value: bool) -> None:  # noqa: FBT001
         """Callback that displays custom grouped help and exits."""
         if not value or ctx.resilient_parsing:
             return
 
         # Import here to avoid circular imports
-        from kp_analysis_toolkit.cli.common.output_formatting import display_grouped_help
+        from kp_analysis_toolkit.cli.common.output_formatting import (
+            display_grouped_help,
+        )
 
         display_grouped_help(ctx, command_name)
         ctx.exit()
@@ -237,7 +243,8 @@ def custom_help_option(command_name: str) -> Callable[[Callable], Callable]:
     def decorator(func: Callable) -> Callable:
         # Add the custom help option to the command
         help_option = click.option(
-            "--help", "-h",
+            "--help",
+            "-h",
             is_flag=True,
             expose_value=False,
             is_eager=True,

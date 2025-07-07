@@ -15,6 +15,10 @@ from kp_analysis_toolkit.cli.common.decorators import (
     verbose_option,
 )
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
+from kp_analysis_toolkit.cli.common.output_formatting import (
+    format_hash_display,
+    format_verbose_details,
+)
 from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
 from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
 from kp_analysis_toolkit.cli.utils.table_layouts import (
@@ -159,14 +163,13 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
 
         if program_config.verbose:
             # Create details string for verbose mode
-            details = []
-            for key, value in yaml_data.to_dict().items():
-                details.append(f"{key}: {rich_output.format_value(value, 60)}")
-            details_text = "\n".join(details[:max_details_items])
-            if len(yaml_data.to_dict()) > max_details_items:
-                details_text += (
-                    f"\n... and {len(yaml_data.to_dict()) - max_details_items} more"
-                )
+            yaml_dict = yaml_data.to_dict()
+            details_text = format_verbose_details(
+                rich_output,
+                yaml_dict,
+                max_items=max_details_items,
+                max_value_length=60,
+            )
             table.add_row(relative_path, details_text)
         else:
             table.add_row(relative_path)
@@ -231,25 +234,24 @@ def list_systems(program_config: ProgramConfig) -> None:
         return
 
     max_detail_fields = 5  # Limit displayed details in verbose mode
-    hash_display_length = 16  # Length of hash to display
 
     for system in systems:
-        row_data = [system.system_name, system.file_hash[:hash_display_length] + "..."]
+        row_data = [system.system_name, format_hash_display(system.file_hash)]
 
         if program_config.verbose:
-            # Create details string for verbose mode
-            details = []
-            for key, value in system.model_dump().items():
-                if key not in [
-                    "system_name",
-                    "file_hash",
-                ]:  # Skip already displayed fields
-                    details.append(f"{key}: {rich_output.format_value(value, 60)}")
-            details_text = "\n".join(details[:max_detail_fields])
-            if len(details) > max_detail_fields:
-                details_text += (
-                    f"\n... and {len(details) - max_detail_fields} more fields"
-                )
+            # Create details string for verbose mode with excluded fields
+            system_data = system.model_dump()
+            filtered_data = {
+                k: v
+                for k, v in system_data.items()
+                if k not in ["system_name", "file_hash"]
+            }
+            details_text = format_verbose_details(
+                rich_output,
+                filtered_data,
+                max_items=max_detail_fields,
+                max_value_length=60,
+            )
             row_data.append(details_text)
 
         table.add_row(*row_data)
