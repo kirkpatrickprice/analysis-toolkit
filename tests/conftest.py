@@ -98,8 +98,9 @@ def isolated_cli_runner(tmp_path: Path) -> CliRunner:
 
 
 def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:  # noqa: ARG001
+    config: pytest.Config,  # noqa: ARG001
+    items: list[pytest.Item],
+) -> None:
     """
     Automatically mark tests based on their directory structure.
 
