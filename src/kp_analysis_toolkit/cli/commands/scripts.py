@@ -1,15 +1,43 @@
-import sys
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
+import rich_click as click
+
+from kp_analysis_toolkit.cli.common.config_validation import (
+    handle_fatal_error,
+    validate_program_config,
+)
+from kp_analysis_toolkit.cli.common.decorators import (
+    custom_help_option,
+    module_version_option,
+    output_directory_option,
+    start_directory_option,
+    verbose_option,
+)
+from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
+from kp_analysis_toolkit.cli.common.output_formatting import (
+    create_list_command_header,
+    create_standard_list_table,
+    display_list_summary,
+    format_hash_display,
+    format_verbose_details,
+    handle_empty_list_result,
+)
+from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
+from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
+from kp_analysis_toolkit.cli.utils.table_layouts import (
+    create_file_listing_table,
+    create_system_info_table,
+)
+from kp_analysis_toolkit.process_scripts import (
+    __version__ as process_scripts_version,
+)
 from kp_analysis_toolkit.process_scripts import process_systems
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_search_results_to_excel,
 )
 from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, SysFilterAttr
-from kp_analysis_toolkit.process_scripts.models.program_config import (
-    ProgramConfig,
-)
+from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
@@ -28,86 +56,104 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
+# Configure option groups for this command
+# Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
+# This configuration is ready for future use when the issue is resolved
+setup_command_option_groups("scripts")
 
-def create_results_path(program_config: ProgramConfig) -> None:
-    """Create the results path if it does not exist."""
-    import os
 
-    # Check if we're in a testing environment (for backward compatibility with existing tests)
-    is_testing = (
-        "pytest" in sys.modules
-        or "unittest" in sys.modules
-        or os.environ.get("TESTING", "").lower() in ("true", "1", "yes")
-    )
+@custom_help_option("scripts")
+@click.command(name="scripts")
+@module_version_option(process_scripts_version, "scripts")
+@start_directory_option()
+@output_directory_option()
+@verbose_option()
+@click.option(
+    "audit_config_file",
+    "--conf",
+    "-c",
+    default="audit-all.yaml",
+    help="Default: audit-all.yaml. Provide a YAML configuration file to specify the options. If only a file name, assumes analysis-toolit/conf.d location. Forces quiet mode.",
+)
+@click.option(
+    "source_files_spec",
+    "--filespec",
+    "-f",
+    default="*.txt",
+    help="Default: *.txt. Specify the file specification to match. This can be a glob pattern.",
+)
+@click.option(
+    "--list-audit-configs",
+    help="List all available audit configuration files and then exit",
+    is_flag=True,
+)
+@click.option(
+    "--list-sections",
+    help="List all sections headers found in FILESPEC and then exit",
+    is_flag=True,
+)
+@click.option(
+    "--list-source-files",
+    help="List all files found in FILESPEC and then exit",
+    is_flag=True,
+)
+@click.option(
+    "--list-systems",
+    help="Print system details found in FILESPEC and then exit",
+    is_flag=True,
+)
+def process_command_line(**cli_config: dict) -> None:
+    """Process collector script results files (formerly adv-searchfor)."""
+    """Convert the click config to a ProgramConfig object and perform validation."""
+    try:
+        program_config = validate_program_config(ProgramConfig, **cli_config)
+    except ValueError as e:
+        handle_fatal_error(e, error_prefix="Configuration validation failed")
 
-    if program_config.results_path.exists():
-        message = f"Reusing results path: {program_config.results_path}"
-        if is_testing:
-            # Use click.echo for test compatibility
-            import click
+    # Echo the program configuration to the screen
+    if program_config.verbose:
+        print_verbose_config(cli_config, program_config)
 
-            click.echo(message)
-        else:
-            # Use Rich output for normal operation
-            rich_output = get_rich_output()
-            rich_output.info(message)
+    # List available audit configuration files
+    if program_config.list_audit_configs:
+        # List all available configuration files
+        list_audit_configs(program_config)
         return
 
-    if program_config.verbose:
-        message = f"Creating results path: {program_config.results_path}"
-        if is_testing:
-            # Use click.echo for test compatibility
-            import click
+    # List all discovered source file section headings
+    if program_config.list_sections:
+        list_sections()
+        return
 
-            click.echo(message)
-        else:
-            # Use Rich output for normal operation
-            rich_output = get_rich_output()
-            rich_output.debug(message)
+    # List all discovered source files
+    if program_config.list_source_files:
+        list_source_files(program_config)
+        return
 
-    program_config.results_path.mkdir(parents=True, exist_ok=False)
+    # List all discovered systems
+    if program_config.list_systems:
+        list_systems(program_config)
+        return
 
-
-def get_size(obj: Any, seen: set | None = None) -> int:  # noqa: ANN401
-    """Recursively find the size of an object and its contents in bytes."""
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Mark object as seen
-    seen.add(obj_id)
-    size = sys.getsizeof(obj)
-
-    # Handle iterables
-    if isinstance(obj, list | tuple | set | dict):
-        if isinstance(obj, list | tuple | set):
-            size += sum(get_size(i, seen) for i in obj)
-        else:  # dict
-            size += sum(get_size(k, seen) + get_size(v, seen) for k, v in obj.items())
-
-    return size
+    # Start the main processing
+    process_scipts_results(program_config)
 
 
 def list_audit_configs(program_config: ProgramConfig) -> None:
     """List all available audit configuration files."""
     rich_output = get_rich_output()
-    rich_output.header("Available Audit Configuration Files")
+    create_list_command_header(rich_output, "Available Audit Configuration Files")
 
     # Create a Rich table for configuration files
-    table = rich_output.table(
-        title="📋 Audit Configuration Files",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
+    table = create_standard_list_table(
+        rich_output,
+        "Audit Configuration Files",
+        "Configuration File",
+        include_verbose_column=program_config.verbose,
     )
 
     if table is None:  # Quiet mode
         return
-
-    table.add_column("Configuration File", style="cyan", min_width=30)
-    if program_config.verbose:
-        table.add_column("Details", style="white", min_width=40)
 
     max_details_items = 3  # Limit displayed details in verbose mode
 
@@ -117,14 +163,13 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
 
         if program_config.verbose:
             # Create details string for verbose mode
-            details = []
-            for key, value in yaml_data.to_dict().items():
-                details.append(f"{key}: {rich_output.format_value(value, 60)}")
-            details_text = "\n".join(details[:max_details_items])
-            if len(yaml_data.to_dict()) > max_details_items:
-                details_text += (
-                    f"\n... and {len(yaml_data.to_dict()) - max_details_items} more"
-                )
+            yaml_dict = yaml_data.to_dict()
+            details_text = format_verbose_details(
+                rich_output,
+                yaml_dict,
+                max_items=max_details_items,
+                max_value_length=60,
+            )
             table.add_row(relative_path, details_text)
         else:
             table.add_row(relative_path)
@@ -141,115 +186,78 @@ def list_sections() -> None:
 def list_source_files(program_config: ProgramConfig) -> None:
     """List all source files found in the specified path."""
     rich_output = get_rich_output()
-    rich_output.header("Source Files")
+    create_list_command_header(rich_output, "Source Files")
 
     source_files = list(process_systems.get_source_files(program_config))
 
     if not source_files:
-        rich_output.warning("No source files found")
+        handle_empty_list_result(rich_output, "source files")
         return
 
-    # Create a Rich table for source files
-    table = rich_output.table(
+    # Create a Rich table for source files using the centralized utility
+    table = create_file_listing_table(
+        rich_output,
         title="📁 Source Files",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
+        file_column_name="File Path",
     )
 
     if table is None:  # Quiet mode
         return
 
-    table.add_column("File Path", style="cyan", min_width=40)
-    table.add_column("Size", style="white", justify="right", min_width=10)
-
-    bytes_per_kb = 1024  # Standard byte to KB conversion
-
     for file in source_files:
-        try:
-            file_size = file.stat().st_size
-            size_str = (
-                f"{file_size:,} bytes"
-                if file_size < bytes_per_kb
-                else f"{file_size / bytes_per_kb:.1f} KB"
-            )
-        except OSError:
-            size_str = "Unknown"
-
+        size_str = get_file_size(file)
         table.add_row(str(file), size_str)
 
     rich_output.display_table(table)
-    rich_output.success(f"Total source files found: {len(source_files)}")
+    display_list_summary(rich_output, len(source_files), "source files")
 
 
 def list_systems(program_config: ProgramConfig) -> None:
     """List all systems found in the specified source files."""
     rich_output = get_rich_output()
-    rich_output.header("Systems Found")
+    create_list_command_header(rich_output, "Systems Found")
 
     systems = list(process_systems.enumerate_systems_from_source_files(program_config))
 
     if not systems:
-        rich_output.warning("No systems found")
+        handle_empty_list_result(rich_output, "systems")
         return
 
-    # Create a Rich table for systems
-    table = rich_output.table(
+    # Create a Rich table for systems using the centralized utility
+    table = create_system_info_table(
+        rich_output,
         title="🖥️ Systems",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
+        include_details=program_config.verbose,
     )
 
     if table is None:  # Quiet mode
         return
 
-    table.add_column("System Name", style="bold white", min_width=25)
-    table.add_column("File Hash", style="dim white", min_width=16)
-    if program_config.verbose:
-        table.add_column("Details", style="white", min_width=40)
-
     max_detail_fields = 5  # Limit displayed details in verbose mode
-    hash_display_length = 16  # Length of hash to display
 
     for system in systems:
-        row_data = [system.system_name, system.file_hash[:hash_display_length] + "..."]
+        row_data = [system.system_name, format_hash_display(system.file_hash)]
 
         if program_config.verbose:
-            # Create details string for verbose mode
-            details = []
-            for key, value in system.model_dump().items():
-                if key not in [
-                    "system_name",
-                    "file_hash",
-                ]:  # Skip already displayed fields
-                    details.append(f"{key}: {rich_output.format_value(value, 60)}")
-            details_text = "\n".join(details[:max_detail_fields])
-            if len(details) > max_detail_fields:
-                details_text += (
-                    f"\n... and {len(details) - max_detail_fields} more fields"
-                )
+            # Create details string for verbose mode with excluded fields
+            system_data = system.model_dump()
+            filtered_data = {
+                k: v
+                for k, v in system_data.items()
+                if k not in ["system_name", "file_hash"]
+            }
+            details_text = format_verbose_details(
+                rich_output,
+                filtered_data,
+                max_items=max_detail_fields,
+                max_value_length=60,
+            )
             row_data.append(details_text)
 
         table.add_row(*row_data)
 
     rich_output.display_table(table)
-    rich_output.success(f"Total systems found: {len(systems)}")
-
-
-def summarize_text(
-    text: str,
-    *,
-    first_x_chars: int = 10,
-    max_length: int = 50,
-    replace_with: str = "...",
-) -> str:
-    """Summarize text to a maximum length."""
-    if len(text) <= max_length:
-        return text
-    end_chars = max_length - first_x_chars - len(replace_with)
-    result: str = f"{text[:first_x_chars]}...{text[-end_chars:]}"
-    return result
+    display_list_summary(rich_output, len(systems), "systems")
 
 
 def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> None:
@@ -273,7 +281,10 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     rich_output.header("Processing Source Files")
 
     # Create results path
-    create_results_path(program_config)
+    create_results_directory(
+        program_config.results_path,
+        verbose=program_config.verbose,
+    )
 
     # Load systems
     systems: list[Systems] = list(

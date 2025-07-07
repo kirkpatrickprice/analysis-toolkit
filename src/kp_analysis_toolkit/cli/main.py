@@ -1,24 +1,35 @@
-import platform
 import sys
 from collections.abc import Callable
-from pathlib import Path
+from typing import Any
 
 import rich_click as click
 
 from kp_analysis_toolkit import __version__ as cli_version
-from kp_analysis_toolkit.nipper_expander import __version__ as nipper_version
-from kp_analysis_toolkit.nipper_expander.cli import (
+from kp_analysis_toolkit.cli.commands.nipper import (
     process_command_line as nipper_process_command_line,
 )
-from kp_analysis_toolkit.process_scripts import __version__ as scripts_version
-from kp_analysis_toolkit.process_scripts.cli import (
-    process_command_line as scripts_process_command_line,
-)
-from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_version
-from kp_analysis_toolkit.rtf_to_text.cli import (
+from kp_analysis_toolkit.cli.commands.rtf_to_text import (
     process_command_line as rtf_process_command_line,
 )
-from kp_analysis_toolkit.utils.rich_output import RichOutput, get_rich_output
+from kp_analysis_toolkit.cli.commands.scripts import (
+    process_command_line as scripts_process_command_line,
+)
+from kp_analysis_toolkit.cli.common.output_formatting import (
+    VersionDisplayOptions,
+    create_commands_help_table,
+    display_version_information,
+)
+from kp_analysis_toolkit.cli.utils.system_utils import (
+    get_architecture_info,
+    get_installation_path,
+    get_module_versions,
+    get_platform_info,
+    get_python_version_string,
+)
+from kp_analysis_toolkit.core.containers.application import (
+    initialize_dependency_injection,
+)
+from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
 # Configure Rich Click for enhanced help formatting
@@ -34,7 +45,10 @@ click.rich_click.STYLE_COMMAND = "bold cyan"
 click.rich_click.STYLE_SWITCH = "bold green"
 click.rich_click.MAX_WIDTH = 100
 
-CONTEXT_SETTINGS: dict[str, int] = {
+# Note: Global option groups are set up via individual command configuration
+# to avoid wildcard conflicts with specific command configurations
+
+CONTEXT_SETTINGS: dict[str, Any] = {
     "max_content_width": 120,
     "terminal_width": 120,
 }
@@ -45,78 +59,34 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
     if not value or ctx.resilient_parsing:
         return
 
-    console = get_rich_output()
+    console: RichOutputService = get_rich_output()
 
-    # Include the expected text for test compatibility
-    console.print("kpat_cli version " + cli_version)
-    console.print("")
+    # Collect module information
+    modules = get_module_versions()
 
-    # Main banner
-    console.banner(
-        title="🔧 KP Analysis Toolkit",
-        subtitle="Python utilities for security analysis and data processing",
-        version=cli_version,
-        force=True,
+    # Collect environment information
+    python_version = get_python_version_string()
+    platform_info = get_platform_info()
+    architecture = get_architecture_info()
+    install_path = get_installation_path()
+
+    environment_info = {
+        "environment": f"💻 Environment: Python {python_version} on {platform_info} ({architecture})",
+        "installation": f"📦 Installation: {install_path}",
+    }
+
+    # Use centralized version display
+    options = VersionDisplayOptions(
+        modules=modules,
+        environment_info=environment_info,
     )
 
-    # Module versions table
-    table = console.table(
-        title="📦 Module Versions",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
-        force=True,
+    display_version_information(
+        console,
+        "🔧 KP Analysis Toolkit",
+        cli_version,
+        options,
     )
-
-    if table is not None:
-        table.add_column("Module", style="bold white", min_width=20)
-        table.add_column("Version", style="bold green", min_width=10)
-        table.add_column("Description", style="cyan", min_width=40)
-
-        table.add_row(
-            "kp-analysis-toolkit",
-            cli_version,
-            "Main toolkit package",
-        )
-        table.add_row(
-            "process-scripts",
-            scripts_version,
-            "Collector script results processor",
-        )
-        table.add_row(
-            "nipper-expander",
-            nipper_version,
-            "Nipper CSV file expander",
-        )
-        table.add_row(
-            "rtf-to-text",
-            rtf_version,
-            "RTF to plain text converter",
-        )
-
-        console.display_table(table, force=True)
-
-    # System information
-    console.print("")
-
-    # Get system information
-    python_version = (
-        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
-    platform_info = platform.platform()
-    architecture = platform.architecture()[0]
-
-    # Installation path
-    try:
-        install_path = Path(__file__).parent.parent.parent
-    except (AttributeError, OSError):
-        install_path = "Unknown"
-
-    console.info(
-        f"💻 Environment: Python {python_version} on {platform_info} ({architecture})"
-    )
-    console.info(f"📦 Installation: {install_path}")
-    console.print("")
 
     ctx.exit()
 
@@ -136,9 +106,28 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
     default=False,
     help="Skip checking for updates at startup.",
 )
+@click.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    default=False,
+    help="Suppress non-essential output (errors still shown)",
+)
 @click.pass_context
-def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
+def cli(
+    ctx: click.Context,
+    *,
+    skip_update_check: bool,
+    quiet: bool,
+) -> None:
     """Command line interface for the KP Analysis Toolkit."""
+    # Store DI settings in context for all subcommands
+    ctx.ensure_object(dict)
+    ctx.obj["quiet"] = quiet
+
+    # Initialize dependency injection once for all commands
+    initialize_dependency_injection(verbose=False, quiet=quiet)
+
     # Always run version check unless explicitly skipped
     if not skip_update_check:
         check_and_prompt_update()
@@ -149,13 +138,65 @@ def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
         _show_enhanced_help(console)
 
 
-# Add commands to the CLI group at import time
+# Add module commands to the CLI
+# Configure option groups for multi-command CLI structure
+click.rich_click.OPTION_GROUPS = getattr(click.rich_click, "OPTION_GROUPS", {})
+
+# Scripts command option groups
+click.rich_click.OPTION_GROUPS["scripts"] = [
+    {
+        "name": "Configuration & Input",
+        "options": ["--conf", "--start-dir", "--filespec"],
+    },
+    {
+        "name": "Information Options",
+        "options": [
+            "--list-audit-configs",
+            "--list-sections",
+            "--list-source-files",
+            "--list-systems",
+        ],
+    },
+    {
+        "name": "Output & Control",
+        "options": ["--out-path", "--verbose"],
+    },
+    {
+        "name": "Information & Control",
+        "options": ["--version"],
+    },
+]
+
+# RTF-to-text command option groups
+click.rich_click.OPTION_GROUPS["rtf-to-text"] = [
+    {
+        "name": "Input & Processing Options",
+        "options": ["--in-file", "--start-dir"],
+    },
+    {
+        "name": "Information & Control",
+        "options": ["--version"],
+    },
+]
+
+# Nipper command option groups
+click.rich_click.OPTION_GROUPS["nipper"] = [
+    {
+        "name": "Input & Processing Options",
+        "options": ["--in-file", "--start-dir"],
+    },
+    {
+        "name": "Information & Control",
+        "options": ["--version"],
+    },
+]
+
 cli.add_command(scripts_process_command_line, name="scripts")
 cli.add_command(nipper_process_command_line, name="nipper")
 cli.add_command(rtf_process_command_line, name="rtf-to-text")
 
 
-def _show_enhanced_help(console: RichOutput) -> None:
+def _show_enhanced_help(console: RichOutputService) -> None:
     """Show enhanced help using Rich formatting."""
     console.header("🔧 KP Analysis Toolkit")
     console.print("")
@@ -163,35 +204,22 @@ def _show_enhanced_help(console: RichOutput) -> None:
     console.print("")
 
     # Create a table for available commands
-    table = console.table(
-        title="📋 Available Commands",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
-    )
-
-    if table is not None:  # Not in quiet mode
-        table.add_column("Command", style="bold white", min_width=15)
-        table.add_column("Description", style="cyan", min_width=50)
-
-        table.add_row(
-            "scripts",
-            "Process collector script results files (formerly adv-searchfor)",
-        )
-        table.add_row(
+    commands = [
+        ("scripts", "Process collector script results files (formerly adv-searchfor)"),
+        (
             "nipper",
             "Process a Nipper CSV file and expand it into a more readable format",
-        )
-        table.add_row(
-            "rtf-to-text",
-            "Convert RTF files to plain text format with ASCII encoding",
-        )
+        ),
+        ("rtf-to-text", "Convert RTF files to plain text format with ASCII encoding"),
+    ]
 
+    table = create_commands_help_table(console, commands)
+    if table is not None:  # Not in quiet mode
         console.display_table(table)
 
     console.print("")
     console.info(
-        "Use 'kpat_cli <command> --help' for more information on a specific command."
+        "Use 'kpat_cli <command> --help' for more information on a specific command.",
     )
     console.print("")
     console.subheader("Options:")
@@ -213,7 +241,7 @@ def _show_deprecation_warning(legacy_cmd: str, new_cmd: str) -> None:
 def _create_legacy_command(
     legacy_name: str,
     new_command: str,
-    command_func: Callable[[], None],
+    command_func: Callable[..., None],
 ) -> Callable[[], None]:
     """Create a legacy command wrapper with deprecation warning."""
 

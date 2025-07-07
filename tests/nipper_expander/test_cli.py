@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from kp_analysis_toolkit.nipper_expander.cli import process_command_line
+from kp_analysis_toolkit.cli.commands.nipper import process_command_line
 
 
 class TestNipperExpanderCLI:
@@ -18,13 +18,13 @@ class TestNipperExpanderCLI:
             # Create a test CSV file
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text(
-                "column1,devices,column3\nvalue1,device1;device2,value3\n",
+                "column1,Devices,column3\nvalue1,device1;device2,value3\n",
             )
 
             runner = CliRunner()
 
             with patch(
-                "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
+                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
             ) as mock_process:
                 result = runner.invoke(
                     process_command_line,
@@ -45,14 +45,20 @@ class TestNipperExpanderCLI:
             # Create a test CSV file
             test_csv = Path(temp_dir) / "nipper_output.csv"
             test_csv.write_text(
-                "column1,devices,column3\nvalue1,device1;device2,value3\n",
+                "column1,Devices,column3\nvalue1,device1;device2,value3\n",
             )
 
             runner = CliRunner()
 
-            with patch(
-                "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
-            ) as mock_process:
+            with (
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
+                ) as mock_process,
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
+                    return_value=test_csv,
+                ) as mock_get_file,
+            ):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -63,6 +69,7 @@ class TestNipperExpanderCLI:
 
                 assert result.exit_code == 0
                 mock_process.assert_called_once()
+                mock_get_file.assert_called_once()
 
     def test_cli_no_csv_files_found(self) -> None:
         """Test CLI behavior when no CSV files are found."""
@@ -72,7 +79,7 @@ class TestNipperExpanderCLI:
             runner = CliRunner()
 
             with patch(
-                "kp_analysis_toolkit.nipper_expander.cli.get_input_file",
+                "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
             ) as mock_get_file:
                 mock_get_file.side_effect = ValueError("No CSV files found")
 
@@ -85,14 +92,14 @@ class TestNipperExpanderCLI:
                 )
 
                 assert result.exit_code == 1  # CLI should exit with error code
-                assert "Error validating configuration" in result.output
+                assert "File selection failed: No CSV files found" in result.output
 
     def test_cli_invalid_input_file(self) -> None:
         """Test CLI behavior with invalid input file."""
         runner = CliRunner()
 
         with patch(
-            "kp_analysis_toolkit.nipper_expander.cli.get_input_file",
+            "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
         ) as mock_get_file:
             mock_get_file.side_effect = ValueError("Invalid file specified")
 
@@ -104,7 +111,7 @@ class TestNipperExpanderCLI:
                 ],
             )
 
-            assert "Error validating configuration" in result.output
+            assert "File selection failed: Invalid file specified" in result.output
 
     def test_cli_with_custom_start_directory(self) -> None:
         """Test CLI with custom start directory."""
@@ -114,13 +121,19 @@ class TestNipperExpanderCLI:
 
             # Create CSV in subdirectory
             test_csv = subdir / "test.csv"
-            test_csv.write_text("column1,devices,column3\nvalue1,device1,value3\n")
+            test_csv.write_text("column1,Devices,column3\nvalue1,device1,value3\n")
 
             runner = CliRunner()
 
-            with patch(
-                "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
-            ) as mock_process:
+            with (
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
+                ) as mock_process,
+                patch(
+                    "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
+                    return_value=test_csv,
+                ) as mock_get_file,
+            ):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -131,13 +144,14 @@ class TestNipperExpanderCLI:
 
                 assert result.exit_code == 0
                 mock_process.assert_called_once()
+                mock_get_file.assert_called_once()
 
-    @patch("kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv")
+    @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
     def test_program_config_creation(self, mock_process: MagicMock) -> None:
         """Test that ProgramConfig is created correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1;device2\n")
+            test_csv.write_text("Devices\ndevice1;device2\n")
 
             runner = CliRunner()
 
@@ -181,12 +195,12 @@ class TestNipperExpanderCLI:
         assert result.exit_code == 0
         assert "version" in result.output
 
-    @patch("kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv")
+    @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
     def test_processing_success_message(self, mock_process: MagicMock) -> None:
         """Test success message is displayed."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
@@ -206,12 +220,12 @@ class TestNipperExpanderCLI:
         """Test error handling during CSV processing."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
             with patch(
-                "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
+                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
             ) as mock_process:
                 mock_process.side_effect = Exception("Processing failed")
 
@@ -231,18 +245,18 @@ class TestNipperExpanderCLI:
 class TestGetInputFileFunction:
     """Test the get_input_file helper function."""
 
-    @patch("kp_analysis_toolkit.nipper_expander.cli.get_input_file")
+    @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
     def test_explicit_file_parameter(self, mock_get_file: MagicMock) -> None:
         """Test get_input_file with explicit file parameter."""
         mock_get_file.return_value = Path("/test/file.csv")
 
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
-            with patch("kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv"):
+            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -253,7 +267,7 @@ class TestGetInputFileFunction:
 
                 mock_get_file.assert_called_once()
 
-    @patch("kp_analysis_toolkit.nipper_expander.cli.get_input_file")
+    @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
     def test_auto_discovery_mode(self, mock_get_file: MagicMock) -> None:
         """Test get_input_file with auto-discovery mode."""
         mock_get_file.return_value = Path("/discovered/file.csv")
@@ -261,7 +275,7 @@ class TestGetInputFileFunction:
         with tempfile.TemporaryDirectory() as temp_dir:
             runner = CliRunner()
 
-            with patch("kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv"):
+            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -292,10 +306,10 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
             # Mock the actual processing to avoid file system operations
             with (
                 patch(
-                    "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
+                    "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
                 ) as mock_process,
                 patch(
-                    "kp_analysis_toolkit.nipper_expander.cli.ProgramConfig",
+                    "kp_analysis_toolkit.cli.commands.nipper.ProgramConfig",
                 ) as mock_config_class,
             ):
                 # Create a mock config instance
@@ -328,19 +342,19 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
             # Create multiple CSV files
             csv1 = Path(temp_dir) / "file1.csv"
             csv2 = Path(temp_dir) / "file2.csv"
-            csv1.write_text("devices\ndevice1\n")
-            csv2.write_text("devices\ndevice2\n")
+            csv1.write_text("Devices\ndevice1\n")
+            csv2.write_text("Devices\ndevice2\n")
 
             runner = CliRunner()
 
             with patch(
-                "kp_analysis_toolkit.nipper_expander.cli.get_input_file",
+                "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
             ) as mock_get_file:
                 # Should handle multiple files scenario
                 mock_get_file.return_value = csv1
 
                 with patch(
-                    "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
+                    "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
                 ):
                     result = runner.invoke(
                         process_command_line,
@@ -358,10 +372,10 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
 
         with (
             patch(
-                "kp_analysis_toolkit.nipper_expander.cli.get_input_file",
+                "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
             ) as mock_get_file,
             patch(
-                "kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv",
+                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
             ) as mock_process,
         ):
             mock_get_file.return_value = Path("./test.csv")
@@ -401,11 +415,11 @@ class TestCLIParameterValidation:
         """Test that valid parameters are accepted."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
-            with patch("kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv"):
+            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
                 result = runner.invoke(
                     process_command_line,
                     [
@@ -423,15 +437,15 @@ class TestCLIParameterValidation:
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create CSV in current directory simulation
             test_csv = Path(temp_dir) / "test.csv"
-            test_csv.write_text("devices\ndevice1\n")
+            test_csv.write_text("Devices\ndevice1\n")
 
             runner = CliRunner()
 
             with (
                 patch(
-                    "kp_analysis_toolkit.nipper_expander.cli.get_input_file",
+                    "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
                 ) as mock_get_file,
-                patch("kp_analysis_toolkit.nipper_expander.cli.process_nipper_csv"),
+                patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"),
             ):
                 mock_get_file.return_value = test_csv
 
@@ -439,4 +453,10 @@ class TestCLIParameterValidation:
                 result = runner.invoke(process_command_line, [])
 
                 assert result.exit_code == 0
-                mock_get_file.assert_called_once_with(None, "./")  # Default start dir
+                mock_get_file.assert_called_once_with(
+                    None,
+                    "./",
+                    file_pattern="*.csv",
+                    file_type_description="CSV",
+                    include_process_all_option=True,
+                )

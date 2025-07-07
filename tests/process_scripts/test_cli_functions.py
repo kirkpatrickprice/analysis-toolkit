@@ -4,10 +4,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from kp_analysis_toolkit.process_scripts.cli_functions import (
-    create_results_path,
-    get_size,
-)
+from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
+from kp_analysis_toolkit.cli.utils.system_utils import get_object_size
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 
 
@@ -27,7 +25,7 @@ class TestCreateResultsPath:
             # Path should not exist initially
             assert not results_path.exists()
 
-            create_results_path(program_config)
+            create_results_directory(results_path, verbose=program_config.verbose)
 
             # Path should be created
             assert results_path.exists()
@@ -47,50 +45,59 @@ class TestCreateResultsPath:
             assert results_path.exists()
 
             # Should not raise an error
-            create_results_path(program_config)
+            create_results_directory(results_path, verbose=program_config.verbose)
 
             # Path should still exist
             assert results_path.exists()
 
-    @patch("click.echo")
-    def test_verbose_output_new_path(self, mock_echo: MagicMock) -> None:
+    @patch("kp_analysis_toolkit.cli.utils.path_helpers.get_rich_output")
+    def test_verbose_output_new_path(self, mock_get_rich_output: MagicMock) -> None:
         """Test verbose output when creating new path."""
         with tempfile.TemporaryDirectory() as temp_dir:
             results_path = Path(temp_dir) / "new_results"
+
+            # Create mock rich_output
+            mock_rich_output = MagicMock()
+            mock_get_rich_output.return_value = mock_rich_output
 
             # Create mock program config with verbose enabled
             program_config = MagicMock(spec=ProgramConfig)
             program_config.results_path = results_path
             program_config.verbose = True
 
-            create_results_path(program_config)
+            create_results_directory(results_path, verbose=program_config.verbose)
 
-            # Should have printed verbose message
-            mock_echo.assert_called()
+            # Should have called debug method for creating path
+            mock_rich_output.debug.assert_called()
             assert any(
                 "Creating results path" in str(call)
-                for call in mock_echo.call_args_list
+                for call in mock_rich_output.debug.call_args_list
             )
 
-    @patch("click.echo")
-    def test_verbose_output_existing_path(self, mock_echo: MagicMock) -> None:
+    @patch("kp_analysis_toolkit.cli.utils.path_helpers.get_rich_output")
+    def test_verbose_output_existing_path(
+        self, mock_get_rich_output: MagicMock
+    ) -> None:
         """Test verbose output when reusing existing path."""
         with tempfile.TemporaryDirectory() as temp_dir:
             results_path = Path(temp_dir)  # Use existing temp directory
 
+            # Create mock rich_output
+            mock_rich_output = MagicMock()
+            mock_get_rich_output.return_value = mock_rich_output
+
             # Create mock program config with verbose enabled
             program_config = MagicMock(spec=ProgramConfig)
             program_config.results_path = results_path
-            program_config.verbose = (
-                False  # Even without verbose, should show reuse message
-            )
+            program_config.verbose = True  # Set to True to trigger verbose output
 
-            create_results_path(program_config)
+            create_results_directory(results_path, verbose=program_config.verbose)
 
-            # Should have printed reuse message
-            mock_echo.assert_called()
+            # Should have called info method for reusing path
+            mock_rich_output.info.assert_called()
             assert any(
-                "Reusing results path" in str(call) for call in mock_echo.call_args_list
+                "Reusing results path" in str(call)
+                for call in mock_rich_output.info.call_args_list
             )
 
     def test_creates_nested_path(self) -> None:
@@ -107,7 +114,7 @@ class TestCreateResultsPath:
             assert not results_path.exists()
             assert not results_path.parent.exists()
 
-            create_results_path(program_config)
+            create_results_directory(results_path, verbose=program_config.verbose)
 
             # Nested path should be created
             assert results_path.exists()
@@ -120,10 +127,10 @@ class TestGetSize:
     def test_simple_objects(self) -> None:
         """Test size calculation for simple objects."""
         # Test basic types
-        assert get_size(42) > 0
-        assert get_size("hello") > 0
-        assert get_size([1, 2, 3]) > 0
-        assert get_size({"key": "value"}) > 0
+        assert get_object_size(42) > 0
+        assert get_object_size("hello") > 0
+        assert get_object_size([1, 2, 3]) > 0
+        assert get_object_size({"key": "value"}) > 0
 
     def test_nested_objects(self) -> None:
         """Test size calculation for nested objects."""
@@ -136,7 +143,7 @@ class TestGetSize:
             },
         }
 
-        size = get_size(nested_dict)
+        size = get_object_size(nested_dict)
         assert size > 0
 
     def test_circular_references(self) -> None:
@@ -147,18 +154,18 @@ class TestGetSize:
         obj1["ref"] = obj2
 
         # Should not cause infinite recursion
-        size = get_size(obj1)
+        size = get_object_size(obj1)
         assert size > 0
 
     def test_empty_objects(self) -> None:
         """Test size calculation for empty objects."""
-        assert get_size([]) > 0
-        assert get_size({}) > 0
-        assert get_size("") > 0
+        assert get_object_size([]) > 0
+        assert get_object_size({}) > 0
+        assert get_object_size("") > 0
 
     def test_none_object(self) -> None:
         """Test size calculation for None."""
-        size = get_size(None)
+        size = get_object_size(None)
         assert size > 0
 
     def test_custom_objects(self) -> None:
@@ -170,7 +177,7 @@ class TestGetSize:
                 self.name = "custom"
 
         obj = CustomClass()
-        size = get_size(obj)
+        size = get_object_size(obj)
         assert size > 0
 
     def test_large_objects(self) -> None:
@@ -187,7 +194,7 @@ class TestGetSize:
             },
         }
 
-        size = get_size(large_obj)
+        size = get_object_size(large_obj)
         assert size > 1000  # Should be reasonably large  # noqa: PLR2004
 
 
@@ -200,8 +207,8 @@ class TestMemoryManagement:
         original_data = {"test": list(range(1000))}
 
         # Multiple calls should work without issues
-        size1 = get_size(original_data)
-        size2 = get_size(original_data)
+        size1 = get_object_size(original_data)
+        size2 = get_object_size(original_data)
 
         # Should return consistent results
         assert size1 == size2
@@ -214,7 +221,7 @@ class TestMemoryManagement:
             current = {"level": i, "data": "some data", "nested": current}
 
         # Should handle deep nesting without issues
-        size = get_size(current)
+        size = get_object_size(current)
         assert size > 0
 
 
@@ -272,7 +279,7 @@ class TestErrorHandling:
             program_config.verbose = False
 
             # Should handle existing directory gracefully
-            create_results_path(program_config)
+            create_results_directory(results_path, verbose=program_config.verbose)
 
     def test_invalid_paths(self) -> None:
         """Test handling of invalid paths."""
@@ -285,7 +292,10 @@ class TestErrorHandling:
 
         # Should handle gracefully or raise appropriate error
         try:  # noqa: SIM105
-            create_results_path(program_config)
+            create_results_directory(
+                program_config.results_path,
+                verbose=program_config.verbose,
+            )
         except (AttributeError, TypeError):
             # Expected behavior for invalid configuration
             pass
