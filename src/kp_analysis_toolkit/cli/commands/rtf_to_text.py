@@ -7,6 +7,7 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     validate_program_config,
 )
 from kp_analysis_toolkit.cli.common.decorators import (
+    custom_help_option,
     input_file_option,
     module_version_option,
     start_directory_option,
@@ -24,6 +25,7 @@ from kp_analysis_toolkit.utils.rich_output import get_rich_output
 setup_command_option_groups("rtf-to-text")
 
 
+@custom_help_option("rtf-to-text")
 @click.command(name="rtf-to-text")
 @module_version_option(rtf_to_text_version, "rtf-to-text")
 @input_file_option(file_type="RTF")

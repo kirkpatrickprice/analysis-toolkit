@@ -7,6 +7,7 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     validate_program_config,
 )
 from kp_analysis_toolkit.cli.common.decorators import (
+    custom_help_option,
     input_file_option,
     module_version_option,
     start_directory_option,
@@ -24,6 +25,7 @@ from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_ou
 setup_command_option_groups("nipper")
 
 
+@custom_help_option("nipper")
 @click.command(name="nipper")
 @module_version_option(nipper_expander_version, "nipper")
 @input_file_option(file_type="CSV")

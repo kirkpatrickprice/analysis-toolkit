@@ -8,6 +8,7 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     validate_program_config,
 )
 from kp_analysis_toolkit.cli.common.decorators import (
+    custom_help_option,
     module_version_option,
     output_directory_option,
     start_directory_option,
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
 setup_command_option_groups("scripts")
 
 
+@custom_help_option("scripts")
 @click.command(name="scripts")
 @module_version_option(process_scripts_version, "scripts")
 @start_directory_option()

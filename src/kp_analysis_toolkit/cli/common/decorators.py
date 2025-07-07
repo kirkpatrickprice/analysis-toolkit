@@ -201,3 +201,49 @@ def grouped_option_decorator(group_name: str) -> Callable[[Callable], Callable]:
             func.rich_click_group = group_name  # type: ignore[attr-defined]
         return func
     return decorator
+
+
+def custom_help_option(command_name: str) -> Callable[[Callable], Callable]:
+    """
+    Decorator that adds custom grouped help display to a command.
+
+    This decorator intercepts --help requests and displays option groups
+    in separate Rich panels, working around rich-click's multi-command
+    CLI limitation.
+
+    Args:
+        command_name: The name of the command for option group lookup
+
+    Returns:
+        Click decorator that adds custom help option
+
+    Example:
+        @custom_help_option("scripts")
+        @click.command(name="scripts")
+        def scripts_command():
+            pass
+    """
+    def help_callback(ctx: click.Context, param: click.Parameter, value: bool) -> None:  # noqa: FBT001
+        """Callback that displays custom grouped help and exits."""
+        if not value or ctx.resilient_parsing:
+            return
+
+        # Import here to avoid circular imports
+        from kp_analysis_toolkit.cli.common.output_formatting import display_grouped_help
+
+        display_grouped_help(ctx, command_name)
+        ctx.exit()
+
+    def decorator(func: Callable) -> Callable:
+        # Add the custom help option to the command
+        help_option = click.option(
+            "--help", "-h",
+            is_flag=True,
+            expose_value=False,
+            is_eager=True,
+            callback=help_callback,
+            help="Show this message and exit",
+        )
+        return help_option(func)
+
+    return decorator
