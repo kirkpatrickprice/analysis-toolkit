@@ -147,7 +147,9 @@ class TestNipperExpanderCLI:
                 mock_get_file.assert_called_once()
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
-    def test_program_config_creation(self, mock_process: MagicMock, cli_runner: CliRunner) -> None:
+    def test_program_config_creation(
+        self, mock_process: MagicMock, cli_runner: CliRunner
+    ) -> None:
         """Test that ProgramConfig is created correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
@@ -196,7 +198,9 @@ class TestNipperExpanderCLI:
         assert "version" in result.output
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
-    def test_processing_success_message(self, mock_process: MagicMock, cli_runner: CliRunner) -> None:
+    def test_processing_success_message(
+        self, mock_process: MagicMock, cli_runner: CliRunner
+    ) -> None:
         """Test success message is displayed."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
@@ -246,7 +250,9 @@ class TestGetInputFileFunction:
     """Test the get_input_file helper function."""
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
-    def test_explicit_file_parameter(self, mock_get_file: MagicMock, cli_runner: CliRunner) -> None:
+    def test_explicit_file_parameter(
+        self, mock_get_file: MagicMock, cli_runner: CliRunner
+    ) -> None:
         """Test get_input_file with explicit file parameter."""
         mock_get_file.return_value = Path("/test/file.csv")
 
@@ -268,7 +274,9 @@ class TestGetInputFileFunction:
                 mock_get_file.assert_called_once()
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
-    def test_auto_discovery_mode(self, mock_get_file: MagicMock, cli_runner: CliRunner) -> None:
+    def test_auto_discovery_mode(
+        self, mock_get_file: MagicMock, cli_runner: CliRunner
+    ) -> None:
         """Test get_input_file with auto-discovery mode."""
         mock_get_file.return_value = Path("/discovered/file.csv")
 
