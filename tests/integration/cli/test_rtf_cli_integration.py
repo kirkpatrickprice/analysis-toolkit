@@ -102,7 +102,8 @@ class TestProcessCommandLine:
         assert "Convert RTF files to plain text format" in result.output
 
     def test_process_command_line_with_invalid_file(
-        self, cli_runner: CliRunner
+        self,
+        cli_runner: CliRunner,
     ) -> None:
         """Test error handling with invalid file."""
         result = cli_runner.invoke(process_command_line, ["-f", "nonexistent.rtf"])
@@ -134,7 +135,8 @@ class TestProcessCommandLine:
             # Mock user input to select "process all files" (option 3 with 2 files)
             with patch("builtins.input", return_value="3"):
                 result = cli_runner.invoke(
-                    process_command_line, ["-d", str(tmpdir_path)]
+                    process_command_line,
+                    ["-d", str(tmpdir_path)],
                 )
 
             # Debug output in case of failure

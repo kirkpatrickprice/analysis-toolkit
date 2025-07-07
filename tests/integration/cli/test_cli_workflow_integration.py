@@ -20,7 +20,9 @@ class TestCLIVersionChecking:
 
     @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
     def test_cli_calls_version_check_by_default(
-        self, mock_check_update: Mock, cli_runner: CliRunner
+        self,
+        mock_check_update: Mock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that CLI calls version check by default when invoked without subcommand."""
         result = cli_runner.invoke(cli, [])
@@ -64,7 +66,9 @@ class TestCLIVersionChecking:
 
     @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
     def test_subcommands_trigger_version_check(
-        self, mock_check_update: Mock, cli_runner: CliRunner
+        self,
+        mock_check_update: Mock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that accessing subcommands also triggers version check."""
         result = cli_runner.invoke(cli, ["scripts", "--help"])

@@ -73,26 +73,25 @@ class TestNipperExpanderCLI:
 
     def test_cli_no_csv_files_found(self, cli_runner: CliRunner) -> None:
         """Test CLI behavior when no CSV files are found."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Directory with no CSV files
-
-            # Using shared cli_runner fixture
-
-            with patch(
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            patch(
                 "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
-            ) as mock_get_file:
-                mock_get_file.side_effect = ValueError("No CSV files found")
+            ) as mock_get_file,
+        ):
+            # Directory with no CSV files
+            mock_get_file.side_effect = ValueError("No CSV files found")
 
-                result = cli_runner.invoke(
-                    process_command_line,
-                    [
-                        "--start-dir",
-                        temp_dir,
-                    ],
-                )
+            result = cli_runner.invoke(
+                process_command_line,
+                [
+                    "--start-dir",
+                    temp_dir,
+                ],
+            )
 
-                assert result.exit_code == 1  # CLI should exit with error code
-                assert "File selection failed: No CSV files found" in result.output
+            assert result.exit_code == 1  # CLI should exit with error code
+            assert "File selection failed: No CSV files found" in result.output
 
     def test_cli_invalid_input_file(self, cli_runner: CliRunner) -> None:
         """Test CLI behavior with invalid input file."""
@@ -148,7 +147,9 @@ class TestNipperExpanderCLI:
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
     def test_program_config_creation(
-        self, mock_process: MagicMock, cli_runner: CliRunner
+        self,
+        mock_process: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that ProgramConfig is created correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -199,7 +200,9 @@ class TestNipperExpanderCLI:
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
     def test_processing_success_message(
-        self, mock_process: MagicMock, cli_runner: CliRunner
+        self,
+        mock_process: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test success message is displayed."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -243,6 +246,7 @@ class TestNipperExpanderCLI:
 
                 # CLI should handle exceptions gracefully
                 # The exact behavior depends on implementation
+                assert result.exit_code != 0  # Should exit with error
                 mock_process.assert_called_once()
 
 
@@ -251,7 +255,9 @@ class TestGetInputFileFunction:
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
     def test_explicit_file_parameter(
-        self, mock_get_file: MagicMock, cli_runner: CliRunner
+        self,
+        mock_get_file: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test get_input_file with explicit file parameter."""
         mock_get_file.return_value = Path("/test/file.csv")
@@ -260,9 +266,7 @@ class TestGetInputFileFunction:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            # Using shared cli_runner fixture
-
-            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
+            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv") as mock_process:
                 result = cli_runner.invoke(
                     process_command_line,
                     [
@@ -271,28 +275,36 @@ class TestGetInputFileFunction:
                     ],
                 )
 
+                # Verify the command executed successfully
+                assert result.exit_code == 0
                 mock_get_file.assert_called_once()
+                mock_process.assert_called_once()
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
     def test_auto_discovery_mode(
-        self, mock_get_file: MagicMock, cli_runner: CliRunner
+        self,
+        mock_get_file: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test get_input_file with auto-discovery mode."""
         mock_get_file.return_value = Path("/discovered/file.csv")
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Using shared cli_runner fixture
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv") as mock_process,
+        ):
+            result = cli_runner.invoke(
+                process_command_line,
+                [
+                    "--start-dir",
+                    temp_dir,
+                ],
+            )
 
-            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
-                result = cli_runner.invoke(
-                    process_command_line,
-                    [
-                        "--start-dir",
-                        temp_dir,
-                    ],
-                )
-
-                mock_get_file.assert_called_once()
+            # Verify the command executed successfully
+            assert result.exit_code == 0
+            mock_get_file.assert_called_once()
+            mock_process.assert_called_once()
 
 
 class TestCLIIntegration:
@@ -363,7 +375,7 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
 
                 with patch(
                     "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
-                ):
+                ) as mock_process:
                     result = cli_runner.invoke(
                         process_command_line,
                         [
@@ -372,7 +384,10 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
                         ],
                     )
 
+                    # Verify the command executed successfully
+                    assert result.exit_code == 0
                     mock_get_file.assert_called_once()
+                    mock_process.assert_called_once()
 
     def test_relative_path_handling(self, cli_runner: CliRunner) -> None:
         """Test handling of relative paths."""
@@ -397,7 +412,9 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
             )
 
             # Should handle relative paths appropriately
+            assert result.exit_code == 0
             mock_get_file.assert_called_once()
+            mock_process.assert_called_once()
 
     def test_error_recovery(self, cli_runner: CliRunner) -> None:
         """Test error recovery and user feedback."""

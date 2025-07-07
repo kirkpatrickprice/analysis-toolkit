@@ -7,6 +7,7 @@ the key changes made and as a guard against regressions.
 """
 
 import pytest
+from click.testing import CliRunner
 
 from kp_analysis_toolkit.core.containers.application import (
     container,
@@ -34,7 +35,7 @@ class TestRichOutputDIRegression:
         assert isinstance(service, RichOutputService)
         assert service.verbose is True
         assert service.quiet is False
-        assert service.console.width == 100
+        assert service.console.width == 100  # noqa: PLR2004
 
     def test_backward_compatibility_maintained(self) -> None:
         """Test that existing code continues to work."""
@@ -94,11 +95,9 @@ class TestRichOutputDIRegression:
         assert instance1 is instance2
         assert instance1 is instance3
 
-    def test_cli_integration_preserved(self) -> None:
+    def test_cli_integration_preserved(self, cli_runner: CliRunner) -> None:
         """Test that CLI integration works."""
         from kp_analysis_toolkit.cli import cli
-
-        # Using shared cli_runner fixture
 
         # CLI should start without errors
         result = cli_runner.invoke(cli, ["--help"])
@@ -141,7 +140,7 @@ class TestRichOutputDIRegression:
             rich_output = get_rich_output(verbose=True)
             assert isinstance(rich_output, RichOutputService)
             assert rich_output.verbose is True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             pytest.fail(
                 f"get_rich_output should handle uninitialized DI gracefully: {e}",
             )
@@ -159,7 +158,7 @@ class TestRichOutputDIRegression:
         init_time = time.time() - start_time
 
         # Should initialize quickly
-        assert init_time < 0.1  # 100ms should be more than enough
+        assert init_time < 0.1  # 100ms should be more than enough  # noqa: PLR2004
 
         # Subsequent accesses should be fast
         start_time = time.time()
@@ -168,7 +167,7 @@ class TestRichOutputDIRegression:
         access_time = time.time() - start_time
 
         # 100 accesses should be very fast due to singleton caching
-        assert access_time < 0.1  # 100ms for 100 accesses
+        assert access_time < 0.1  # 100ms for 100 accesses  # noqa: PLR2004
 
 
 class TestDIImplementationDocumentation:

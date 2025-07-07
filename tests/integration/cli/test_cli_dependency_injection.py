@@ -12,7 +12,9 @@ class TestCLIDependencyInjection:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_initializes_di_on_startup(
-        self, mock_init_di: MagicMock, cli_runner: CliRunner
+        self,
+        mock_init_di: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that CLI initializes dependency injection on startup."""
         result = cli_runner.invoke(cli, ["--skip-update-check"])
@@ -23,7 +25,9 @@ class TestCLIDependencyInjection:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_passes_quiet_to_di(
-        self, mock_init_di: MagicMock, cli_runner: CliRunner
+        self,
+        mock_init_di: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that CLI passes quiet flag to DI initialization."""
         result = cli_runner.invoke(cli, ["--quiet", "--skip-update-check"])
@@ -33,12 +37,13 @@ class TestCLIDependencyInjection:
         mock_init_di.assert_called_with(verbose=False, quiet=True)
 
     def test_cli_rejects_verbose_option_not_available(
-        self, cli_runner: CliRunner
+        self,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that CLI rejects verbose option since it's no longer available."""
         result = cli_runner.invoke(cli, ["--verbose", "--skip-update-check"])
 
-        assert result.exit_code == 2  # Invalid option
+        assert result.exit_code == 2  # Invalid option  # noqa: PLR2004
         assert "No such option: --verbose" in result.output
 
     def test_cli_has_quiet_option(self, cli_runner: CliRunner) -> None:
@@ -101,9 +106,9 @@ class TestCLIRichOutputIntegration:
         assert mock_init_di.called
         mock_get_rich_output.assert_called()
 
-    @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_version_callback_uses_rich_output(
-        self, mock_init_di: MagicMock, cli_runner: CliRunner
+        self,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that version callback uses Rich Output for formatting."""
         result = cli_runner.invoke(cli, ["--version"])
@@ -111,6 +116,8 @@ class TestCLIRichOutputIntegration:
         # Version callback should exit early, but we can check output format
         assert result.exit_code == 0
         assert "kpat_cli version" in result.output
+        # Version callback may not require DI initialization
+        # Just ensure it doesn't fail
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_backward_compatibility_with_rich_output(
@@ -125,6 +132,8 @@ class TestCLIRichOutputIntegration:
         assert result.exit_code == 0
         # Should not crash due to Rich Output changes
         assert "Command line interface" in result.output
+        # DI should be initialized for help command
+        assert mock_init_di.called
 
 
 class TestCLIErrorHandling:
@@ -132,7 +141,9 @@ class TestCLIErrorHandling:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_handles_di_initialization_error(
-        self, mock_init_di: MagicMock, cli_runner: CliRunner
+        self,
+        mock_init_di: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that CLI handles DI initialization errors gracefully."""
         mock_init_di.side_effect = Exception("DI initialization failed")
@@ -195,7 +206,9 @@ class TestCLIConfigurationPropagation:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_default_configuration_propagation(
-        self, mock_init_di: MagicMock, cli_runner: CliRunner
+        self,
+        mock_init_di: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that default configuration is properly propagated."""
         cli_runner.invoke(cli, ["--skip-update-check"])
@@ -205,7 +218,9 @@ class TestCLIConfigurationPropagation:
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_custom_configuration_propagation(
-        self, mock_init_di: MagicMock, cli_runner: CliRunner
+        self,
+        mock_init_di: MagicMock,
+        cli_runner: CliRunner,
     ) -> None:
         """Test that custom configuration is properly propagated."""
         # Test quiet flag
