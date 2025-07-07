@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from kp_analysis_toolkit.core.containers.application import (
     ApplicationContainer,
     configure_application_container,
@@ -160,6 +162,7 @@ class TestApplicationContainer:
         assert isinstance(rich_output, RichOutputService)
         assert rich_output.quiet is True
 
+    @pytest.mark.usefixtures("isolated_console_env")
     def test_initialize_dependency_injection_custom_console_width(self) -> None:
         """Test initialize_dependency_injection with custom console width."""
         # Reset container before test
@@ -217,7 +220,8 @@ class TestDependencyInjectionIntegration:
 
     @patch("kp_analysis_toolkit.core.services.rich_output.Console")
     def test_rich_output_service_initialization(
-        self, mock_console_class: MagicMock
+        self,
+        mock_console_class: MagicMock,
     ) -> None:
         """Test that RichOutputService initializes Console objects correctly."""
         mock_console = MagicMock()

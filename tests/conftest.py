@@ -1,6 +1,7 @@
 # tests/conftest.py
 """Shared pytest configuration and fixtures."""
 
+import os
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
@@ -92,6 +93,32 @@ def cli_runner() -> CliRunner:
 def isolated_cli_runner(tmp_path: Path) -> CliRunner:
     """Create an isolated CLI runner with temporary working directory."""
     return CliRunner(env={"HOME": str(tmp_path)})
+
+
+@pytest.fixture
+def isolated_console_env() -> Generator[None, Any, None]:
+    """
+    Isolate console environment variables that could affect Rich Console width detection.
+
+    This fixture ensures that tests involving console width settings are not affected
+    by CI environment variables like COLUMNS, LINES, etc.
+    """
+    # Environment variables that could affect console behavior
+    console_env_vars = ["COLUMNS", "LINES", "TERM", "FORCE_COLOR", "NO_COLOR"]
+
+    # Store original values
+    original_values = {}
+    for var in console_env_vars:
+        if var in os.environ:
+            original_values[var] = os.environ[var]
+            del os.environ[var]
+
+    try:
+        yield
+    finally:
+        # Restore original values
+        for var, value in original_values.items():
+            os.environ[var] = value
 
 
 # Automatic test marking based on directory structure

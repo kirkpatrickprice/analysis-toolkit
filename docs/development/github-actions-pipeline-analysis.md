@@ -111,6 +111,8 @@ env:
   TERM: xterm-256color
 ```
 
+**Note:** Tests that need consistent console behavior independent of CI environment variables should use the `isolated_console_env` fixture from `tests/conftest.py`. This fixture temporarily removes console-related environment variables during test execution to ensure predictable Rich Console width behavior.
+
 #### Platform-Specific Considerations
 - **Windows:** Ensure proper console encoding for Rich output
 - **Cross-platform:** Consistent terminal sizing for layout tests
@@ -236,6 +238,7 @@ strategy:
 ### ✅ Completed Improvements
 - **Test Marking System:** Automatic marker assignment based on directory structure
 - **Selective Test Execution:** Quick tests now exclude slow regex tests (87% time reduction)
+- **Console Environment Isolation:** Added `isolated_console_env` fixture in `tests/conftest.py` to ensure Rich Console width tests are robust against CI environment variables
 
 ## Configuration Templates
 
