@@ -95,21 +95,19 @@ class TestGetInputFile:
 class TestProcessCommandLine:
     """Test the CLI command functionality."""
 
-    def test_process_command_line_help(self) -> None:
+    def test_process_command_line_help(self, cli_runner: CliRunner) -> None:
         """Test that help command works."""
-        runner = CliRunner()
-        result = runner.invoke(process_command_line, ["--help"])
+        result = cli_runner.invoke(process_command_line, ["--help"])
         assert result.exit_code == 0
         assert "Convert RTF files to plain text format" in result.output
 
-    def test_process_command_line_with_invalid_file(self) -> None:
+    def test_process_command_line_with_invalid_file(self, cli_runner: CliRunner) -> None:
         """Test error handling with invalid file."""
-        runner = CliRunner()
-        result = runner.invoke(process_command_line, ["-f", "nonexistent.rtf"])
+        result = cli_runner.invoke(process_command_line, ["-f", "nonexistent.rtf"])
         assert result.exit_code == 1
         assert "Error processing RTF file" in result.output
 
-    def test_process_all_files_integration(self) -> None:
+    def test_process_all_files_integration(self, cli_runner: CliRunner) -> None:
         """Test the integration of the 'process all files' functionality."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
@@ -122,8 +120,6 @@ class TestProcessCommandLine:
             rtf_file1.write_text(rtf_content1)
             rtf_file2.write_text(rtf_content2)
 
-            runner = CliRunner()
-
             # First, test that both files would be found
             from kp_analysis_toolkit.cli.utils.path_helpers import (
                 discover_files_by_pattern,
@@ -135,7 +131,7 @@ class TestProcessCommandLine:
 
             # Mock user input to select "process all files" (option 3 with 2 files)
             with patch("builtins.input", return_value="3"):
-                result = runner.invoke(process_command_line, ["-d", str(tmpdir_path)])
+                result = cli_runner.invoke(process_command_line, ["-d", str(tmpdir_path)])
 
             # Debug output in case of failure
             print(f"Exit code: {result.exit_code}")

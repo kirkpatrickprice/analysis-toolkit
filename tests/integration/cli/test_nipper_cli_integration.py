@@ -12,7 +12,7 @@ from kp_analysis_toolkit.cli.commands.nipper import process_command_line
 class TestNipperExpanderCLI:
     """Test nipper_expander CLI functionality."""
 
-    def test_cli_with_explicit_file(self) -> None:
+    def test_cli_with_explicit_file(self, cli_runner: CliRunner) -> None:
         """Test CLI with explicitly specified input file."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create a test CSV file
@@ -21,12 +21,12 @@ class TestNipperExpanderCLI:
                 "column1,Devices,column3\nvalue1,device1;device2,value3\n",
             )
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch(
                 "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
             ) as mock_process:
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--in-file",
@@ -39,7 +39,7 @@ class TestNipperExpanderCLI:
                 assert result.exit_code == 0
                 mock_process.assert_called_once()
 
-    def test_cli_auto_discovery(self) -> None:
+    def test_cli_auto_discovery(self, cli_runner: CliRunner) -> None:
         """Test CLI with automatic CSV file discovery."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create a test CSV file
@@ -48,7 +48,7 @@ class TestNipperExpanderCLI:
                 "column1,Devices,column3\nvalue1,device1;device2,value3\n",
             )
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with (
                 patch(
@@ -59,7 +59,7 @@ class TestNipperExpanderCLI:
                     return_value=test_csv,
                 ) as mock_get_file,
             ):
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--start-dir",
@@ -71,19 +71,19 @@ class TestNipperExpanderCLI:
                 mock_process.assert_called_once()
                 mock_get_file.assert_called_once()
 
-    def test_cli_no_csv_files_found(self) -> None:
+    def test_cli_no_csv_files_found(self, cli_runner: CliRunner) -> None:
         """Test CLI behavior when no CSV files are found."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Directory with no CSV files
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch(
                 "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
             ) as mock_get_file:
                 mock_get_file.side_effect = ValueError("No CSV files found")
 
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--start-dir",
@@ -94,16 +94,16 @@ class TestNipperExpanderCLI:
                 assert result.exit_code == 1  # CLI should exit with error code
                 assert "File selection failed: No CSV files found" in result.output
 
-    def test_cli_invalid_input_file(self) -> None:
+    def test_cli_invalid_input_file(self, cli_runner: CliRunner) -> None:
         """Test CLI behavior with invalid input file."""
-        runner = CliRunner()
+        # Using shared cli_runner fixture
 
         with patch(
             "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
         ) as mock_get_file:
             mock_get_file.side_effect = ValueError("Invalid file specified")
 
-            result = runner.invoke(
+            result = cli_runner.invoke(
                 process_command_line,
                 [
                     "--in-file",
@@ -113,7 +113,7 @@ class TestNipperExpanderCLI:
 
             assert "File selection failed: Invalid file specified" in result.output
 
-    def test_cli_with_custom_start_directory(self) -> None:
+    def test_cli_with_custom_start_directory(self, cli_runner: CliRunner) -> None:
         """Test CLI with custom start directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             subdir = Path(temp_dir) / "subdir"
@@ -123,7 +123,7 @@ class TestNipperExpanderCLI:
             test_csv = subdir / "test.csv"
             test_csv.write_text("column1,Devices,column3\nvalue1,device1,value3\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with (
                 patch(
@@ -134,7 +134,7 @@ class TestNipperExpanderCLI:
                     return_value=test_csv,
                 ) as mock_get_file,
             ):
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--start-dir",
@@ -147,15 +147,15 @@ class TestNipperExpanderCLI:
                 mock_get_file.assert_called_once()
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
-    def test_program_config_creation(self, mock_process: MagicMock) -> None:
+    def test_program_config_creation(self, mock_process: MagicMock, cli_runner: CliRunner) -> None:
         """Test that ProgramConfig is created correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1;device2\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
-            result = runner.invoke(
+            result = cli_runner.invoke(
                 process_command_line,
                 [
                     "--in-file",
@@ -175,36 +175,36 @@ class TestNipperExpanderCLI:
             assert hasattr(program_config, "input_file")
             assert hasattr(program_config, "source_files_path")
 
-    def test_cli_help_output(self) -> None:
+    def test_cli_help_output(self, cli_runner: CliRunner) -> None:
         """Test CLI help output."""
-        runner = CliRunner()
+        # Using shared cli_runner fixture
 
-        result = runner.invoke(process_command_line, ["--help"])
+        result = cli_runner.invoke(process_command_line, ["--help"])
 
         assert result.exit_code == 0
         assert "Process a Nipper CSV file" in result.output
         assert "--in-file" in result.output
         assert "--start-dir" in result.output
 
-    def test_cli_version_output(self) -> None:
+    def test_cli_version_output(self, cli_runner: CliRunner) -> None:
         """Test CLI version output."""
-        runner = CliRunner()
+        # Using shared cli_runner fixture
 
-        result = runner.invoke(process_command_line, ["--version"])
+        result = cli_runner.invoke(process_command_line, ["--version"])
 
         assert result.exit_code == 0
         assert "version" in result.output
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv")
-    def test_processing_success_message(self, mock_process: MagicMock) -> None:
+    def test_processing_success_message(self, mock_process: MagicMock, cli_runner: CliRunner) -> None:
         """Test success message is displayed."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
-            result = runner.invoke(
+            result = cli_runner.invoke(
                 process_command_line,
                 [
                     "--in-file",
@@ -216,20 +216,20 @@ class TestNipperExpanderCLI:
             assert "Processing Nipper CSV file" in result.output
             mock_process.assert_called_once()
 
-    def test_error_handling_in_processing(self) -> None:
+    def test_error_handling_in_processing(self, cli_runner: CliRunner) -> None:
         """Test error handling during CSV processing."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch(
                 "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
             ) as mock_process:
                 mock_process.side_effect = Exception("Processing failed")
 
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--in-file",
@@ -246,7 +246,7 @@ class TestGetInputFileFunction:
     """Test the get_input_file helper function."""
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
-    def test_explicit_file_parameter(self, mock_get_file: MagicMock) -> None:
+    def test_explicit_file_parameter(self, mock_get_file: MagicMock, cli_runner: CliRunner) -> None:
         """Test get_input_file with explicit file parameter."""
         mock_get_file.return_value = Path("/test/file.csv")
 
@@ -254,10 +254,10 @@ class TestGetInputFileFunction:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--in-file",
@@ -268,15 +268,15 @@ class TestGetInputFileFunction:
                 mock_get_file.assert_called_once()
 
     @patch("kp_analysis_toolkit.cli.commands.nipper.get_input_file")
-    def test_auto_discovery_mode(self, mock_get_file: MagicMock) -> None:
+    def test_auto_discovery_mode(self, mock_get_file: MagicMock, cli_runner: CliRunner) -> None:
         """Test get_input_file with auto-discovery mode."""
         mock_get_file.return_value = Path("/discovered/file.csv")
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--start-dir",
@@ -290,7 +290,7 @@ class TestGetInputFileFunction:
 class TestCLIIntegration:
     """Test CLI integration scenarios."""
 
-    def test_end_to_end_processing(self) -> None:
+    def test_end_to_end_processing(self, cli_runner: CliRunner) -> None:
         """Test complete end-to-end processing workflow."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create realistic test CSV
@@ -301,7 +301,7 @@ Medium Risk Finding,router2;switch2,Medium,Configuration issue finding,Medium im
 Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor and review"""
             test_csv.write_text(csv_content)
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             # Mock the actual processing to avoid file system operations
             with (
@@ -319,7 +319,7 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
                 mock_config.output_file = Path(temp_dir) / "nipper_test_expanded.xlsx"
                 mock_config_class.return_value = mock_config
 
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--in-file",
@@ -336,7 +336,7 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
                 config = mock_process.call_args[0][0]
                 assert config == mock_config
 
-    def test_multiple_csv_files_discovery(self) -> None:
+    def test_multiple_csv_files_discovery(self, cli_runner: CliRunner) -> None:
         """Test behavior when multiple CSV files exist."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create multiple CSV files
@@ -345,7 +345,7 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
             csv1.write_text("Devices\ndevice1\n")
             csv2.write_text("Devices\ndevice2\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch(
                 "kp_analysis_toolkit.cli.commands.nipper.get_input_file",
@@ -356,7 +356,7 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
                 with patch(
                     "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
                 ):
-                    result = runner.invoke(
+                    result = cli_runner.invoke(
                         process_command_line,
                         [
                             "--start-dir",
@@ -366,9 +366,9 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
 
                     mock_get_file.assert_called_once()
 
-    def test_relative_path_handling(self) -> None:
+    def test_relative_path_handling(self, cli_runner: CliRunner) -> None:
         """Test handling of relative paths."""
-        runner = CliRunner()
+        # Using shared cli_runner fixture
 
         with (
             patch(
@@ -380,7 +380,7 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
         ):
             mock_get_file.return_value = Path("./test.csv")
 
-            result = runner.invoke(
+            result = cli_runner.invoke(
                 process_command_line,
                 [
                     "--start-dir",
@@ -391,12 +391,12 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
             # Should handle relative paths appropriately
             mock_get_file.assert_called_once()
 
-    def test_error_recovery(self) -> None:
+    def test_error_recovery(self, cli_runner: CliRunner) -> None:
         """Test error recovery and user feedback."""
-        runner = CliRunner()
+        # Using shared cli_runner fixture
 
         # Test with nonexistent file - this should trigger a processing error, not config error
-        result = runner.invoke(
+        result = cli_runner.invoke(
             process_command_line,
             [
                 "--in-file",
@@ -411,16 +411,16 @@ Low Risk Finding,switch3,Low,Minor issue finding,Low impact,High effort,Monitor 
 class TestCLIParameterValidation:
     """Test CLI parameter validation."""
 
-    def test_valid_parameters(self) -> None:
+    def test_valid_parameters(self, cli_runner: CliRunner) -> None:
         """Test that valid parameters are accepted."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv"):
-                result = runner.invoke(
+                result = cli_runner.invoke(
                     process_command_line,
                     [
                         "--in-file",
@@ -432,14 +432,14 @@ class TestCLIParameterValidation:
 
                 assert result.exit_code == 0
 
-    def test_default_parameters(self) -> None:
+    def test_default_parameters(self, cli_runner: CliRunner) -> None:
         """Test default parameter behavior."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create CSV in current directory simulation
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            runner = CliRunner()
+            # Using shared cli_runner fixture
 
             with (
                 patch(
@@ -450,7 +450,7 @@ class TestCLIParameterValidation:
                 mock_get_file.return_value = test_csv
 
                 # Test with minimal parameters (should use defaults)
-                result = runner.invoke(process_command_line, [])
+                result = cli_runner.invoke(process_command_line, [])
 
                 assert result.exit_code == 0
                 mock_get_file.assert_called_once_with(

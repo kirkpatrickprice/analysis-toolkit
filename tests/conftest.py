@@ -7,6 +7,7 @@ from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from click.testing import CliRunner
 
 from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, ProducerType
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
@@ -79,6 +80,18 @@ def mock_windows_system() -> Systems:
     system.file = Mock()
     system.file.name = "test-system.log"
     return system
+
+
+@pytest.fixture
+def cli_runner() -> CliRunner:
+    """Create a Click CLI runner for testing CLI commands."""
+    return CliRunner()
+
+
+@pytest.fixture
+def isolated_cli_runner(tmp_path: Path) -> CliRunner:
+    """Create an isolated CLI runner with temporary working directory."""
+    return CliRunner(env={"HOME": str(tmp_path)})
 
 
 # Add other shared fixtures as needed

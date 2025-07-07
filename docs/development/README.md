@@ -37,13 +37,20 @@ This directory contains:
 - Integration testing
 - Test data management
 - Test coverage requirements
+- [CLI Testing Standards](cli-testing-standards.md) - Standards for CLI component testing
+- [Test Directory Organization](test-directory-organization.md) - Test structure and shared fixtures
+
+## Completed Development Docs
+
+- [x] [CLI Testing Standards](cli-testing-standards.md) - CLI testing best practices and shared fixtures
+- [x] [Test Directory Organization](test-directory-organization.md) - Test structure analysis and implementation
 
 ## Planned Development Docs
 
 - [ ] Development environment setup
 - [ ] Contributing guidelines
 - [ ] Code style guide
-- [ ] Testing strategy
+- [ ] Testing strategy (comprehensive)
 - [ ] Release process
 - [ ] Debugging guide
 - [ ] Performance profiling
