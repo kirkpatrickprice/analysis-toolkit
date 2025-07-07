@@ -63,10 +63,16 @@ version = {attr = "kp_analysis_toolkit.__version__"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = "src/"
-addopts = ["--import-mode=importlib"]
 testpaths = ["tests"]
-markers = []
+pythonpath = ["src", "tests"]
+markers = [
+    "unit: Fast unit tests",
+    "integration: Integration tests", 
+    "e2e: End-to-end tests",
+    "regression: Regression tests",
+    "performance: Performance tests",
+    "slow: Tests that take longer to run",
+]
 
 [dependency-groups]
 dev = [
