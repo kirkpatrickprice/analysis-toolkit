@@ -1,35 +1,9 @@
-from collections.abc import Generator
 from pathlib import Path
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
 
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
-
-
-@pytest.fixture
-def mock_file_system() -> Generator[dict[str, MagicMock | AsyncMock], Any, None]:
-    """Mock file system for testing."""
-    with (
-        patch("pathlib.Path.exists") as mock_exists,
-        patch("pathlib.Path.is_file") as mock_is_file,
-        patch("pathlib.Path.is_dir") as mock_is_dir,
-        patch("pathlib.Path.mkdir") as mock_mkdir,
-    ):
-        # Default behavior - everything exists
-        mock_exists.return_value = True
-        mock_is_file.return_value = True
-        mock_is_dir.return_value = True
-        mock_mkdir.return_value = None
-
-        yield {
-            "exists": mock_exists,
-            "is_file": mock_is_file,
-            "is_dir": mock_is_dir,
-            "mkdir": mock_mkdir,
-        }
 
 
 @pytest.fixture
