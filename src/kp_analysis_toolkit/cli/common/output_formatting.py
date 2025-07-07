@@ -25,6 +25,78 @@ class VersionDisplayOptions(KPATBaseModel):
     environment_info: dict[str, str] | None = None
 
 
+class ErrorDisplayOptions(KPATBaseModel):
+    """Options for error information display."""
+
+    context: str | None = None
+    suggestions: list[str] | None = None
+    show_help_hint: bool = True
+    error_code: str | None = None
+
+
+def display_cli_error(
+    rich_output: RichOutputService,
+    error: Exception,
+    *,
+    error_prefix: str = "Error",
+    options: ErrorDisplayOptions | None = None,
+) -> None:
+    """
+    Display enhanced error information with context and suggestions.
+
+    This function provides sophisticated error formatting with optional
+    context information, suggestions, and help hints for better user experience.
+
+    Args:
+        rich_output: Rich output service instance
+        error: The exception that occurred
+        error_prefix: Custom prefix for the error message
+        options: Optional error display configuration
+
+    Example:
+        options = ErrorDisplayOptions(
+            context="Trying to process configuration file",
+            suggestions=[
+                "Check that the file exists",
+                "Verify file permissions",
+                "Ensure the file is in the correct format"
+            ],
+            error_code="CONFIG_001"
+        )
+        display_cli_error(rich_output, error, error_prefix="Configuration Error", options=options)
+
+    """
+    if options is None:
+        options = ErrorDisplayOptions()
+
+    # Main error message
+    rich_output.error(f"{error_prefix}: {error}")
+
+    # Add context if provided
+    if options.context:
+        rich_output.print("")
+        rich_output.info(f"Context: {options.context}")
+
+    # Add suggestions if provided
+    if options.suggestions:
+        rich_output.print("")
+        rich_output.subheader("💡 Suggestions:")
+        for i, suggestion in enumerate(options.suggestions, 1):
+            rich_output.print(f"  {i}. {suggestion}")
+
+    # Add error code if provided
+    if options.error_code:
+        rich_output.print("")
+        rich_output.print(f"Error Code: {options.error_code}", style="dim")
+
+    # Add help hint if enabled
+    if options.show_help_hint:
+        rich_output.print("")
+        rich_output.print(
+            "💡 Use --help for more information about command options", style="dim cyan"
+        )
+
+
 def display_grouped_help(ctx: click.Context, command_name: str) -> None:
     """
     Display help with option groups for a specific command.
@@ -302,7 +374,7 @@ def create_list_command_header(
     Args:
         rich_output: Rich output service instance
         title: Title text for the header
-        icon: Emoji icon to use (default: 📋)
+        icon: Emoji icon to use (default: "📋")
 
     """
     rich_output.header(f"{icon} {title}")
@@ -408,7 +480,8 @@ def display_version_information(
     # Main banner
     rich_output.banner(
         title=app_name,
-        subtitle=options.subtitle or "Python utilities for security analysis and data processing",
+        subtitle=options.subtitle
+        or "Python utilities for security analysis and data processing",
         version=version,
         force=True,
     )

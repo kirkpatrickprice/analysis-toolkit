@@ -179,15 +179,51 @@ def display_version_information(
 - ✅ **Backward Compatibility**: Maintained existing output format for test compatibility
 - ✅ **No Regression**: All existing functionality preserved
 
-### 6. **Error Message Formatting for CLI**
+### 6. **Error Message Formatting for CLI** ✅ **IMPLEMENTED**
 
-**Current Implementation:** Using `handle_fatal_error()` but formatting is basic
+**Current Implementation:** Enhanced error display with context and suggestions available
 ```python
 # In config_validation.py
-console.print_error(f"{error_prefix}: {e}")
+from kp_analysis_toolkit.cli.common.config_validation import (
+    handle_enhanced_fatal_error,
+    EnhancedErrorOptions
+)
+
+# Enhanced usage
+options = EnhancedErrorOptions(
+    context="Attempting to locate input file for processing",
+    suggestions=[
+        "Check that the file exists in the specified directory",
+        "Verify file permissions allow reading"
+    ],
+    error_code="FILE_001"
+)
+handle_enhanced_fatal_error(e, error_prefix="File selection failed", options=options)
+
+# Basic usage (backward compatible)
+handle_fatal_error(e, error_prefix="Configuration validation failed")
 ```
 
-**Should Be Centralized:** More sophisticated error display with context.
+**✅ CENTRALIZED IMPLEMENTATION:** Enhanced error formatting with sophisticated display options implemented in `config_validation.py`
+
+**Implementation Details:**
+- `handle_enhanced_fatal_error()` - New function for sophisticated error display with context and suggestions
+- `EnhancedErrorOptions` - Pydantic model inheriting from `KPATBaseModel` for configuring enhanced error display options
+- `display_cli_error()` - Core enhanced error display function in `output_formatting.py`
+- `ErrorDisplayOptions` - Pydantic model for error display configuration
+- Backward compatibility maintained with existing `handle_fatal_error()` function
+
+**Results Achieved:**
+- ✅ **Enhanced Error Display**: Context, suggestions, error codes, and help hints
+- ✅ **Fallback Support**: Graceful fallback to basic display if enhanced formatting unavailable
+- ✅ **Backward Compatibility**: Existing error handling patterns continue to work unchanged
+- ✅ **Sophisticated Formatting**: Rich console output with proper styling and organization
+- ✅ **Code Organization**: Error display logic centralized in `output_formatting.py`
+
+**Code Migration:**
+- **Before**: Basic error messages with `rich_output.error(f"{error_prefix}: {e}")`
+- **After**: Enhanced display with context, suggestions, and professional formatting
+- **Benefit**: Better user experience, clearer error guidance, consistent formatting
 
 ### 7. **Configuration Display Formatting**
 
@@ -302,14 +338,31 @@ def display_version_information(
     """Display comprehensive version information with banner and tables."""
 ```
 
-#### 6. **Enhanced Error Display** ⏳ **PENDING**
+#### 6. **Enhanced Error Display** ✅ **IMPLEMENTED**
 ```python
+class EnhancedErrorOptions(KPATBaseModel):
+    """Options for enhanced error display."""
+    context: str | None = None
+    suggestions: list[str] | None = None
+    error_code: str | None = None
+    show_help_hint: bool = True
+
+def handle_enhanced_fatal_error(
+    error: Exception,
+    *,
+    error_prefix: str = "Error",
+    options: EnhancedErrorOptions | None = None,
+    exit_on_error: bool = True,
+    rich_output: RichOutputService | None = None,
+) -> None:
+    """Handle fatal errors with enhanced display including context and suggestions."""
+
 def display_cli_error(
     rich_output: RichOutputService,
     error: Exception,
-    context: str | None = None,
-    suggestions: list[str] | None = None,
-    exit_code: int = 1,
+    *,
+    error_prefix: str = "Error",
+    options: ErrorDisplayOptions | None = None,
 ) -> None:
     """Display enhanced error information with context and suggestions."""
 ```
@@ -435,7 +488,7 @@ Instead of relying on rich-click's broken option grouping, we could:
 4. **Command Help Formatting** - Working option groups for all commands ✅ **IMPLEMENTED**
 
 ### Medium Priority  
-5. **Enhanced Error Display** - Improve user experience ⏳ **PENDING**
+5. **Enhanced Error Display** - Improve user experience ✅ **IMPLEMENTED**
 6. **Version Display Formatting** - Standardize version output ✅ **IMPLEMENTED**
 
 ### Low Priority
@@ -471,12 +524,12 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 - **Scripts Command Migration**: All list commands updated to use centralized formatting
 - **Verbose Details Formatting**: Complete centralization with all manual patterns eliminated
 - **Version Display Formatting**: Complete centralization with Pydantic-based configuration
+- **Enhanced Error Display**: Sophisticated error messages with context, suggestions, and fallback support
 
 ### 🔄 **IN PROGRESS**
 - **Documentation**: This analysis document and implementation guides
 
 ### ⏳ **PENDING**  
-- **Enhanced Error Display**: Sophisticated error messages with context
 - **Progress Formatters**: Batch operation status and success rate display
 - **Common Display Patterns**: Section dividers, file size display, emoji utilities
 - **Unit Tests**: Comprehensive testing for new formatting functions
@@ -491,6 +544,8 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 - **✅ Complete Pattern Migration**: Hash display, list commands, and verbose details all using centralized utilities
 - **✅ Version Display Centralized**: Main CLI version display now uses centralized formatting with configurable options
 - **✅ Pydantic Model Design**: Version display options follow project patterns using `KPATBaseModel` for proper data validation
+- **✅ Enhanced Error Display**: Sophisticated error formatting with context, suggestions, error codes, and help hints
+- **✅ Consistent Pydantic Design**: All configuration models inherit from `KPATBaseModel` following project patterns
 
 ## Notes
 

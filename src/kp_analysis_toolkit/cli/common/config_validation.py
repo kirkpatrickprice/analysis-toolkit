@@ -5,8 +5,29 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.models.types import ConfigValue, PathLike, T
 from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
+
+# Import for enhanced error display (conditional to avoid circular imports)
+try:
+    from kp_analysis_toolkit.cli.common.output_formatting import (
+        ErrorDisplayOptions,
+        display_cli_error,
+    )
+
+    _ENHANCED_ERROR_AVAILABLE = True
+except ImportError:
+    _ENHANCED_ERROR_AVAILABLE = False
+
+
+class EnhancedErrorOptions(KPATBaseModel):
+    """Options for enhanced error display."""
+
+    context: str | None = None
+    suggestions: list[str] | None = None
+    error_code: str | None = None
+    show_help_hint: bool = True
 
 
 def validate_program_config(config_class: type[T], **kwargs: ConfigValue) -> T:
@@ -81,6 +102,79 @@ def handle_fatal_error(
         rich_output = get_rich_output()
 
     rich_output.error(f"{error_prefix}: {error}")
+
+    if exit_on_error:
+        sys.exit(1)
+
+
+def handle_enhanced_fatal_error(
+    error: Exception,
+    *,
+    error_prefix: str = "Error",
+    options: EnhancedErrorOptions | None = None,
+    exit_on_error: bool = True,
+    rich_output: RichOutputService | None = None,
+) -> None:
+    """
+    Handle fatal errors with enhanced display including context and suggestions.
+
+    This function provides sophisticated error formatting with optional
+    context information, suggestions, and help hints for better user experience.
+    Falls back to basic error display if enhanced formatting is not available.
+
+    Args:
+        error: The exception that occurred
+        error_prefix: Custom prefix for the error message (default: "Error")
+        options: Enhanced error display options
+        exit_on_error: Whether to exit the program after displaying the error
+        rich_output: Optional RichOutput instance (will create one if not provided)
+
+    Example:
+        options = EnhancedErrorOptions(
+            context="Attempting to locate input file for processing",
+            suggestions=[
+                "Check that the file exists in the specified directory",
+                "Verify file permissions allow reading",
+                "Ensure the file has the correct extension"
+            ],
+            error_code="FILE_001"
+        )
+        try:
+            selected_file = get_input_file(...)
+        except ValueError as e:
+            handle_enhanced_fatal_error(
+                e,
+                error_prefix="File selection failed",
+                options=options
+            )
+
+    """
+    if options is None:
+        options = EnhancedErrorOptions()
+
+    if rich_output is None:
+        rich_output = get_rich_output()
+
+    if _ENHANCED_ERROR_AVAILABLE:
+        # Use enhanced error display
+        error_options = ErrorDisplayOptions(
+            context=options.context,
+            suggestions=options.suggestions,
+            error_code=options.error_code,
+            show_help_hint=options.show_help_hint,
+        )
+        display_cli_error(
+            rich_output, error, error_prefix=error_prefix, options=error_options
+        )
+    else:
+        # Fall back to basic error display
+        rich_output.error(f"{error_prefix}: {error}")
+        if options.context:
+            rich_output.info(f"Context: {options.context}")
+        if options.suggestions:
+            rich_output.subheader("Suggestions:")
+            for i, suggestion in enumerate(options.suggestions, 1):
+                rich_output.print(f"  {i}. {suggestion}")
 
     if exit_on_error:
         sys.exit(1)
