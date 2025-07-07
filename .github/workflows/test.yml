@@ -1,4 +1,4 @@
-name: Cross-Platform Unit Tests
+name: Cross-Platform Full Tests
 
 on:
   # Trigger on push to main branch only
