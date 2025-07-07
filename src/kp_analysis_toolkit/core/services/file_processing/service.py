@@ -1,32 +1,15 @@
+"""Main file processing service implementation."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
-
-from kp_analysis_toolkit.utils.rich_output import RichOutput
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from kp_analysis_toolkit.utils.rich_output import RichOutput
 
-
-class EncodingDetector(Protocol):
-    """Protocol for file encoding detection."""
-
-    def detect_encoding(self, file_path: Path) -> str | None: ...
-
-
-class HashGenerator(Protocol):
-    """Protocol for file hash generation."""
-
-    def generate_hash(self, file_path: Path) -> str: ...
-
-
-class FileValidator(Protocol):
-    """Protocol for file validation."""
-
-    def validate_file_exists(self, file_path: Path) -> bool: ...
-    def validate_directory_exists(self, dir_path: Path) -> bool: ...
+    from .protocols import EncodingDetector, FileValidator, HashGenerator
 
 
 class FileProcessingService:
@@ -39,13 +22,33 @@ class FileProcessingService:
         file_validator: FileValidator,
         rich_output: RichOutput,
     ) -> None:
+        """
+        Initialize the file processing service.
+
+        Args:
+            encoding_detector: Service for detecting file encodings
+            hash_generator: Service for generating file hashes
+            file_validator: Service for validating file paths
+            rich_output: Service for rich console output
+
+        """
         self.encoding_detector: EncodingDetector = encoding_detector
         self.hash_generator: HashGenerator = hash_generator
         self.file_validator: FileValidator = file_validator
         self.rich_output: RichOutput = rich_output
 
     def process_file(self, file_path: Path) -> dict[str, str | None]:
-        """Process a file and return metadata."""
+        """
+        Process a file and return metadata.
+
+        Args:
+            file_path: Path to the file to process
+
+        Returns:
+            Dictionary containing file metadata including encoding, hash, and path.
+            Returns empty dict if file validation fails.
+
+        """
         if not self.file_validator.validate_file_exists(file_path):
             self.rich_output.error(f"File not found: {file_path}")
             return {}
