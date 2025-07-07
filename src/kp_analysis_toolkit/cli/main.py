@@ -15,7 +15,9 @@ from kp_analysis_toolkit.cli.commands.scripts import (
     process_command_line as scripts_process_command_line,
 )
 from kp_analysis_toolkit.cli.common.output_formatting import (
+    VersionDisplayOptions,
     create_commands_help_table,
+    display_version_information,
 )
 from kp_analysis_toolkit.cli.utils.system_utils import (
     get_architecture_info,
@@ -24,7 +26,6 @@ from kp_analysis_toolkit.cli.utils.system_utils import (
     get_platform_info,
     get_python_version_string,
 )
-from kp_analysis_toolkit.cli.utils.table_layouts import create_version_info_table
 from kp_analysis_toolkit.core.containers.application import (
     initialize_dependency_injection,
 )
@@ -60,37 +61,32 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
 
     console: RichOutputService = get_rich_output()
 
-    # Include the expected text for test compatibility
-    console.print("kpat_cli version " + cli_version)
-    console.print("")
+    # Collect module information
+    modules = get_module_versions()
 
-    # Main banner
-    console.banner(
-        title="🔧 KP Analysis Toolkit",
-        subtitle="Python utilities for security analysis and data processing",
-        version=cli_version,
-        force=True,
-    )
-
-    # Module versions table using standardized layout
-    table = create_version_info_table(console)
-    if table is not None:
-        for module_name, version, description in get_module_versions():
-            table.add_row(module_name, version, description)
-        console.display_table(table, force=True)
-
-    # System information using utility functions
-    console.print("")
+    # Collect environment information
     python_version = get_python_version_string()
     platform_info = get_platform_info()
     architecture = get_architecture_info()
     install_path = get_installation_path()
 
-    console.info(
-        f"💻 Environment: Python {python_version} on {platform_info} ({architecture})",
+    environment_info = {
+        "environment": f"💻 Environment: Python {python_version} on {platform_info} ({architecture})",
+        "installation": f"📦 Installation: {install_path}",
+    }
+
+    # Use centralized version display
+    options = VersionDisplayOptions(
+        modules=modules,
+        environment_info=environment_info,
     )
-    console.info(f"📦 Installation: {install_path}")
-    console.print("")
+
+    display_version_information(
+        console,
+        "🔧 KP Analysis Toolkit",
+        cli_version,
+        options,
+    )
 
     ctx.exit()
 

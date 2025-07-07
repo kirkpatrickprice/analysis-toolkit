@@ -133,14 +133,51 @@ table = console.table(
 - ✅ **Consistent Formatting**: 30-character width for options, proper type indicators
 - ✅ **Full Functionality**: Commands work normally, only help display is enhanced
 
-### 5. **Version Display Formatting**
+### 5. **Version Display Formatting** ✅ **IMPLEMENTED**
 
-**Current Implementation:** In main.py `_version_callback()`
-- Banner creation
-- Version table display
-- System information formatting
+**Current Implementation:** Centralized in `output_formatting.py`
+```python
+# In output_formatting.py - IMPLEMENTED
+class VersionDisplayOptions(KPATBaseModel):
+    """Options for version information display."""
+    subtitle: str | None = None
+    modules: list[tuple[str, str, str]] | None = None
+    environment_info: dict[str, str] | None = None
 
-**Should Be Centralized:** Standardized version display format.
+def display_version_information(
+    rich_output: RichOutputService,
+    app_name: str,
+    version: str,
+    options: VersionDisplayOptions | None = None,
+) -> None:
+    """Display comprehensive version information with banner and tables."""
+```
+
+**✅ IMPLEMENTATION COMPLETED:** The version display formatting has been successfully centralized and is now used in the main CLI.
+
+**Implementation Details:**
+- `display_version_information()` - Centralized function in `output_formatting.py`
+- `VersionDisplayOptions` - Pydantic model inheriting from `KPATBaseModel` to configure display options
+- Consistent banner creation with configurable subtitle
+- Modular approach for modules table and environment information
+- Used in `main.py` `_version_callback()` function
+
+**Results Achieved:**
+- ✅ **Main CLI Integration**: `--version` option uses centralized formatting
+- ✅ **Consistent Banner**: Standardized banner display with emoji and styling
+- ✅ **Pydantic Model**: Following project patterns with proper data validation
+- ✅ **Code Reduction**: Eliminated manual formatting logic in callback function
+
+**Code Migration:**
+- **Before**: Manual banner creation, table setup, and environment info formatting in `_version_callback()`
+- **After**: Single function call `display_version_information(console, app_name, version, options)`
+- **Benefit**: Centralized formatting logic, easier maintenance, consistent styling, reusable for other commands
+
+**Testing Results:**
+- ✅ **Command Line Verification**: Tested with `--version` option
+- ✅ **Output Formatting**: Confirmed proper banner, module table, and environment info display
+- ✅ **Backward Compatibility**: Maintained existing output format for test compatibility
+- ✅ **No Regression**: All existing functionality preserved
 
 ### 6. **Error Message Formatting for CLI**
 
@@ -248,15 +285,19 @@ def display_option_group_panel(
     """Display a single option group as a Rich panel."""
 ```
 
-#### 5. **Version Display Formatting** ⏳ **PENDING**
+#### 5. **Version Display Formatting** ✅ **IMPLEMENTED**
 ```python
+class VersionDisplayOptions(KPATBaseModel):
+    """Options for version information display."""
+    subtitle: str | None = None
+    modules: list[tuple[str, str, str]] | None = None
+    environment_info: dict[str, str] | None = None
+
 def display_version_information(
     rich_output: RichOutputService,
     app_name: str,
     version: str,
-    subtitle: str | None = None,
-    modules: list[tuple[str, str, str]] | None = None,
-    show_system_info: bool = True,
+    options: VersionDisplayOptions | None = None,
 ) -> None:
     """Display comprehensive version information with banner and tables."""
 ```
@@ -395,7 +436,7 @@ Instead of relying on rich-click's broken option grouping, we could:
 
 ### Medium Priority  
 5. **Enhanced Error Display** - Improve user experience ⏳ **PENDING**
-6. **Version Display Formatting** - Standardize version output ⏳ **PENDING**
+6. **Version Display Formatting** - Standardize version output ✅ **IMPLEMENTED**
 
 ### Low Priority
 7. **Progress Formatters** - Nice-to-have for consistency ⏳ **PENDING**
@@ -413,7 +454,7 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 
 1. **Implement core functions** in `output_formatting.py` ✅ **COMPLETED**
 2. **Update scripts.py** to use centralized functions (highest impact) ✅ **COMPLETED**  
-3. **Update main.py** version display ⏳ **PENDING**
+3. **Update main.py** version display ✅ **COMPLETED**
 4. **Update other commands** as needed ✅ **COMPLETED** (help system)
 5. **Add unit tests** for formatting functions ⏳ **PENDING**
 6. **Document patterns** for future developers ✅ **IN PROGRESS**
@@ -429,12 +470,12 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 - **Command Integration**: All three main commands (scripts, nipper, rtf-to-text) updated
 - **Scripts Command Migration**: All list commands updated to use centralized formatting
 - **Verbose Details Formatting**: Complete centralization with all manual patterns eliminated
+- **Version Display Formatting**: Complete centralization with Pydantic-based configuration
 
 ### 🔄 **IN PROGRESS**
 - **Documentation**: This analysis document and implementation guides
 
 ### ⏳ **PENDING**  
-- **Version Display Formatting**: Centralized version information display
 - **Enhanced Error Display**: Sophisticated error messages with context
 - **Progress Formatters**: Batch operation status and success rate display
 - **Common Display Patterns**: Section dividers, file size display, emoji utilities
@@ -448,6 +489,8 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 - **✅ Professional UI**: Blue-bordered panels with clear section organization
 - **✅ Verbose Details Centralized**: All manual verbose details formatting patterns eliminated and replaced with centralized function
 - **✅ Complete Pattern Migration**: Hash display, list commands, and verbose details all using centralized utilities
+- **✅ Version Display Centralized**: Main CLI version display now uses centralized formatting with configurable options
+- **✅ Pydantic Model Design**: Version display options follow project patterns using `KPATBaseModel` for proper data validation
 
 ## Notes
 
