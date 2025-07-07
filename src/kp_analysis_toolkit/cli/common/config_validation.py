@@ -164,7 +164,10 @@ def handle_enhanced_fatal_error(
             show_help_hint=options.show_help_hint,
         )
         display_cli_error(
-            rich_output, error, error_prefix=error_prefix, options=error_options
+            rich_output,
+            error,
+            error_prefix=error_prefix,
+            options=error_options,
         )
     else:
         # Fall back to basic error display

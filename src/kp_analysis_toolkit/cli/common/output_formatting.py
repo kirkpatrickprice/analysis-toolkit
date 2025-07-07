@@ -93,7 +93,8 @@ def display_cli_error(
     if options.show_help_hint:
         rich_output.print("")
         rich_output.print(
-            "💡 Use --help for more information about command options", style="dim cyan"
+            "💡 Use --help for more information about command options",
+            style="dim cyan",
         )
 
 
