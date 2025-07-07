@@ -266,7 +266,9 @@ class TestGetInputFileFunction:
             test_csv = Path(temp_dir) / "test.csv"
             test_csv.write_text("Devices\ndevice1\n")
 
-            with patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv") as mock_process:
+            with patch(
+                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
+            ) as mock_process:
                 result = cli_runner.invoke(
                     process_command_line,
                     [
@@ -291,7 +293,9 @@ class TestGetInputFileFunction:
 
         with (
             tempfile.TemporaryDirectory() as temp_dir,
-            patch("kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv") as mock_process,
+            patch(
+                "kp_analysis_toolkit.cli.commands.nipper.process_nipper_csv",
+            ) as mock_process,
         ):
             result = cli_runner.invoke(
                 process_command_line,
