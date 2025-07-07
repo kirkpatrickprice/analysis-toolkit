@@ -19,7 +19,7 @@ from kp_analysis_toolkit.utils.rich_output import get_rich_output
 class TestRichOutputDIRegression:
     """Regression tests for RichOutput DI implementation."""
 
-    def test_di_initialization_and_configuration(self, cli_runner: CliRunner) -> None:
+    def test_di_initialization_and_configuration(self) -> None:
         """Test that DI can be initialized and configured."""
         # Reset to ensure clean state
         container.reset_singletons()
@@ -36,7 +36,7 @@ class TestRichOutputDIRegression:
         assert service.quiet is False
         assert service.console.width == 100
 
-    def test_backward_compatibility_maintained(self, cli_runner: CliRunner) -> None:
+    def test_backward_compatibility_maintained(self) -> None:
         """Test that existing code continues to work."""
         # Reset container
         container.reset_singletons()
@@ -54,7 +54,7 @@ class TestRichOutputDIRegression:
         assert isinstance(rich_output, RichOutputService)
         assert rich_output.quiet is True  # Should get DI configuration
 
-    def test_convenience_functions_still_work(self, cli_runner: CliRunner) -> None:
+    def test_convenience_functions_still_work(self) -> None:
         """Test that convenience functions continue to work."""
         # Reset container
         container.reset_singletons()
@@ -78,7 +78,7 @@ class TestRichOutputDIRegression:
         error("Error message", force=True)  # Force to ensure it shows
         debug("Debug message")
 
-    def test_singleton_behavior_preserved(self, cli_runner: CliRunner) -> None:
+    def test_singleton_behavior_preserved(self) -> None:
         """Test that singleton behavior is preserved."""
         # Reset container
         container.reset_singletons()
@@ -94,10 +94,8 @@ class TestRichOutputDIRegression:
         assert instance1 is instance2
         assert instance1 is instance3
 
-    def test_cli_integration_preserved(self, cli_runner: CliRunner) -> None:
+    def test_cli_integration_preserved(self) -> None:
         """Test that CLI integration works."""
-        from click.testing import CliRunner
-
         from kp_analysis_toolkit.cli import cli
 
         # Using shared cli_runner fixture
@@ -112,7 +110,7 @@ class TestRichOutputDIRegression:
         assert result.exit_code == 0
         assert "kpat_cli version" in result.output
 
-    def test_configuration_flexibility(self, cli_runner: CliRunner) -> None:
+    def test_configuration_flexibility(self) -> None:
         """Test that configuration can be changed dynamically."""
         # Test different configurations
         configurations = [
@@ -132,7 +130,7 @@ class TestRichOutputDIRegression:
             assert service.quiet == config["quiet"]
             assert service.console.width == config["console_width"]
 
-    def test_error_handling_robustness(self, cli_runner: CliRunner) -> None:
+    def test_error_handling_robustness(self) -> None:
         """Test that error handling is robust."""
         # Reset container
         container.reset_singletons()
@@ -145,10 +143,10 @@ class TestRichOutputDIRegression:
             assert rich_output.verbose is True
         except Exception as e:
             pytest.fail(
-                f"get_rich_output should handle uninitialized DI gracefully: {e}"
+                f"get_rich_output should handle uninitialized DI gracefully: {e}",
             )
 
-    def test_performance_characteristics(self, cli_runner: CliRunner) -> None:
+    def test_performance_characteristics(self) -> None:
         """Test that performance characteristics are acceptable."""
         import time
 
@@ -176,7 +174,7 @@ class TestRichOutputDIRegression:
 class TestDIImplementationDocumentation:
     """Documentation tests for DI implementation details."""
 
-    def test_di_container_structure(self, cli_runner: CliRunner) -> None:
+    def test_di_container_structure(self) -> None:
         """Document the DI container structure."""
         # The ApplicationContainer should have a core container
         assert hasattr(container, "core")
@@ -186,7 +184,7 @@ class TestDIImplementationDocumentation:
         assert hasattr(core_container, "rich_output")
         assert hasattr(core_container, "config")
 
-    def test_configuration_model_structure(self, cli_runner: CliRunner) -> None:
+    def test_configuration_model_structure(self) -> None:
         """Document the configuration model structure."""
         from kp_analysis_toolkit.models.rich_config import RichOutputConfig
 
@@ -203,7 +201,7 @@ class TestDIImplementationDocumentation:
         for field in expected_fields:
             assert hasattr(config, field), f"RichOutputConfig missing field: {field}"
 
-    def test_service_interface_preserved(self, cli_runner: CliRunner) -> None:
+    def test_service_interface_preserved(self) -> None:
         """Document that the RichOutputService interface is preserved."""
         # Reset and initialize
         container.reset_singletons()
