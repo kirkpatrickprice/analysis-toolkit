@@ -227,7 +227,7 @@ def custom_help_option(command_name: str) -> Callable[[Callable], Callable]:
 
     """
 
-    def help_callback(ctx: click.Context, param: click.Parameter, value: bool) -> None:  # noqa: FBT001
+    def help_callback(ctx: click.Context, _param: click.Parameter, value: bool) -> None:  # noqa: FBT001
         """Callback that displays custom grouped help and exits."""
         if not value or ctx.resilient_parsing:
             return

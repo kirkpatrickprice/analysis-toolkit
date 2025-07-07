@@ -16,8 +16,12 @@ from kp_analysis_toolkit.cli.common.decorators import (
 )
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.common.output_formatting import (
+    create_list_command_header,
+    create_standard_list_table,
+    display_list_summary,
     format_hash_display,
     format_verbose_details,
+    handle_empty_list_result,
 )
 from kp_analysis_toolkit.cli.utils.path_helpers import create_results_directory
 from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
@@ -138,22 +142,18 @@ def process_command_line(**cli_config: dict) -> None:
 def list_audit_configs(program_config: ProgramConfig) -> None:
     """List all available audit configuration files."""
     rich_output = get_rich_output()
-    rich_output.header("Available Audit Configuration Files")
+    create_list_command_header(rich_output, "Available Audit Configuration Files")
 
     # Create a Rich table for configuration files
-    table = rich_output.table(
-        title="📋 Audit Configuration Files",
-        show_header=True,
-        header_style="bold cyan",
-        border_style="blue",
+    table = create_standard_list_table(
+        rich_output,
+        "Audit Configuration Files",
+        "Configuration File",
+        include_verbose_column=program_config.verbose,
     )
 
     if table is None:  # Quiet mode
         return
-
-    table.add_column("Configuration File", style="cyan", min_width=30)
-    if program_config.verbose:
-        table.add_column("Details", style="white", min_width=40)
 
     max_details_items = 3  # Limit displayed details in verbose mode
 
@@ -186,12 +186,12 @@ def list_sections() -> None:
 def list_source_files(program_config: ProgramConfig) -> None:
     """List all source files found in the specified path."""
     rich_output = get_rich_output()
-    rich_output.header("Source Files")
+    create_list_command_header(rich_output, "Source Files")
 
     source_files = list(process_systems.get_source_files(program_config))
 
     if not source_files:
-        rich_output.warning("No source files found")
+        handle_empty_list_result(rich_output, "source files")
         return
 
     # Create a Rich table for source files using the centralized utility
@@ -209,18 +209,18 @@ def list_source_files(program_config: ProgramConfig) -> None:
         table.add_row(str(file), size_str)
 
     rich_output.display_table(table)
-    rich_output.success(f"Total source files found: {len(source_files)}")
+    display_list_summary(rich_output, len(source_files), "source files")
 
 
 def list_systems(program_config: ProgramConfig) -> None:
     """List all systems found in the specified source files."""
     rich_output = get_rich_output()
-    rich_output.header("Systems Found")
+    create_list_command_header(rich_output, "Systems Found")
 
     systems = list(process_systems.enumerate_systems_from_source_files(program_config))
 
     if not systems:
-        rich_output.warning("No systems found")
+        handle_empty_list_result(rich_output, "systems")
         return
 
     # Create a Rich table for systems using the centralized utility
@@ -257,7 +257,7 @@ def list_systems(program_config: ProgramConfig) -> None:
         table.add_row(*row_data)
 
     rich_output.display_table(table)
-    rich_output.success(f"Total systems found: {len(systems)}")
+    display_list_summary(rich_output, len(systems), "systems")
 
 
 def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> None:

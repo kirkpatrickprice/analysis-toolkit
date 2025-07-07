@@ -24,22 +24,46 @@ After reviewing the current CLI implementation, I've identified several output f
 
 ## Identified Output Formatting Patterns to Centralize
 
-### 1. **Verbose Details Formatting**
+### 1. **Verbose Details Formatting** ✅ **IMPLEMENTED**
 
-**Current Implementation:** Scattered across commands
+**Current Implementation:** Centralized in `output_formatting.py`
 ```python
-# In scripts.py (appears multiple times)
-details = []
-for key, value in yaml_data.to_dict().items():
-    details.append(f"{key}: {rich_output.format_value(value, 60)}")
-details_text = "\n".join(details[:max_details_items])
-if len(yaml_data.to_dict()) > max_details_items:
-    details_text += f"\n... and {len(yaml_data.to_dict()) - max_details_items} more"
+# In output_formatting.py - IMPLEMENTED
+def format_verbose_details(
+    rich_output: RichOutputService,
+    data_dict: dict[str, Any],
+    max_items: int = 3,
+    max_value_length: int = 60,
+) -> str:
+    """Format dictionary data for verbose display with truncation."""
 ```
 
-**Should Be Centralized:** This pattern appears at least 3 times in scripts.py alone.
+**✅ IMPLEMENTATION COMPLETED:** The verbose details formatting pattern has been successfully centralized and is now used throughout the codebase.
 
-### 2. **Hash Display Formatting**
+**Implementation Details:**
+- `format_verbose_details()` - Centralized function in `output_formatting.py`
+- Consistent formatting with `rich_output.format_value()` for value display
+- Configurable truncation with "... and X more" pattern
+- Used in all list commands that display verbose details
+
+**Results Achieved:**
+- ✅ **Scripts Commands**: All list commands using centralized verbose details formatting
+- ✅ **Consistent Truncation**: Standardized "... and X more" pattern across all commands
+- ✅ **Value Formatting**: Unified approach using `rich_output.format_value()` 
+- ✅ **Manual Pattern Removal**: All manual verbose details formatting patterns eliminated
+
+**Code Migration:**
+- **Before**: Manual loops with `details = []`, `for key, value in data_dict.items()`, custom truncation logic scattered across commands
+- **After**: Single function call `format_verbose_details(rich_output, data_dict, max_items, max_value_length)`
+- **Benefit**: Eliminated code duplication, consistent formatting, easier maintenance, centralized configuration
+
+**Testing Results:**
+- ✅ **Command Line Verification**: Tested with `--list-audit-configs --verbose` and `--list-systems --verbose`
+- ✅ **Output Formatting**: Confirmed proper truncation display like "... and 9 more"
+- ✅ **Value Formatting**: Verified consistent value formatting using `rich_output.format_value()`
+- ✅ **No Regression**: All existing functionality preserved
+
+### 2. **Hash Display Formatting** ✅ **IMPLEMENTED**
 
 **Current Implementation:**
 ```python
@@ -50,14 +74,32 @@ system.file_hash[:hash_display_length] + "..."
 
 **Should Be Centralized:** Pattern for truncating and displaying hash values.
 
-### 3. **List Commands Output Formatting**
+### 3. **List Commands Output Formatting** ✅ **IMPLEMENTED**
 
 **Current Implementation:** Multiple similar patterns in scripts.py:
 - `list_audit_configs()` - Custom table creation and population
 - `list_source_files()` - Using standardized table but custom logic
 - `list_systems()` - Custom detail formatting
 
-**Should Be Centralized:** Common patterns for list command outputs.
+**✅ CENTRALIZED IMPLEMENTATION:** Common patterns for list command outputs implemented in `output_formatting.py`
+
+**Implementation Details:**
+- `create_list_command_header()` - Standardized header creation with emoji icons
+- `handle_empty_list_result()` - Consistent "no items found" messages  
+- `display_list_summary()` - Standardized "Total X found" success messages
+- `create_standard_list_table()` - Simplified table creation with optional verbose column
+
+**Results Achieved:**
+- ✅ **Scripts Commands**: All list commands (`--list-audit-configs`, `--list-source-files`, `--list-systems`) updated
+- ✅ **Consistent Headers**: Standardized emoji headers with centralized `create_list_command_header()`
+- ✅ **Consistent Empty Results**: Unified warning messages via `handle_empty_list_result()`
+- ✅ **Consistent Summary**: Standardized success messages via `display_list_summary()`
+- ✅ **Simplified Table Creation**: Reduced duplication with `create_standard_list_table()`
+
+**Code Reduction:**
+- **Before**: Manual header, table creation, empty handling, and summary in each function
+- **After**: Single function calls for each common pattern
+- **Benefit**: Reduced code duplication, consistent formatting, easier maintenance
 
 ### 4. **Command Help Table Formatting** ✅ **IMPLEMENTED**
 
@@ -150,7 +192,7 @@ def format_hash_display(
     """Format hash values for consistent display truncation."""
 ```
 
-#### 3. **List Command Output Helpers** ⏳ **PENDING**
+#### 3. **List Command Output Helpers** ✅ **IMPLEMENTED**
 ```python
 def create_list_command_header(
     rich_output: RichOutputService,
@@ -171,6 +213,16 @@ def display_list_summary(
     item_type: str,
 ) -> None:
     """Display standard summary for list commands."""
+
+def create_standard_list_table(
+    rich_output: RichOutputService,
+    title: str,
+    primary_column: str,
+    *,
+    icon: str = "📋",
+    include_verbose_column: bool = False,
+) -> Table | None:
+    """Create standardized table for list commands."""
 ```
 
 #### 4. **Command Help Formatting** ✅ **IMPLEMENTED**
@@ -335,9 +387,9 @@ Instead of relying on rich-click's broken option grouping, we could:
 
 ## Implementation Priority
 
-### High Priority
+### High Priority ✅ **ALL COMPLETED**
 1. **Verbose Details Formatting** - Used extensively in scripts command ✅ **IMPLEMENTED**
-2. **List Command Helpers** - Reduce duplication in scripts.py ⏳ **PENDING**
+2. **List Command Helpers** - Reduce duplication in scripts.py ✅ **IMPLEMENTED**
 3. **Hash Display Formatting** - Simple but used multiple times ✅ **IMPLEMENTED**
 4. **Command Help Formatting** - Working option groups for all commands ✅ **IMPLEMENTED**
 
@@ -360,7 +412,7 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 ## Migration Strategy
 
 1. **Implement core functions** in `output_formatting.py` ✅ **COMPLETED**
-2. **Update scripts.py** to use centralized functions (highest impact) 🔄 **IN PROGRESS**  
+2. **Update scripts.py** to use centralized functions (highest impact) ✅ **COMPLETED**  
 3. **Update main.py** version display ⏳ **PENDING**
 4. **Update other commands** as needed ✅ **COMPLETED** (help system)
 5. **Add unit tests** for formatting functions ⏳ **PENDING**
@@ -373,14 +425,15 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 - **Help Callback Interceptor**: `custom_help_option()` decorator working for all commands  
 - **Core Formatting Functions**: `display_grouped_help()`, `display_option_group_panel()`, `format_option_line()`
 - **Utility Functions**: `format_verbose_details()`, `format_hash_display()`, `create_commands_help_table()`
+- **List Command Helpers**: `create_list_command_header()`, `handle_empty_list_result()`, `display_list_summary()`, `create_standard_list_table()`
 - **Command Integration**: All three main commands (scripts, nipper, rtf-to-text) updated
+- **Scripts Command Migration**: All list commands updated to use centralized formatting
+- **Verbose Details Formatting**: Complete centralization with all manual patterns eliminated
 
 ### 🔄 **IN PROGRESS**
-- **Scripts Command Migration**: Updating to use centralized formatting functions
 - **Documentation**: This analysis document and implementation guides
 
 ### ⏳ **PENDING**  
-- **List Command Helpers**: Functions for standardized list output formatting
 - **Version Display Formatting**: Centralized version information display
 - **Enhanced Error Display**: Sophisticated error messages with context
 - **Progress Formatters**: Batch operation status and success rate display
@@ -393,6 +446,8 @@ Since `output_formatting.py` is in `cli/common/`, it should:
 - **✅ Consistent Formatting**: 30-character option width, proper type indicators, emoji icons
 - **✅ Backward Compatible**: Existing functionality unchanged, only help display enhanced
 - **✅ Professional UI**: Blue-bordered panels with clear section organization
+- **✅ Verbose Details Centralized**: All manual verbose details formatting patterns eliminated and replaced with centralized function
+- **✅ Complete Pattern Migration**: Hash display, list commands, and verbose details all using centralized utilities
 
 ## Notes
 

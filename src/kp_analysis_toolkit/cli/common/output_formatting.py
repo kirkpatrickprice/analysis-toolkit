@@ -2,14 +2,7 @@
 CLI Output Formatting Utilities.
 
 This module provides centralized formatting functions for consistent CLI output
-across all commands in the KP Analysis Toolkit.    # Get parameter type information
-    type_info = ""
-    if hasattr(param, "type") and param.type:
-        if isinstance(param.type, click.Choice):
-            choices = "|".join(param.type.choices)
-            type_info = f" [{choices}]"
-        elif param.type.name != "boolean":  # Skip boolean flags
-            type_info = f" {param.type.name.upper()}"udes custom help formatting
+across all commands in the KP Analysis Toolkit. Includes custom help formatting
 with option groups, progress displays, and other common output patterns.
 """
 
@@ -17,6 +10,7 @@ from typing import Any
 
 import rich_click as click
 from rich.panel import Panel
+from rich.table import Table
 
 from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
@@ -125,7 +119,8 @@ def display_option_group_panel(
 
 
 def display_fallback_options_panel(
-    console: RichOutputService, ctx: click.Context
+    console: RichOutputService,
+    ctx: click.Context,
 ) -> None:
     """
     Display all options in a single panel when no groups are configured.
@@ -202,7 +197,7 @@ def create_commands_help_table(
     rich_output: RichOutputService,
     commands: list[tuple[str, str]],
     title: str = "📋 Available Commands",
-) -> Any:
+) -> Table | None:
     """
     Create standardized table for command help display.
 
@@ -284,3 +279,94 @@ def format_hash_display(
     if len(hash_value) <= display_length:
         return hash_value
     return hash_value[:display_length] + suffix
+
+
+def create_list_command_header(
+    rich_output: RichOutputService,
+    title: str,
+    icon: str = "📋",
+) -> None:
+    """
+    Create standardized header for list commands.
+
+    Args:
+        rich_output: Rich output service instance
+        title: Title text for the header
+        icon: Emoji icon to use (default: 📋)
+
+    """
+    rich_output.header(f"{icon} {title}")
+
+
+def handle_empty_list_result(
+    rich_output: RichOutputService,
+    item_type: str,
+) -> None:
+    """
+    Display standard 'no items found' message.
+
+    Args:
+        rich_output: Rich output service instance
+        item_type: Type of items that were not found (e.g., "systems", "files")
+
+    """
+    rich_output.warning(f"No {item_type} found")
+
+
+def display_list_summary(
+    rich_output: RichOutputService,
+    count: int,
+    item_type: str,
+) -> None:
+    """
+    Display standard summary for list commands.
+
+    Args:
+        rich_output: Rich output service instance
+        count: Number of items found
+        item_type: Type of items (e.g., "systems", "files")
+
+    """
+    rich_output.success(f"Total {item_type} found: {count}")
+
+
+def create_standard_list_table(
+    rich_output: RichOutputService,
+    title: str,
+    primary_column: str,
+    *,
+    icon: str = "📋",
+    include_verbose_column: bool = False,
+) -> Table | None:
+    """
+    Create a standardized table for list commands.
+
+    Args:
+        rich_output: Rich output service instance
+        title: Table title
+        primary_column: Name of the primary column
+        icon: Emoji icon for the title
+        include_verbose_column: Whether to include a Details column
+
+    Returns:
+        Rich table object or None if in quiet mode
+
+    """
+    table = rich_output.table(
+        title=f"{icon} {title}",
+        show_header=True,
+        header_style="bold cyan",
+        border_style="blue",
+    )
+
+    if table is None:  # Quiet mode
+        return None
+
+    # Add primary column
+    table.add_column(primary_column, style="cyan", min_width=30)
+
+    # Add details column if requested
+    if include_verbose_column:
+        table.add_column("Details", style="white", min_width=40)
+
+    return table
