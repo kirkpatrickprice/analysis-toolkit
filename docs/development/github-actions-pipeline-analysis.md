@@ -79,7 +79,7 @@ Tests are organized by directory structure but were not previously marked with p
     uv run pytest tests/unit/ tests/integration/cli/ -m "not slow and not performance" --color=yes -v --tb=short --ff --maxfail=5
 ```
 
-**Implementation Status: ✅ READY**
+**Implementation Status: ✅ IMPLEMENTED**
 - Regex tests (169 tests, ~54s execution) are now automatically marked as `@pytest.mark.slow`
 - Quick test selection excludes slow tests, reducing execution time from ~54s to ~4s (87% improvement)
 - 367 tests run in quick mode vs 536 total unit+integration tests
@@ -87,11 +87,39 @@ Tests are organized by directory structure but were not previously marked with p
 **Full Test Pipeline Enhancement:**
 ```yaml
 strategy:
+  fail-fast: false
   matrix:
-    os: [windows-latest, ubuntu-latest, macos-latest]
-    python-version: ["3.12"]
-    test-category: ["unit", "integration", "regression"]
+    include:
+      # Windows: Quick tests (unit + integration/cli) excluding slow tests
+      - os: windows-latest
+        test-category: "quick"
+        test-path: "tests/unit/ tests/integration/cli/"
+        markers: "not slow and not performance"
+        
+      # Ubuntu: Full test suite with all categories
+      - os: ubuntu-latest
+        test-category: "full"
+        test-path: "tests/"
+        markers: ""
+        
+      # macOS: Integration and E2E tests excluding performance tests
+      - os: macos-latest
+        test-category: "integration"
+        test-path: "tests/integration/ tests/e2e/"
+        markers: "not performance"
+        
+      # Ubuntu: Regression tests only
+      - os: ubuntu-latest
+        test-category: "regression"
+        test-path: "tests/regression/"
+        markers: ""
 ```
+
+**Implementation Status: ✅ IMPLEMENTED**
+- Cross-platform test pipeline now uses matrix strategy with test categories
+- Different platforms run different test suites for optimal parallel execution
+- Windows runs quick tests, Ubuntu runs full and regression tests, macOS runs integration tests
+- Enhanced caching and environment variable support added
 
 #### Benefits
 - Faster feedback loops for developers
@@ -239,6 +267,7 @@ strategy:
 - **Test Marking System:** Automatic marker assignment based on directory structure
 - **Selective Test Execution:** Quick tests now exclude slow regex tests (87% time reduction)
 - **Console Environment Isolation:** Added `isolated_console_env` fixture in `tests/conftest.py` to ensure Rich Console width tests are robust against CI environment variables
+- **Matrix Strategy Implementation:** Cross-platform test pipeline now uses advanced matrix strategy with test categories for parallel execution and optimized resource usage
 
 ## Configuration Templates
 
