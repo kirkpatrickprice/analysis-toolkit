@@ -819,7 +819,7 @@ from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, Produ
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 ```
 
-##### 1. Mock File System Fixture (Most Critical)
+##### 1. Mock File System Fixture (Most Critical) - ✅ IMPLEMENTED
 **Usage**: Found in 15+ test files across process_scripts, rtf_to_text, and CLI tests  
 **Purpose**: Mock pathlib.Path operations for testing file system interactions
 
@@ -854,9 +854,10 @@ def mock_file_system() -> Generator[dict[str, MagicMock], Any, None]:
         }
 ```
 
-##### 2. Mock Systems Object Fixture (High Priority)
+##### 2. Mock Systems Object Fixture (High Priority) - ✅ IMPLEMENTED
 **Usage**: Used in process_scripts tests for system validation and OS family testing  
 **Purpose**: Provide consistent mock Systems objects for testing search engines and filters
+**Status**: ✅ Implemented in `tests/conftest.py` and migrated to 2 test files
 
 ```python
 @pytest.fixture
@@ -865,7 +866,7 @@ def mock_linux_system() -> Systems:
     system: Systems = Mock(spec=Systems)
     system.system_name = "test-linux-system"
     system.os_family = OSFamilyType.LINUX
-    system.producer = ProducerType.KPNIX
+    system.producer = ProducerType.KPNIXAUDIT
     system.producer_version = "1.0.0"
     system.file = Mock()
     system.file.name = "test-system.log"
@@ -877,7 +878,7 @@ def mock_windows_system() -> Systems:
     system: Systems = Mock(spec=Systems)
     system.system_name = "test-windows-system"
     system.os_family = OSFamilyType.WINDOWS
-    system.producer = ProducerType.KPWIN
+    system.producer = ProducerType.KPWINAUDIT
     system.producer_version = "1.0.0"
     system.file = Mock()
     system.file.name = "test-system.log"
@@ -982,15 +983,18 @@ The test suite primarily uses:
 
 **📊 FIXTURE USAGE ASSESSMENT:**
 - **`mock_file_system`**: Currently used by 1 test file (ProgramConfig validation)
+- **`mock_linux_system`**: ✅ Implemented and used by 2 test files
+- **`mock_windows_system`**: ✅ Implemented and used by 2 test files
 - **File system mocking**: Generally limited to validation logic testing
 - **Real file operations**: Preferred approach for most test scenarios
 
 ##### Implementation Priority (Updated)
 1. **✅ COMPLETED**: `mock_file_system` fixture in `tests/conftest.py`
-2. **LOW PRIORITY**: `mock_linux_system`, `mock_windows_system`, `cli_runner` (tests use real objects/tmp_path)
-3. **LOW PRIORITY**: `mock_rich_output`, `sample_log_content` (tests use real objects/fixtures)
+2. **✅ COMPLETED**: `mock_linux_system`, `mock_windows_system` fixtures in `tests/conftest.py`
+3. **LOW PRIORITY**: `cli_runner` (tests use real objects/tmp_path)
+4. **LOW PRIORITY**: `mock_rich_output`, `sample_log_content` (tests use real objects/fixtures)
 
-**RECOMMENDATION**: The current implementation is sufficient. The test suite is well-designed with appropriate use of real file operations and temporary directories rather than excessive mocking.
+**RECOMMENDATION**: The critical shared fixtures are now implemented. The test suite is well-designed with appropriate use of real file operations and temporary directories rather than excessive mocking.
 
 ## Shared Fixtures Analysis Summary
 
@@ -1058,6 +1062,9 @@ markers = [
    - **✅ MIGRATED**: ProgramConfig tests to use shared fixture (removed local fixture)
    - **✅ VALIDATED**: All tests pass with shared fixture implementation
    - **✅ ANALYZED**: Comprehensive test suite analysis completed
+   - **✅ IMPLEMENTED**: `mock_linux_system` and `mock_windows_system` fixtures in `tests/conftest.py`
+   - **✅ MIGRATED**: All affected test files to use shared system fixtures
+   - **✅ VALIDATED**: All process_scripts tests pass with shared fixtures
 
 4. **Migration Scripts**: Created comprehensive PowerShell scripts for:
    - `scripts/tests-migrate-regex-unit-tests.ps1` - Complex regex test migration (completed)

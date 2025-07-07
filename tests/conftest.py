@@ -4,9 +4,12 @@
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
+from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, ProducerType
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
 
 @pytest.fixture(scope="session")
@@ -50,6 +53,32 @@ def mock_file_system() -> Generator[dict[str, MagicMock], Any, None]:
             "is_dir": mock_is_dir,
             "mkdir": mock_mkdir,
         }
+
+
+@pytest.fixture
+def mock_linux_system() -> Systems:
+    """Create a mock Linux Systems object for testing."""
+    system: Systems = Mock(spec=Systems)
+    system.system_name = "test-linux-system"
+    system.os_family = OSFamilyType.LINUX
+    system.producer = ProducerType.KPNIXAUDIT
+    system.producer_version = "1.0.0"
+    system.file = Mock()
+    system.file.name = "test-system.log"
+    return system
+
+
+@pytest.fixture
+def mock_windows_system() -> Systems:
+    """Create a mock Windows Systems object for testing."""
+    system: Systems = Mock(spec=Systems)
+    system.system_name = "test-windows-system"
+    system.os_family = OSFamilyType.WINDOWS
+    system.producer = ProducerType.KPWINAUDIT
+    system.producer_version = "1.0.0"
+    system.file = Mock()
+    system.file.name = "test-system.log"
+    return system
 
 
 # Add other shared fixtures as needed

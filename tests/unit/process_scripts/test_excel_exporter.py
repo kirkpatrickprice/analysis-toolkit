@@ -8,7 +8,6 @@ from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_results_by_os_type,
     export_search_results_to_excel,
 )
-from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, ProducerType
 from kp_analysis_toolkit.process_scripts.models.results.base import (
     SearchResult,
     SearchResults,
@@ -41,21 +40,20 @@ class TestExportResultsByOSType:
     @patch(
         "kp_analysis_toolkit.process_scripts.excel_exporter.export_search_results_to_excel",
     )
-    def test_calls_export_function(self, mock_export: MagicMock) -> None:
+    def test_calls_export_function(
+        self,
+        mock_export: MagicMock,
+        mock_linux_system: Systems,
+        mock_windows_system: Systems,
+    ) -> None:
         """Test that the export function is called appropriately."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
 
-            # Create mock systems with different OS families
-            mock_system1 = MagicMock(spec=Systems)
-            mock_system1.os_family = OSFamilyType.LINUX
-            mock_system1.system_name = "system1"
-
-            mock_system2 = MagicMock(spec=Systems)
-            mock_system2.os_family = OSFamilyType.WINDOWS
-            mock_system2.system_name = "system2"
-
-            systems = [mock_system1, mock_system2]
+            # Use shared fixtures
+            mock_linux_system.system_name = "system1"
+            mock_windows_system.system_name = "system2"
+            systems = [mock_linux_system, mock_windows_system]
 
             # Create mock search results with proper attributes matching system names
             mock_search_result = MagicMock(spec=SearchResult)
@@ -83,25 +81,21 @@ class TestExportResultsByOSType:
             # Should be called once for each OS family
             assert mock_export.call_count >= 1
 
-    def test_groups_systems_by_os_family(self) -> None:
+    def test_groups_systems_by_os_family(
+        self, mock_linux_system: Systems, mock_windows_system: Systems
+    ) -> None:
         """Test that systems are properly grouped by OS family."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
 
-            # Create mock systems with known OS families
-            mock_system1 = MagicMock(spec=Systems)
-            mock_system1.os_family = OSFamilyType.LINUX
-            mock_system1.system_name = "linux1"
+            # Create additional Linux system from shared fixture
+            mock_linux_system.system_name = "linux1"
+            mock_linux_system2 = mock_linux_system
+            mock_linux_system2.system_name = "linux2"
 
-            mock_system2 = MagicMock(spec=Systems)
-            mock_system2.os_family = OSFamilyType.LINUX
-            mock_system2.system_name = "linux2"
+            mock_windows_system.system_name = "win1"
 
-            mock_system3 = MagicMock(spec=Systems)
-            mock_system3.os_family = OSFamilyType.WINDOWS
-            mock_system3.system_name = "win1"
-
-            systems = [mock_system1, mock_system2, mock_system3]
+            systems = [mock_linux_system, mock_linux_system2, mock_windows_system]
 
             # Test behavior when no search results provided
             result = export_results_by_os_type([], systems, output_dir)
@@ -114,7 +108,9 @@ class TestExportSearchResultsToExcel:
     @patch("pandas.DataFrame.to_excel")
     @patch("pandas.ExcelWriter")
     def test_excel_writer_called(
-        self, mock_writer: MagicMock, mock_to_excel: MagicMock
+        self,
+        mock_writer: MagicMock,
+        mock_to_excel: MagicMock,
     ) -> None:
         """Test that Excel writer is properly instantiated."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -175,7 +171,9 @@ class TestResultsDataProcessing:
     @patch("pandas.DataFrame.to_excel")
     @patch("pandas.ExcelWriter")
     def test_result_flattening(
-        self, mock_writer: MagicMock, mock_to_excel: MagicMock
+        self,
+        mock_writer: MagicMock,
+        mock_to_excel: MagicMock,
     ) -> None:
         """Test that nested results are properly flattened."""
         # Create mock results with nested structure
@@ -262,7 +260,10 @@ class TestSystemSummaryExport:
     @patch("pandas.DataFrame.to_excel")
     @patch("pandas.ExcelWriter")
     def test_system_summary_creation(
-        self, mock_writer: MagicMock, mock_to_excel: MagicMock
+        self,
+        mock_writer: MagicMock,
+        mock_to_excel: MagicMock,
+        mock_linux_system: Systems,
     ) -> None:
         """Test that system summary is created correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -270,23 +271,19 @@ class TestSystemSummaryExport:
 
             _setup_excel_writer_mock(mock_writer, mock_to_excel)
 
-            # Create mock systems
-            mock_system = MagicMock(spec=Systems)
-            mock_system.hostname = "test-host"
-            mock_system.system_name = "test-host"
-            mock_system.os_family = OSFamilyType.LINUX
-            mock_system.os_version = "22.04"
-            mock_system.producer = ProducerType.KPNIXAUDIT
-            mock_system.producer_version = "1.0.0"
-            mock_system.distro_family = None
-            mock_system.os_pretty_name = "Ubuntu 22.04"
-            mock_system.product_name = None
-            mock_system.release_id = None
-            mock_system.current_build = None
-            mock_system.file = "/path/to/file"
-            mock_system.encoding = "utf-8"
+            # Set up the mock system's attributes for the test
+            mock_linux_system.hostname = "test-host"
+            mock_linux_system.system_name = "test-host"
+            mock_linux_system.os_version = "22.04"
+            mock_linux_system.distro_family = None
+            mock_linux_system.os_pretty_name = "Ubuntu 22.04"
+            mock_linux_system.product_name = None
+            mock_linux_system.release_id = None
+            mock_linux_system.current_build = None
+            mock_linux_system.file = "/path/to/file"
+            mock_linux_system.encoding = "utf-8"
 
-            systems = [mock_system]
+            systems = [mock_linux_system]
 
             export_search_results_to_excel([], output_path, systems)
 
@@ -361,7 +358,9 @@ class TestErrorHandling:
     @patch("pandas.DataFrame.to_excel")
     @patch("pandas.ExcelWriter")
     def test_missing_config_handling(
-        self, mock_writer: MagicMock, mock_to_excel: MagicMock
+        self,
+        mock_writer: MagicMock,
+        mock_to_excel: MagicMock,
     ) -> None:
         """Test handling of search results with missing config."""
         with tempfile.TemporaryDirectory() as temp_dir:

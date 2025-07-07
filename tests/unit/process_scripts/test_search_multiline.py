@@ -5,7 +5,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType
 from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
 from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.search_engine import search_multiline
@@ -16,16 +15,6 @@ if TYPE_CHECKING:
 
 class TestSearchMultiline:
     """Tests for the search_multiline function."""
-
-    @pytest.fixture
-    def mock_system(self) -> Systems:
-        """Create a mock Systems object for testing."""
-        system: Systems = Mock(spec=Systems)
-        system.system_name = "test-system"
-        system.os_family = OSFamilyType.LINUX
-        system.file = Mock()
-        system.file.name = "test-file.log"
-        return system
 
     @pytest.fixture
     def mock_file_content(self) -> IO[str]:
@@ -44,7 +33,7 @@ class TestSearchMultiline:
 
     def test_basic_multiline_search(
         self,
-        mock_system: Systems,
+        mock_linux_system: Systems,
         mock_file_content: IO[str],
     ) -> None:
         """Test basic multiline search with field extraction."""
@@ -65,7 +54,7 @@ class TestSearchMultiline:
         # Execute
         results: list[SearchResult] = search_multiline(
             search_config,
-            mock_system,
+            mock_linux_system,
             mock_file_content,
             pattern,
         )
@@ -74,7 +63,7 @@ class TestSearchMultiline:
         assert len(results) == 2, "Should find two records"  # noqa: PLR2004
 
         # First record
-        assert results[0].system_name == "test-system"
+        assert results[0].system_name == "test-linux-system"
         assert "User: user1" in results[0].matched_text
         assert "ID: 12345" in results[0].matched_text
         assert results[0].extracted_fields is not None
@@ -82,14 +71,14 @@ class TestSearchMultiline:
         assert results[0].extracted_fields.get("id") == "12345"
 
         # Second record
-        assert results[1].system_name == "test-system"
+        assert results[1].system_name == "test-linux-system"
         assert "User: user2" in results[1].matched_text
         assert "ID: 67890" in results[1].matched_text
         assert results[1].extracted_fields is not None
         assert results[1].extracted_fields.get("user") == "user2"
         assert results[1].extracted_fields.get("id") == "67890"
 
-    def test_field_list_completion(self, mock_system: Systems) -> None:
+    def test_field_list_completion(self, mock_linux_system: Systems) -> None:
         """Test multiline search that completes when all fields are found."""
         # Setup
         search_config: SearchConfig = Mock(spec=SearchConfig)
@@ -121,7 +110,7 @@ class TestSearchMultiline:
         # Execute
         results: list[SearchResult] = search_multiline(
             search_config,
-            mock_system,
+            mock_linux_system,
             file_handle,
             pattern,
         )
@@ -135,7 +124,7 @@ class TestSearchMultiline:
 
     def test_max_results_limit(
         self,
-        mock_system: Systems,
+        mock_linux_system: Systems,
         mock_file_content: IO[str],
     ) -> None:
         """Test that max_results properly limits the number of results."""
@@ -156,7 +145,7 @@ class TestSearchMultiline:
         # Execute
         results: list[SearchResult] = search_multiline(
             search_config,
-            mock_system,
+            mock_linux_system,
             mock_file_content,
             pattern,
         )
@@ -166,7 +155,7 @@ class TestSearchMultiline:
         assert results[0].extracted_fields.get("user") == "user1"
         assert results[0].extracted_fields.get("id") == "12345"
 
-    def test_no_matches(self, mock_system: Systems) -> None:
+    def test_no_matches(self, mock_linux_system: Systems) -> None:
         """Test behavior when no matches are found."""
         # Setup
         search_config: SearchConfig = Mock(spec=SearchConfig)
@@ -190,7 +179,7 @@ class TestSearchMultiline:
         # Execute
         results: list[SearchResult] = search_multiline(
             search_config,
-            mock_system,
+            mock_linux_system,
             file_handle,
             pattern,
         )
