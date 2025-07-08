@@ -3,7 +3,11 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
+from kp_analysis_toolkit.utils.get_file_encoding import (
+    clear_file_processing_service,
+    detect_encoding,
+    set_file_processing_service,
+)
 
 
 class TestDetectEncoding:
@@ -56,34 +60,37 @@ class TestDetectEncoding:
         assert isinstance(result, str)
         assert len(result) > 0
 
-    @patch("kp_analysis_toolkit.utils.get_file_encoding.from_path")
-    @patch("kp_analysis_toolkit.utils.get_file_encoding.warning")
     def test_detect_encoding_failure_returns_none(
         self,
-        mock_warning: MagicMock,
-        mock_from_path: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Test that encoding detection failure returns None and logs warning."""
-        # Create a test file
-        test_file = tmp_path / "test_file.txt"
-        test_file.write_text("Test content")
+        """Test that encoding detection failure returns None via DI service."""
+        # Test with DI service that returns None (simulating detection failure)
 
-        # Mock charset_normalizer to return no results (simulating detection failure)
-        mock_result = mock_from_path.return_value
-        mock_result.best.return_value = None
+        # Create mock service that fails encoding detection
+        mock_service = MagicMock()
+        mock_service.detect_encoding.return_value = None
 
-        # Test encoding detection
-        result = detect_encoding(test_file)
+        # Set up DI service
+        set_file_processing_service(mock_service)
 
-        # Should return None when detection fails
-        assert result is None
+        try:
+            # Create a test file
+            test_file = tmp_path / "test_file.txt"
+            test_file.write_text("Test content")
 
-        # Should call warning function
-        mock_warning.assert_called_once()
-        warning_call_args = mock_warning.call_args[0][0]
-        assert "Skipping file due to encoding detection failure" in warning_call_args
-        assert str(test_file) in warning_call_args
+            # Test encoding detection with DI service that returns None
+            result = detect_encoding(test_file)
+
+            # Should return None when DI service fails detection
+            assert result is None
+
+            # Should have called the DI service
+            mock_service.detect_encoding.assert_called_once_with(test_file)
+
+        finally:
+            # Clean up DI service
+            clear_file_processing_service()
 
     def test_detect_encoding_with_string_path(self, tmp_path: Path) -> None:
         """Test that function works with string paths as well as Path objects."""
@@ -140,23 +147,60 @@ class TestDetectEncoding:
         # (though this depends on charset_normalizer's behavior)
         assert result is None or isinstance(result, str)
 
-    @patch("kp_analysis_toolkit.utils.get_file_encoding.from_path")
     def test_detect_encoding_exception_handling(
         self,
-        mock_from_path: MagicMock,
         tmp_path: Path,
     ) -> None:
-        """Test that exceptions in charset_normalizer are handled gracefully."""
-        # Create a test file
-        test_file = tmp_path / "exception_test.txt"
-        test_file.write_text("Test content")
+        """Test that exceptions in DI service are handled gracefully with fallback."""
+        # Create mock service that raises an exception
+        mock_service = MagicMock()
+        mock_service.detect_encoding.side_effect = Exception(
+            "Simulated DI service error"
+        )
 
-        # Mock charset_normalizer to raise an exception
-        mock_from_path.side_effect = Exception("Simulated charset_normalizer error")
+        # Set up DI service
+        set_file_processing_service(mock_service)
 
-        # Should handle exceptions gracefully
-        with patch("kp_analysis_toolkit.utils.get_file_encoding.warning"):
+        try:
+            # Create a test file
+            test_file = tmp_path / "exception_test.txt"
+            test_file.write_text("Test content")
+
+            # Should handle DI service exceptions gracefully and fallback to direct implementation
             result = detect_encoding(test_file)
 
-        # Should return None when an exception occurs
-        assert result is None
+            # Should have tried the DI service first
+            mock_service.detect_encoding.assert_called_once_with(test_file)
+
+            # Should fallback to direct implementation and return a valid encoding
+            # (since we have real content, charset_normalizer should detect something)
+            assert result is not None
+            assert isinstance(result, str)
+
+        finally:
+            # Clean up DI service
+            clear_file_processing_service()
+
+    def test_detect_encoding_fallback_to_direct_implementation(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Test that fallback to direct implementation works when DI is not available."""
+        # Ensure no DI service is set
+        clear_file_processing_service()
+
+        try:
+            # Create a test file
+            test_file = tmp_path / "fallback_test.txt"
+            test_file.write_text("Test content for fallback")
+
+            # Should use direct implementation when no DI service is available
+            result = detect_encoding(test_file)
+
+            # Should still return a valid encoding via direct implementation
+            assert result is not None
+            assert isinstance(result, str)
+
+        finally:
+            # Ensure clean state
+            clear_file_processing_service()

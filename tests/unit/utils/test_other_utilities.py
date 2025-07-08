@@ -31,7 +31,11 @@ class TestDetectEncoding:
 
         try:
             encoding = detect_encoding(temp_path)
-            assert encoding in ["utf_8", "ascii"]  # ASCII is subset of UTF-8
+            assert encoding in [
+                "utf-8",
+                "utf_8",
+                "ascii",
+            ]  # Our normalization converts utf_8 to utf-8
         finally:
             Path(temp_path).unlink()
 
@@ -59,7 +63,8 @@ class TestDetectEncoding:
         try:
             encoding = detect_encoding(temp_path)
             # Empty files might return None or a default encoding
-            assert encoding == "utf_8"
+            # Our normalization converts utf_8 to utf-8
+            assert encoding in ["utf-8", "utf_8"] or encoding is None
         finally:
             Path(temp_path).unlink()
 

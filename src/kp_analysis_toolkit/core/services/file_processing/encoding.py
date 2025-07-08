@@ -33,7 +33,17 @@ class CharsetNormalizerEncodingDetector:
         result: CharsetMatch | None = from_path(file_path).best()
 
         if result is not None:
-            return result.encoding
+            # Normalize encoding names for consistency
+            encoding = result.encoding
+            # Normalize underscore variants to hyphen variants for consistency
+            # Both forms are valid in Python, but hyphens are more standard
+            if encoding == "utf_8":
+                encoding = "utf-8"
+            elif encoding in {"iso_8859_1", "latin_1"}:
+                encoding = "latin-1"
+            # Note: We keep other encodings as-is since they're all valid
+            # Examples: windows-1252, cp1252, ascii, etc.
+            return encoding
 
         return None
 
