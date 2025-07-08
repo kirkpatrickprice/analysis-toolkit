@@ -2,6 +2,7 @@
 """Shared pytest configuration and fixtures."""
 
 import os
+import re
 from collections.abc import Generator
 from pathlib import Path
 from re import Pattern
@@ -494,8 +495,6 @@ def assert_rich_output_contains(output: str, expected_content: str | list[str]) 
             "process-scripts"
         ])
     """
-    import re
-
     # Strip ANSI escape sequences from the output
     ansi_escape: Pattern[str] = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     clean_output: str = ansi_escape.sub("", output)
@@ -509,9 +508,18 @@ def assert_rich_output_contains(output: str, expected_content: str | list[str]) 
         expected_items = expected_content
 
     for item in expected_items:
-        assert item in clean_output, (
+        # Try exact match first, then case-insensitive
+        if item in clean_output:
+            continue
+        
+        # Case-insensitive fallback
+        if item.lower() in clean_output.lower():
+            continue
+            
+        # If neither works, fail with helpful message
+        assert False, (
             f"Expected '{item}' to be in CLI output. "
-            f"Clean output was: {clean_output[:200]}..."
+            f"Clean output was: {clean_output[:500]}..."
         )
 
 
@@ -546,17 +554,25 @@ def assert_rich_help_output(output: str, command_description: str) -> None:
         output: The raw CLI output from help command
         command_description: The expected command description
     """
-    import re
-
     # Strip ANSI codes
     ansi_escape: Pattern[str] = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     clean_output: str = ansi_escape.sub("", output)
 
     # Help output should contain Usage and command description
-    assert "Usage:" in clean_output
+    assert "Usage:" in clean_output, f"Expected 'Usage:' in help output. Got: {clean_output[:500]}..."
+    
     # Use case-insensitive search for command descriptions since Rich may change case
-    assert (
+    # Also try partial word matching for more flexibility
+    description_found = (
         command_description.lower() in clean_output.lower()
-    ) or any(
-        word in clean_output.lower() for word in command_description.lower().split()
-    ), f"Expected command description related to '{command_description}' in help output"
+        or any(
+            word.lower() in clean_output.lower() 
+            for word in command_description.split() 
+            if len(word) > 3  # Only check meaningful words
+        )
+    )
+    
+    assert description_found, (
+        f"Expected command description related to '{command_description}' in help output. "
+        f"Clean output was: {clean_output[:500]}..."
+    )

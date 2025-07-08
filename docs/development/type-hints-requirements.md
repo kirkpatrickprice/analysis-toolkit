@@ -408,18 +408,19 @@ def sample_data() -> dict[str, Any]:
 
 ### 2. Mypy Configuration
 
-Ensure strict type checking in `pyproject.toml`:
+Ensure strict type checking and `pydantic` support in `pyproject.toml`:
 
 ```toml
 [tool.mypy]
-python_version = "3.13"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 ```
 
 ## Common Patterns
