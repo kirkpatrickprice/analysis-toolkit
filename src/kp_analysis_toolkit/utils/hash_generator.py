@@ -9,44 +9,21 @@ import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from kp_analysis_toolkit.utils.di_state import create_file_processing_di_manager
+
 if TYPE_CHECKING:
     from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 
 # Standard hash algorithm for the toolkit
 TOOLKIT_HASH_ALGORITHM = "sha384"
 
-
-class _DIState:
-    """Internal state for dependency injection integration."""
-
-    def __init__(self) -> None:
-        self.enabled = False
-        self.file_processing_service: object | None = None
-
-    def get_service(self) -> object | None:
-        """Get the file processing service if available."""
-        if not self.enabled or self.file_processing_service is None:
-            return None
-        return self.file_processing_service
-
-    def set_service(self, service: object) -> None:
-        """Set the file processing service for DI integration."""
-        self.file_processing_service = service
-        self.enabled = True
-
-
-# Global DI state
-_di_state = _DIState()
-
-
-def _get_file_processing_service() -> object | None:
-    """Get the file processing service if DI is available."""
-    return _di_state.get_service()
-
-
-def _set_file_processing_service(service: object) -> None:
-    """Set the file processing service for DI integration."""
-    _di_state.set_service(service)
+# Global DI state using centralized utility
+(
+    _di_state,
+    _get_file_processing_service,
+    _set_file_processing_service,
+    _clear_file_processing_service,
+) = create_file_processing_di_manager()
 
 
 class HashGenerator:

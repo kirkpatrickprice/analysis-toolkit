@@ -65,3 +65,29 @@ class FileProcessingService:
             "hash": file_hash,
             "path": str(file_path),
         }
+
+    def detect_encoding(self, file_path: Path) -> str | None:
+        """
+        Detect the encoding of a file.
+
+        Args:
+            file_path: Path to the file to analyze
+
+        Returns:
+            The detected encoding name, or None if detection fails
+
+        """
+        return self.encoding_detector.detect_encoding(file_path)
+
+    def generate_hash(self, file_path: Path) -> str:
+        """
+        Generate hash for a file.
+
+        Args:
+            file_path: Path to the file to hash
+
+        Returns:
+            The generated hash as a hexadecimal string
+
+        """
+        return self.hash_generator.generate_hash(file_path)

@@ -7,13 +7,14 @@ from dependency_injector import containers, providers
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 
 
-def _setup_hash_generator_di_integration(
+def _setup_utils_di_integration(
     file_processing_service: FileProcessingService,
 ) -> FileProcessingService:
-    """Set up DI integration between file processing service and hash generator utils."""
-    from kp_analysis_toolkit.utils import hash_generator
+    """Set up DI integration between file processing service and legacy utils."""
+    from kp_analysis_toolkit.utils import get_file_encoding, hash_generator
 
     hash_generator.set_file_processing_service(file_processing_service)
+    get_file_encoding.set_file_processing_service(file_processing_service)
     return file_processing_service
 
 
@@ -25,7 +26,8 @@ class FileProcessingContainer(containers.DeclarativeContainer):
 
     # File Processing Components
     encoding_detector: providers.Factory = providers.Factory(
-        "kp_analysis_toolkit.utils.get_file_encoding.ChardetEncodingDetector",
+        "kp_analysis_toolkit.core.services.file_processing.encoding.RobustEncodingDetector",
+        rich_output=core.rich_output,
     )
 
     hash_generator: providers.Factory = providers.Factory(
@@ -39,7 +41,7 @@ class FileProcessingContainer(containers.DeclarativeContainer):
     # Main Service with DI integration
     file_processing_service: providers.Factory[FileProcessingService] = (
         providers.Factory(
-            _setup_hash_generator_di_integration,
+            _setup_utils_di_integration,
             file_processing_service=providers.Factory(
                 FileProcessingService,
                 rich_output=core.rich_output,
