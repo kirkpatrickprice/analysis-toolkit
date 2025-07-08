@@ -64,7 +64,8 @@ class TestApplicationContainerFileProcessingIntegration:
         assert isinstance(result, dict)
         assert "encoding" in result
         assert "hash" in result
-        assert result["encoding"] == "utf-8"
+        from tests.conftest import assert_valid_encoding
+        assert_valid_encoding(result["encoding"], "utf-8")
         assert result["hash"]  # Should have a hash value
 
     def test_initialization_configures_file_processing_correctly(self) -> None:

@@ -58,6 +58,24 @@ def test_command_error(cli_runner):
     assert 'Error' in result.output
 ```
 
+### 6. Encoding Detection Testing
+When testing file encoding detection, use the shared helper function to handle the fact that ASCII-compatible content can be legitimately detected as either 'ascii' or 'utf-8':
+
+```python
+from tests.conftest import assert_valid_encoding
+
+def test_encoding_detection(tmp_path):
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("ASCII compatible content", encoding="utf-8")
+    
+    encoding = detect_encoding(test_file)
+    # Accept both ascii and utf-8 as valid for ASCII-compatible content
+    assert_valid_encoding(encoding, "utf-8")
+    
+    # For content that should be specific encodings
+    assert_valid_encoding(encoding, ["latin-1", "iso-8859-1", "ascii"])
+```
+
 ## Best Practices
 
 1. **Keep tests focused**: Each test should verify one specific behavior

@@ -342,3 +342,38 @@ def _path_matches_pattern_exact(path: str, pattern: str) -> bool:
 
     # All pattern parts must match the beginning of the path
     return path_parts[: len(pattern_parts)] == pattern_parts
+
+
+def assert_valid_encoding(actual_encoding: str | None, expected_encodings: list[str] | str) -> None:
+    """
+    Assert that the actual encoding is one of the expected valid encodings.
+
+    This helper function handles the fact that ASCII-compatible text can be
+    legitimately detected as either 'ascii' or 'utf-8' by charset-normalizer.
+
+    Args:
+        actual_encoding: The encoding detected by the system
+        expected_encodings: Either a single encoding string or list of valid encodings.
+                          If a single string is provided and it's 'utf-8', both 'utf-8'
+                          and 'ascii' will be considered valid.
+
+    Example:
+        # Accept both ascii and utf-8 for ASCII-compatible content
+        assert_valid_encoding(result["encoding"], "utf-8")
+
+        # Accept specific encodings
+        assert_valid_encoding(result["encoding"], ["latin-1", "iso-8859-1"])
+    """
+    if isinstance(expected_encodings, str):
+        if expected_encodings == "utf-8":
+            # For UTF-8, also accept ASCII as valid since ASCII-compatible text
+            # can be legitimately detected as either encoding
+            valid_encodings = ["utf-8", "ascii"]
+        else:
+            valid_encodings = [expected_encodings]
+    else:
+        valid_encodings = expected_encodings
+
+    assert actual_encoding in valid_encodings, (
+        f"Expected encoding to be one of {valid_encodings}, but got {actual_encoding!r}"
+    )
