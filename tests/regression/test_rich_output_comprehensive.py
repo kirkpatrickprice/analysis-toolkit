@@ -108,7 +108,7 @@ class TestRichOutputDIImplementation:
 
     @patch("kp_analysis_toolkit.core.services.rich_output.Console")
     def test_console_configuration_through_di(
-        self, mock_console_class: MagicMock
+        self, mock_console_class: MagicMock,
     ) -> None:
         """Test that Console objects are configured correctly through DI."""
         mock_console = MagicMock()

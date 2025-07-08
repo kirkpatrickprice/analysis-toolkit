@@ -53,7 +53,7 @@ class TestFileProcessingContainer:
         assert isinstance(service, RobustEncodingDetector)
 
     def test_hashing_service_creation(
-        self, real_core_container: "CoreContainer"
+        self, real_core_container: "CoreContainer",
     ) -> None:
         """Test that SHA384FileHashGenerator can be created from container."""
         container = FileProcessingContainer()

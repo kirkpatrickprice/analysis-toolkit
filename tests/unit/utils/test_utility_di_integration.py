@@ -36,7 +36,7 @@ class TestDIState:
         assert di_state.get_service() is mock_file_processing_service
 
     def test_clear_service_disables_di(
-        self, mock_file_processing_service: Mock
+        self, mock_file_processing_service: Mock,
     ) -> None:
         """Test that clearing service disables DI."""
         di_state = DIState[FileProcessingService]()
@@ -50,7 +50,7 @@ class TestDIState:
         assert di_state.get_service() is None
 
     def test_get_service_when_disabled(
-        self, mock_file_processing_service: Mock
+        self, mock_file_processing_service: Mock,
     ) -> None:
         """Test that get_service returns None when DI is disabled."""
         di_state = DIState[FileProcessingService]()
@@ -71,7 +71,7 @@ class TestFileProcessingDIState:
         assert di_state.service is None
 
     def test_type_safety_with_file_processing_service(
-        self, mock_file_processing_service: Mock
+        self, mock_file_processing_service: Mock,
     ) -> None:
         """Test type safety when working with FileProcessingService."""
         di_state = FileProcessingDIState()
@@ -98,7 +98,7 @@ class TestFileProcessingDIManager:
         assert callable(clear_service)
 
     def test_manager_functions_work_together(
-        self, mock_file_processing_service: Mock
+        self, mock_file_processing_service: Mock,
     ) -> None:
         """Test that all manager functions work together correctly."""
         di_state, get_service, set_service, clear_service = (
@@ -135,7 +135,7 @@ class TestFileProcessingDIManager:
         assert get_service_2() is None
 
     def test_manager_functions_reference_same_state(
-        self, mock_file_processing_service: Mock
+        self, mock_file_processing_service: Mock,
     ) -> None:
         """Test that manager functions all reference the same underlying state."""
         di_state, get_service, set_service, clear_service = (
@@ -158,7 +158,7 @@ class TestDIStateEdgeCases:
     """Test edge cases and error conditions in DI state management."""
 
     def test_multiple_service_assignments(
-        self, mock_file_processing_service: Mock
+        self, mock_file_processing_service: Mock,
     ) -> None:
         """Test that multiple service assignments work correctly."""
         di_state = DIState[FileProcessingService]()

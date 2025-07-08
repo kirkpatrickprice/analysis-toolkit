@@ -76,7 +76,7 @@ class TestCreateResultsPath:
 
     @patch("kp_analysis_toolkit.cli.utils.path_helpers.get_rich_output")
     def test_verbose_output_existing_path(
-        self, mock_get_rich_output: MagicMock
+        self, mock_get_rich_output: MagicMock,
     ) -> None:
         """Test verbose output when reusing existing path."""
         with tempfile.TemporaryDirectory() as temp_dir:

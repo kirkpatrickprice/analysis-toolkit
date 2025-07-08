@@ -21,7 +21,7 @@ class TestSearchConfig:
 
     def test_validate_regex_invalid(self) -> None:
         """Test that invalid regex patterns are rejected."""
-        with pytest.raises(ValueError) as excinfo:  # noqa: PT011
+        with pytest.raises(ValueError) as excinfo:
             SearchConfig(
                 name="test",
                 regex=r"test[",  # Invalid regex - unclosed character class
@@ -51,7 +51,7 @@ class TestSearchConfig:
 
     def test_validate_max_results_invalid(self) -> None:
         """Test that invalid max_results values are rejected."""
-        with pytest.raises(ValueError) as excinfo:  # noqa: PT011
+        with pytest.raises(ValueError) as excinfo:
             SearchConfig(
                 name="test",
                 regex=r"test",
@@ -62,7 +62,7 @@ class TestSearchConfig:
             excinfo.value,
         )
 
-        with pytest.raises(ValueError) as excinfo:  # noqa: PT011
+        with pytest.raises(ValueError) as excinfo:
             SearchConfig(
                 name="test",
                 regex=r"test",
@@ -86,7 +86,7 @@ class TestSearchConfig:
 
     def test_multiline_without_field_list(self) -> None:
         """Test that multiline requires field_list."""
-        with pytest.raises(ValueError) as excinfo:  # noqa: PT011
+        with pytest.raises(ValueError) as excinfo:
             SearchConfig(
                 name="test",
                 regex=r"test",
@@ -100,7 +100,7 @@ class TestSearchConfig:
 
     def test_rs_delimiter_without_multiline(self) -> None:
         """Test that rs_delimiter requires multiline."""
-        with pytest.raises(ValueError) as excinfo:  # noqa: PT011
+        with pytest.raises(ValueError) as excinfo:
             SearchConfig(
                 name="test",
                 regex=r"test",
@@ -113,7 +113,7 @@ class TestSearchConfig:
 
     def test_rs_delimiter_without_field_list(self) -> None:
         """Test that rs_delimiter requires field_list."""
-        with pytest.raises(ValueError) as excinfo:  # noqa: PT011
+        with pytest.raises(ValueError) as excinfo:
             SearchConfig(
                 name="test",
                 regex=r"test",

@@ -114,7 +114,7 @@ class TestRichOutputService:
 
     @patch("kp_analysis_toolkit.core.services.rich_output.Console")
     def test_force_parameter_overrides_quiet(
-        self, mock_console_class: MagicMock
+        self, mock_console_class: MagicMock,
     ) -> None:
         """Test that force parameter overrides quiet mode."""
         mock_console = MagicMock()
@@ -236,7 +236,7 @@ class TestRichOutputBackwardCompatibility:
 
     @patch("kp_analysis_toolkit.utils.rich_output.get_rich_output")
     def test_convenience_functions_use_get_rich_output(
-        self, mock_get_rich_output: MagicMock
+        self, mock_get_rich_output: MagicMock,
     ) -> None:
         """Test that convenience functions delegate to get_rich_output."""
         from kp_analysis_toolkit.utils.rich_output import info

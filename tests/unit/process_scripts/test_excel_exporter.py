@@ -82,7 +82,7 @@ class TestExportResultsByOSType:
             assert mock_export.call_count >= 1
 
     def test_groups_systems_by_os_family(
-        self, mock_linux_system: Systems, mock_windows_system: Systems
+        self, mock_linux_system: Systems, mock_windows_system: Systems,
     ) -> None:
         """Test that systems are properly grouped by OS family."""
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -98,10 +98,10 @@ Or if you want to skip this check in the future:
         rich.panel(version_info, title="Upgrade Instructions", border_style="yellow")
 
         rich.info(
-            "The application will now exit. Please run the upgrade command above and then run your command again."
+            "The application will now exit. Please run the upgrade command above and then run your command again.",
         )
         rich.warning(
-            "Note: Upgrade checks can be disabled using the --skip-update-check option."
+            "Note: Upgrade checks can be disabled using the --skip-update-check option.",
         )
 
 

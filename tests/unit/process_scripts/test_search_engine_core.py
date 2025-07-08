@@ -179,7 +179,7 @@ class TestGetSystemAttributeValue:
     def test_get_os_family(self, mock_windows_system: Systems) -> None:
         """Test getting OS family attribute."""
         result = get_system_attribute_value(
-            mock_windows_system, SysFilterAttr.OS_FAMILY
+            mock_windows_system, SysFilterAttr.OS_FAMILY,
         )
         assert result == OSFamilyType.WINDOWS
 
@@ -191,7 +191,7 @@ class TestGetSystemAttributeValue:
     def test_get_producer_version(self, mock_windows_system: Systems) -> None:
         """Test getting producer version attribute."""
         result = get_system_attribute_value(
-            mock_windows_system, SysFilterAttr.PRODUCER_VERSION
+            mock_windows_system, SysFilterAttr.PRODUCER_VERSION,
         )
         assert result == "1.0.0"
 
@@ -201,7 +201,7 @@ class TestGetSystemAttributeValue:
         mock_linux_system.distro_family = DistroFamilyType.DEB
 
         result = get_system_attribute_value(
-            mock_linux_system, SysFilterAttr.DISTRO_FAMILY
+            mock_linux_system, SysFilterAttr.DISTRO_FAMILY,
         )
         assert result == DistroFamilyType.DEB
 
@@ -211,7 +211,7 @@ class TestGetSystemAttributeValue:
         mock_windows_system.product_name = "Windows 10 Pro"
 
         result = get_system_attribute_value(
-            mock_windows_system, SysFilterAttr.PRODUCT_NAME
+            mock_windows_system, SysFilterAttr.PRODUCT_NAME,
         )
         assert result == "Windows 10 Pro"
 
@@ -222,7 +222,7 @@ class TestGetSystemAttributeValue:
             delattr(mock_windows_system, "os_family")
 
         result = get_system_attribute_value(
-            mock_windows_system, SysFilterAttr.OS_FAMILY
+            mock_windows_system, SysFilterAttr.OS_FAMILY,
         )
         assert result is None
 
@@ -319,7 +319,7 @@ class TestEvaluateSystemFilters:
             )
 
             assert not evaluate_system_filters(
-                mock_windows_system, [filter_config_too_new]
+                mock_windows_system, [filter_config_too_new],
             )
 
 
@@ -402,7 +402,7 @@ class TestSearchEngineIntegration:
             return_value=True,
         ):
             assert not evaluate_system_filters(
-                mock_windows_system, non_matching_filters
+                mock_windows_system, non_matching_filters,
             )
 
     def test_error_handling_in_filters(self, mock_windows_system: Systems) -> None:
