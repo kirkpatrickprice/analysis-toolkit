@@ -112,11 +112,15 @@ class TestApplicationContainer:
     def test_global_container_instance(self) -> None:
         """Test that global container instance is available and configured."""
         assert container is not None
-        assert isinstance(container, ApplicationContainer)
 
-        # Should have both containers
+        # In dependency-injector, containers become DynamicContainer instances
+        # We should check for the expected attributes instead of exact type
         assert hasattr(container, "core")
         assert hasattr(container, "file_processing")
+
+        # Test that the containers are accessible and functional
+        assert container.core is not None
+        assert container.file_processing is not None
 
     def test_file_processing_container_gets_core_dependency(self) -> None:
         """Test that file processing container receives core dependency."""
