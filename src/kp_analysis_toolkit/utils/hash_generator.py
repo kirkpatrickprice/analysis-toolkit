@@ -1,10 +1,52 @@
-"""Centralized hashing utilities for the KP Analysis Toolkit."""
+"""
+Centralized hashing utilities for the KP Analysis Toolkit.
+
+This module provides both legacy direct hashing functionality and
+dependency injection integration for file processing services.
+"""
 
 import hashlib
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 
 # Standard hash algorithm for the toolkit
 TOOLKIT_HASH_ALGORITHM = "sha384"
+
+
+class _DIState:
+    """Internal state for dependency injection integration."""
+
+    def __init__(self) -> None:
+        self.enabled = False
+        self.file_processing_service: object | None = None
+
+    def get_service(self) -> object | None:
+        """Get the file processing service if available."""
+        if not self.enabled or self.file_processing_service is None:
+            return None
+        return self.file_processing_service
+
+    def set_service(self, service: object) -> None:
+        """Set the file processing service for DI integration."""
+        self.file_processing_service = service
+        self.enabled = True
+
+
+# Global DI state
+_di_state = _DIState()
+
+
+def _get_file_processing_service() -> object | None:
+    """Get the file processing service if DI is available."""
+    return _di_state.get_service()
+
+
+def _set_file_processing_service(service: object) -> None:
+    """Set the file processing service for DI integration."""
+    _di_state.set_service(service)
 
 
 class HashGenerator:
@@ -101,10 +143,27 @@ def validate_hash_input(data: str | bytes | None) -> str | bytes:
 
 # Convenience functions using the standard algorithm
 def hash_file(file_path: Path, *, validate_input: bool = True) -> str:
-    """Generate SHA384 hash for a file using toolkit standard."""
+    """
+    Generate SHA384 hash for a file using toolkit standard.
+
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
+    """
     if validate_input:
         validate_file_path(file_path)
 
+    # Try to use DI-based file processing service first
+    file_service = _get_file_processing_service()
+    if file_service is not None:
+        try:
+            # Use the DI-based hash generator
+            return file_service.generate_hash(file_path)  # type: ignore[attr-defined]
+        except (AttributeError, ValueError, OSError, PermissionError):
+            # Fall back to direct implementation if DI fails
+            # Common failures: service lacks method, file issues, etc.
+            pass
+
+    # Direct implementation fallback
     try:
         return HashGenerator().hash_file(file_path)
     except Exception as e:
@@ -153,3 +212,35 @@ def create_hash_generator(algorithm: str) -> HashGenerator:
             f"Failed to create hash generator with algorithm '{algorithm}': {e}"
         )
         raise ValueError(message) from e
+
+
+# Dependency injection integration
+def set_file_processing_service(service: "FileProcessingService") -> None:
+    """
+    Set the file processing service for dependency injection integration.
+
+    This allows the hash_file function to use the DI-based file processing
+    service when available, while maintaining backward compatibility.
+
+    Args:
+        service: The file processing service instance
+
+    """
+    _set_file_processing_service(service)
+
+
+def get_file_processing_service() -> object | None:
+    """
+    Get the current file processing service if DI is enabled.
+
+    Returns:
+        The file processing service instance or None if not set
+
+    """
+    return _get_file_processing_service()
+
+
+def clear_file_processing_service() -> None:
+    """Clear the file processing service DI integration."""
+    _di_state.enabled = False
+    _di_state.file_processing_service = None

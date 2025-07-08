@@ -5,6 +5,23 @@ from charset_normalizer import CharsetMatch, from_path
 from kp_analysis_toolkit.utils.rich_output import warning
 
 
+class ChardetEncodingDetector:
+    """Encoding detector using charset-normalizer for DI integration."""
+
+    def detect_encoding(self, file_path: Path) -> str | None:
+        """
+        Detect the encoding of a file using charset-normalizer.
+
+        Args:
+            file_path: Path to the file to analyze
+
+        Returns:
+            The detected encoding name, or None if detection fails
+
+        """
+        return detect_encoding(file_path)
+
+
 def detect_encoding(file_path: str | Path) -> str | None:
     """
     Attempt to detect the encoding of the file.
