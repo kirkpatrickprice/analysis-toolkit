@@ -4,6 +4,7 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
+from re import Pattern
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -307,6 +308,38 @@ def di_initialized() -> Generator[None, Any, None]:
             pass
 
 
+@pytest.fixture
+def container_initialized() -> Generator[None, Any, None]:
+    """
+    Initialize DI container with proper configuration for container testing.
+
+    This fixture is specifically for tests that need to examine container
+    behavior, wiring, and configuration. It ensures the container is properly
+    configured before testing container-specific functionality.
+    """
+    from kp_analysis_toolkit.core.containers.application import initialize_dependency_injection
+
+    # Initialize with explicit configuration for container testing
+    initialize_dependency_injection(
+        verbose=False,
+        quiet=True,
+        console_width=120,
+        force_terminal=True,
+        stderr_enabled=True,
+    )
+
+    try:
+        yield
+    finally:
+        # Clean up container state
+        try:
+            from kp_analysis_toolkit.core.containers.application import container
+
+            container.reset_singletons()
+        except (ImportError, AttributeError):
+            pass
+
+
 # Automatic test marking based on directory structure
 
 
@@ -328,7 +361,7 @@ def pytest_collection_modifyitems(
     """
     # Define directory-based marking rules
     # Each entry maps a directory path pattern to a list of markers to apply
-    directory_markers = {
+    directory_markers: dict[str, list[str]] = {
         # Mark all regex tests as slow (they take ~54 seconds for 169 tests)
         "unit/process_scripts/regex": ["slow"],
         # Future extensions can be added here:
@@ -342,15 +375,15 @@ def pytest_collection_modifyitems(
     for item in items:
         # Get the test file path relative to the tests directory
         test_file_path = Path(item.fspath)
-        tests_dir = Path(__file__).parent  # This is the tests/ directory
+        tests_dir: Path = Path(__file__).parent  # This is the tests/ directory
 
         try:
             # Get relative path from tests/ directory
-            relative_path = test_file_path.relative_to(tests_dir)
+            relative_path: Path = test_file_path.relative_to(tests_dir)
             relative_dir = str(relative_path.parent)
 
             # Normalize path separators for cross-platform compatibility
-            relative_dir = relative_dir.replace("\\", "/")
+            relative_dir: str = relative_dir.replace("\\", "/")
 
             # Apply markers based on directory patterns
             for dir_pattern, markers in directory_markers.items():
@@ -393,8 +426,8 @@ def _path_matches_pattern_exact(path: str, pattern: str) -> bool:
     This is an alternative implementation that can be used if more precise
     control over directory matching is needed.
     """
-    path_parts = path.split("/")
-    pattern_parts = pattern.split("/")
+    path_parts: list[str] = path.split("/")
+    pattern_parts: list[str] = pattern.split("/")
 
     # Pattern must be shorter or equal length to path
     if len(pattern_parts) > len(path_parts):
@@ -428,7 +461,7 @@ def assert_valid_encoding(actual_encoding: str | None, expected_encodings: list[
         if expected_encodings == "utf-8":
             # For UTF-8, also accept ASCII as valid since ASCII-compatible text
             # can be legitimately detected as either encoding
-            valid_encodings = ["utf-8", "ascii"]
+            valid_encodings: list[str] = ["utf-8", "ascii"]
         else:
             valid_encodings = [expected_encodings]
     else:
@@ -464,14 +497,14 @@ def assert_rich_output_contains(output: str, expected_content: str | list[str]) 
     import re
 
     # Strip ANSI escape sequences from the output
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    clean_output = ansi_escape.sub("", output)
+    ansi_escape: Pattern[str] = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    clean_output: str = ansi_escape.sub("", output)
 
     # Normalize whitespace for more reliable matching
     clean_output = " ".join(clean_output.split())
 
     if isinstance(expected_content, str):
-        expected_items = [expected_content]
+        expected_items: list[str] = [expected_content]
     else:
         expected_items = expected_content
 
@@ -516,8 +549,8 @@ def assert_rich_help_output(output: str, command_description: str) -> None:
     import re
 
     # Strip ANSI codes
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    clean_output = ansi_escape.sub("", output)
+    ansi_escape: Pattern[str] = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    clean_output: str = ansi_escape.sub("", output)
 
     # Help output should contain Usage and command description
     assert "Usage:" in clean_output

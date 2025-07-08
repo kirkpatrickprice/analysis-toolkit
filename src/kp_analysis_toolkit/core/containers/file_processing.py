@@ -24,7 +24,10 @@ class FileProcessingContainer(containers.DeclarativeContainer):
     # Dependencies
     core = providers.DependenciesContainer()
 
-    # File Processing Components
+    # File Processing Components - All Factory providers because:
+    # 1. They are stateless and don't need to share state between operations
+    # 2. Each file operation should use fresh instances for isolation
+    # 3. Better for parallel processing and testing
     encoding_detector: providers.Factory = providers.Factory(
         "kp_analysis_toolkit.core.services.file_processing.encoding.RobustEncodingDetector",
         rich_output=core.rich_output,
@@ -38,7 +41,10 @@ class FileProcessingContainer(containers.DeclarativeContainer):
         "kp_analysis_toolkit.utils.file_validator.PathLibFileValidator",
     )
 
-    # Main Service with DI integration
+    # Main Service with DI integration - Factory provider because:
+    # 1. File processing operations should be isolated from each other
+    # 2. Each operation can have fresh instances for better memory management
+    # 3. Supports parallel processing of multiple files safely
     file_processing_service: providers.Factory[FileProcessingService] = (
         providers.Factory(
             _setup_utils_di_integration,

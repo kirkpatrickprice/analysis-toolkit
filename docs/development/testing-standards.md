@@ -141,14 +141,40 @@ def test_di_service_integration():
     assert hasattr(service, 'detect_encoding')
 ```
 
-## Best Practices
+#### Container Configuration Testing
+When testing DI container behavior, configuration, and wiring:
 
-1. **Keep tests focused**: Each test should verify one specific behavior
-2. **Use meaningful names**: Test names should clearly describe what's being tested
-3. **Clean up properly**: Use fixtures and temporary directories (e.g. Pytest's `tmp_path`) for isolation
-4. **Test both success and failure paths**: Ensure robust error handling
-5. **Document test scenarios**: Add docstrings consistent with the test's complexity
-6. **Use Pytest Markers** -- especially mark with `slow` and `performance` as appropriate
+```python
+from tests.conftest import container_initialized
+
+def test_container_behavior(container_initialized):
+    """Test container behavior with proper initialization."""
+    from kp_analysis_toolkit.core.containers.application import container
+    
+    # Container is properly initialized by the fixture
+    service = container.file_processing().file_processing_service()
+    assert service is not None
+    
+    # Test that container instances are consistent
+    container1 = container.file_processing()
+    container2 = container.file_processing() 
+    assert container1 is container2
+
+def test_service_instance_behavior(container_initialized):
+    """Test service instance creation behavior."""
+    from kp_analysis_toolkit.core.containers.application import container
+    
+    # Most services use Factory providers (create new instances each time)
+    service1 = container.file_processing().file_processing_service()
+    service2 = container.file_processing().file_processing_service()
+    
+    # Expect different instances for Factory providers
+    assert service1 is not service2
+    
+    # But they should have the same configuration
+    assert service1.rich_output.verbose == service2.rich_output.verbose
+```
+
 
 ## Future Enhancements
 
