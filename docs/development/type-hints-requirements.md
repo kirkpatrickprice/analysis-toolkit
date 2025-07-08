@@ -408,20 +408,14 @@ def sample_data() -> dict[str, Any]:
 
 ### 2. Mypy Configuration
 
-Ensure strict type checking and `pydantic` support in `pyproject.toml`:
+As this project is in a state of flux with implementing strict type checking with `mypy`, reference the following documents for practical guidance on gradual implementation:
 
-```toml
-[tool.mypy]
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-plugins = ["pydantic.mypy"]
+- **[Gradual MyPy Implementation Plan](./gradual-mypy-implementation.md)** - Strategy for migrating from strict to gradual type checking
+- **[Gradual MyPy Workflow](./gradual-mypy-workflow.md)** - Daily development workflow and phase-by-phase implementation guide  
+- **[MyPy Quick Start Guide](./gradual-mypy-quick-start.md)** - Quick Start Guide for using MyPy
+- **[MyPy Action Plan](./mypy-action-plan.md)** - 30-minute getting started guide and weekly workflow
 
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = true
-```
+
 
 ## Common Patterns
 
