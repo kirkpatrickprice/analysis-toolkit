@@ -341,6 +341,30 @@ def container_initialized() -> Generator[None, Any, None]:
             pass
 
 
+def assert_console_width_tolerant(actual_width: int, expected_width: int, tolerance: int = 1) -> None:
+    """
+    Assert console width with tolerance for CI environment variations.
+
+    GitHub Actions Windows runners sometimes report console width as 99 instead of 100,
+    or 79 instead of 80, due to terminal detection quirks. This function provides a
+    tolerant assertion that accounts for these CI environment variations.
+
+    Args:
+        actual_width: The actual console width reported
+        expected_width: The expected console width
+        tolerance: The allowed difference (default 1)
+
+    Raises:
+        AssertionError: If the width difference exceeds tolerance
+    """
+    width_diff = abs(actual_width - expected_width)
+    assert width_diff <= tolerance, (
+        f"Console width {actual_width} differs from expected {expected_width} "
+        f"by {width_diff} (tolerance: {tolerance}). "
+        f"This may be due to CI environment terminal detection quirks."
+    )
+
+
 # Automatic test marking based on directory structure
 
 
@@ -511,11 +535,11 @@ def assert_rich_output_contains(output: str, expected_content: str | list[str]) 
         # Try exact match first, then case-insensitive
         if item in clean_output:
             continue
-        
+
         # Case-insensitive fallback
         if item.lower() in clean_output.lower():
             continue
-            
+
         # If neither works, fail with helpful message
         assert False, (
             f"Expected '{item}' to be in CLI output. "
@@ -560,18 +584,18 @@ def assert_rich_help_output(output: str, command_description: str) -> None:
 
     # Help output should contain Usage and command description
     assert "Usage:" in clean_output, f"Expected 'Usage:' in help output. Got: {clean_output[:500]}..."
-    
+
     # Use case-insensitive search for command descriptions since Rich may change case
     # Also try partial word matching for more flexibility
     description_found = (
         command_description.lower() in clean_output.lower()
         or any(
-            word.lower() in clean_output.lower() 
-            for word in command_description.split() 
+            word.lower() in clean_output.lower()
+            for word in command_description.split()
             if len(word) > 3  # Only check meaningful words
         )
     )
-    
+
     assert description_found, (
         f"Expected command description related to '{command_description}' in help output. "
         f"Clean output was: {clean_output[:500]}..."
