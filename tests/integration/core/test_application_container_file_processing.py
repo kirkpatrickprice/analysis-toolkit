@@ -91,24 +91,59 @@ class TestApplicationContainerFileProcessingIntegration:
         assert rich_config.force_terminal() is False
         assert rich_config.stderr_enabled() is False
 
-    @patch("kp_analysis_toolkit.utils.get_file_encoding.get_di_state")
-    @patch("kp_analysis_toolkit.utils.hash_generator.get_di_state")
+    @patch("kp_analysis_toolkit.utils.get_file_encoding._get_file_processing_service")
+    @patch("kp_analysis_toolkit.utils.hash_generator._get_file_processing_service")
     def test_backward_compatibility_utilities_use_container(
         self,
-        mock_hash_di_state: Mock,
-        mock_encoding_di_state: Mock,
+        mock_hash_get_service: Mock,
+        mock_encoding_get_service: Mock,
     ) -> None:
         """Test that backward compatibility utilities can access container services."""
-        # Setup mocks to return the global container and service
-        mock_hash_di_state.return_value = (container.file_processing, True)
-        mock_encoding_di_state.return_value = (container.file_processing, True)
-
-        # Initialize DI
+        # Initialize DI first
         initialize_dependency_injection()
+        
+        # Create a mock service to return
+        from unittest.mock import MagicMock
+        mock_service = MagicMock()
+        mock_service.detect_encoding.return_value = "utf-8"
+        mock_service.generate_hash.return_value = "mock_hash"
+        
+        # Setup mocks to return the service when called
+        mock_hash_get_service.return_value = mock_service
+        mock_encoding_get_service.return_value = mock_service
 
-        # These calls should trigger DI state checks
-        mock_hash_di_state.assert_called()
-        mock_encoding_di_state.assert_called()
+        # Create a test file to trigger the utility functions
+        import tempfile
+        from pathlib import Path
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write("test content")
+            test_file = Path(f.name)
+        
+        try:
+            # Call the utility functions to trigger DI service usage
+            from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
+            from kp_analysis_toolkit.utils.hash_generator import generate_file_hash
+            
+            # These calls should use the DI services
+            encoding = detect_encoding(test_file)
+            file_hash = generate_file_hash(test_file)
+            
+            # Verify the mocked services were called
+            mock_encoding_get_service.assert_called()
+            mock_hash_get_service.assert_called()
+            
+            # Verify the service methods were called
+            mock_service.detect_encoding.assert_called_with(test_file)
+            mock_service.generate_hash.assert_called_with(test_file)
+            
+            # Verify the results
+            assert encoding == "utf-8"
+            assert file_hash == "mock_hash"
+            
+        finally:
+            # Clean up
+            test_file.unlink(missing_ok=True)
 
 
 class TestFileProcessingContainerWiring:

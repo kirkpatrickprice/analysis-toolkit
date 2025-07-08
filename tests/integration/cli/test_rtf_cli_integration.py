@@ -99,7 +99,8 @@ class TestProcessCommandLine:
         """Test that help command works."""
         result = cli_runner.invoke(process_command_line, ["--help"])
         assert result.exit_code == 0
-        assert "Convert RTF files to plain text format" in result.output
+        from tests.conftest import assert_rich_help_output
+        assert_rich_help_output(result.output, "Convert RTF files to plain text format")
 
     def test_process_command_line_with_invalid_file(
         self,

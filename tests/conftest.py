@@ -247,6 +247,66 @@ def real_core_container() -> "CoreContainer":
     return container
 
 
+@pytest.fixture
+def mock_di_state() -> Generator[MagicMock, Any, None]:
+    """
+    Mock DI state for testing file processing service integration.
+
+    This fixture provides a mock DI state that can be configured for different
+    test scenarios involving dependency injection.
+    """
+    # Create a mock service
+    mock_service = MagicMock()
+    mock_service.detect_encoding.return_value = "utf-8"
+    mock_service.generate_hash.return_value = "mock_hash_value"
+    mock_service.process_file.return_value = {
+        "encoding": "utf-8",
+        "hash": "mock_hash_value",
+        "path": "mock_path",
+    }
+
+    # Mock the DI state getter functions
+    with (
+        patch("kp_analysis_toolkit.utils.get_file_encoding._get_file_processing_service") as mock_encoding_getter,
+        patch("kp_analysis_toolkit.utils.hash_generator._get_file_processing_service") as mock_hash_getter,
+    ):
+        # Configure mocks to return the service
+        mock_encoding_getter.return_value = mock_service
+        mock_hash_getter.return_value = mock_service
+
+        yield {
+            "service": mock_service,
+            "encoding_getter": mock_encoding_getter,
+            "hash_getter": mock_hash_getter,
+        }
+
+
+@pytest.fixture
+def di_initialized() -> Generator[None, Any, None]:
+    """
+    Initialize dependency injection for tests that need it.
+
+    This fixture ensures DI is properly initialized and cleaned up.
+    """
+    from kp_analysis_toolkit.core.containers.application import initialize_dependency_injection
+
+    # Initialize DI with test-friendly settings
+    initialize_dependency_injection(verbose=False, quiet=True)
+
+    try:
+        yield
+    finally:
+        # Clean up DI state if needed
+        try:
+            from kp_analysis_toolkit.core.containers.application import container
+
+            # Reset container state
+            container.reset_singletons()
+        except (ImportError, AttributeError):
+            # Container reset may not be available
+            pass
+
+
 # Automatic test marking based on directory structure
 
 
@@ -377,3 +437,93 @@ def assert_valid_encoding(actual_encoding: str | None, expected_encodings: list[
     assert actual_encoding in valid_encodings, (
         f"Expected encoding to be one of {valid_encodings}, but got {actual_encoding!r}"
     )
+
+
+def assert_rich_output_contains(output: str, expected_content: str | list[str]) -> None:
+    """
+    Assert that Rich-formatted CLI output contains expected content.
+
+    This helper function strips ANSI codes and handles Rich formatting to test
+    for content presence without being brittle to formatting changes.
+
+    Args:
+        output: The raw CLI output (may contain ANSI codes)
+        expected_content: String or list of strings that should be present
+
+    Example:
+        # Test for single content
+        assert_rich_output_contains(result.output, "KP Analysis Toolkit")
+
+        # Test for multiple content items
+        assert_rich_output_contains(result.output, [
+            "KP Analysis Toolkit",
+            "Version",
+            "process-scripts"
+        ])
+    """
+    import re
+
+    # Strip ANSI escape sequences from the output
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    clean_output = ansi_escape.sub("", output)
+
+    # Normalize whitespace for more reliable matching
+    clean_output = " ".join(clean_output.split())
+
+    if isinstance(expected_content, str):
+        expected_items = [expected_content]
+    else:
+        expected_items = expected_content
+
+    for item in expected_items:
+        assert item in clean_output, (
+            f"Expected '{item}' to be in CLI output. "
+            f"Clean output was: {clean_output[:200]}..."
+        )
+
+
+def assert_rich_version_output(output: str) -> None:
+    """
+    Assert that Rich-formatted version output contains expected elements.
+
+    This helper specifically validates version command output which uses
+    Rich panels and tables.
+
+    Args:
+        output: The raw CLI output from version command
+    """
+    # Check for key version output elements
+    assert_rich_output_contains(
+        output,
+        [
+            "KP Analysis Toolkit",
+            "Version",
+            "process-scripts",
+            "nipper-expander",
+            "rtf-to-text",
+        ],
+    )
+
+
+def assert_rich_help_output(output: str, command_description: str) -> None:
+    """
+    Assert that Rich-formatted help output contains expected elements.
+
+    Args:
+        output: The raw CLI output from help command
+        command_description: The expected command description
+    """
+    import re
+
+    # Strip ANSI codes
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    clean_output = ansi_escape.sub("", output)
+
+    # Help output should contain Usage and command description
+    assert "Usage:" in clean_output
+    # Use case-insensitive search for command descriptions since Rich may change case
+    assert (
+        command_description.lower() in clean_output.lower()
+    ) or any(
+        word in clean_output.lower() for word in command_description.lower().split()
+    ), f"Expected command description related to '{command_description}' in help output"

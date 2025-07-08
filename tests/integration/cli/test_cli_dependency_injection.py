@@ -117,7 +117,8 @@ class TestCLIRichOutputIntegration:
 
         # Version callback should exit early, but we can check output format
         assert result.exit_code == 0
-        assert "kpat_cli version" in result.output
+        from tests.conftest import assert_rich_version_output
+        assert_rich_version_output(result.output)
         # Version callback may not require DI initialization
         # Just ensure it doesn't fail
 
@@ -134,7 +135,8 @@ class TestCLIRichOutputIntegration:
 
         assert result.exit_code == 0
         # Should not crash due to Rich Output changes - check for help content
-        assert "KP Analysis Toolkit" in result.output
+        from tests.conftest import assert_rich_output_contains
+        assert_rich_output_contains(result.output, "KP Analysis Toolkit")
         # DI should be initialized when we actually invoke the CLI function
         assert mock_init_di.called
 

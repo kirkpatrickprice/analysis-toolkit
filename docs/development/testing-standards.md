@@ -39,26 +39,40 @@ CLI tests should cover:
 - Edge cases and boundary conditions
 - Integration with other components
 
-### 5. Output Validation
+### 5. Special Testing Scenarios
+
+#### Output Validation
 When testing CLI output:
 - Check exit codes
-- Validate key output content
+- Validate key output content using Rich-aware helpers
 - Test error messages
 - Verify file operations when applicable
 
 ```python
+from tests.conftest import assert_rich_output_contains, assert_rich_help_output, assert_rich_version_output
+
 def test_command_success(cli_runner):
     result = cli_runner.invoke(command, ['--valid-option'])
     assert result.exit_code == 0
-    assert 'Success' in result.output
+    assert_rich_output_contains(result.output, 'Success')
 
 def test_command_error(cli_runner):
     result = cli_runner.invoke(command, ['--invalid-option'])
     assert result.exit_code != 0
-    assert 'Error' in result.output
+    assert_rich_output_contains(result.output, 'Error')
+
+def test_version_output(cli_runner):
+    result = cli_runner.invoke(command, ['--version'])
+    assert result.exit_code == 0
+    assert_rich_version_output(result.output)
+
+def test_help_output(cli_runner):
+    result = cli_runner.invoke(command, ['--help'])
+    assert result.exit_code == 0
+    assert_rich_help_output(result.output, "Expected command description")
 ```
 
-### 6. Encoding Detection Testing
+#### Encoding Detection Testing
 When testing file encoding detection, use the shared helper function to handle the fact that ASCII-compatible content can be legitimately detected as either 'ascii' or 'utf-8':
 
 ```python
@@ -74,6 +88,57 @@ def test_encoding_detection(tmp_path):
     
     # For content that should be specific encodings
     assert_valid_encoding(encoding, ["latin-1", "iso-8859-1", "ascii"])
+```
+
+#### Dependency Injection Testing
+When testing components that use dependency injection, you need two different testing approaches depending on what you're validating:
+
+**Mock-based testing** is used to test integration points and verify that DI services are called correctly without executing the actual business logic. This is faster and isolates the test from external dependencies.
+
+**Real DI testing** is used to test end-to-end functionality with actual service implementations to ensure the entire DI stack works correctly and produces expected results.
+
+Use the provided fixtures and follow these patterns:
+
+```python
+from tests.conftest import mock_di_state, di_initialized
+
+def test_with_mocked_di_services(mock_di_state):
+    """Test using mocked DI services - verifies integration points."""
+    # The mock_di_state fixture provides a configured mock service
+    service = mock_di_state["service"]
+    
+    # Test your functionality - the service calls will be mocked
+    result = some_function_that_uses_di()
+    
+    # Verify the mock service was called as expected
+    service.detect_encoding.assert_called_once()
+
+def test_with_real_di_initialization(di_initialized, tmp_path):
+    """Test with real DI initialization - verifies end-to-end functionality."""
+    # The di_initialized fixture sets up real DI
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("content")
+    
+    # Test functionality with real DI services
+    from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
+    encoding = detect_encoding(test_file)
+    assert_valid_encoding(encoding, "utf-8")
+
+def test_di_service_integration():
+    """Test DI service integration directly - manual container testing."""
+    from kp_analysis_toolkit.core.containers.application import (
+        container, initialize_dependency_injection
+    )
+    
+    # Initialize DI
+    initialize_dependency_injection(verbose=False, quiet=True)
+    
+    # Get service through container
+    service = container.file_processing().file_processing_service()
+    
+    # Test service functionality
+    assert service is not None
+    assert hasattr(service, 'detect_encoding')
 ```
 
 ## Best Practices

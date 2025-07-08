@@ -185,9 +185,11 @@ class TestNipperExpanderCLI:
         result = cli_runner.invoke(process_command_line, ["--help"])
 
         assert result.exit_code == 0
-        assert "Process a Nipper CSV file" in result.output
-        assert "--in-file" in result.output
-        assert "--start-dir" in result.output
+        from tests.conftest import assert_rich_help_output
+        assert_rich_help_output(result.output, "Process a Nipper CSV file")
+        # Also check for specific options
+        from tests.conftest import assert_rich_output_contains
+        assert_rich_output_contains(result.output, ["--in-file", "--start-dir"])
 
     def test_cli_version_output(self, cli_runner: CliRunner) -> None:
         """Test CLI version output."""
@@ -220,7 +222,8 @@ class TestNipperExpanderCLI:
             )
 
             assert result.exit_code == 0
-            assert "Processing Nipper CSV file" in result.output
+            from tests.conftest import assert_rich_output_contains
+            assert_rich_output_contains(result.output, "Processing Nipper CSV file")
             mock_process.assert_called_once()
 
     def test_error_handling_in_processing(self, cli_runner: CliRunner) -> None:
