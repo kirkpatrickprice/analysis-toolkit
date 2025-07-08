@@ -219,5 +219,19 @@ def get_file_processing_service() -> object | None:
 
 def clear_file_processing_service() -> None:
     """Clear the file processing service DI integration."""
-    _di_state.enabled = False
-    _di_state.file_processing_service = None
+    _clear_file_processing_service()
+
+
+# Alias for backward compatibility with tests
+generate_file_hash = hash_file
+
+
+def get_di_state() -> object:
+    """
+    Get the DI state for compatibility with test expectations.
+
+    Returns:
+        The DI state manager instance
+
+    """
+    return _di_state

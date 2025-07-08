@@ -125,3 +125,14 @@ def get_file_processing_service() -> object | None:
 def clear_file_processing_service() -> None:
     """Clear the file processing service DI integration."""
     _clear_service()
+
+
+def get_di_state() -> object:
+    """
+    Get the DI state for compatibility with test expectations.
+
+    Returns:
+        The DI state manager instance
+
+    """
+    return _di_manager
