@@ -1,40 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import openpyxl.worksheet.worksheet
     import pandas as pd
 
-    from kp_analysis_toolkit.utils.rich_output import RichOutput
-
-
-class WorkbookEngine(Protocol):
-    """Protocol for Excel workbook engines."""
-
-    def create_writer(self, output_path: Path) -> pd.ExcelWriter: ...
-
-
-class ExcelFormatter(Protocol):
-    """Protocol for Excel formatting."""
-
-    def format_worksheet(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        data: pd.DataFrame,
-    ) -> None: ...
-
-
-class TableGenerator(Protocol):
-    """Protocol for Excel table generation."""
-
-    def create_table(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        data: pd.DataFrame,
-    ) -> None: ...
+    from kp_analysis_toolkit.core.services.excel_export.protocols import (
+        ExcelFormatter,
+        TableGenerator,
+        WorkbookEngine,
+    )
+    from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
 
 class ExcelExportService:
@@ -45,12 +23,12 @@ class ExcelExportService:
         workbook_engine: WorkbookEngine,
         formatter: ExcelFormatter,
         table_generator: TableGenerator,
-        rich_output: RichOutput,
+        rich_output: RichOutputService,
     ) -> None:
         self.workbook_engine: WorkbookEngine = workbook_engine
         self.formatter: ExcelFormatter = formatter
         self.table_generator: TableGenerator = table_generator
-        self.rich_output: RichOutput = rich_output
+        self.rich_output: RichOutputService = rich_output
 
     def export_dataframe(
         self,

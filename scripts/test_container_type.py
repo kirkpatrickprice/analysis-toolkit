@@ -3,6 +3,8 @@
 
 from dependency_injector import containers
 
+from kp_analysis_toolkit.core.containers.application import ApplicationContainer
+
 
 class TestContainer(containers.DeclarativeContainer):
     pass
@@ -13,7 +15,6 @@ print(f"Simple container type: {type(test)}")
 print(f"Is TestContainer: {isinstance(test, TestContainer)}")
 
 # Test our actual container
-from kp_analysis_toolkit.core.containers.application import ApplicationContainer
 
 app_test = ApplicationContainer()
 print(f"App container type: {type(app_test)}")
