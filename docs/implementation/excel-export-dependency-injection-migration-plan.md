@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the migration plan for converting the utility functions in `excel_utils.py` into a comprehensive DI-based Excel Export service. The current implementation provides standalone utility functions, while the target implementation will follow the established service package pattern with proper dependency injection integration.
+This document outlines the migration plan for converting the utility functions in `excel_utils.py` into a DI-based Excel Export service. The current implementation provides standalone utility functions, while the target implementation will follow the established service package pattern with proper dependency injection integration.
 
 ## Current State Analysis
 
@@ -10,29 +10,34 @@ This document outlines the migration plan for converting the utility functions i
 
 The current `excel_utils.py` module provides the following capabilities:
 
-1. **Core Export Functions**:
+**Core Export Functions**:
+
    - `export_dataframe_to_excel()` - Main export function with formatting and table creation
    - `format_as_excel_table()` - Table formatting with Excel table objects
    - `sanitize_sheet_name()` - Sheet name validation and sanitization
 
-2. **Formatting Functions**:
+**Formatting Functions**:
+
    - `auto_adjust_column_widths()` - Automatic column width adjustment
    - `format_date_columns()` - Date column detection and formatting
    - `set_table_alignment()` - Cell alignment configuration
    - `adjust_row_heights()` - Row height adjustment based on content
 
-3. **Utility Functions**:
+**Utility Functions**:
+
    - `get_column_letter()` - Convert column numbers to Excel letters
    - Various helper functions for worksheet manipulation
 
 ### Current Usage Patterns
 
 **Direct Imports and Usage**:
+
 - `nipper_expander/process_nipper.py`: Uses `export_dataframe_to_excel()`
 - `process_scripts/excel_exporter.py`: Uses `format_as_excel_table()` and `sanitize_sheet_name()`
 - Multiple test files: Various function testing
 
 **Dependencies**:
+
 - `pandas` for DataFrame operations
 - `openpyxl` for Excel file manipulation
 - No current DI integration
@@ -40,12 +45,14 @@ The current `excel_utils.py` module provides the following capabilities:
 ### Existing DI Infrastructure
 
 **Excel Export Service Package** (Partially Implemented):
+
 - `core/services/excel_export/` - Service package structure exists
 - `core/services/excel_export/protocols.py` - Basic protocols defined
 - `core/services/excel_export/service.py` - Minimal service implementation
 - `core/containers/excel_export.py` - Container configuration exists
 
 **Container Integration**:
+
 - `ExcelExportContainer` already defined with placeholder providers
 - References non-existent implementations in `excel_utils.py`
 - Already integrated into application container structure
