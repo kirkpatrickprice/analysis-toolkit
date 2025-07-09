@@ -33,3 +33,42 @@ class TableGenerator(Protocol):
         worksheet: openpyxl.worksheet.worksheet.Worksheet,
         data: pd.DataFrame,
     ) -> None: ...
+
+
+class SheetNameSanitizer(Protocol):
+    def sanitize_sheet_name(self, name: str) -> str: ...
+
+
+class ColumnWidthAdjuster(Protocol):
+    def auto_adjust_column_widths(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+    ) -> None: ...
+
+
+class DateFormatter(Protocol):
+    def format_date_columns(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+        startrow: int,
+    ) -> None: ...
+
+
+class RowHeightAdjuster(Protocol):
+    def adjust_row_heights(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+        startrow: int,
+    ) -> None: ...
+
+
+class ExcelUtilities(Protocol):
+    def get_column_letter(self, col_num: int) -> str: ...
+    def set_table_alignment(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        table_range: str,
+    ) -> None: ...

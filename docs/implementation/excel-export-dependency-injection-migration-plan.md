@@ -10,23 +10,23 @@ This document outlines the migration plan for converting the utility functions i
 
 The current `excel_utils.py` module provides the following capabilities:
 
-**Core Export Functions**:
+1. **Core Export Functions**:
 
-   - `export_dataframe_to_excel()` - Main export function with formatting and table creation
-   - `format_as_excel_table()` - Table formatting with Excel table objects
-   - `sanitize_sheet_name()` - Sheet name validation and sanitization
+    - `export_dataframe_to_excel()` - Main export function with formatting and table creation
+    - `format_as_excel_table()` - Table formatting with Excel table objects
+    - `sanitize_sheet_name()` - Sheet name validation and sanitization
 
-**Formatting Functions**:
+2. **Formatting Functions**:
 
-   - `auto_adjust_column_widths()` - Automatic column width adjustment
-   - `format_date_columns()` - Date column detection and formatting
-   - `set_table_alignment()` - Cell alignment configuration
-   - `adjust_row_heights()` - Row height adjustment based on content
+    - `auto_adjust_column_widths()` - Automatic column width adjustment
+    - `format_date_columns()` - Date column detection and formatting
+    - `set_table_alignment()` - Cell alignment configuration
+    - `adjust_row_heights()` - Row height adjustment based on content
 
-**Utility Functions**:
+3. **Utility Functions**:
 
-   - `get_column_letter()` - Convert column numbers to Excel letters
-   - Various helper functions for worksheet manipulation
+    - `get_column_letter()` - Convert column numbers to Excel letters
+    - Various helper functions for worksheet manipulation
 
 ### Current Usage Patterns
 
@@ -91,21 +91,25 @@ class ExcelUtilities(Protocol):
 Following the service package pattern, create focused implementation files:
 
 **excel_export/sheet_management.py**: 
+
 - Sheet name sanitization
 - Sheet creation and management utilities
 - Column letter conversion utilities
 
 **excel_export/formatting.py**:
+
 - Date column formatting
 - Cell alignment and styling
 - Row height and column width adjustment
 
 **excel_export/table_generation.py**:
+
 - Excel table creation with proper styling
 - Table range management
 - Table styling and configuration
 
 **excel_export/workbook_engine.py**:
+
 - Workbook creation and writer management
 - File output handling
 - Error handling for Excel operations
@@ -113,11 +117,13 @@ Following the service package pattern, create focused implementation files:
 #### 1.3 Update Main Service (excel_export/service.py)
 
 **Current Limitations**: 
+
 - Minimal implementation with only basic export
 - No integration with excel_utils functionality
 - Limited error handling
 
 **Target Implementation**:
+
 - Orchestrate all feature implementations
 - Provide high-level API matching current `export_dataframe_to_excel()` signature
 - Integrate with `RichOutputService` for consistent user feedback
@@ -128,6 +134,7 @@ Following the service package pattern, create focused implementation files:
 #### 2.1 Direct Function Migration
 
 **Functions to Migrate**:
+
 1. `sanitize_sheet_name()` → `sheet_management.py`
 2. `get_column_letter()` → `sheet_management.py`
 3. `auto_adjust_column_widths()` → `formatting.py`
@@ -138,6 +145,7 @@ Following the service package pattern, create focused implementation files:
 8. `export_dataframe_to_excel()` → `service.py` (orchestration)
 
 **Migration Approach**:
+
 - Copy function implementations to appropriate feature files
 - Wrap as class methods implementing the defined protocols
 - Add proper type hints and error handling
@@ -183,16 +191,19 @@ excel_export_service = providers.Factory(
 Following the established pattern and analyzing the functionality:
 
 - **ExcelExportService**: `Factory` provider
-  - **Rationale**: Each export operation should be independent
-  - **Benefits**: Isolation between operations, better memory management, parallel processing support
+
+    - **Rationale**: Each export operation should be independent
+    - **Benefits**: Isolation between operations, better memory management, parallel processing support
 
 - **Feature Implementations**: `Factory` providers
-  - **Rationale**: Stateless operations that don't require shared state
-  - **Benefits**: Fresh instances for each operation, better testability
+
+    - **Rationale**: Stateless operations that don't require shared state
+    - **Benefits**: Fresh instances for each operation, better testability
 
 - **WorkbookEngine**: `Factory` provider
-  - **Rationale**: Each workbook operation should use fresh file handles
-  - **Benefits**: Avoids file handle conflicts, supports concurrent operations
+
+    - **Rationale**: Each workbook operation should use fresh file handles
+    - **Benefits**: Avoids file handle conflicts, supports concurrent operations
 
 ### Phase 3: Backward Compatibility Layer
 
@@ -297,6 +308,7 @@ tests/unit/core/services/excel_export/
 ```
 
 **Test Strategy**:
+
 - **Unit Tests**: Test each feature implementation in isolation
 - **Integration Tests**: Test service orchestration with real Excel files
 - **Compatibility Tests**: Ensure backward compatibility with existing usage
@@ -305,11 +317,13 @@ tests/unit/core/services/excel_export/
 #### 5.2 Migration Validation Tests
 
 **Behavior Preservation Tests**:
+
 - Test that DI service produces identical Excel files to current implementation
 - Validate all formatting options work identically
 - Ensure error handling behavior is preserved
 
 **Container Integration Tests**:
+
 - Verify proper wiring of all dependencies
 - Test service factory behavior vs singleton behavior
 - Validate module container integration
@@ -317,6 +331,7 @@ tests/unit/core/services/excel_export/
 #### 5.3 Legacy Compatibility Tests
 
 **Compatibility Layer Tests**:
+
 - Test that all existing `excel_utils.py` functions continue to work
 - Verify that existing module imports don't break
 - Ensure test suites continue to pass during migration
@@ -390,23 +405,23 @@ tests/unit/core/services/excel_export/
 Once the DI migration is complete, the following enhancements become possible:
 
 1. **Advanced Excel Features**: 
-   - Conditional formatting engines
-   - Data validation rules
-   - Chart generation capabilities
+    - Conditional formatting engines
+    - Data validation rules
+    - Chart generation capabilities
 
 2. **Multiple Export Formats**: 
-   - PDF export via openpyxl
-   - CSV export with formatting preservation
-   - HTML export with styling
+    - PDF export via openpyxl
+    - CSV export with formatting preservation
+    - HTML export with styling
 
 3. **Performance Optimizations**:
-   - Streaming Excel export for large datasets
-   - Parallel sheet generation
-   - Memory-efficient formatting
+    - Streaming Excel export for large datasets
+    - Parallel sheet generation
+    - Memory-efficient formatting
 
 4. **Enhanced Integration**:
-   - Template-based Excel generation
-   - Dynamic worksheet layouts
-   - Custom styling configurations
+    - Template-based Excel generation
+    - Dynamic worksheet layouts
+    - Custom styling configurations
 
-This migration plan provides a comprehensive, low-risk path to modernize the Excel export functionality while maintaining full backward compatibility and following established architectural patterns.
+
