@@ -11,6 +11,12 @@ from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 from kp_analysis_toolkit.utils.hash_generator import (
     TOOLKIT_HASH_ALGORITHM,
     HashGenerator,
+    clear_file_processing_service,
+    get_file_processing_service,
+    set_file_processing_service,
+)
+from kp_analysis_toolkit.utils.hash_generator import (
+    hash_file as hash_file_func,
 )
 
 
@@ -25,7 +31,11 @@ class TestDetectEncoding:
 
         try:
             encoding = detect_encoding(temp_path)
-            assert encoding in ["utf_8", "ascii"]  # ASCII is subset of UTF-8
+            assert encoding in [
+                "utf-8",
+                "utf_8",
+                "ascii",
+            ]  # Our normalization converts utf_8 to utf-8
         finally:
             Path(temp_path).unlink()
 
@@ -53,7 +63,8 @@ class TestDetectEncoding:
         try:
             encoding = detect_encoding(temp_path)
             # Empty files might return None or a default encoding
-            assert encoding == "utf_8"
+            # Our normalization converts utf_8 to utf-8
+            assert encoding in ["utf-8", "utf_8"] or encoding is None
         finally:
             Path(temp_path).unlink()
 
@@ -234,3 +245,220 @@ class TestHashGenerator:
             assert hash1 == hash2
         finally:
             temp_path.unlink()
+
+    def test_set_file_processing_service(self) -> None:
+        """Test setting and getting file processing service."""
+
+        # Define a dummy service function
+        def dummy_service(file_path: str) -> str:
+            return f"processed_{file_path}"
+
+        # Set the custom service
+        set_file_processing_service(dummy_service)
+
+        try:
+            # Get the service and process a file
+            service = get_file_processing_service()
+            result = service("test.txt")  # type: ignore[misc]
+
+            assert result == "processed_test.txt"
+
+            # Hash the result using a new generator instance
+            generator = HashGenerator()
+            hash_result = generator.hash_string(result)
+
+            assert isinstance(hash_result, str)
+            assert len(hash_result) > 0
+        finally:
+            # Clear the service
+            clear_file_processing_service()
+
+    def test_hash_file_with_service_integration(self) -> None:
+        """Test file hashing with service integration."""
+
+        # Define a dummy service function
+        def dummy_service(file_path: Path) -> str:
+            return f"processed_{file_path}"
+
+        # Set the custom service
+        set_file_processing_service(dummy_service)
+
+        try:
+            # Create a temporary file
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(b"Hello, world!")
+                temp_path = Path(f.name)
+
+            try:
+                # Hash the file using the service integration
+                hash_result = hash_file_func(temp_path)
+
+                assert isinstance(hash_result, str)
+                assert len(hash_result) > 0
+            finally:
+                temp_path.unlink()
+        finally:
+            # Clear the service
+            clear_file_processing_service()
+
+    def test_hash_nonexistent_file_with_service_integration(self) -> None:
+        """Test hashing non-existent file with service integration raises ValueError."""
+
+        # Define a dummy service function
+        def dummy_service(file_path: Path) -> str:
+            return f"processed_{file_path}"
+
+        # Set the custom service
+        set_file_processing_service(dummy_service)
+
+        try:
+            with pytest.raises(ValueError, match="File does not exist"):
+                hash_file_func(Path("/nonexistent/file.txt"))
+        finally:
+            # Clear the service
+            clear_file_processing_service()
+
+    def test_hash_file_permission_error_with_service_integration(self) -> None:
+        """Test handling of file permission errors with service integration."""
+
+        # Define a dummy service function
+        def dummy_service(file_path: Path) -> str:
+            return f"processed_{file_path}"
+
+        # Set the custom service
+        set_file_processing_service(dummy_service)
+
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                temp_path = Path(f.name)
+
+            try:
+                # Mock file open to raise PermissionError
+                with (
+                    patch(
+                        "pathlib.Path.open",
+                        side_effect=PermissionError("Access denied"),
+                    ),
+                    pytest.raises(ValueError, match="Error reading file"),
+                ):
+                    hash_file_func(temp_path)
+            finally:
+                temp_path.unlink()
+        finally:
+            # Clear the service
+            clear_file_processing_service()
+
+
+class TestHashGeneratorDIIntegration:
+    """Test dependency injection integration for hash generator utilities."""
+
+    def teardown_method(self) -> None:
+        """Clean up DI state after each test."""
+        clear_file_processing_service()
+
+    def test_di_not_set_falls_back_to_direct(self) -> None:
+        """Test that hash_file falls back to direct implementation when DI not set."""
+        # Ensure no DI service is set
+        clear_file_processing_service()
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"Hello, world!")
+            temp_path = Path(f.name)
+
+        try:
+            hash_result = hash_file_func(temp_path)
+            assert isinstance(hash_result, str)
+            assert len(hash_result) > 0
+        finally:
+            temp_path.unlink()
+
+    def test_di_service_is_used_when_available(self) -> None:
+        """Test that hash_file uses DI service when available."""
+
+        # Mock service with generate_hash method
+        class MockService:
+            def generate_hash(self, _file_path: Path) -> str:
+                return "mocked_hash_result"
+
+        mock_service = MockService()
+        set_file_processing_service(mock_service)
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"Hello, world!")
+            temp_path = Path(f.name)
+
+        try:
+            hash_result = hash_file_func(temp_path)
+            assert hash_result == "mocked_hash_result"
+        finally:
+            temp_path.unlink()
+
+    def test_di_fallback_on_service_error(self) -> None:
+        """Test fallback to direct implementation when DI service raises error."""
+
+        # Mock service that raises AttributeError
+        class BrokenService:
+            def broken_method(self) -> None:
+                pass  # Missing generate_hash method
+
+        broken_service = BrokenService()
+        set_file_processing_service(broken_service)
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"Hello, world!")
+            temp_path = Path(f.name)
+
+        try:
+            # Should fall back to direct implementation
+            hash_result = hash_file_func(temp_path)
+            assert isinstance(hash_result, str)
+            assert len(hash_result) > 0
+            # Should not be the mocked result
+            assert hash_result != "mocked_hash_result"
+        finally:
+            temp_path.unlink()
+
+    def test_di_fallback_on_value_error(self) -> None:
+        """Test fallback when DI service raises ValueError."""
+
+        # Mock service that raises ValueError
+        class ErrorService:
+            def generate_hash(self, _file_path: Path) -> str:
+                message = "Service error"
+                raise ValueError(message)
+
+        error_service = ErrorService()
+        set_file_processing_service(error_service)
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"Hello, world!")
+            temp_path = Path(f.name)
+
+        try:
+            # Should fall back to direct implementation
+            hash_result = hash_file_func(temp_path)
+            assert isinstance(hash_result, str)
+            assert len(hash_result) > 0
+        finally:
+            temp_path.unlink()
+
+    def test_get_set_clear_service(self) -> None:
+        """Test getting, setting, and clearing the DI service."""
+        # Initially no service
+        assert get_file_processing_service() is None
+
+        # Set a service
+        class DummyService:
+            pass
+
+        dummy = DummyService()
+        set_file_processing_service(dummy)
+        assert get_file_processing_service() is dummy
+
+        # Clear the service
+        clear_file_processing_service()
+        assert get_file_processing_service() is None

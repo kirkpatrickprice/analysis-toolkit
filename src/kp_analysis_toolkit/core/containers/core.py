@@ -14,7 +14,8 @@ class CoreContainer(containers.DeclarativeContainer):
     # Configuration
     config = providers.Configuration()
 
-    # RichOutput Service
+    # RichOutput Service - Singleton because it maintains global console state
+    # and configuration that should be consistent across the entire application
     rich_output: providers.Singleton[RichOutputService] = providers.Singleton(
         RichOutputService,
         config=providers.Factory(

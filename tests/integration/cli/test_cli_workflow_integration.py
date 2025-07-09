@@ -62,7 +62,8 @@ class TestCLIVersionChecking:
         result = cli_runner.invoke(cli, ["--version"])
 
         assert result.exit_code == 0
-        assert "kpat_cli version" in result.output
+        from tests.conftest import assert_rich_version_output
+        assert_rich_version_output(result.output)
 
     @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
     def test_subcommands_trigger_version_check(
@@ -75,7 +76,8 @@ class TestCLIVersionChecking:
 
         assert result.exit_code == 0
         mock_check_update.assert_called_once()
-        assert "Process collector script results files" in result.output
+        from tests.conftest import assert_rich_help_output
+        assert_rich_help_output(result.output, "Process collector script results files")
 
     @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
     def test_nipper_subcommand_triggers_version_check(
@@ -88,4 +90,5 @@ class TestCLIVersionChecking:
 
         assert result.exit_code == 0
         mock_check_update.assert_called_once()
-        assert "Process a Nipper CSV file" in result.output
+        from tests.conftest import assert_rich_help_output
+        assert_rich_help_output(result.output, "Process a Nipper CSV file")

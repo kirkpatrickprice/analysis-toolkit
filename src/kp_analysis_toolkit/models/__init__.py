@@ -15,7 +15,7 @@ from kp_analysis_toolkit.models.types import (
     WorksheetData,
 )
 
-__all__: ResultList[str] = [  # noqa: RUF022
+__all__: list[str] = [
     "KPATBaseModel",
     "MessageType",
     # Type aliases

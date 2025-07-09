@@ -1,0 +1,323 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="../../../../../mypy-html.css">
+</head>
+<body>
+<h2>kp_analysis_toolkit.cli.common.file_selection</h2>
+<table>
+<caption>src\kp_analysis_toolkit\cli\common\file_selection.py</caption>
+<tbody><tr>
+<td class="table-lines"><pre><span id="L1" class="lineno"><a class="lineno" href="#L1">1</a></span>
+<span id="L2" class="lineno"><a class="lineno" href="#L2">2</a></span>
+<span id="L3" class="lineno"><a class="lineno" href="#L3">3</a></span>
+<span id="L4" class="lineno"><a class="lineno" href="#L4">4</a></span>
+<span id="L5" class="lineno"><a class="lineno" href="#L5">5</a></span>
+<span id="L6" class="lineno"><a class="lineno" href="#L6">6</a></span>
+<span id="L7" class="lineno"><a class="lineno" href="#L7">7</a></span>
+<span id="L8" class="lineno"><a class="lineno" href="#L8">8</a></span>
+<span id="L9" class="lineno"><a class="lineno" href="#L9">9</a></span>
+<span id="L10" class="lineno"><a class="lineno" href="#L10">10</a></span>
+<span id="L11" class="lineno"><a class="lineno" href="#L11">11</a></span>
+<span id="L12" class="lineno"><a class="lineno" href="#L12">12</a></span>
+<span id="L13" class="lineno"><a class="lineno" href="#L13">13</a></span>
+<span id="L14" class="lineno"><a class="lineno" href="#L14">14</a></span>
+<span id="L15" class="lineno"><a class="lineno" href="#L15">15</a></span>
+<span id="L16" class="lineno"><a class="lineno" href="#L16">16</a></span>
+<span id="L17" class="lineno"><a class="lineno" href="#L17">17</a></span>
+<span id="L18" class="lineno"><a class="lineno" href="#L18">18</a></span>
+<span id="L19" class="lineno"><a class="lineno" href="#L19">19</a></span>
+<span id="L20" class="lineno"><a class="lineno" href="#L20">20</a></span>
+<span id="L21" class="lineno"><a class="lineno" href="#L21">21</a></span>
+<span id="L22" class="lineno"><a class="lineno" href="#L22">22</a></span>
+<span id="L23" class="lineno"><a class="lineno" href="#L23">23</a></span>
+<span id="L24" class="lineno"><a class="lineno" href="#L24">24</a></span>
+<span id="L25" class="lineno"><a class="lineno" href="#L25">25</a></span>
+<span id="L26" class="lineno"><a class="lineno" href="#L26">26</a></span>
+<span id="L27" class="lineno"><a class="lineno" href="#L27">27</a></span>
+<span id="L28" class="lineno"><a class="lineno" href="#L28">28</a></span>
+<span id="L29" class="lineno"><a class="lineno" href="#L29">29</a></span>
+<span id="L30" class="lineno"><a class="lineno" href="#L30">30</a></span>
+<span id="L31" class="lineno"><a class="lineno" href="#L31">31</a></span>
+<span id="L32" class="lineno"><a class="lineno" href="#L32">32</a></span>
+<span id="L33" class="lineno"><a class="lineno" href="#L33">33</a></span>
+<span id="L34" class="lineno"><a class="lineno" href="#L34">34</a></span>
+<span id="L35" class="lineno"><a class="lineno" href="#L35">35</a></span>
+<span id="L36" class="lineno"><a class="lineno" href="#L36">36</a></span>
+<span id="L37" class="lineno"><a class="lineno" href="#L37">37</a></span>
+<span id="L38" class="lineno"><a class="lineno" href="#L38">38</a></span>
+<span id="L39" class="lineno"><a class="lineno" href="#L39">39</a></span>
+<span id="L40" class="lineno"><a class="lineno" href="#L40">40</a></span>
+<span id="L41" class="lineno"><a class="lineno" href="#L41">41</a></span>
+<span id="L42" class="lineno"><a class="lineno" href="#L42">42</a></span>
+<span id="L43" class="lineno"><a class="lineno" href="#L43">43</a></span>
+<span id="L44" class="lineno"><a class="lineno" href="#L44">44</a></span>
+<span id="L45" class="lineno"><a class="lineno" href="#L45">45</a></span>
+<span id="L46" class="lineno"><a class="lineno" href="#L46">46</a></span>
+<span id="L47" class="lineno"><a class="lineno" href="#L47">47</a></span>
+<span id="L48" class="lineno"><a class="lineno" href="#L48">48</a></span>
+<span id="L49" class="lineno"><a class="lineno" href="#L49">49</a></span>
+<span id="L50" class="lineno"><a class="lineno" href="#L50">50</a></span>
+<span id="L51" class="lineno"><a class="lineno" href="#L51">51</a></span>
+<span id="L52" class="lineno"><a class="lineno" href="#L52">52</a></span>
+<span id="L53" class="lineno"><a class="lineno" href="#L53">53</a></span>
+<span id="L54" class="lineno"><a class="lineno" href="#L54">54</a></span>
+<span id="L55" class="lineno"><a class="lineno" href="#L55">55</a></span>
+<span id="L56" class="lineno"><a class="lineno" href="#L56">56</a></span>
+<span id="L57" class="lineno"><a class="lineno" href="#L57">57</a></span>
+<span id="L58" class="lineno"><a class="lineno" href="#L58">58</a></span>
+<span id="L59" class="lineno"><a class="lineno" href="#L59">59</a></span>
+<span id="L60" class="lineno"><a class="lineno" href="#L60">60</a></span>
+<span id="L61" class="lineno"><a class="lineno" href="#L61">61</a></span>
+<span id="L62" class="lineno"><a class="lineno" href="#L62">62</a></span>
+<span id="L63" class="lineno"><a class="lineno" href="#L63">63</a></span>
+<span id="L64" class="lineno"><a class="lineno" href="#L64">64</a></span>
+<span id="L65" class="lineno"><a class="lineno" href="#L65">65</a></span>
+<span id="L66" class="lineno"><a class="lineno" href="#L66">66</a></span>
+<span id="L67" class="lineno"><a class="lineno" href="#L67">67</a></span>
+<span id="L68" class="lineno"><a class="lineno" href="#L68">68</a></span>
+<span id="L69" class="lineno"><a class="lineno" href="#L69">69</a></span>
+<span id="L70" class="lineno"><a class="lineno" href="#L70">70</a></span>
+<span id="L71" class="lineno"><a class="lineno" href="#L71">71</a></span>
+<span id="L72" class="lineno"><a class="lineno" href="#L72">72</a></span>
+<span id="L73" class="lineno"><a class="lineno" href="#L73">73</a></span>
+<span id="L74" class="lineno"><a class="lineno" href="#L74">74</a></span>
+<span id="L75" class="lineno"><a class="lineno" href="#L75">75</a></span>
+<span id="L76" class="lineno"><a class="lineno" href="#L76">76</a></span>
+<span id="L77" class="lineno"><a class="lineno" href="#L77">77</a></span>
+<span id="L78" class="lineno"><a class="lineno" href="#L78">78</a></span>
+<span id="L79" class="lineno"><a class="lineno" href="#L79">79</a></span>
+<span id="L80" class="lineno"><a class="lineno" href="#L80">80</a></span>
+<span id="L81" class="lineno"><a class="lineno" href="#L81">81</a></span>
+<span id="L82" class="lineno"><a class="lineno" href="#L82">82</a></span>
+<span id="L83" class="lineno"><a class="lineno" href="#L83">83</a></span>
+<span id="L84" class="lineno"><a class="lineno" href="#L84">84</a></span>
+<span id="L85" class="lineno"><a class="lineno" href="#L85">85</a></span>
+<span id="L86" class="lineno"><a class="lineno" href="#L86">86</a></span>
+<span id="L87" class="lineno"><a class="lineno" href="#L87">87</a></span>
+<span id="L88" class="lineno"><a class="lineno" href="#L88">88</a></span>
+<span id="L89" class="lineno"><a class="lineno" href="#L89">89</a></span>
+<span id="L90" class="lineno"><a class="lineno" href="#L90">90</a></span>
+<span id="L91" class="lineno"><a class="lineno" href="#L91">91</a></span>
+<span id="L92" class="lineno"><a class="lineno" href="#L92">92</a></span>
+<span id="L93" class="lineno"><a class="lineno" href="#L93">93</a></span>
+<span id="L94" class="lineno"><a class="lineno" href="#L94">94</a></span>
+<span id="L95" class="lineno"><a class="lineno" href="#L95">95</a></span>
+<span id="L96" class="lineno"><a class="lineno" href="#L96">96</a></span>
+<span id="L97" class="lineno"><a class="lineno" href="#L97">97</a></span>
+<span id="L98" class="lineno"><a class="lineno" href="#L98">98</a></span>
+<span id="L99" class="lineno"><a class="lineno" href="#L99">99</a></span>
+<span id="L100" class="lineno"><a class="lineno" href="#L100">100</a></span>
+<span id="L101" class="lineno"><a class="lineno" href="#L101">101</a></span>
+<span id="L102" class="lineno"><a class="lineno" href="#L102">102</a></span>
+<span id="L103" class="lineno"><a class="lineno" href="#L103">103</a></span>
+<span id="L104" class="lineno"><a class="lineno" href="#L104">104</a></span>
+<span id="L105" class="lineno"><a class="lineno" href="#L105">105</a></span>
+<span id="L106" class="lineno"><a class="lineno" href="#L106">106</a></span>
+<span id="L107" class="lineno"><a class="lineno" href="#L107">107</a></span>
+<span id="L108" class="lineno"><a class="lineno" href="#L108">108</a></span>
+<span id="L109" class="lineno"><a class="lineno" href="#L109">109</a></span>
+<span id="L110" class="lineno"><a class="lineno" href="#L110">110</a></span>
+<span id="L111" class="lineno"><a class="lineno" href="#L111">111</a></span>
+<span id="L112" class="lineno"><a class="lineno" href="#L112">112</a></span>
+<span id="L113" class="lineno"><a class="lineno" href="#L113">113</a></span>
+<span id="L114" class="lineno"><a class="lineno" href="#L114">114</a></span>
+<span id="L115" class="lineno"><a class="lineno" href="#L115">115</a></span>
+<span id="L116" class="lineno"><a class="lineno" href="#L116">116</a></span>
+<span id="L117" class="lineno"><a class="lineno" href="#L117">117</a></span>
+<span id="L118" class="lineno"><a class="lineno" href="#L118">118</a></span>
+<span id="L119" class="lineno"><a class="lineno" href="#L119">119</a></span>
+<span id="L120" class="lineno"><a class="lineno" href="#L120">120</a></span>
+<span id="L121" class="lineno"><a class="lineno" href="#L121">121</a></span>
+<span id="L122" class="lineno"><a class="lineno" href="#L122">122</a></span>
+<span id="L123" class="lineno"><a class="lineno" href="#L123">123</a></span>
+<span id="L124" class="lineno"><a class="lineno" href="#L124">124</a></span>
+<span id="L125" class="lineno"><a class="lineno" href="#L125">125</a></span>
+<span id="L126" class="lineno"><a class="lineno" href="#L126">126</a></span>
+<span id="L127" class="lineno"><a class="lineno" href="#L127">127</a></span>
+<span id="L128" class="lineno"><a class="lineno" href="#L128">128</a></span>
+<span id="L129" class="lineno"><a class="lineno" href="#L129">129</a></span>
+<span id="L130" class="lineno"><a class="lineno" href="#L130">130</a></span>
+<span id="L131" class="lineno"><a class="lineno" href="#L131">131</a></span>
+<span id="L132" class="lineno"><a class="lineno" href="#L132">132</a></span>
+<span id="L133" class="lineno"><a class="lineno" href="#L133">133</a></span>
+<span id="L134" class="lineno"><a class="lineno" href="#L134">134</a></span>
+<span id="L135" class="lineno"><a class="lineno" href="#L135">135</a></span>
+<span id="L136" class="lineno"><a class="lineno" href="#L136">136</a></span>
+<span id="L137" class="lineno"><a class="lineno" href="#L137">137</a></span>
+<span id="L138" class="lineno"><a class="lineno" href="#L138">138</a></span>
+<span id="L139" class="lineno"><a class="lineno" href="#L139">139</a></span>
+<span id="L140" class="lineno"><a class="lineno" href="#L140">140</a></span>
+<span id="L141" class="lineno"><a class="lineno" href="#L141">141</a></span>
+<span id="L142" class="lineno"><a class="lineno" href="#L142">142</a></span>
+<span id="L143" class="lineno"><a class="lineno" href="#L143">143</a></span>
+<span id="L144" class="lineno"><a class="lineno" href="#L144">144</a></span>
+<span id="L145" class="lineno"><a class="lineno" href="#L145">145</a></span>
+<span id="L146" class="lineno"><a class="lineno" href="#L146">146</a></span>
+<span id="L147" class="lineno"><a class="lineno" href="#L147">147</a></span>
+<span id="L148" class="lineno"><a class="lineno" href="#L148">148</a></span>
+<span id="L149" class="lineno"><a class="lineno" href="#L149">149</a></span>
+<span id="L150" class="lineno"><a class="lineno" href="#L150">150</a></span>
+<span id="L151" class="lineno"><a class="lineno" href="#L151">151</a></span>
+<span id="L152" class="lineno"><a class="lineno" href="#L152">152</a></span>
+</pre></td>
+<td class="table-code"><pre><span class="line-precise" title="No Anys on this line!">import sys</span>
+<span class="line-precise" title="No Anys on this line!">from pathlib import Path</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">from kp_analysis_toolkit.cli.utils.system_utils import get_file_size</span>
+<span class="line-precise" title="No Anys on this line!">from kp_analysis_toolkit.cli.utils.table_layouts import create_file_selection_table</span>
+<span class="line-precise" title="No Anys on this line!">from kp_analysis_toolkit.utils.rich_output import (</span>
+<span class="line-empty" title="No Anys on this line!">    RichOutputService,</span>
+<span class="line-empty" title="No Anys on this line!">    get_rich_output,</span>
+<span class="line-empty" title="No Anys on this line!">)</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">def get_input_file(</span>
+<span class="line-empty" title="No Anys on this line!">    infile: str | None,</span>
+<span class="line-empty" title="No Anys on this line!">    source_files_path: str | Path,</span>
+<span class="line-precise" title="No Anys on this line!">    file_pattern: str = "*.csv",</span>
+<span class="line-precise" title="No Anys on this line!">    file_type_description: str = "CSV",</span>
+<span class="line-empty" title="No Anys on this line!">    *,</span>
+<span class="line-precise" title="No Anys on this line!">    include_process_all_option: bool = False,</span>
+<span class="line-empty" title="No Anys on this line!">) -&gt; Path | None:</span>
+<span class="line-empty" title="No Anys on this line!">    """</span>
+<span class="line-empty" title="No Anys on this line!">    Get the input file to process.</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">    If an infile is specified, use it. Otherwise, search the current directory for files matching the pattern.</span>
+<span class="line-empty" title="No Anys on this line!">    If multiple files are found, prompt the user to select one.</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">    Args:</span>
+<span class="line-empty" title="No Anys on this line!">        infile: Specific file path if provided</span>
+<span class="line-empty" title="No Anys on this line!">        source_files_path: Directory to search for files</span>
+<span class="line-empty" title="No Anys on this line!">        file_pattern: Glob pattern to match files (default: "*.csv")</span>
+<span class="line-empty" title="No Anys on this line!">        file_type_description: Human-readable description of file type for error messages</span>
+<span class="line-empty" title="No Anys on this line!">        include_process_all_option: Whether to include "process all files" option in the menu</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">    Returns:</span>
+<span class="line-empty" title="No Anys on this line!">        Path to selected file, or None if "process all files" was selected</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">    """</span>
+<span class="line-precise" title="No Anys on this line!">    rich_output: RichOutputService = get_rich_output()</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    if infile:</span>
+<span class="line-precise" title="No Anys on this line!">        return Path(infile)</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">    # Get a directory listing of all files matching the pattern</span>
+<span class="line-precise" title="No Anys on this line!">    source_files_path = Path(source_files_path).resolve()</span>
+<span class="line-precise" title="No Anys on this line!">    dirlist: list[Path] = [</span>
+<span class="line-precise" title="No Anys on this line!">        Path(source_files_path / f) for f in source_files_path.glob(file_pattern)</span>
+<span class="line-empty" title="No Anys on this line!">    ]</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    if len(dirlist) == 0:</span>
+<span class="line-precise" title="No Anys on this line!">        error_msg = f"No {file_type_description} files found in {source_files_path!s}."</span>
+<span class="line-precise" title="No Anys on this line!">        raise ValueError(error_msg)</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    if len(dirlist) == 1 and not include_process_all_option:</span>
+<span class="line-precise" title="No Anys on this line!">        rich_output.debug(</span>
+<span class="line-precise" title="No Anys on this line!">            f"Auto-selecting the only {file_type_description} file found: {dirlist[0]}",</span>
+<span class="line-empty" title="No Anys on this line!">        )</span>
+<span class="line-precise" title="No Anys on this line!">        return dirlist[0]</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">    # Multiple files found or process all option enabled - create an interactive selection menu</span>
+<span class="line-precise" title="No Anys on this line!">    rich_output.warning(</span>
+<span class="line-precise" title="No Anys on this line!">        f"Multiple {file_type_description} files found. Choose from below.",</span>
+<span class="line-empty" title="No Anys on this line!">    )</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    title = f"Available {file_type_description} Files"</span>
+<span class="line-precise" title="No Anys on this line!">    _create_file_selection_table(</span>
+<span class="line-precise" title="No Anys on this line!">        dirlist,</span>
+<span class="line-precise" title="No Anys on this line!">        rich_output,</span>
+<span class="line-precise" title="No Anys on this line!">        title,</span>
+<span class="line-precise" title="No Anys on this line!">        include_process_all_option=include_process_all_option,</span>
+<span class="line-empty" title="No Anys on this line!">    )</span>
+<span class="line-precise" title="No Anys on this line!">    choice = _get_user_choice(</span>
+<span class="line-precise" title="No Anys on this line!">        dirlist,</span>
+<span class="line-precise" title="No Anys on this line!">        rich_output,</span>
+<span class="line-precise" title="No Anys on this line!">        include_process_all_option=include_process_all_option,</span>
+<span class="line-empty" title="No Anys on this line!">    )</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    if include_process_all_option and choice == len(dirlist) + 1:</span>
+<span class="line-precise" title="No Anys on this line!">        return None  # Sentinel value indicating "process all files"</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    return dirlist[choice - 1]</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">def _create_file_selection_table(</span>
+<span class="line-empty" title="No Anys on this line!">    dirlist: list[Path],</span>
+<span class="line-empty" title="No Anys on this line!">    rich_output: RichOutputService,</span>
+<span class="line-empty" title="No Anys on this line!">    title: str,</span>
+<span class="line-empty" title="No Anys on this line!">    *,</span>
+<span class="line-precise" title="No Anys on this line!">    include_process_all_option: bool = False,</span>
+<span class="line-empty" title="No Anys on this line!">) -&gt; None:</span>
+<span class="line-empty" title="No Anys on this line!">    """Create and display a Rich table for file selection."""</span>
+<span class="line-precise" title="No Anys on this line!">    table = create_file_selection_table(</span>
+<span class="line-precise" title="No Anys on this line!">        rich_output,</span>
+<span class="line-precise" title="No Anys on this line!">        title=title,</span>
+<span class="line-precise" title="No Anys on this line!">        include_size=True,</span>
+<span class="line-precise" title="No Anys on this line!">        include_choice_column=True,</span>
+<span class="line-empty" title="No Anys on this line!">    )</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    if table is not None:  # Not in quiet mode</span>
+<span class="line-precise" title="No Anys on this line!">        for index, filename in enumerate(dirlist, 1):</span>
+<span class="line-precise" title="No Anys on this line!">            size_str: str = get_file_size(filename)</span>
+<span class="line-precise" title="No Anys on this line!">            table.add_row(str(index), filename.name, size_str)</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">        # Add "process all files" option if requested</span>
+<span class="line-precise" title="No Anys on this line!">        if include_process_all_option:</span>
+<span class="line-precise" title="No Anys on this line!">            table.add_row(</span>
+<span class="line-precise" title="No Anys on this line!">                str(len(dirlist) + 1),</span>
+<span class="line-precise" title="No Anys on this line!">                "[bold yellow]Process all files[/bold yellow]",</span>
+<span class="line-precise" title="No Anys on this line!">                "",</span>
+<span class="line-empty" title="No Anys on this line!">            )</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">        rich_output.display_table(table)</span>
+<span class="line-empty" title="No Anys on this line!">    else:</span>
+<span class="line-empty" title="No Anys on this line!">        # Fallback for quiet mode</span>
+<span class="line-precise" title="No Anys on this line!">        for index, filename in enumerate(dirlist, 1):</span>
+<span class="line-precise" title="Any Types on this line: 
+Explicit (x1)">            rich_output.print(f"{index:{len(str(len(dirlist)))}d} - {filename}")</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!">        # Add "process all files" option if requested</span>
+<span class="line-precise" title="No Anys on this line!">        if include_process_all_option:</span>
+<span class="line-precise" title="Any Types on this line: 
+Explicit (x1)">            rich_output.print(f"{len(dirlist) + 1} - Process all files")</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">def _get_user_choice(</span>
+<span class="line-empty" title="No Anys on this line!">    dirlist: list[Path],</span>
+<span class="line-empty" title="No Anys on this line!">    rich_output: RichOutputService,</span>
+<span class="line-empty" title="No Anys on this line!">    *,</span>
+<span class="line-precise" title="No Anys on this line!">    include_process_all_option: bool = False,</span>
+<span class="line-precise" title="No Anys on this line!">    prompt_message: str | None = None,</span>
+<span class="line-empty" title="No Anys on this line!">) -&gt; int:</span>
+<span class="line-empty" title="No Anys on this line!">    """Get user's file choice with input validation."""</span>
+<span class="line-precise" title="Any Types on this line: 
+Explicit (x1)">    rich_output.print("")  # Empty line for spacing</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    max_choice = len(dirlist) + (1 if include_process_all_option else 0)</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    if prompt_message is None:</span>
+<span class="line-precise" title="No Anys on this line!">        if include_process_all_option:</span>
+<span class="line-precise" title="No Anys on this line!">            prompt_message = (</span>
+<span class="line-precise" title="No Anys on this line!">                "Choose a file, select 'all files', or press CTRL-C to quit: "</span>
+<span class="line-empty" title="No Anys on this line!">            )</span>
+<span class="line-empty" title="No Anys on this line!">        else:</span>
+<span class="line-precise" title="No Anys on this line!">            prompt_message = "Choose a file (or CTRL-C to quit): "</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    choice: int = 0</span>
+<span class="line-precise" title="No Anys on this line!">    while choice &lt; 1 or choice &gt; max_choice:</span>
+<span class="line-empty" title="No Anys on this line!">        try:</span>
+<span class="line-precise" title="No Anys on this line!">            choice = int(input(prompt_message))</span>
+<span class="line-precise" title="No Anys on this line!">        except KeyboardInterrupt:</span>
+<span class="line-precise" title="No Anys on this line!">            rich_output.error("\nExiting...")</span>
+<span class="line-precise" title="No Anys on this line!">            sys.exit()</span>
+<span class="line-precise" title="No Anys on this line!">        except ValueError:</span>
+<span class="line-precise" title="No Anys on this line!">            rich_output.warning("\nSpecify the line number (digits only)\n")</span>
+<span class="line-precise" title="No Anys on this line!">            continue  # Continue the loop instead of exiting</span>
+<span class="line-empty" title="No Anys on this line!"></span>
+<span class="line-precise" title="No Anys on this line!">    return choice</span>
+</pre></td>
+</tr></tbody>
+</table>
+</body>
+</html>

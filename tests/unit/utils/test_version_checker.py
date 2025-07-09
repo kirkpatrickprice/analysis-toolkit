@@ -95,7 +95,7 @@ class TestVersionChecker:
         checker = VersionChecker()
 
         with patch(
-            "kp_analysis_toolkit.utils.version_checker.get_rich_output"
+            "kp_analysis_toolkit.utils.version_checker.get_rich_output",
         ) as mock_rich:
             mock_rich_instance = Mock()
             mock_rich.return_value = mock_rich_instance
@@ -141,7 +141,7 @@ class TestCheckAndPromptUpdate:
 
     @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
     def test_update_available_shows_info_and_exits(
-        self, mock_checker_class: Mock
+        self, mock_checker_class: Mock,
     ) -> None:
         """Test when update is available, shows info and exits."""
         newer_version = _get_next_minor_version(__version__)

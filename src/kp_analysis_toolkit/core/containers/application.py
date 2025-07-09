@@ -5,13 +5,20 @@ from __future__ import annotations
 from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.core.containers.core import CoreContainer
+from kp_analysis_toolkit.core.containers.file_processing import FileProcessingContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
-    """Main application container - Rich Output DI only for now."""
+    """Main application container with core and file processing services."""
 
-    # Core containers - only what's needed for Rich Output
+    # Core containers
     core: providers.Container[CoreContainer] = providers.Container(CoreContainer)
+
+    # File Processing container with core dependency injection
+    file_processing: providers.Container[FileProcessingContainer] = providers.Container(
+        FileProcessingContainer,
+        core=core,
+    )
 
 
 # Global container instance
@@ -26,7 +33,7 @@ def configure_application_container(
     force_terminal: bool = True,
     stderr_enabled: bool = True,
 ) -> None:
-    """Configure the application container with Rich Output settings only."""
+    """Configure the application container with core and file processing settings."""
     container.core().config.verbose.from_value(verbose)
     container.core().config.quiet.from_value(quiet)
     container.core().config.console_width.from_value(console_width)
@@ -44,9 +51,14 @@ def wire_application_container() -> None:
 
 
 def wire_module_containers() -> None:
-    """Wire module containers - currently no modules use DI yet."""
-    # TODO @flyguy62n: Add module container wiring as modules are migrated to DI  # noqa: FIX002, TD003
-    pass  # noqa: PIE790
+    """Wire module containers for file processing integration."""
+    # Wire file processing utilities for backward compatibility
+    container.file_processing().wire(
+        modules=[
+            "kp_analysis_toolkit.utils.get_file_encoding",
+            "kp_analysis_toolkit.utils.hash_generator",
+        ],
+    )
 
 
 def initialize_dependency_injection(
@@ -57,7 +69,7 @@ def initialize_dependency_injection(
     force_terminal: bool = True,
     stderr_enabled: bool = True,
 ) -> None:
-    """Initialize dependency injection for Rich Output only."""
+    """Initialize dependency injection for core and file processing services."""
     # 1. Configure the application container
     configure_application_container(
         verbose=verbose,
@@ -70,5 +82,5 @@ def initialize_dependency_injection(
     # 2. Wire the application container
     wire_application_container()
 
-    # 3. Module containers - not implemented yet
-    # wire_module_containers()  # Skip for now
+    # 3. Wire module containers for file processing integration
+    wire_module_containers()

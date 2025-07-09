@@ -22,6 +22,11 @@ jobs:
       COLUMNS: 120
       LINES: 30
       TERM: xterm-256color
+      # Additional environment variables for Windows CI stability
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: 1
+      # Force Rich console width in CI environments
+      RICH_FORCE_TERMINAL: 1
     
     strategy:
       fail-fast: false  # Continue testing other combinations even if one fails
@@ -76,6 +81,13 @@ jobs:
     - name: Install dependencies
       run: |
         uv sync --dev
+
+    - name: Set Console Environment (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        echo "COLUMNS=120" >> $GITHUB_ENV
+        echo "LINES=30" >> $GITHUB_ENV
+        echo "TERM=xterm-256color" >> $GITHUB_ENV
 
     - name: Run ${{ matrix.test-category }} tests (with markers)
       if: matrix.markers != ''

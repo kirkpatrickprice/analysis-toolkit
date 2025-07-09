@@ -76,7 +76,7 @@ class TestExportDataframeToExcel:
                 {
                     "Column1": [1, 2, 3],
                     "Column2": ["A", "B", "C"],
-                }
+                },
             )
 
             export_dataframe_to_excel(test_data, output_path)
