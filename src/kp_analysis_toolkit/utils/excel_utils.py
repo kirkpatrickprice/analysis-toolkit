@@ -16,6 +16,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
 
+# Implemented in DI excel_export
 def sanitize_sheet_name(name: str) -> str:
     """
     Sanitize a string to be used as an Excel sheet name.
@@ -51,6 +52,7 @@ def sanitize_sheet_name(name: str) -> str:
     return sanitized
 
 
+# Implemented in DI excel_export
 def get_column_letter(col_num: int) -> str:
     """
     Convert column number to Excel column letter.
@@ -70,6 +72,7 @@ def get_column_letter(col_num: int) -> str:
     return result
 
 
+# Implemented in DI excel_export
 def auto_adjust_column_widths(worksheet: Worksheet, df: pd.DataFrame) -> None:
     """
     Auto-adjust column widths based on content.
@@ -96,6 +99,7 @@ def auto_adjust_column_widths(worksheet: Worksheet, df: pd.DataFrame) -> None:
         worksheet.column_dimensions[column_letter].width = width
 
 
+# Implemented in DI excel_export
 def format_date_columns(  # noqa: C901, PLR0912
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -177,6 +181,7 @@ def format_date_columns(  # noqa: C901, PLR0912
                 worksheet[cell].number_format = "yyyy-mm-dd"
 
 
+# Implemented in DI excel_export
 def set_table_alignment(worksheet: Worksheet, table_range: str) -> None:
     """
     Set alignment for table cells.
@@ -195,6 +200,7 @@ def set_table_alignment(worksheet: Worksheet, table_range: str) -> None:
             )
 
 
+# Implemented in DI excel_export
 def adjust_row_heights(
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -230,6 +236,7 @@ def adjust_row_heights(
         worksheet.row_dimensions[row_num].height = height
 
 
+# Implemented in DI excel_export
 def format_as_excel_table(
     worksheet: Worksheet,
     df: pd.DataFrame,

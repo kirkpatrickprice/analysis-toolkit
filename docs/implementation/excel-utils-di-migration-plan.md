@@ -29,101 +29,6 @@ excel_export/
 ├── workbook_engine.py        # ExcelWriter and file output logic
 ```
 
-## Concern-Specific Implementations
-
-1. **Sheet Management** (`sheet_management.py`)
-```python
-class SheetNameSanitizer(SheetNameSanitizer):
-    def sanitize_sheet_name(self, name: str) -> str: ...
-    def get_column_letter(self, col_num: int) -> str: ...
-```
-
-2. **Formatting** (`formatting.py`)
-```python
-class ColumnWidthAdjuster(ColumnWidthAdjuster):
-    def auto_adjust_column_widths(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        df: pd.DataFrame,
-    ) -> None: ...
-
-class DateFormatter(DateFormatter):
-    def format_date_columns(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        df: pd.DataFrame,
-        startrow: int = 1,
-    ) -> None: ...
-
-class RowHeightAdjuster(RowHeightAdjuster):
-    def adjust_row_heights(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        df: pd.DataFrame,
-        startrow: int = 1,
-    ) -> None: ...
-
-class ExcelFormatter(ExcelFormatter):
-    def set_table_alignment(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        table_range: str,
-    ) -> None: ...
-    def auto_adjust_column_widths(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        df: pd.DataFrame,
-    ) -> None: ...
-```
-
-3. **Table Generation** (`table_generation.py`)
-```python
-class TableGenerator(TableGenerator):
-    def __init__(
-        self,
-        formatter: ExcelFormatter,
-        date_formatter: DateFormatter,
-        column_width_adjuster: ColumnWidthAdjuster,
-        row_height_adjuster: RowHeightAdjuster,
-    ) -> None: ...
-    def format_as_excel_table(
-        self,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
-        df: pd.DataFrame,
-        startrow: int = 1,
-    ) -> None: ...
-```
-
-4. **Workbook Engine** (`workbook_engine.py`)
-```python
-class WorkbookEngine(WorkbookEngine):
-    def create_writer(self, output_path: Path) -> pd.ExcelWriter: ...
-```
-
-5. **Service Orchestrator** (`service.py`)
-```python
-class ExcelExportService(ExcelExportService):
-    def __init__(
-        self,
-        sheet_name_sanitizer: SheetNameSanitizer,
-        column_width_adjuster: ColumnWidthAdjuster,
-        date_formatter: DateFormatter,
-        row_height_adjuster: RowHeightAdjuster,
-        excel_formatter: ExcelFormatter,
-        table_generator: TableGenerator,
-        workbook_engine: WorkbookEngine,
-    ) -> None: ...
-    def export_dataframe_to_excel(
-        self,
-        df: pd.DataFrame,
-        output_path: Path,
-        sheet_name: str = "Sheet1",
-        title: str | None = None,
-        *,
-        as_table: bool = True,
-    ) -> None: ...
-```
-
 ## Protocols and Interfaces
 
 All concern-specific classes will implement protocols defined in `protocols.py`. The orchestrator will depend on these protocols, not concrete implementations, for maximum flexibility and testability.
@@ -199,6 +104,153 @@ class ExcelExportService(Protocol):
 ```
 
 These protocols ensure that each feature area is independently testable and swappable, and that the orchestrator can coordinate all Excel export operations via dependency injection.
+
+## Concern-Specific Implementations
+
+1. **Sheet Management** (`sheet_management.py`)
+```python
+class SheetNameSanitizer(SheetNameSanitizer):
+    def sanitize_sheet_name(self, name: str) -> str: ...
+    def get_column_letter(self, col_num: int) -> str: ...
+```
+
+2. **Formatting** (`formatting.py`)
+```python
+class ColumnWidthAdjuster(ColumnWidthAdjuster):
+    def auto_adjust_column_widths(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+    ) -> None: ...
+
+class DateFormatter(DateFormatter):
+    def format_date_columns(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+        startrow: int = 1,
+    ) -> None: ...
+
+class RowHeightAdjuster(RowHeightAdjuster):
+    def adjust_row_heights(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+        startrow: int = 1,
+    ) -> None: ...
+
+class ExcelFormatter(ExcelFormatter):
+    def set_table_alignment(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        table_range: str,
+    ) -> None: ...
+    def auto_adjust_column_widths(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+    ) -> None: ...
+```
+
+3. **Table Generation** (`table_generation.py`)
+```python
+class TableGenerator(TableGenerator):
+    def __init__(
+        self,
+        formatter: ExcelFormatter,
+        date_formatter: DateFormatter,
+        column_width_adjuster: ColumnWidthAdjuster,
+        row_height_adjuster: RowHeightAdjuster,
+    ) -> None: ...
+    def format_as_excel_table(
+        self,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        df: pd.DataFrame,
+        startrow: int = 1,
+    ) -> None: ...
+```
+
+4. **Workbook Engine** (`workbook_engine.py`)
+```python
+class WorkbookEngine(WorkbookEngine):
+    def create_writer(self, output_path: Path) -> pd.ExcelWriter: ...
+```
+
+## **Service Orchestrator** (`service.py`)
+```python
+from typing import __future__
+
+from kp_analysis_toolkit.core.services.excel_export.protocols import *
+
+class ExcelExportService:
+    """Service for all Excel export operations."""
+
+    def __init__(
+        self,
+        sheet_name_sanitizer: SheetNameSanitizer,
+        column_width_adjuster: ColumnWidthAdjuster,
+        date_formatter: DateFormatter,
+        row_height_adjuster: RowHeightAdjuster,
+        excel_formatter: ExcelFormatter,
+        table_generator: TableGenerator,
+        workbook_engine: WorkbookEngine,
+    ) -> None:
+        """
+        Initialize the Excel export service.
+
+        Args:
+            sheet_name_sanitizer: Service for sanitizing and validating sheet names
+            column_width_adjuster: Service for adjusting column widths
+            date_formatter: Service for formatting date columns
+            row_height_adjuster: Service for adjusting row heights
+            excel_formatter: Service for table alignment and formatting
+            table_generator: Service for creating and styling Excel tables
+            workbook_engine: Service for creating Excel writers and managing output
+        """
+        self.sheet_name_sanitizer = sheet_name_sanitizer
+        self.column_width_adjuster = column_width_adjuster
+        self.date_formatter = date_formatter
+        self.row_height_adjuster = row_height_adjuster
+        self.excel_formatter = excel_formatter
+        self.table_generator = table_generator
+        self.workbook_engine = workbook_engine
+
+    def export_dataframe_to_excel(
+        self,
+        df: pd.DataFrame,
+        output_path: Path,
+        sheet_name: str = "Sheet1",
+        title: str | None = None,
+        *,
+        as_table: bool = True,
+    ) -> None:
+        """
+        Export a DataFrame to an Excel file with formatting and optional table styling.
+
+        Args:
+            df: The DataFrame to export
+            output_path: Path to the output Excel file
+            sheet_name: Name of the worksheet (default: "Sheet1")
+            title: Optional title to add to the worksheet
+            as_table: Whether to format the data as an Excel table (default: True)
+        """
+        sanitized_sheet_name = self.sheet_name_sanitizer.sanitize_sheet_name(sheet_name)
+        with self.workbook_engine.create_writer(output_path) as writer:
+            df.to_excel(writer, sheet_name=sanitized_sheet_name, index=False, startrow=1 if title else 0)
+            worksheet = writer.sheets[sanitized_sheet_name]
+
+            if title:
+                worksheet.cell(row=1, column=1, value=title)
+                # Optionally apply title formatting here
+
+            if as_table:
+                self.table_generator.format_as_excel_table(worksheet, df, startrow=2 if title else 1)
+
+            self.column_width_adjuster.auto_adjust_column_widths(worksheet, df)
+            self.date_formatter.format_date_columns(worksheet, df, startrow=2 if title else 1)
+            self.row_height_adjuster.adjust_row_heights(worksheet, df, startrow=2 if title else 1)
+            # Additional formatting as needed
+```
 
 ## Backward Compatibility Layer
 - The original `excel_utils.py` will be retained as a thin compatibility layer
