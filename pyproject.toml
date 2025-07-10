@@ -39,10 +39,7 @@ classifiers = [
 dev = [
     "pytest>=8.3.5",
 ]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.5.0",
-]
+
 
 [project.scripts]
 kpat_cli = "kp_analysis_toolkit.cli.main:main"
@@ -87,6 +84,10 @@ dev = [
     "pytest-cov>=5.0.0",
     "types-openpyxl>=3.1.5.20250602",
     "types-pyyaml>=6.0.12.20250516",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.5.0",
 ]
 
 [tool.mypy]
