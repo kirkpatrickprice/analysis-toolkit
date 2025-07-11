@@ -79,3 +79,6 @@ class ExcelExportService(Protocol):
 
 class TableStyler(Protocol):
     def apply_style(self, table: Table) -> None: ...
+
+class TitleFormatter(Protocol):
+    def apply_title_format(self, worksheet: openpyxl.worksheet.worksheet.Worksheet, title: str, row: int = 1, col: int = 1) -> None: ...

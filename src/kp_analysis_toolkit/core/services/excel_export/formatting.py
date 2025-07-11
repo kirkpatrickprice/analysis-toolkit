@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-from openpyxl.styles import Alignment
+from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from kp_analysis_toolkit.core.services.excel_export.protocols import (
@@ -15,12 +15,14 @@ from kp_analysis_toolkit.core.services.excel_export.protocols import (
     ExcelFormatter,
     RowHeightAdjuster,
     TableStyler,
+    TitleFormatter,
 )
 from kp_analysis_toolkit.core.services.excel_export.sheet_management import (
     DefaultSheetNameSanitizer,
 )
 
 if TYPE_CHECKING:
+    from openpyxl.cell.cell import Cell
     from openpyxl.worksheet.worksheet import Worksheet
 
     from kp_analysis_toolkit.models.types import DisplayableValue
@@ -154,3 +156,16 @@ class DefaultTableStyler(TableStyler):
             showColumnStripes=False,
         )
         table.tableStyleInfo = style
+
+
+class DefaultTitleFormatter(TitleFormatter):
+    def apply_title_format(
+        self,
+        worksheet: Worksheet,
+        title: str,
+        row: int = 1,
+        col: int = 1,
+    ) -> None:
+        """Apply formatting to the title cell."""
+        cell: Cell = worksheet.cell(row=row, column=col, value=title)
+        cell.font = Font(bold=True, size=12, color="1F497D")
