@@ -2,7 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dependency_injector import containers, providers
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.excel_export.protocols import (
+        WorkbookEngine,
+    )
+    from kp_analysis_toolkit.core.services.file_processing.protocols import (
+        EncodingDetector,
+        FileValidator,
+        HashGenerator,
+    )
 
 from kp_analysis_toolkit.core.services.excel_export.formatting import (
     DefaultColumnWidthAdjuster,
@@ -17,9 +29,6 @@ from kp_analysis_toolkit.core.services.excel_export.sheet_management import (
 )
 from kp_analysis_toolkit.core.services.excel_export.table_generation import (
     DefaultTableGenerator,
-)
-from kp_analysis_toolkit.core.services.excel_export.workbook_engine import (
-    WorkbookEngine,
 )
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
@@ -90,7 +99,9 @@ class CoreContainer(containers.DeclarativeContainer):
     )
 
     # Workbook engine - Factory for flexibility with different engines
-    workbook_engine = providers.Factory(WorkbookEngine)
+    workbook_engine: providers.Factory[WorkbookEngine] = providers.Factory(
+        "kp_analysis_toolkit.core.services.excel_export.workbook_engine.WorkbookEngine",
+    )
 
     # Excel Export Service - Singleton to ensure consistent behavior across the application
     # This service maintains formatting standards and should be consistent
@@ -109,16 +120,16 @@ class CoreContainer(containers.DeclarativeContainer):
     # File Processing Services - Factory providers for stateless file operations
     # Each file operation should use fresh instances for isolation and parallel processing
 
-    encoding_detector = providers.Factory(
+    encoding_detector: providers.Factory[EncodingDetector] = providers.Factory(
         "kp_analysis_toolkit.core.services.file_processing.encoding.RobustEncodingDetector",
         rich_output=rich_output,
     )
 
-    hash_generator = providers.Factory(
+    hash_generator: providers.Factory[HashGenerator] = providers.Factory(
         "kp_analysis_toolkit.core.services.file_processing.hashing.SHA384FileHashGenerator",
     )
 
-    file_validator = providers.Factory(
+    file_validator: providers.Factory[FileValidator] = providers.Factory(
         "kp_analysis_toolkit.utils.file_validator.PathLibFileValidator",
     )
 

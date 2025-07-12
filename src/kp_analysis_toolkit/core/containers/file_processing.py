@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dependency_injector import containers, providers
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.file_processing.protocols import (
+        EncodingDetector,
+        FileValidator,
+        HashGenerator,
+    )
 
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 
@@ -28,16 +37,16 @@ class FileProcessingContainer(containers.DeclarativeContainer):
     # 1. They are stateless and don't need to share state between operations
     # 2. Each file operation should use fresh instances for isolation
     # 3. Better for parallel processing and testing
-    encoding_detector: providers.Factory = providers.Factory(
+    encoding_detector: providers.Factory[EncodingDetector] = providers.Factory(
         "kp_analysis_toolkit.core.services.file_processing.encoding.RobustEncodingDetector",
         rich_output=core.rich_output,
     )
 
-    hash_generator: providers.Factory = providers.Factory(
+    hash_generator: providers.Factory[HashGenerator] = providers.Factory(
         "kp_analysis_toolkit.core.services.file_processing.hashing.SHA384FileHashGenerator",
     )
 
-    file_validator: providers.Factory = providers.Factory(
+    file_validator: providers.Factory[FileValidator] = providers.Factory(
         "kp_analysis_toolkit.utils.file_validator.PathLibFileValidator",
     )
 

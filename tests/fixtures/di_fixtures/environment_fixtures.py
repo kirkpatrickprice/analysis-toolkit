@@ -17,11 +17,13 @@ def isolated_di_env() -> Generator[None, Any, None]:
     """
     # Clear any existing DI state before test
     try:
-        from kp_analysis_toolkit.utils.di_state import (
-            clear_di_state,  # type: ignore[attr-defined]
+        from kp_analysis_toolkit.utils.excel_utils import clear_excel_export_service
+        from kp_analysis_toolkit.utils.get_file_encoding import (
+            clear_file_processing_service,
         )
 
-        clear_di_state()
+        clear_excel_export_service()
+        clear_file_processing_service()
     except (ImportError, AttributeError):
         # DI state utilities may not be fully implemented yet
         pass
@@ -31,11 +33,13 @@ def isolated_di_env() -> Generator[None, Any, None]:
     finally:
         # Clear DI state after test
         try:
-            from kp_analysis_toolkit.utils.di_state import (
-                clear_di_state,  # type: ignore[attr-defined]
+            from kp_analysis_toolkit.utils.excel_utils import clear_excel_export_service
+            from kp_analysis_toolkit.utils.get_file_encoding import (
+                clear_file_processing_service,
             )
 
-            clear_di_state()
+            clear_excel_export_service()
+            clear_file_processing_service()
         except (ImportError, AttributeError):
             # DI state utilities may not be fully implemented yet
             pass

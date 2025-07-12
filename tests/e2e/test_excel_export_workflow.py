@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -75,7 +76,7 @@ class TestExcelExportE2E:
                 )
 
                 # Test multiple scenarios
-                test_scenarios = [
+                test_scenarios: list[dict[str, Any]] = [
                     {
                         "filename": "employee_report.xlsx",
                         "sheet_name": "Employee Data",
@@ -121,12 +122,15 @@ class TestExcelExportE2E:
                         if scenario["title"]:
                             # Title is in row 1, headers start at row 2 (0-indexed: 1)
                             result_data = pd.read_excel(
-                                output_path, sheet_name=sheet_name, header=1
+                                output_path,
+                                sheet_name=sheet_name,
+                                header=1,
                             )
                         else:
                             # No title, headers start at row 1 (0-indexed: 0)
                             result_data = pd.read_excel(
-                                output_path, sheet_name=sheet_name
+                                output_path,
+                                sheet_name=sheet_name,
                             )
 
                         assert len(result_data) == len(test_data)

@@ -157,7 +157,7 @@ class RichOutputService:
 
     def panel(  # noqa: PLR0913
         self,
-        content: str | Table | Tree,
+        content: str | Table | Tree | Text,
         *,
         title: str | None = None,
         subtitle: str | None = None,
@@ -395,13 +395,15 @@ class RichOutputService:
             return self.format_path(value, max_length)
 
         # Handle collections (but not strings)
-        if isinstance(value, list | tuple | set) and not isinstance(value, str):
+        if isinstance(value, list | tuple | set):
             return self._format_collection(value, max_length)
 
         # Handle string values
         return self._format_string(str(value), max_length)
 
-    def _format_collection(self, value: list | tuple | set, max_length: int) -> Text:
+    def _format_collection(
+        self, value: list[Any] | tuple[Any, ...] | set[Any], max_length: int,
+    ) -> Text:
         """Format collection values with appropriate styling."""
         if len(value) == 0:
             return Text("(empty)", style="dim")
@@ -449,6 +451,9 @@ class RichOutputService:
             border_style="blue",
         )
 
+        if table is None:
+            return
+
         # Add columns
         table.add_column("Parameter", style="bold white", min_width=20)
         if original_dict:
@@ -463,7 +468,7 @@ class RichOutputService:
             )
             value_type = type(value).__name__
 
-            row_data = [key]
+            row_data: list[str | Text] = [key]
             if original_dict:
                 if original_value == "(computed)":
                     row_data.append(Text("(computed)", style="italic dim"))
@@ -534,4 +539,4 @@ class RichOutputService:
 
         """
         if not self.quiet:
-            self.console.rule(title, style=style)
+            self.console.rule(title or "", style=style)

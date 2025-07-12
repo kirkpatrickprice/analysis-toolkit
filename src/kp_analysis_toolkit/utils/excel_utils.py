@@ -499,7 +499,7 @@ def export_dataframe_to_excel(
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         start_row = 1 if title else 0
         df.to_excel(
-            writer, sheet_name=sanitized_sheet_name, index=False, startrow=start_row
+            writer, sheet_name=sanitized_sheet_name, index=False, startrow=start_row,
         )
         worksheet = writer.sheets[sanitized_sheet_name]
 
