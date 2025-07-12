@@ -3,23 +3,57 @@ Common Excel utilities for the analysis toolkit.
 
 Provides reusable Excel formatting, table creation, and export functionality
 that can be used across all modules in the toolkit.
+
+This module provides backward compatibility for existing code while delegating
+to the new DI-based Excel export services when available.
 """
+
+from __future__ import annotations
 
 import random
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.table import Table, TableStyleInfo
-from openpyxl.worksheet.worksheet import Worksheet
+
+from kp_analysis_toolkit.utils.di_state import create_excel_export_di_manager
+
+if TYPE_CHECKING:
+    from openpyxl.worksheet.worksheet import Worksheet
+
+    from kp_analysis_toolkit.core.services.excel_export.service import (
+        ExcelExportService,
+    )
+
+# Global DI state manager for Excel export services
+_di_manager, _get_service, _set_service, _clear_service = (
+    create_excel_export_di_manager()
+)
 
 
-# Implemented in DI excel_export
+def _get_excel_export_service() -> object | None:
+    """Get the Excel export service if DI is available."""
+    return _get_service()
+
+
+def _set_excel_export_service(service: object) -> None:
+    """Set the Excel export service for DI integration."""
+    _set_service(service)
+
+
+# Backward compatibility functions that delegate to DI services when available
+
+
 def sanitize_sheet_name(name: str) -> str:
     """
     Sanitize a string to be used as an Excel sheet name.
+
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
 
     Args:
         name: The string to sanitize
@@ -28,6 +62,16 @@ def sanitize_sheet_name(name: str) -> str:
         A string safe to use as an Excel sheet name
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            return excel_service.sheet_name_sanitizer.sanitize_sheet_name(name)  # type: ignore[attr-defined]
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+
+    # Direct implementation fallback
     if not name:
         return "Unnamed_Sheet"
 
@@ -52,10 +96,12 @@ def sanitize_sheet_name(name: str) -> str:
     return sanitized
 
 
-# Implemented in DI excel_export
 def get_column_letter(col_num: int) -> str:
     """
     Convert column number to Excel column letter.
+
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
 
     Args:
         col_num: Column number (1-indexed)
@@ -64,6 +110,16 @@ def get_column_letter(col_num: int) -> str:
         Excel column letter(s)
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            return excel_service.sheet_name_sanitizer.get_column_letter(col_num)  # type: ignore[attr-defined]
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+
+    # Direct implementation fallback
     result = ""
     while col_num > 0:
         col_num -= 1
@@ -72,16 +128,33 @@ def get_column_letter(col_num: int) -> str:
     return result
 
 
-# Implemented in DI excel_export
 def auto_adjust_column_widths(worksheet: Worksheet, df: pd.DataFrame) -> None:
     """
     Auto-adjust column widths based on content.
+
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
 
     Args:
         worksheet: The worksheet to adjust
         df: DataFrame that was written to the worksheet
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            excel_service.column_width_adjuster.auto_adjust_column_widths(  # type: ignore[attr-defined]
+                worksheet,
+                df,
+            )
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+        else:
+            return
+
+    # Direct implementation fallback
     for col_num, column_name in enumerate(df.columns, 1):
         column_letter = get_column_letter(col_num)
 
@@ -99,7 +172,6 @@ def auto_adjust_column_widths(worksheet: Worksheet, df: pd.DataFrame) -> None:
         worksheet.column_dimensions[column_letter].width = width
 
 
-# Implemented in DI excel_export
 def format_date_columns(  # noqa: C901, PLR0912
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -108,12 +180,31 @@ def format_date_columns(  # noqa: C901, PLR0912
     """
     Format date columns in the worksheet.
 
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
+
     Args:
         worksheet: The worksheet to format
         df: DataFrame that was written to the worksheet
         startrow: Row where the data starts (1-indexed)
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            excel_service.date_formatter.format_date_columns(  # type: ignore[attr-defined]
+                worksheet,
+                df,
+                startrow,
+            )
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+        else:
+            return
+
+    # Direct implementation fallback
     for col_num, column_name in enumerate(df.columns, 1):
         column_letter = get_column_letter(col_num)
 
@@ -161,7 +252,7 @@ def format_date_columns(  # noqa: C901, PLR0912
 
                         for pattern in patterns:
                             try:
-                                parsed_date: datetime = datetime.strptime(  # noqa: DTZ007
+                                parsed_date = datetime.strptime(  # noqa: DTZ007
                                     str_value,
                                     pattern,
                                 )
@@ -181,16 +272,33 @@ def format_date_columns(  # noqa: C901, PLR0912
                 worksheet[cell].number_format = "yyyy-mm-dd"
 
 
-# Implemented in DI excel_export
 def set_table_alignment(worksheet: Worksheet, table_range: str) -> None:
     """
     Set alignment for table cells.
+
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
 
     Args:
         worksheet: The worksheet containing the table
         table_range: Excel range string (e.g., "A1:D10")
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            excel_service.excel_formatter.set_table_alignment(  # type: ignore[attr-defined]
+                worksheet,
+                table_range,
+            )
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+        else:
+            return
+
+    # Direct implementation fallback
     for row in worksheet[table_range]:
         for cell in row:
             cell.alignment = Alignment(
@@ -200,7 +308,6 @@ def set_table_alignment(worksheet: Worksheet, table_range: str) -> None:
             )
 
 
-# Implemented in DI excel_export
 def adjust_row_heights(
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -209,12 +316,31 @@ def adjust_row_heights(
     """
     Adjust row heights based on content.
 
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
+
     Args:
         worksheet: The worksheet to adjust
         df: DataFrame that was written to the worksheet
         startrow: Row where the data starts (1-indexed)
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            excel_service.row_height_adjuster.adjust_row_heights(  # type: ignore[attr-defined]
+                worksheet,
+                df,
+                startrow,
+            )
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+        else:
+            return
+
+    # Direct implementation fallback
     # Set minimum row height for header
     worksheet.row_dimensions[startrow].height = 20
 
@@ -236,7 +362,6 @@ def adjust_row_heights(
         worksheet.row_dimensions[row_num].height = height
 
 
-# Implemented in DI excel_export
 def format_as_excel_table(
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -245,12 +370,31 @@ def format_as_excel_table(
     """
     Format DataFrame as an Excel table with proper styling.
 
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
+
     Args:
         worksheet: The worksheet to format
         df: DataFrame that was written to the worksheet
         startrow: Row where the data starts (1-indexed)
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            excel_service.table_generator.format_as_excel_table(  # type: ignore[attr-defined]
+                worksheet,
+                df,
+                startrow,
+            )
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+        else:
+            return
+
+    # Direct implementation fallback
     if df.empty:
         return
 
@@ -317,6 +461,9 @@ def export_dataframe_to_excel(
     """
     General-purpose DataFrame to Excel export with formatting.
 
+    This function supports dependency injection when available, falling back to
+    direct implementation for backward compatibility.
+
     Args:
         df: DataFrame to export
         output_path: Path to save Excel file
@@ -325,6 +472,24 @@ def export_dataframe_to_excel(
         as_table: Whether to format as Excel table
 
     """
+    # Try to use DI-based Excel export service first
+    excel_service = _get_excel_export_service()
+    if excel_service is not None:
+        try:
+            excel_service.export_dataframe_to_excel(  # type: ignore[attr-defined]
+                df,
+                output_path,
+                sheet_name,
+                title,
+                as_table=as_table,
+            )
+        except (AttributeError, Exception):  # noqa: S110
+            # Fall back to direct implementation if DI fails
+            pass
+        else:
+            return
+
+    # Direct implementation fallback
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -341,3 +506,53 @@ def export_dataframe_to_excel(
             format_as_excel_table(worksheet, df, startrow=start_row + 1)
         else:
             auto_adjust_column_widths(worksheet, df)
+
+
+# DI Integration Functions
+
+
+def set_excel_export_service(service: ExcelExportService) -> None:
+    """
+    Set the Excel export service for dependency injection integration.
+
+    This function allows external code to configure the Excel export service
+    that will be used by all backward compatibility functions.
+
+    Args:
+        service: The ExcelExportService instance to use
+
+    """
+    _set_excel_export_service(service)
+
+
+def get_excel_export_service() -> object | None:
+    """
+    Get the current Excel export service if available.
+
+    Returns:
+        The current ExcelExportService instance or None if not configured
+
+    """
+    return _get_excel_export_service()
+
+
+def clear_excel_export_service() -> None:
+    """
+    Clear the Excel export service, forcing fallback to direct implementations.
+
+    This function is useful for testing or when you want to ensure
+    direct implementations are used instead of DI services.
+
+    """
+    _clear_service()
+
+
+def get_di_state() -> object:
+    """
+    Get the DI state for compatibility with test expectations.
+
+    Returns:
+        The DI state manager instance
+
+    """
+    return _di_manager

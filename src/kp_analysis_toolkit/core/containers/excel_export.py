@@ -15,15 +15,15 @@ class ExcelExportContainer(containers.DeclarativeContainer):
 
     # Excel Components
     workbook_engine = providers.Factory(
-        "kp_analysis_toolkit.utils.excel_utils.OpenpyxlEngine",
+        "kp_analysis_toolkit.core.services.excel_export.workbook_engine.WorkbookEngine",
     )
 
     excel_formatter = providers.Factory(
-        "kp_analysis_toolkit.utils.excel_utils.StandardExcelFormatter",
+        "kp_analysis_toolkit.core.services.excel_export.formatting.DefaultExcelFormatter",
     )
 
     table_generator = providers.Factory(
-        "kp_analysis_toolkit.utils.excel_utils.StandardTableGenerator",
+        "kp_analysis_toolkit.core.services.excel_export.table_generation.DefaultTableGenerator",
     )
 
     # Main Service

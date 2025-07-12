@@ -11,6 +11,7 @@ from kp_analysis_toolkit.core.services.excel_export.protocols import (
     RowHeightAdjuster,
     SheetNameSanitizer,
     TableGenerator,
+    TitleFormatter,
     WorkbookEngine,
 )
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
         RowHeightAdjuster,
         SheetNameSanitizer,
         TableGenerator,
+        TitleFormatter,
         WorkbookEngine,
     )
 
@@ -42,6 +44,7 @@ class ExcelExportService:
         row_height_adjuster: RowHeightAdjuster,
         excel_formatter: ExcelFormatter,
         table_generator: TableGenerator,
+        title_formatter: TitleFormatter,
         workbook_engine: WorkbookEngine,
     ) -> None:
         """
@@ -54,6 +57,7 @@ class ExcelExportService:
             row_height_adjuster: Service for adjusting row heights
             excel_formatter: Service for table alignment and formatting
             table_generator: Service for creating and styling Excel tables
+            title_formatter: Service for formatting title cells
             workbook_engine: Service for creating Excel writers and managing output
 
         """
@@ -63,6 +67,7 @@ class ExcelExportService:
         self.row_height_adjuster: RowHeightAdjuster = row_height_adjuster
         self.excel_formatter: ExcelFormatter = excel_formatter
         self.table_generator: TableGenerator = table_generator
+        self.title_formatter: TitleFormatter = title_formatter
         self.workbook_engine: WorkbookEngine = workbook_engine
 
     def export_dataframe_to_excel(
@@ -98,8 +103,7 @@ class ExcelExportService:
             worksheet: Worksheet = writer.sheets[sanitized_sheet_name]
 
             if title:
-                worksheet.cell(row=1, column=1, value=title)
-                # Optionally apply title formatting here
+                self.title_formatter.apply_title_format(worksheet, title, row=1, col=1)
 
             if as_table:
                 self.table_generator.format_as_excel_table(
@@ -107,16 +111,17 @@ class ExcelExportService:
                     data_frame,
                     startrow=2 if title else 1,
                 )
+            else:
+                # Only apply basic formatting without table styling
+                self.column_width_adjuster.auto_adjust_column_widths(worksheet, data_frame)
+                self.date_formatter.format_date_columns(
+                    worksheet,
+                    data_frame,
+                    startrow=2 if title else 1,
+                )
+                self.row_height_adjuster.adjust_row_heights(
+                    worksheet,
+                    data_frame,
+                    startrow=2 if title else 1,
+                )
 
-            self.column_width_adjuster.auto_adjust_column_widths(worksheet, data_frame)
-            self.date_formatter.format_date_columns(
-                worksheet,
-                data_frame,
-                startrow=2 if title else 1,
-            )
-            self.row_height_adjuster.adjust_row_heights(
-                worksheet,
-                data_frame,
-                startrow=2 if title else 1,
-            )
-            # Additional formatting as needed

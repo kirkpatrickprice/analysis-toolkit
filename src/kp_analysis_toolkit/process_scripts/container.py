@@ -13,7 +13,6 @@ from kp_analysis_toolkit.process_scripts.services.system_detection import (
 
 if TYPE_CHECKING:
     from kp_analysis_toolkit.core.containers.core import CoreContainer
-    from kp_analysis_toolkit.core.containers.excel_export import ExcelExportContainer
     from kp_analysis_toolkit.core.containers.file_processing import (
         FileProcessingContainer,
     )
@@ -25,7 +24,6 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
     # Dependencies from core containers
     core = providers.DependenciesContainer()
     file_processing = providers.DependenciesContainer()
-    excel_export = providers.DependenciesContainer()
 
     # Search Configuration Services (process_scripts specific)
     yaml_parser = providers.Factory(
@@ -96,13 +94,13 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
     # Enhanced Excel Export Services (process_scripts specific)
     advanced_worksheet_builder = providers.Factory(
         "kp_analysis_toolkit.process_scripts.services.excel_export.AdvancedWorksheetBuilder",
-        base_workbook_engine=excel_export.workbook_engine,
+        base_workbook_engine=core.workbook_engine,
         rich_output=core.rich_output,
     )
 
     multi_sheet_formatter = providers.Factory(
         "kp_analysis_toolkit.process_scripts.services.excel_export.MultiSheetFormatter",
-        base_formatter=excel_export.excel_formatter,
+        base_formatter=core.excel_formatter,
     )
 
     conditional_formatting_engine = providers.Factory(
@@ -115,7 +113,7 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
 
     enhanced_excel_export_service = providers.Factory(
         "kp_analysis_toolkit.process_scripts.services.excel_export.EnhancedExcelExportService",
-        base_excel_service=excel_export.excel_export_service,
+        base_excel_service=core.excel_export_service,
         worksheet_builder=advanced_worksheet_builder,
         multi_sheet_formatter=multi_sheet_formatter,
         conditional_formatter=conditional_formatting_engine,
@@ -162,17 +160,15 @@ def wire_process_scripts_container() -> None:
 def configure_process_scripts_container(
     core_container: CoreContainer,
     file_processing_container: FileProcessingContainer,
-    excel_export_container: ExcelExportContainer,
 ) -> None:
     """
     Configure the process scripts container with its dependencies.
 
     Args:
-        core_container: The core services container
+        core_container: The core services container (includes Excel export services)
         file_processing_container: The file processing container
-        excel_export_container: The excel export container
+        file_processing_container: The file processing container
 
     """
     container.core.override(core_container)
     container.file_processing.override(file_processing_container)
-    container.excel_export.override(excel_export_container)
