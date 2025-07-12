@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class DefaultTableGenerator(TableGenerator):
-    """Default implementation for formatting DataFrame as an Excel table."""
+    """Default implementation for formatting DataFrame as an Excel table using dependency injection."""
 
     def __init__(
         self,
@@ -33,6 +33,17 @@ class DefaultTableGenerator(TableGenerator):
         row_height_adjuster: RowHeightAdjuster,
         table_styler: TableStyler,
     ) -> None:
+        """
+        Initialize the table generator with required formatters and adjusters.
+
+        Args:
+            formatter: Excel formatter for table alignment and column widths
+            date_formatter: Formatter for detecting and formatting date columns
+            column_width_adjuster: Adjuster for automatically sizing column widths
+            row_height_adjuster: Adjuster for automatically sizing row heights
+            table_styler: Styler for applying Excel table styles
+
+        """
         self.formatter: ExcelFormatter = formatter
         self.date_formatter: DateFormatter = date_formatter
         self.column_width_adjuster: ColumnWidthAdjuster = column_width_adjuster
@@ -40,7 +51,17 @@ class DefaultTableGenerator(TableGenerator):
         self.table_styler: TableStyler = table_styler
 
     def _get_table_range(self, df: "pd.DataFrame", startrow: int) -> str:
-        """Return the Excel range string for the DataFrame table."""
+        """
+        Calculate the Excel range string for the DataFrame table.
+
+        Args:
+            df: The DataFrame to calculate the range for
+            startrow: The starting row number (1-based)
+
+        Returns:
+            str: Excel range string in format "A1:Z10" covering the DataFrame data
+
+        """
         end_row: int = startrow + len(df)
         end_col_letter: str = DefaultSheetNameSanitizer().get_column_letter(
             len(df.columns),
@@ -48,7 +69,20 @@ class DefaultTableGenerator(TableGenerator):
         return f"A{startrow}:{end_col_letter}{end_row}"
 
     def _generate_table_name(self, worksheet_title: str) -> str:
-        """Generate a unique, valid Excel table name."""
+        """
+        Generate a unique, valid Excel table name from the worksheet title.
+
+        Excel table names must be unique within a workbook and follow specific naming rules.
+        This method creates a name by combining the worksheet title with a random suffix,
+        then sanitizing it to ensure compliance with Excel naming requirements.
+
+        Args:
+            worksheet_title: The title of the worksheet containing the table
+
+        Returns:
+            str: A unique, sanitized table name safe for use in Excel
+
+        """
         random_suffix: int = random.randint(1000, 9999)
         table_name: str = f"Table_{worksheet_title}_{random_suffix}".replace(
             " ",
@@ -65,6 +99,22 @@ class DefaultTableGenerator(TableGenerator):
         df: "pd.DataFrame",
         startrow: int = 1,
     ) -> None:
+        """
+        Format a DataFrame as a styled Excel table in the given worksheet.
+
+        This method creates a properly formatted Excel table with styling, date formatting,
+        auto-adjusted column widths, and row heights. If the DataFrame is empty, no action
+        is taken.
+
+        Args:
+            worksheet: The openpyxl worksheet to add the table to
+            df: The pandas DataFrame containing the data to format
+            startrow: The starting row number for the table (default: 1, 1-based indexing)
+
+        Raises:
+            ValueError: If the table cannot be added to the worksheet (e.g., overlapping ranges)
+
+        """
         if df.empty:
             return
 
