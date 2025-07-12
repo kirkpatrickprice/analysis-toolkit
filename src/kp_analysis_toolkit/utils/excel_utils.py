@@ -493,10 +493,15 @@ def export_dataframe_to_excel(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Sanitize sheet name for Excel compatibility
+    sanitized_sheet_name = sanitize_sheet_name(sheet_name)
+
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-        start_row = 2 if title else 1
-        df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=start_row)
-        worksheet = writer.sheets[sheet_name]
+        start_row = 1 if title else 0
+        df.to_excel(
+            writer, sheet_name=sanitized_sheet_name, index=False, startrow=start_row
+        )
+        worksheet = writer.sheets[sanitized_sheet_name]
 
         if title:
             worksheet["A1"] = title

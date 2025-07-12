@@ -32,19 +32,20 @@ class TestExcelExportE2E:
 
     def test_complete_workflow_with_di(self) -> None:
         """Test complete workflow from container setup to Excel export."""
-        with tempfile.TemporaryDirectory() as temp_dir:        # Setup DI container
-        container = ApplicationContainer()
-        container.core().config.verbose.from_value(False)
-        container.core().config.quiet.from_value(False)
-        container.core().config.console_width.from_value(120)
-        container.core().config.force_terminal.from_value(True)
-        container.core().config.stderr_enabled.from_value(True)
-        container.wire(modules=["kp_analysis_toolkit.utils.excel_utils"])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Setup DI container
+            container = ApplicationContainer()
+            container.core().config.verbose.from_value(False)
+            container.core().config.quiet.from_value(False)
+            container.core().config.console_width.from_value(120)
+            container.core().config.force_terminal.from_value(True)
+            container.core().config.stderr_enabled.from_value(True)
+            container.wire(modules=["kp_analysis_toolkit.utils.excel_utils"])
 
-        try:
-            # Get and configure Excel service
-            excel_service = container.excel_export().excel_export_service()
-            set_excel_export_service(excel_service)
+            try:
+                # Get and configure Excel service
+                excel_service = container.core().excel_export_service()
+                set_excel_export_service(excel_service)
 
                 # Create comprehensive test data
                 test_data = pd.DataFrame(
@@ -70,7 +71,7 @@ class TestExcelExportE2E:
                             "Top performer in Q3",
                             "New hire\nOnboarding in progress",
                         ],
-                    }
+                    },
                 )
 
                 # Test multiple scenarios
@@ -116,8 +117,18 @@ class TestExcelExportE2E:
                         assert len(excel_file.sheet_names) == 1
                         sheet_name = excel_file.sheet_names[0]
 
-                        # Verify data integrity
-                        result_data = pd.read_excel(output_path, sheet_name=sheet_name)
+                        # Verify data integrity - skip title row if present
+                        if scenario["title"]:
+                            # Title is in row 1, headers start at row 2 (0-indexed: 1)
+                            result_data = pd.read_excel(
+                                output_path, sheet_name=sheet_name, header=1
+                            )
+                        else:
+                            # No title, headers start at row 1 (0-indexed: 0)
+                            result_data = pd.read_excel(
+                                output_path, sheet_name=sheet_name
+                            )
+
                         assert len(result_data) == len(test_data)
                         assert set(result_data.columns) == set(test_data.columns)
 
@@ -141,7 +152,7 @@ class TestExcelExportE2E:
                     "Product": ["Widget A", "Widget B", "Widget C"],
                     "Price": [10.99, 25.50, 15.75],
                     "Stock": [100, 50, 75],
-                }
+                },
             )
 
             output_path = Path(temp_dir) / "fallback_test.xlsx"
@@ -158,8 +169,8 @@ class TestExcelExportE2E:
             # Verify file was created
             assert output_path.exists()
 
-            # Verify content
-            result_data = pd.read_excel(output_path, sheet_name="Products")
+            # Verify content - skip title row since title is provided
+            result_data = pd.read_excel(output_path, sheet_name="Products", header=1)
             assert len(result_data) == len(test_data)
             assert list(result_data.columns) == list(test_data.columns)
 
@@ -179,7 +190,7 @@ class TestExcelExportE2E:
         container.wire(modules=["kp_analysis_toolkit.utils.excel_utils"])
 
         try:
-            excel_service = container.excel_export_service()
+            excel_service = container.core().excel_export_service()
             set_excel_export_service(excel_service)
 
             di_results = [sanitize_sheet_name(name) for name in problematic_names]
@@ -193,7 +204,9 @@ class TestExcelExportE2E:
 
         # Both should produce valid sheet names
         for di_result, fallback_result in zip(
-            di_results, fallback_results, strict=True
+            di_results,
+            fallback_results,
+            strict=True,
         ):
             # Both should be strings
             assert isinstance(di_result, str)
