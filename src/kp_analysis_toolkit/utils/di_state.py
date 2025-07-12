@@ -107,3 +107,43 @@ def create_file_processing_di_manager() -> tuple[
         di_state.clear_service()
 
     return di_state, get_service, set_service, clear_service
+
+
+class ExcelExportDIState(DIState[T]):
+    """
+    Specialized DI state for Excel export service integration.
+
+    This provides type-safe access to the Excel export service
+    for backward compatibility modules.
+    """
+
+
+def create_excel_export_di_manager() -> tuple[
+    ExcelExportDIState[object],
+    Callable[[], object | None],
+    Callable[[object], None],
+    Callable[[], None],
+]:
+    """
+    Create a complete DI management setup for Excel export service.
+
+    Returns:
+        A tuple containing:
+        - The DI state instance
+        - A getter function for the service
+        - A setter function for the service
+        - A clear function for the service
+
+    """
+    di_state = ExcelExportDIState[object]()
+
+    def get_service() -> object | None:
+        return di_state.get_service()
+
+    def set_service(service: object) -> None:
+        di_state.set_service(service)
+
+    def clear_service() -> None:
+        di_state.clear_service()
+
+    return di_state, get_service, set_service, clear_service

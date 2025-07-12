@@ -1,0 +1,162 @@
+# MkDocs Configuration for KP Analysis Toolkit
+# This configuration is optimized for local development with future ReadTheDocs hosting in mind
+
+site_name: KP Analysis Toolkit Documentation
+site_description: Python toolkit for security audit data analysis and processing
+site_author: Randy Bartels
+
+# Directory configuration
+docs_dir: docs
+site_dir: site
+
+# Theme configuration
+theme:
+  name: material
+  palette:
+    # Dark mode by default (easier on the eyes)
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Light mode option
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  
+  features:
+    - navigation.tabs           # Top-level navigation tabs
+    - navigation.sections       # Collapsible navigation sections
+    - navigation.expand         # Expand all navigation sections by default
+    - navigation.top            # Back to top button
+    - search.highlight          # Highlight search terms
+    - search.share              # Share search results
+    - content.code.copy         # Copy code button
+    - content.code.annotate     # Code annotations
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+# Navigation structure (easily changeable)
+# Organized for developer workflow: practical usage first, then technical details
+nav:
+  - Home: index.md
+  - User Guides: 
+    - user-guides/README.md
+  - Tutorials:
+    - tutorials/README.md
+  - Reference:
+    - reference/README.md
+  - API Reference:
+    - api/README.md
+  - Architecture:
+    - architecture/README.md
+    - Service Package Pattern: architecture/service-package-pattern.md
+    - DI Service Types: architecture/di-service-type.md
+    - UI Service Layer Separation: architecture/ui-service-layer-separation.md
+  - Development:
+    - development/README.md
+    - Testing Standards: development/testing-standards.md
+    - Type Hints Requirements: development/type-hints-requirements.md
+    - MyPy Implementation: development/gradual-mypy-implementation.md
+    - MyPy Quick Start: development/gradual-mypy-quick-start.md
+    - Test Directory Organization: development/test-directory-organization.md
+  - Implementation:
+    - implementation/README.md
+    - CLI Refactoring: implementation/cli-refactoring-recommendations.md
+    - Dependency Injection Plan: implementation/dependency-injection-implementation-plan.md
+    - Excel Export DI Migration: implementation/excel-export-dependency-injection-migration-plan.md
+    - File Processing DI Migration: implementation/file-processing-dependency-injection-migration-plan.md
+    - PyTest Fixture Migration: implementation/pytest-fixture-organization-migration-plan.md
+  - Troubleshooting:
+    - troubleshooting/README.md
+
+# Markdown extensions for technical documentation
+markdown_extensions:
+  # Code highlighting and formatting
+  - codehilite:
+      guess_lang: false
+      use_pygments: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  
+  # Content formatting
+  - toc:
+      permalink: true
+      baselevel: 1
+      separator: "_"
+  - tables
+  - def_list
+  - footnotes
+  - md_in_html
+  
+  # Enhanced content features
+  - admonition
+  - pymdownx.details
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.smartsymbols
+  
+  # Task lists and formatting
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  
+  # Math and scientific notation (useful for technical docs)
+  - pymdownx.arithmatex:
+      generic: true
+
+# Extra configuration for future use
+extra:
+  # Future ReadTheDocs integration
+  version:
+    provider: mike
+  
+  # Social links (commented out for now, easy to enable later)
+  # social:
+  #   - icon: fontawesome/brands/github
+  #     link: https://github.com/kirkpatrickprice/analysis-toolkit
+  
+  # Analytics (for future hosting)
+  # analytics:
+  #   provider: google
+  #   property: G-XXXXXXXXXX
+
+# Repository integration (commented out for local use, easy to enable later)
+# repo_url: https://github.com/kirkpatrickprice/analysis-toolkit
+# repo_name: kirkpatrickprice/analysis-toolkit
+# edit_uri: edit/main/docs/
+
+# Copyright
+copyright: Copyright &copy; 2025 Randy Bartels
+
+# Additional CSS (for future customization)
+# extra_css:
+#   - stylesheets/extra.css
+
+# Additional JavaScript (for future features)
+# extra_javascript:
+#   - javascripts/mathjax.js
+#   - https://polyfill.io/v3/polyfill.min.js?features=es6
+#   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

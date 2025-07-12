@@ -6,7 +6,6 @@ from dependency_injector import containers, providers
 
 if TYPE_CHECKING:
     from kp_analysis_toolkit.core.containers.core import CoreContainer
-    from kp_analysis_toolkit.core.containers.excel_export import ExcelExportContainer
     from kp_analysis_toolkit.core.containers.file_processing import (
         FileProcessingContainer,
     )
@@ -18,7 +17,6 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
     # Dependencies from core containers
     core = providers.DependenciesContainer()
     file_processing = providers.DependenciesContainer()
-    excel_export = providers.DependenciesContainer()
 
     # Module-specific services would go here
     # (Currently nipper expander only uses shared services)
@@ -26,7 +24,7 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
     # Main Module Service
     nipper_expander_service: providers.Factory = providers.Factory(
         "kp_analysis_toolkit.nipper_expander.service.NipperExpanderService",
-        excel_export=excel_export.excel_export_service,
+        excel_export=core.excel_export_service,
         file_processing=file_processing.file_processing_service,
         rich_output=core.rich_output,
     )
@@ -55,17 +53,14 @@ def wire_nipper_expander_container() -> None:
 def configure_nipper_expander_container(
     core_container: CoreContainer,
     file_processing_container: FileProcessingContainer,
-    excel_export_container: ExcelExportContainer,
 ) -> None:
     """
     Configure the nipper expander container with its dependencies.
 
     Args:
-        core_container: The core services container
+        core_container: The core services container (includes Excel export services)
         file_processing_container: The file processing container
-        excel_export_container: The excel export container
 
     """
     container.core.override(core_container)
     container.file_processing.override(file_processing_container)
-    container.excel_export.override(excel_export_container)

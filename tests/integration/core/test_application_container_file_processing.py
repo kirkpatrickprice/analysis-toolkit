@@ -10,7 +10,6 @@ from kp_analysis_toolkit.core.containers.application import (
     container,
     initialize_dependency_injection,
 )
-from kp_analysis_toolkit.core.containers.file_processing import FileProcessingContainer
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
@@ -19,11 +18,12 @@ class TestApplicationContainerFileProcessingIntegration:
     """Test application container integration with file processing services."""
 
     def test_application_container_includes_file_processing(self) -> None:
-        """Test that ApplicationContainer includes file processing container."""
+        """Test that ApplicationContainer includes file processing service in core."""
         app_container = ApplicationContainer()
 
-        assert hasattr(app_container, "file_processing")
-        assert app_container.file_processing is not None
+        assert hasattr(app_container, "core")
+        assert hasattr(app_container.core(), "file_processing_service")
+        assert app_container.core().file_processing_service is not None
 
     def test_file_processing_service_available_through_global_container(self) -> None:
         """Test that file processing service is available through global container."""
@@ -37,8 +37,10 @@ class TestApplicationContainerFileProcessingIntegration:
         global_container.core().config.force_terminal.from_value(True)
         global_container.core().config.stderr_enabled.from_value(True)
 
-        # Get file processing service
-        service: FileProcessingService = global_container.file_processing().file_processing_service()
+        # Get file processing service from core container
+        service: FileProcessingService = (
+            global_container.core().file_processing_service()
+        )
 
         assert isinstance(service, FileProcessingService)
         assert service.encoding_detector is not None
@@ -61,7 +63,9 @@ class TestApplicationContainerFileProcessingIntegration:
         global_container.core().config.stderr_enabled.from_value(True)
 
         # Get service and process file
-        service: FileProcessingService = global_container.file_processing().file_processing_service()
+        service: FileProcessingService = (
+            global_container.core().file_processing_service()
+        )
         result: dict[str, str | None] = service.process_file(test_file)
 
         # Verify results
@@ -69,6 +73,7 @@ class TestApplicationContainerFileProcessingIntegration:
         assert "encoding" in result
         assert "hash" in result
         from tests.conftest import assert_valid_encoding
+
         assert_valid_encoding(result["encoding"], "utf-8")
         assert result["hash"]  # Should have a hash value
 
@@ -84,7 +89,7 @@ class TestApplicationContainerFileProcessingIntegration:
         )
 
         # Verify file processing service is configured
-        service: FileProcessingService = container.file_processing().file_processing_service()
+        service: FileProcessingService = container.core().file_processing_service()
         assert isinstance(service, FileProcessingService)
 
         # Verify configuration propagated to rich output
@@ -105,13 +110,14 @@ class TestApplicationContainerFileProcessingIntegration:
         """Test that backward compatibility utilities can access container services."""
         # Initialize DI first
         initialize_dependency_injection()
-        
+
         # Create a mock service to return
         from unittest.mock import MagicMock
+
         mock_service = MagicMock()
         mock_service.detect_encoding.return_value = "utf-8"
         mock_service.generate_hash.return_value = "mock_hash"
-        
+
         # Setup mocks to return the service when called
         mock_hash_get_service.return_value = mock_service
         mock_encoding_get_service.return_value = mock_service
@@ -119,32 +125,32 @@ class TestApplicationContainerFileProcessingIntegration:
         # Create a test file to trigger the utility functions
         import tempfile
         from pathlib import Path
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("test content")
             test_file = Path(f.name)
-        
+
         try:
             # Call the utility functions to trigger DI service usage
             from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
             from kp_analysis_toolkit.utils.hash_generator import generate_file_hash
-            
+
             # These calls should use the DI services
             encoding: str | None = detect_encoding(test_file)
             file_hash: str = generate_file_hash(test_file)
-            
+
             # Verify the mocked services were called
             mock_encoding_get_service.assert_called()
             mock_hash_get_service.assert_called()
-            
+
             # Verify the service methods were called
             mock_service.detect_encoding.assert_called_with(test_file)
             mock_service.generate_hash.assert_called_with(test_file)
-            
+
             # Verify the results
             assert encoding == "utf-8"
             assert file_hash == "mock_hash"
-            
+
         finally:
             # Clean up
             test_file.unlink(missing_ok=True)
@@ -154,43 +160,47 @@ class TestFileProcessingContainerWiring:
     """Test file processing container wiring for backward compatibility."""
 
     def test_module_wiring_configuration(self) -> None:
-        """Test that file processing container can be wired to utility modules."""
+        """Test that core container can be wired to utility modules."""
         # Configure container
         initialize_dependency_injection()
 
-        # Verify container is wired
-        file_processing_container: FileProcessingContainer = container.file_processing()
-        assert file_processing_container is not None
+        # Verify core container is wired
+        core_container = container.core()
+        assert core_container is not None
 
         # Test that wiring doesn't raise errors
-        file_processing_container.wire(modules=["unittest.mock"])  # Safe module to test
-        file_processing_container.unwire()
+        core_container.wire(modules=["unittest.mock"])  # Safe module to test
+        core_container.unwire()
 
-    def test_global_container_singleton_behavior(self, container_initialized: None) -> None:
+    def test_global_container_singleton_behavior(
+        self, container_initialized: None
+    ) -> None:
         """Test that global container maintains singleton services."""
         # Container is properly initialized by the fixture
-        
+
         # Get service instances multiple times
-        service1: FileProcessingService = container.file_processing().file_processing_service()
-        service2: FileProcessingService = container.file_processing().file_processing_service()
+        service1: FileProcessingService = container.core().file_processing_service()
+        service2: FileProcessingService = container.core().file_processing_service()
 
         # Services are created using Factory providers, so they won't be singletons
         # This test should verify that the behavior is consistent with the implementation
         # Since the current implementation uses Factory providers, we expect new instances
         assert service1 is not service2, "Factory providers should create new instances"
 
-        # However, the container itself should be a singleton
-        container1: FileProcessingContainer = container.file_processing()
-        container2: FileProcessingContainer = container.file_processing()
-        assert container1 is container2, "Container should be singleton"
+        # However, the core container itself should be a singleton
+        container1 = container.core()
+        container2 = container.core()
+        assert container1 is container2, "Core container should be singleton"
 
-    def test_application_container_dependency_injection(self, container_initialized: None) -> None:
+    def test_application_container_dependency_injection(
+        self, container_initialized: None
+    ) -> None:
         """Test that file processing container gets core dependencies correctly."""
         # Reconfigure with specific settings for this test
         initialize_dependency_injection(console_width=100, verbose=True)
 
         # Get file processing service
-        fp_service: FileProcessingService = container.file_processing().file_processing_service()
+        fp_service: FileProcessingService = container.core().file_processing_service()
 
         # Verify it has access to rich output from core
         assert fp_service.rich_output is not None

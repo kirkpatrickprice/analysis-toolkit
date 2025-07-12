@@ -5,20 +5,13 @@ from __future__ import annotations
 from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.core.containers.core import CoreContainer
-from kp_analysis_toolkit.core.containers.file_processing import FileProcessingContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
-    """Main application container with core and file processing services."""
+    """Main application container that exposes all core services."""
 
-    # Core containers
+    # Core container with all shared services
     core: providers.Container[CoreContainer] = providers.Container(CoreContainer)
-
-    # File Processing container with core dependency injection
-    file_processing: providers.Container[FileProcessingContainer] = providers.Container(
-        FileProcessingContainer,
-        core=core,
-    )
 
 
 # Global container instance
@@ -33,7 +26,7 @@ def configure_application_container(
     force_terminal: bool = True,
     stderr_enabled: bool = True,
 ) -> None:
-    """Configure the application container with core and file processing settings."""
+    """Configure the application container with core settings."""
     container.core().config.verbose.from_value(verbose)
     container.core().config.quiet.from_value(quiet)
     container.core().config.console_width.from_value(console_width)
@@ -51,9 +44,9 @@ def wire_application_container() -> None:
 
 
 def wire_module_containers() -> None:
-    """Wire module containers for file processing integration."""
+    """Wire core container for backward compatibility utilities."""
     # Wire file processing utilities for backward compatibility
-    container.file_processing().wire(
+    container.core().wire(
         modules=[
             "kp_analysis_toolkit.utils.get_file_encoding",
             "kp_analysis_toolkit.utils.hash_generator",
@@ -69,7 +62,7 @@ def initialize_dependency_injection(
     force_terminal: bool = True,
     stderr_enabled: bool = True,
 ) -> None:
-    """Initialize dependency injection for core and file processing services."""
+    """Initialize dependency injection for all core services."""
     # 1. Configure the application container
     configure_application_container(
         verbose=verbose,
@@ -82,5 +75,5 @@ def initialize_dependency_injection(
     # 2. Wire the application container
     wire_application_container()
 
-    # 3. Wire module containers for file processing integration
+    # 3. Wire core container for backward compatibility utilities
     wire_module_containers()

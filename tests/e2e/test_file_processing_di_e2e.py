@@ -81,18 +81,22 @@ class TestFileProcessingE2EIntegration:
         initialize_dependency_injection(verbose=False, quiet=True)
 
         # Get file processing service
-        service = container.file_processing().file_processing_service()
+        service = container.core().file_processing_service()
 
         # Test UTF-8 file processing
         utf8_result = service.process_file(utf8_file)
         from tests.conftest import assert_valid_encoding
+
         assert_valid_encoding(utf8_result["encoding"], "utf-8")
         assert utf8_result["hash"]
         assert len(utf8_result["hash"]) > 0
 
         # Test Latin-1 file processing
         latin1_result = service.process_file(latin1_file)
-        assert_valid_encoding(latin1_result["encoding"], ["latin-1", "iso-8859-1", "ascii"])  # ASCII is valid for ASCII-compatible Latin-1 content
+        assert_valid_encoding(
+            latin1_result["encoding"],
+            ["latin-1", "iso-8859-1", "ascii"],
+        )  # ASCII is valid for ASCII-compatible Latin-1 content
         assert latin1_result["hash"]
         assert len(latin1_result["hash"]) > 0
 
@@ -117,6 +121,7 @@ class TestFileProcessingE2EIntegration:
 
         encoding = detect_encoding(test_file)
         from tests.conftest import assert_valid_encoding
+
         assert_valid_encoding(encoding, "utf-8")
 
         # Test hash generation utility
@@ -147,6 +152,7 @@ class TestFileProcessingE2EIntegration:
 
         # Hash generator throws exception for non-existent files (by design)
         import pytest
+
         with pytest.raises(ValueError, match="File does not exist"):
             generate_file_hash(non_existent)
 
@@ -170,7 +176,7 @@ class TestFileProcessingE2EIntegration:
         initialize_dependency_injection()
 
         # Get service and perform multiple operations
-        service = container.file_processing().file_processing_service()
+        service = container.core().file_processing_service()
 
         # Multiple file processing operations
         result1 = service.process_file(file1)
@@ -178,6 +184,7 @@ class TestFileProcessingE2EIntegration:
 
         # Verify both operations completed successfully
         from tests.conftest import assert_valid_encoding
+
         assert_valid_encoding(result1["encoding"], "utf-8")
         assert_valid_encoding(result2["encoding"], "utf-8")
         assert result1["hash"] != result2["hash"]  # Different files, different hashes
@@ -193,6 +200,7 @@ class TestFileProcessingE2EIntegration:
         hash2 = generate_file_hash(file2)
 
         from tests.conftest import assert_valid_encoding
+
         assert_valid_encoding(enc1, "utf-8")
         assert_valid_encoding(enc2, "utf-8")
         assert hash1 == result1["hash"]  # Should be consistent

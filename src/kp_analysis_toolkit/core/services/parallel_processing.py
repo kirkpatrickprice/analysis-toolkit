@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from kp_analysis_toolkit.utils.rich_output import RichOutput
 
@@ -50,7 +50,7 @@ class ParallelProcessingService:
 
     def execute_in_parallel(
         self,
-        tasks: list[Callable],
+        tasks: list[Callable[[], Any]],
         max_workers: int,
         description: str = "Processing...",
     ) -> None:

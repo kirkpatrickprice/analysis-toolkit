@@ -155,7 +155,7 @@ class TestDetectEncoding:
         # Create mock service that raises an exception
         mock_service = MagicMock()
         mock_service.detect_encoding.side_effect = Exception(
-            "Simulated DI service error"
+            "Simulated DI service error",
         )
 
         # Set up DI service

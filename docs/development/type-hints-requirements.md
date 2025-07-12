@@ -229,7 +229,224 @@ def process_file_encoding(
     return encoding or "utf-8"
 ```
 
-### 2. Predefined Type Aliases
+### 2. Type Hints for `dependency-injector`
+
+When using the `dependency-injector` library, proper type hints are essential for IDE support, type checking, and maintainability. Follow these patterns for all container definitions:
+
+#### Container Type Annotations
+
+Use `providers.Container[ContainerType]` for container dependencies:
+
+```python
+from dependency_injector import containers, providers
+from kp_analysis_toolkit.core.containers.core import CoreContainer
+
+class ApplicationContainer(containers.DeclarativeContainer):
+    """Main application container."""
+    
+    # Type the container provider properly
+    core: providers.Container[CoreContainer] = providers.Container(CoreContainer)
+```
+
+#### Factory Provider Type Hints
+
+Use `providers.Factory[ProtocolType]` with protocol-based typing for maximum flexibility:
+
+```python
+from typing import TYPE_CHECKING
+from dependency_injector import providers
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.file_processing.protocols import (
+        EncodingDetector,
+        HashGenerator,
+        FileValidator,
+    )
+
+class FileProcessingContainer(containers.DeclarativeContainer):
+    """Container for file processing services."""
+    
+    # Factory providers with protocol type hints
+    encoding_detector: providers.Factory[EncodingDetector] = providers.Factory(
+        "kp_analysis_toolkit.core.services.file_processing.encoding.RobustEncodingDetector",
+        # Dependencies can be injected here
+    )
+    
+    hash_generator: providers.Factory[HashGenerator] = providers.Factory(
+        "kp_analysis_toolkit.core.services.file_processing.hashing.SHA384FileHashGenerator",
+    )
+    
+    file_validator: providers.Factory[FileValidator] = providers.Factory(
+        "kp_analysis_toolkit.utils.file_validator.PathLibFileValidator",
+    )
+```
+
+#### Singleton Provider Type Hints
+
+Use `providers.Singleton[ServiceType]` for services that maintain state:
+
+```python
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+from kp_analysis_toolkit.core.services.excel_export.service import ExcelExportService
+
+class CoreContainer(containers.DeclarativeContainer):
+    """Container for core services."""
+    
+    # Singleton for stateful services
+    rich_output: providers.Singleton[RichOutputService] = providers.Singleton(
+        RichOutputService,
+        config=providers.Factory(
+            "kp_analysis_toolkit.models.rich_config.RichOutputConfig",
+            verbose=config.verbose,
+            quiet=config.quiet,
+        ),
+    )
+    
+    # Singleton for services that need consistent behavior
+    excel_export_service: providers.Singleton[ExcelExportService] = providers.Singleton(
+        ExcelExportService,
+        # Inject other services as dependencies
+        sheet_name_sanitizer=sheet_name_sanitizer,
+        workbook_engine=workbook_engine,
+    )
+```
+
+#### Configuration Provider Type Hints
+
+Configuration providers don't need explicit type hints as they're dynamically typed:
+
+```python
+class CoreContainer(containers.DeclarativeContainer):
+    """Container with configuration."""
+    
+    # Configuration provider - no explicit typing needed
+    config = providers.Configuration()
+    
+    # Use configuration in other providers
+    rich_output: providers.Singleton[RichOutputService] = providers.Singleton(
+        RichOutputService,
+        config=providers.Factory(
+            RichOutputConfig,
+            verbose=config.verbose,
+            quiet=config.quiet,
+            console_width=config.console_width,
+        ),
+    )
+```
+
+#### Complex Provider Dependencies
+
+When providers have complex dependencies, maintain type safety throughout:
+
+```python
+class ExcelExportContainer(containers.DeclarativeContainer):
+    """Container for Excel export services."""
+    
+    # Factory providers for stateless services
+    column_width_adjuster = providers.Factory(DefaultColumnWidthAdjuster)
+    date_formatter = providers.Factory(DefaultDateFormatter)
+    
+    # Complex provider with multiple dependencies
+    table_generator: providers.Factory[TableGenerator] = providers.Factory(
+        DefaultTableGenerator,
+        formatter=excel_formatter,
+        date_formatter=date_formatter,
+        column_width_adjuster=column_width_adjuster,
+        row_height_adjuster=row_height_adjuster,
+        table_styler=providers.Factory(
+            "kp_analysis_toolkit.core.services.excel_export.formatting.DefaultTableStyler",
+        ),
+    )
+    
+    # Main service using the complex dependencies
+    excel_export_service: providers.Singleton[ExcelExportService] = providers.Singleton(
+        ExcelExportService,
+        table_generator=table_generator,
+        workbook_engine=workbook_engine,
+    )
+```
+
+#### String-Based Provider References
+
+Use string references for services to avoid circular imports, while maintaining type hints:
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.excel_export.protocols import WorkbookEngine
+
+class CoreContainer(containers.DeclarativeContainer):
+    """Container using string-based references."""
+    
+    # String reference with proper type hint
+    workbook_engine: providers.Factory[WorkbookEngine] = providers.Factory(
+        "kp_analysis_toolkit.core.services.excel_export.workbook_engine.WorkbookEngine",
+    )
+```
+
+#### Provider Method Type Hints
+
+When using provider methods in dependency injection, type the methods properly:
+
+```python
+def _setup_utils_di_integration(
+    file_processing_service: FileProcessingService,
+) -> FileProcessingService:
+    """Set up DI integration between services."""
+    # Setup logic here
+    return file_processing_service
+
+class CoreContainer(containers.DeclarativeContainer):
+    """Container with provider methods."""
+    
+    # Factory using a provider method with proper typing
+    file_processing_service: providers.Factory[FileProcessingService] = providers.Factory(
+        _setup_utils_di_integration,
+        file_processing_service=providers.Factory(
+            FileProcessingService,
+            rich_output=rich_output,
+            encoding_detector=encoding_detector,
+        ),
+    )
+```
+
+#### Best Practices for dependency-injector Type Hints
+
+1. **Always use TYPE_CHECKING imports** for protocol types to avoid runtime overhead
+2. **Prefer protocol-based typing** over concrete class typing for flexibility
+3. **Use string references** for services to avoid circular import issues
+4. **Type container dependencies** explicitly with `providers.Container[ContainerType]`
+5. **Type factory and singleton providers** with their return types
+6. **Document provider lifetime** (Factory vs Singleton) in comments
+7. **Group related providers** logically within containers
+8. **Use descriptive provider names** that indicate their purpose
+
+#### Integration with Dependency Injection
+
+When injecting dependencies into functions or classes, maintain type safety:
+
+```python
+from dependency_injector.wiring import Provide, inject
+from kp_analysis_toolkit.core.containers.application import ApplicationContainer
+
+@inject
+def process_files(
+    file_paths: list[Path],
+    file_processing: FileProcessingService = Provide[
+        ApplicationContainer.core.file_processing_service
+    ],
+    excel_export: ExcelExportService = Provide[
+        ApplicationContainer.core.excel_export_service
+    ],
+) -> None:
+    """Process files with injected dependencies."""
+    for file_path in file_paths:
+        result = file_processing.process_file(file_path)
+        excel_export.export_results(result)
+```
+
+### 3. Predefined Type Aliases
 
 Use the predefined type aliases from `kp_analysis_toolkit.models.types` and `kp_analysis_toolkit.process_scripts.models.types`:
 
@@ -283,7 +500,7 @@ def validate_filter_value(value: Any) -> SysFilterValueType:
         raise ValueError(f"Invalid filter value type: {type(value)}")
 ```
 
-### 3. TypeVar for Generic Functions
+### 4. TypeVar for Generic Functions
 
 When the predefined types don't meet your needs, use TypeVar for custom generic functions:
 
@@ -303,7 +520,7 @@ def filter_results(data: ResultList, predicate: Callable[[ResultData], bool]) ->
     return [item for item in data if predicate(item)]
 ```
 
-### 4. Literal Types vs Enums
+### 5. Literal Types vs Enums
 
 Choose between `Literal` types and `Enum` classes based on your use case:
 
@@ -361,7 +578,7 @@ def generate_report(style: Literal["compact", "detailed"]) -> str:
     pass
 ```
 
-### 5. Overloads for Multiple Signatures
+### 6. Overloads for Multiple Signatures
 
 ```python
 from typing import overload
