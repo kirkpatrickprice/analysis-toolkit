@@ -16,6 +16,14 @@ from kp_analysis_toolkit.core.services.file_processing import FileProcessingServ
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.rich_config import RichOutputConfig
 
+# Core services that should be available in the CoreContainer
+# This list should be updated when new core services are added
+EXPECTED_CORE_SERVICES = [
+    "rich_output",
+    "excel_export_service",
+    "file_processing_service",
+]
+
 
 class TestCoreContainer:
     """Test the CoreContainer for dependency injection."""
@@ -97,17 +105,19 @@ class TestApplicationContainer:
         assert app_container is not None
         assert hasattr(app_container, "core")
 
-    def test_application_container_has_core_and_file_processing(self) -> None:
-        """Test that ApplicationContainer has both core and file processing containers."""
+    def test_application_container_has_core_and_services(self) -> None:
+        """Test that ApplicationContainer has core container with all services."""
         app_container = ApplicationContainer()
 
         # Check core container
         assert hasattr(app_container, "core")
         assert app_container.core is not None
 
-        # Check file processing container
-        assert hasattr(app_container, "file_processing")
-        assert app_container.file_processing is not None
+        # Check that core container has all the expected services
+        for service_name in EXPECTED_CORE_SERVICES:
+            assert hasattr(app_container.core(), service_name), (
+                f"Missing service: {service_name}"
+            )
 
     def test_global_container_instance(self) -> None:
         """Test that global container instance is available and configured."""
@@ -116,14 +126,16 @@ class TestApplicationContainer:
         # In dependency-injector, containers become DynamicContainer instances
         # We should check for the expected attributes instead of exact type
         assert hasattr(container, "core")
-        assert hasattr(container, "file_processing")
 
-        # Test that the containers are accessible and functional
+        # Test that the core container is accessible and has all services
         assert container.core is not None
-        assert container.file_processing is not None
+        for service_name in EXPECTED_CORE_SERVICES:
+            assert hasattr(container.core(), service_name), (
+                f"Missing service: {service_name}"
+            )
 
-    def test_file_processing_container_gets_core_dependency(self) -> None:
-        """Test that file processing container receives core dependency."""
+    def test_file_processing_service_gets_core_dependencies(self) -> None:
+        """Test that file processing service receives core dependencies."""
         app_container = ApplicationContainer()
 
         # Configure core container
@@ -133,8 +145,8 @@ class TestApplicationContainer:
         app_container.core().config.force_terminal.from_value(True)
         app_container.core().config.stderr_enabled.from_value(True)
 
-        # Get file processing service
-        fp_service = app_container.file_processing().file_processing_service()
+        # Get file processing service from core container
+        fp_service = app_container.core().file_processing_service()
 
         assert isinstance(fp_service, FileProcessingService)
         assert fp_service.rich_output is not None
