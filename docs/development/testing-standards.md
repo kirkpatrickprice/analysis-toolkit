@@ -97,6 +97,38 @@ When testing components that use dependency injection, you need two different te
 
 **Real DI testing** is used to test end-to-end functionality with actual service implementations to ensure the entire DI stack works correctly and produces expected results.
 
+##### Preventing Environment-Dependent Test Failures
+
+CLI components often use `container.core.rich_output()` or other DI services. Tests that call these functions directly (not through CLI runners) require proper DI initialization to avoid validation errors in CI environments.
+
+**For any new unit tests** that import and call functions from CLI modules, ensure you:
+
+1. **Add DI fixtures**: Use `@pytest.mark.usefixtures("initialized_container")` for test classes that call CLI functions
+2. **Check function signatures**: Functions that don't take `rich_output` as a parameter likely use the DI container internally
+3. **Prefer integration tests**: Use integration tests with CLI runners for testing complete CLI commands
+4. **Mock when appropriate**: Use mocking for unit tests to avoid DI dependencies when testing isolated logic
+
+```python
+# ✅ Correct - Unit test with DI fixture for CLI function calls
+@pytest.mark.usefixtures("initialized_container")
+class TestFileSelection:
+    def test_get_input_file_behavior(self):
+        # This function uses container.core.rich_output() internally
+        result = get_input_file(None, tmpdir, file_pattern="*.csv")
+        assert result is not None
+
+# ✅ Correct - Integration test using CLI runner (DI auto-initialized)
+def test_cli_command(cli_runner):
+    result = cli_runner.invoke(command, ['--option'])
+    assert result.exit_code == 0
+
+# ✅ Correct - Unit test with mocked services (no DI dependency)
+def test_table_creation():
+    mock_rich_output = Mock()
+    result = create_file_selection_table(mock_rich_output, "Files")
+    assert result is not None
+```
+
 Use the provided fixtures and follow these patterns:
 
 ```python
