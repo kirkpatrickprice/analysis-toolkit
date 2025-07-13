@@ -53,10 +53,10 @@ nav:
   - User Guides: 
     - user-guides/README.md
     - Installation: user-guides/installation.md
+    - Updating: user-guides/updating.md
     - Process Scripts: user-guides/process-scripts.md
     - Nipper Expander: user-guides/nipper-expander.md
     - RTF to Text: user-guides/rtf-to-text.md
-    - Updating: user-guides/updating.md
   - Tutorials:
     - tutorials/README.md
   - Reference:
