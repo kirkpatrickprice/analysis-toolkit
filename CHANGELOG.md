@@ -31,3 +31,6 @@
 
 **06/29/2025** v2.0.4
     * Implement new behavior for upgrade notifications as in-process upgrades resulted in locked, open files
+
+**07/12/2025** v2.1.0
+    Refactor to use Dependency Injection patterns throughout application

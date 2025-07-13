@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 """Change History
 0.1    Initial version
@@ -8,4 +8,5 @@ __version__ = "0.2.0"
 0.1.3  Improve handling of CSV files with large fields
 0.1.4  2025-01-25: Changes to support /src layout and PiPY distribution
 0.2.0  2025-05-22: Rewrite for integrated toolset UI experience
+0.3.0  2025-07-12: Refactor to use Dependency Injection patterns
 """
