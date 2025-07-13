@@ -52,6 +52,11 @@ nav:
   - Home: index.md
   - User Guides: 
     - user-guides/README.md
+    - Installation: user-guides/installation.md
+    - Process Scripts: user-guides/process-scripts.md
+    - Nipper Expander: user-guides/nipper-expander.md
+    - RTF to Text: user-guides/rtf-to-text.md
+    - Updating: user-guides/updating.md
   - Tutorials:
     - tutorials/README.md
   - Reference:
@@ -74,7 +79,7 @@ nav:
     - implementation/README.md
     - CLI Refactoring: implementation/cli-refactoring-recommendations.md
     - Dependency Injection Plan: implementation/dependency-injection-implementation-plan.md
-    - Excel Export DI Migration: implementation/excel-export-dependency-injection-migration-plan.md
+    - Excel Utils DI Migration: implementation/excel-utils-di-migration-plan.md
     - File Processing DI Migration: implementation/file-processing-dependency-injection-migration-plan.md
     - PyTest Fixture Migration: implementation/pytest-fixture-organization-migration-plan.md
   - Troubleshooting:
