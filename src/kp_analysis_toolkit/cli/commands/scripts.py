@@ -1,4 +1,5 @@
 from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import rich_click as click
@@ -39,7 +40,9 @@ from kp_analysis_toolkit.process_scripts.excel_exporter import (
 )
 from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, SysFilterAttr
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
+from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
 from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.systems import Systems
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
     load_search_configs,
@@ -48,15 +51,8 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
 from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
-    from kp_analysis_toolkit.process_scripts.models.results.base import (
-        SearchResult,
-        SearchResults,
-    )
     from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
-    from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
 # Configure option groups for this command
 # Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
@@ -238,7 +234,7 @@ def list_systems(program_config: ProgramConfig) -> None:
     max_detail_fields = 5  # Limit displayed details in verbose mode
 
     for system in systems:
-        row_data = [system.system_name, format_hash_display(system.file_hash)]
+        row_data = [system.system_name, format_hash_display(system.file_hash or "")]
 
         if program_config.verbose:
             # Create details string for verbose mode with excluded fields
@@ -271,19 +267,18 @@ def print_verbose_config(
 
     # Display configuration using Rich
     rich_output.configuration_table(
-        config_dict=program_config.to_dict(),
+        config_dict=dict(program_config.to_dict()),
         original_dict=cli_config,
         title="Program Configuration",
         force=True,
     )
 
 
-def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
-    """Process the source files and execute searches."""
+def _initialize_search_setup(
+    program_config: ProgramConfig,
+) -> tuple[list[Systems], list[SearchConfig]]:
+    """Initialize systems and search configurations."""
     rich_output = container.core.rich_output()
-    time_stamp: str = get_timestamp()
-
-    rich_output.header("Processing Source Files")
 
     # Create results path
     create_results_directory(
@@ -298,58 +293,90 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     rich_output.info(f"Found {len(systems)} systems to process")
 
     # Load search configurations
+    audit_config_path = program_config.audit_config_file
+    if audit_config_path is None:
+        error_msg = "Audit config file is required"
+        raise ValueError(error_msg)
+
     search_configs: list[SearchConfig] = load_search_configs(
-        program_config.audit_config_file,
+        Path(audit_config_path)
+        if isinstance(audit_config_path, str)
+        else audit_config_path,
     )
     rich_output.info(f"Loaded {len(search_configs)} search configurations")
 
+    return systems, search_configs
+
+
+def _execute_search_for_config(
+    config: SearchConfig,
+    systems: list[Systems],
+    os_results: dict[str, list[SearchResults]],
+    *,
+    verbose: bool = False,
+) -> None:
+    """Execute search for a single configuration and update results."""
+    rich_output = container.core.rich_output()
+    os_type: str = _get_sysfilter_os_type(config)
+
+    if verbose:
+        rich_output.debug(f"Executing search: ({os_type}) {config.name}")
+
+    results: SearchResults = execute_search(config, systems)
+
+    # Find the matching OS type or default to UNDEFINED
+    matching_os: OSFamilyType = OSFamilyType.UNDEFINED
+    for enum_os in OSFamilyType:
+        if enum_os.value == os_type:
+            matching_os = enum_os
+            break
+
+    # Append search results to the corresponding OS type list
+    os_results[matching_os.value].append(results)
+
+    if verbose:
+        if results.result_count == 0:
+            rich_output.warning("  No matches found")
+        else:
+            rich_output.success(f"  Found {results.result_count} matches")
+
+
+def _execute_searches(
+    search_configs: list[SearchConfig],
+    systems: list[Systems],
+    *,
+    verbose: bool,
+) -> dict[str, list[SearchResults]]:
+    """Execute all searches and return organized results."""
+    rich_output = container.core.rich_output()
+
     # Initialize dictionary with all OSFamilyType values using a dictionary comprehension
-    os_results: dict[str, list[SearchResult]] = {
+    os_results: dict[str, list[SearchResults]] = {
         os_type.value: [] for os_type in OSFamilyType
     }
 
     # Execute searches with Rich progress bar or verbose output
-    if program_config.verbose:
+    if verbose:
         # Use verbose Rich output instead of progress bar
         rich_output.subheader("Executing Searches")
         for config in search_configs:
-            os_type: str = _get_sysfilter_os_type(config)
-            rich_output.debug(f"Executing search: ({os_type}) {config.name}")
-
-            results: SearchResults = execute_search(config, systems)
-
-            # Find the matching OS type or default to UNDEFINED
-            matching_os: OSFamilyType = OSFamilyType.UNDEFINED
-            for enum_os in OSFamilyType:
-                if enum_os.value == os_type:
-                    matching_os = enum_os.value
-                    break
-
-            # Append results to the corresponding OS type list
-            os_results[matching_os].append(results)
-
-            if results.result_count == 0:
-                rich_output.warning("  No matches found")
-            else:
-                rich_output.success(f"  Found {results.result_count} matches")
+            _execute_search_for_config(config, systems, os_results, verbose=True)
     else:
         # Use Rich progress bar for non-verbose mode
-        for config in rich_output.simple_progress(
-            search_configs,
-            "Executing searches",
-        ):
-            os_type: str = _get_sysfilter_os_type(config)
-            results: SearchResults = execute_search(config, systems)
+        for config in rich_output.simple_progress(search_configs, "Executing searches"):
+            _execute_search_for_config(config, systems, os_results, verbose=False)
 
-            # Find the matching OS type or default to UNDEFINED
-            matching_os: OSFamilyType = OSFamilyType.UNDEFINED
-            for enum_os in OSFamilyType:
-                if enum_os.value == os_type:
-                    matching_os = enum_os.value
-                    break
+    return os_results
 
-            # Append results to the corresponding OS type list
-            os_results[matching_os].append(results)
+
+def _export_results_to_excel(
+    os_results: dict[str, list[SearchResults]],
+    systems: list[Systems],
+    program_config: ProgramConfig,
+    time_stamp: str,
+) -> None:
+    """Export search results to Excel files organized by OS type."""
+    rich_output = container.core.rich_output()
 
     # Export results to separate Excel files based on OS type
     rich_output.subheader("Exporting Results")
@@ -361,8 +388,8 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
         os_family = system.os_family.value if system.os_family else "Unknown"
         systems_by_os[os_family].append(system)
 
-    for os_type, results in os_results.items():
-        if not results:
+    for os_type, search_results_list in os_results.items():
+        if not search_results_list:
             continue
 
         output_file: Path = (
@@ -372,11 +399,14 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
         # Filter systems to only include those for this OS type
         os_systems = systems_by_os.get(os_type, [])
 
-        export_search_results_to_excel(results, output_file, os_systems)
+        export_search_results_to_excel(search_results_list, output_file, os_systems)
         files_created.append(str(output_file.relative_to(program_config.results_path)))
         if program_config.verbose:
+            total_results = sum(
+                search_result.result_count for search_result in search_results_list
+            )
             rich_output.debug(
-                f"Exported {len(results)} results for {os_type} to {output_file.relative_to(program_config.results_path)}",
+                f"Exported {total_results} results for {os_type} to {output_file.relative_to(program_config.results_path)}",
             )
 
     if not files_created:
@@ -387,11 +417,38 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
         )
 
 
+def process_scipts_results(program_config: ProgramConfig) -> None:
+    """Process the source files and execute searches."""
+    rich_output = container.core.rich_output()
+    time_stamp: str = get_timestamp()
+
+    rich_output.header("Processing Source Files")
+
+    # Initialize setup
+    systems, search_configs = _initialize_search_setup(program_config)
+
+    # Execute searches
+    os_results = _execute_searches(
+        search_configs, systems, verbose=program_config.verbose
+    )
+
+    # Export results
+    _export_results_to_excel(os_results, systems, program_config, time_stamp)
+
+
 def _get_sysfilter_os_type(config: SearchConfig) -> str:
     """Get the OS type from the search configuration."""
+    # Check if sys_filter exists and is not None
+    if config.sys_filter is None:
+        return "Unknown"
+
     # Iterate through the sys_filter list to find the first one with an os_family
     for sysfilter in config.sys_filter:
         if sysfilter.attr == SysFilterAttr.OS_FAMILY:
-            return sysfilter.value
+            # Handle the case where value could be various types
+            value = sysfilter.value
+            if isinstance(value, str):
+                return value
+            return str(value)
 
     return "Unknown"

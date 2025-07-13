@@ -193,9 +193,9 @@ click.rich_click.OPTION_GROUPS["nipper"] = [
     },
 ]
 
-cli.add_command(scripts_process_command_line, name="scripts")
-cli.add_command(nipper_process_command_line, name="nipper")
-cli.add_command(rtf_process_command_line, name="rtf-to-text")
+cli.add_command(scripts_process_command_line, name="scripts")  # type: ignore[arg-type]
+cli.add_command(nipper_process_command_line, name="nipper")  # type: ignore[arg-type]
+cli.add_command(rtf_process_command_line, name="rtf-to-text")  # type: ignore[arg-type]
 
 
 def _show_enhanced_help(console: RichOutputService) -> None:
