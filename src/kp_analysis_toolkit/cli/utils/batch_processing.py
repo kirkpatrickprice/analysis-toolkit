@@ -88,10 +88,20 @@ def process_files_batch(
         Exception: If error_handling is FAIL_FAST and an error occurs
 
     Example:
-        def process_rtf(file_path: Path) -> str:
-            # Process RTF file and return output filename
+        from dependency_injector.wiring import inject, Provide
+        from kp_analysis_toolkit.core.containers.application import ApplicationContainer
+        from kp_analysis_toolkit.rtf_to_text.service import RtfToTextService
+
+        @inject
+        def process_rtf(
+            file_path: Path,
+            rtf_service: RtfToTextService = Provide[
+                ApplicationContainer.rtf_to_text.rtf_to_text_service
+            ]
+        ) -> str:
+            # Process RTF file using DI service and return output filename
             config = create_rtf_config(file_path)
-            process_rtf_file(config)
+            rtf_service.convert_file(config.input_file, config.output_file)
             return config.output_file.name
 
         def format_success(file_path: Path, result: str) -> str:
@@ -378,7 +388,7 @@ def process_files_with_config(
         result = process_files_with_config(
             rtf_files,
             create_rtf_config,
-            process_rtf_file,
+            process_rtf_with_di_service,  # Using DI-based processor
             batch_config,
         )
 

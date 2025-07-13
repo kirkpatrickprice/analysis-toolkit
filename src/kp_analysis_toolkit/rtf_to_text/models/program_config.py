@@ -31,9 +31,12 @@ class ProgramConfig(KPATBaseModel):
         return value
 
     @computed_field
-    @property
     def output_file(self) -> Path:
         """Return the path for the converted text output file."""
+        if self.input_file is None:
+            message: str = "Input file is required to generate output file path"
+            raise ValueError(message)
+
         # Get the input file's stem (filename without extension)
         stem: str = self.input_file.stem
 

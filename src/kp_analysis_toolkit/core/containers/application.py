@@ -5,6 +5,7 @@ from __future__ import annotations
 from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.core.containers.core import CoreContainer
+from kp_analysis_toolkit.rtf_to_text.container import RtfToTextContainer
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
@@ -12,6 +13,12 @@ class ApplicationContainer(containers.DeclarativeContainer):
 
     # Core container with all shared services
     core: providers.Container[CoreContainer] = providers.Container(CoreContainer)
+
+    # Module containers
+    rtf_to_text: providers.Container[RtfToTextContainer] = providers.Container(
+        RtfToTextContainer,
+        core=core,
+    )
 
 
 # Global container instance
@@ -39,6 +46,15 @@ def wire_application_container() -> None:
     container.wire(
         modules=[
             "kp_analysis_toolkit.cli",
+            "kp_analysis_toolkit.cli.commands.rtf_to_text",
+        ],
+    )
+
+    # Wire module containers
+    container.rtf_to_text().wire(
+        modules=[
+            "kp_analysis_toolkit.rtf_to_text.service",
+            "kp_analysis_toolkit.rtf_to_text.services.rtf_converter",
         ],
     )
 
