@@ -58,6 +58,7 @@ Choose a file or press CTRL-C to quit:
 ### Expected CSV Structure
 
 Nipper Expander expects CSV files with the following columns:
+
 - **Issue Title** - Name/title of the security finding
 - **Devices** - Affected devices (may contain multiple devices separated by line breaks)
 - **Rating** - Severity rating (Critical, High, Medium, Low)
@@ -94,6 +95,7 @@ Output files follow the pattern:
 ```
 
 Examples:
+
 - `nipper-report_expanded-20250628-143022.xlsx`
 - `firewall-audit_expanded-20250628-143022.xlsx`
 
@@ -188,13 +190,6 @@ kpat_cli nipper --start-dir /audit-reports/2025/Q1
 kpat_cli nipper --version
 ```
 
-## Performance Considerations
-
-- **Memory usage** - Efficient processing even for large CSV files with thousands of findings
-- **Processing speed** - Fast conversion suitable for files with hundreds of devices
-- **Output size** - Expanded files will be larger than originals due to row multiplication
-- **Excel compatibility** - Optimized for Excel's row and column limits
-
 ## Troubleshooting
 
 ### Common Issues
@@ -217,60 +212,8 @@ file your-nipper-file.csv
 - **"Error validating configuration"** - Invalid file path or permissions
 - **"Error processing CSV file"** - Malformed CSV or unexpected format
 
-## Dependencies
-
-### Pre-Requisites
-- **Python 3.12+**
-
-### Automatically Installed
-- **Pydantic** for data modeling and validation
-- **pandas** for CSV processing and data manipulation
-- **openpyxl** for Excel file generation
-- **click** for command-line interface
-- **Pydantic** for configuration validation
-
 ## Related Tools
 
 - **Nipper** - Network security auditing tool that generates the source CSV files
 - **Process Scripts** - For analyzing other types of audit data
 - **Excel** - For advanced analysis of the expanded reports
-
-## Version History
-
-The Nipper Expander evolved from a standalone Python script to a fully integrated module:
-
-- **Original Script** - Command-line Python tool for basic CSV expansion
-- **Integrated Module** - Full integration with KP Analysis Toolkit
-- **Modern Architecture** - Pydantic-based validation and Click CLI interface
-- **Enhanced Output** - Professional Excel formatting with tables and freeze panes
-- **Improved UX** - Better error handling and interactive file selection
-
-## Migration from Legacy Tool
-
-If you're migrating from the original `nipper-expander.py` script:
-
-### Command Differences
-
-**Old command:**
-```bash
-python nipper-expander.py --infile report.csv
-```
-
-**New command:**
-```bash
-kpat_cli nipper --in-file report.csv
-```
-
-### Output Differences
-
-- **File format** - Now generates Excel (.xlsx) instead of CSV
-- **Formatting** - Professional Excel formatting with tables
-- **Filename** - Includes timestamp for better organization
-- **Location** - Saves in same directory as source file
-
-### Functionality Improvements
-
-- **Better error handling** - More informative error messages
-- **Interactive selection** - Improved file selection interface
-- **Data validation** - Pydantic-based input validation
-- **Excel features** - Formatted tables, freeze panes, and proper headers

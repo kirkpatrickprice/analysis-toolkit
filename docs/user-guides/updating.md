@@ -9,15 +9,15 @@ The message will be similar to this:
 📦 Update Available
 
 ┌─ Upgrade Instructions ──────────────────────────────────┐
-│ Current version: 2.0.5                                  │
-│ Latest version:  2.1.0                                  │
-│                                                         │
-│ To upgrade, run:                                        │
-│ pipx upgrade kp-analysis-toolkit                        │
-│                                                         │
-│ Or if you want to skip this check in the future:        │
-│ kpat_cli --skip-update-check                            │
-└─────────────────────────────────────────────────────────┘
+│ Current version: 2.0.5                               │
+│ Latest version:  2.1.0                               │
+│                                                      │
+│ To upgrade, run:                                     │
+│ pipx upgrade kp-analysis-toolkit                     │
+│                                                      │
+│ Or if you want to skip this check in the future:     │
+│ kpat_cli --skip-update-check                         │
+└───────────────────────────────────────────────────────────┘
 
 The application will now exit. Please run the upgrade command above 
 and then run your command again.
@@ -26,6 +26,7 @@ Note: Upgrade checks can be disabled using the --skip-update-check option.
 ```
 
 **Why does the toolkit exit instead of upgrading automatically?**
+
 - **File locking**: When Python applications upgrade themselves while running, file locks can cause upgrade failures
 - **Reliability**: Manual upgrades using `pipx upgrade` are more reliable and consistent
 - **User control**: You have full control over when and how upgrades happen
@@ -38,7 +39,7 @@ pipx upgrade kp-analysis-toolkit
 ```
 
 ## Disabling Update Checks
-Skip update checks for automated scripts or when you don't want to be prompted:
+Skip update checks for automated scripts:
 ```bash
 kpat_cli --skip-update-check scripts --help
 ```

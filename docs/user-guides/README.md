@@ -1,49 +1,62 @@
 # User Guides
 
-Welcome to the KP Analysis Toolkit user guides! These guides provide step-by-step instructions for installing, configuring, and using each module of the toolkit.
+Ready to start analyzing audit data? These guides provide step-by-step instructions for installing, configuring, and using each module of the toolkit.
 
 ## Getting Started
 
-- **[Installation](installation.md)** - How to install the toolkit on your system
-- **[Updating](updating.md)** - Keeping the toolkit up to date
+**New to the toolkit?** Start here:
+- **[Installation](installation.md)** - Set up the toolkit on any system
+- **[Updating](updating.md)** - Keep the toolkit current with latest features
 
 ## Module Guides
 
+Pick the module that matches the data being analyzed:
+
 ### 🔍 Process Scripts
-- **[Process Scripts Guide](process-scripts.md)** - Comprehensive guide for analyzing OS audit data
+**Best for:** OS audit script output, system configuration files, log analysis
+- **[Process Scripts Guide](process-scripts.md)** - Pattern searching and automated Excel reporting
 
 ### 🔧 Nipper Expander  
-- **[Nipper Expander Guide](nipper-expander.md)** - Processing Nipper CSV exports
+**Best for:** Network vulnerability scans, device security assessments
+- **[Nipper Expander Guide](nipper-expander.md)** - Transform CSV exports for analysis
 
 ### 📄 RTF to Text Converter
-- **[RTF to Text Guide](rtf-to-text.md)** - Converting RTF files to plain text
+**Best for:** Configuration files in RTF format, document standardization
+- **[RTF to Text Guide](rtf-to-text.md)** - Convert documents to plain text
 
 ## Quick Reference
 
-Each module can be run with `--help` to see all available options:
+Get help anytime with built-in command assistance:
 
 ```bash
-# Main help
+# Main help - see all available modules
 kpat_cli --help
 
-# Module-specific help
+# Module-specific help with all options
 kpat_cli scripts --help
 kpat_cli nipper --help
 kpat_cli rtf-to-text --help
 ```
 
-## Common Workflows
+## Typical Audit Workflows
 
-Most audit workflows follow this pattern:
+**System Security Assessment:**
+1. **Data Collection** → Run appropriate audit scripts on target systems
+2. **Analysis** → Process collected files with Process Scripts module
+3. **Reporting** → Review generated Excel workbooks for findings
 
-1. **Data Collection** - Use the appropriate audit scripts to collect system data
-2. **Processing** - Use Process Scripts to analyze the collected data
-3. **Network Analysis** - Use Nipper Expander for network device findings
-4. **Format Conversion** - Use RTF to Text for document format issues
-5. **Reporting** - Generate Excel reports for analysis and findings
+**Network Security Assessment:**
+1. **Scanning** → Generate Nipper vulnerability reports
+2. **Processing** → Expand CSV exports with Nipper Expander module  
+3. **Analysis** → Use Excel pivot tables for vulnerability analysis
 
-## Need Help?
+**Configuration Review:**
+1. **Collection** → Gather device configurations (often RTF format)
+2. **Conversion** → Standardize files with RTF to Text module
+3. **Analysis** → Search configuration files with Process Scripts
 
+## Getting Help
+
+**Having trouble?**
 - Check the specific module guide for detailed instructions
-- Review [Troubleshooting](../troubleshooting/README.md) for common issues
-- Consult the [API Reference](../api/README.md) for programmatic usage
+- Review [Troubleshooting](../troubleshooting/README.md) for common problems
