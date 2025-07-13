@@ -8,9 +8,10 @@ from typing import Any, Protocol
 from pydantic import Field
 
 from kp_analysis_toolkit.cli.common.config_validation import handle_fatal_error
+from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.models.types import PathLike
-from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
 
 class ErrorHandlingStrategy(Enum):
@@ -109,7 +110,7 @@ def process_files_batch(
         config = BatchProcessingConfig()
 
     if config.rich_output is None:
-        config.rich_output = get_rich_output()
+        config.rich_output = container.core.rich_output()
 
     result = BatchResult()
     result.total_files = len(file_list)
@@ -138,6 +139,10 @@ def _process_file_list(
     result: BatchResult,
 ) -> BatchResult:
     """Process the file list with progress tracking."""
+    # Ensure rich_output is available
+    if config.rich_output is None:
+        config.rich_output = container.core.rich_output()
+
     # Create progress bar
     with config.rich_output.progress() as progress:
         task = progress.add_task(config.progress_description, total=result.total_files)
@@ -172,6 +177,10 @@ def _handle_file_success(
     result: BatchResult,
 ) -> None:
     """Handle successful file processing."""
+    # Ensure rich_output is available
+    if config.rich_output is None:
+        config.rich_output = container.core.rich_output()
+
     if config.success_message_formatter:
         success_msg = config.success_message_formatter(file_path, process_result)
         config.rich_output.success(success_msg)
@@ -188,6 +197,10 @@ def _handle_file_error(
     result: BatchResult,
 ) -> None:
     """Handle file processing error based on strategy."""
+    # Ensure rich_output is available
+    if config.rich_output is None:
+        config.rich_output = container.core.rich_output()
+
     error_msg = f"Failed to process {file_path.name}: {error}"
 
     if config.error_handling == ErrorHandlingStrategy.FAIL_FAST:
@@ -206,6 +219,10 @@ def _finalize_batch_processing(
     config: BatchProcessingConfig,
 ) -> None:
     """Display summary and handle collected errors."""
+    # Ensure rich_output is available
+    if config.rich_output is None:
+        config.rich_output = container.core.rich_output()
+
     _display_batch_summary(result, config.operation_description, config.rich_output)
 
     # Report collected errors if using COLLECT_ERRORS strategy
@@ -290,7 +307,7 @@ def discover_and_process_files(
         config = BatchProcessingConfig()
 
     if config.rich_output is None:
-        config.rich_output = get_rich_output()
+        config.rich_output = container.core.rich_output()
 
     # Auto-generate descriptions if not provided
     if config.operation_description == "Processing files":

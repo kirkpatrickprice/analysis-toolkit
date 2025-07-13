@@ -7,6 +7,7 @@ naming, help text, and behavior while reducing code duplication.
 """
 
 from collections.abc import Callable
+from typing import Any
 
 import rich_click as click
 
@@ -14,7 +15,7 @@ import rich_click as click
 def module_version_option(
     module_version: str,
     command_name: str,
-) -> Callable[[Callable], Callable]:
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Standard version option decorator for CLI commands.
 
@@ -43,7 +44,7 @@ def start_directory_option(
     param_name: str = "source_files_path",
     default: str = "./",
     help_text: str = "Default: the current working directory (./). Specify the path to start searching for files. Will walk the directory tree from this path.",
-) -> Callable[[Callable], Callable]:
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Standard start directory option for file processing commands.
 
@@ -76,7 +77,7 @@ def input_file_option(
     file_type: str = "file",
     file_extension: str | None = None,
     help_template: str = "Input {file_type} to process. If not specified, will search the current directory for {file_pattern} files.",
-) -> Callable[[Callable], Callable]:
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Standard input file option for file processing commands.
 
@@ -112,7 +113,7 @@ def output_directory_option(
     param_name: str = "out_path",
     default: str = "results/",
     help_text: str = "Default: results/. Specify the output directory for the results files.",
-) -> Callable[[Callable], Callable]:
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Standard output directory option for commands that need explicit output control.
 
@@ -143,7 +144,7 @@ def output_directory_option(
 def verbose_option(
     param_name: str = "verbose",
     help_text: str = "Enable verbose output including debug messages",
-) -> Callable[[Callable], Callable]:
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Standard verbose option for commands that need detailed output control.
 
@@ -177,7 +178,9 @@ start_dir_option = start_directory_option
 input_option = input_file_option
 
 
-def grouped_option_decorator(group_name: str) -> Callable[[Callable], Callable]:
+def grouped_option_decorator(
+    group_name: str,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator to add rich-click group metadata to options.
 
@@ -197,7 +200,7 @@ def grouped_option_decorator(group_name: str) -> Callable[[Callable], Callable]:
 
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         if not hasattr(func, "rich_click_group"):
             func.rich_click_group = group_name  # type: ignore[attr-defined]
         return func
@@ -205,7 +208,9 @@ def grouped_option_decorator(group_name: str) -> Callable[[Callable], Callable]:
     return decorator
 
 
-def custom_help_option(command_name: str) -> Callable[[Callable], Callable]:
+def custom_help_option(
+    command_name: str,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator that adds custom grouped help display to a command.
 
@@ -240,7 +245,7 @@ def custom_help_option(command_name: str) -> Callable[[Callable], Callable]:
         display_grouped_help(ctx, command_name)
         ctx.exit()
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # Add the custom help option to the command
         help_option = click.option(
             "--help",

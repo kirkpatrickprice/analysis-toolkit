@@ -3,10 +3,8 @@ from pathlib import Path
 
 from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
 from kp_analysis_toolkit.cli.utils.table_layouts import create_file_selection_table
-from kp_analysis_toolkit.utils.rich_output import (
-    RichOutputService,
-    get_rich_output,
-)
+from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
 
 def get_input_file(
@@ -34,7 +32,7 @@ def get_input_file(
         Path to selected file, or None if "process all files" was selected
 
     """
-    rich_output: RichOutputService = get_rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
 
     if infile:
         return Path(infile)

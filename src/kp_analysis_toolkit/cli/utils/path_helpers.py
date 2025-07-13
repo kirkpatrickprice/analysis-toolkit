@@ -1,8 +1,9 @@
 from pathlib import Path
 
+from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.types import PathLike
 from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
-from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
 
 def create_results_directory(
@@ -27,7 +28,7 @@ def create_results_directory(
 
     """
     if rich_output is None:
-        rich_output = get_rich_output()
+        rich_output = container.core.rich_output()
 
     path = Path(results_path).resolve()
 
@@ -81,8 +82,8 @@ def discover_files_by_pattern(
         message: str = f"Path does not exist: {base_path}"
         raise ValueError(message)
     if not base_path.is_dir():
-        message: str = f"Path is not a directory: {base_path}"
-        raise ValueError(message)
+        error_message: str = f"Path is not a directory: {base_path}"
+        raise ValueError(error_message)
 
     if recursive:
         return list(base_path.rglob(pattern))

@@ -5,6 +5,8 @@ This module provides standardized table creation functions to ensure
 consistent styling and reduce code duplication across CLI interfaces.
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -14,12 +16,12 @@ if TYPE_CHECKING:
 
 
 def create_file_selection_table(
-    rich_output: "RichOutputService",
+    rich_output: RichOutputService,
     *,
     title: str = "File Selection",
     include_size: bool = True,
     include_choice_column: bool = True,
-) -> "Table | None":
+) -> Table | None:
     """
     Create a standardized file selection table layout.
 
@@ -67,11 +69,11 @@ def create_file_selection_table(
 
 
 def create_file_listing_table(
-    rich_output: "RichOutputService",
+    rich_output: RichOutputService,
     *,
     title: str = "File Listing",
     file_column_name: str = "File Path",
-) -> "Table | None":
+) -> Table | None:
     """
     Create a standardized file listing table (no user interaction).
 
@@ -109,11 +111,11 @@ def create_file_listing_table(
 
 
 def create_system_info_table(
-    rich_output: "RichOutputService",
+    rich_output: RichOutputService,
     *,
     title: str = "System Information",
     include_details: bool = False,
-) -> "Table | None":
+) -> Table | None:
     """
     Create a standardized system information table layout.
 
@@ -157,11 +159,11 @@ def create_system_info_table(
 
 
 def create_config_display_table(
-    rich_output: "RichOutputService",
+    rich_output: RichOutputService,
     *,
     title: str = "Configuration",
     show_original_values: bool = False,
-) -> "Table | None":
+) -> Table | None:
     """
     Create a standardized configuration display table layout.
 
@@ -211,10 +213,10 @@ def create_config_display_table(
 
 
 def create_version_info_table(
-    rich_output: "RichOutputService",
+    rich_output: RichOutputService,
     *,
     title: str = "📦 Module Versions",
-) -> "Table | None":
+) -> Table | None:
     """
     Create a standardized version information table layout.
 

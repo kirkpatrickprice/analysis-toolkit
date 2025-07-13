@@ -9,7 +9,7 @@ from urllib.request import urlopen
 from packaging import version
 
 from kp_analysis_toolkit import __version__
-from kp_analysis_toolkit.utils.rich_output import get_rich_output
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
 
 class VersionChecker:
@@ -58,16 +58,15 @@ class VersionChecker:
         else:
             return latest > current, latest_version
 
-    def prompt_for_upgrade(self, latest_version: str) -> None:
+    def prompt_for_upgrade(self, latest_version: str, rich: RichOutputService) -> None:
         """
         Inform user about available upgrade and provide instructions.
 
         Args:
             latest_version: The latest available version
+            rich: The RichOutputService instance for formatted output
 
         """
-        rich = get_rich_output()
-
         rich.header("📦 Update Available")
 
         # Get the command that was actually run
@@ -105,7 +104,10 @@ Or if you want to skip this check in the future:
         )
 
 
-def check_and_prompt_update(package_name: str = "kp-analysis-toolkit") -> None:
+def check_and_prompt_update(
+    rich: RichOutputService,
+    package_name: str = "kp-analysis-toolkit",
+) -> None:
     """
     Check for updates and inform user if available.
 
@@ -113,11 +115,11 @@ def check_and_prompt_update(package_name: str = "kp-analysis-toolkit") -> None:
     If an update is available, it will display upgrade instructions and exit.
 
     Args:
+        rich: The RichOutputService instance for formatted output
         package_name: The PyPI package name to check
 
     """
     checker = VersionChecker(package_name)
-    rich = get_rich_output()
 
     try:
         has_update, latest_version = checker.check_for_updates()
@@ -128,7 +130,7 @@ def check_and_prompt_update(package_name: str = "kp-analysis-toolkit") -> None:
             return
 
         if has_update and latest_version:
-            checker.prompt_for_upgrade(latest_version)
+            checker.prompt_for_upgrade(latest_version, rich)
             sys.exit(0)  # Exit after showing upgrade instructions
 
     except Exception:  # noqa: BLE001, S110

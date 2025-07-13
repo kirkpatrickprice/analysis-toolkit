@@ -10,6 +10,7 @@ from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 
 
+@pytest.mark.usefixtures("initialized_container")
 class TestEnhancedFileSelection:
     """Test the enhanced file selection functionality."""
 
@@ -190,7 +191,9 @@ class TestEnhancedFileSelection:
 
             # Test non-recursive (default)
             non_recursive_files = discover_files_by_pattern(
-                tmpdir, "*.csv", recursive=False,
+                tmpdir,
+                "*.csv",
+                recursive=False,
             )
             assert len(non_recursive_files) == 1
             assert non_recursive_files[0].name == "root.csv"

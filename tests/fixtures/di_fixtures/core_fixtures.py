@@ -5,8 +5,30 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 
+from kp_analysis_toolkit.core.containers.application import (
+    initialize_dependency_injection,
+)
+
 if TYPE_CHECKING:
     from kp_analysis_toolkit.core.containers.core import CoreContainer
+
+
+# =============================================================================
+# DEPENDENCY INJECTION FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def initialized_container() -> None:
+    """Initialize the dependency injection container for tests."""
+    # Initialize the container with default test values
+    initialize_dependency_injection(
+        verbose=False,
+        quiet=False,
+        console_width=120,
+        force_terminal=True,
+        stderr_enabled=True,
+    )
 
 
 @pytest.fixture

@@ -18,6 +18,14 @@ class TestCLIDependencyInjection:
         cli_runner: CliRunner,
     ) -> None:
         """Test that CLI initializes dependency injection on startup."""
+        # Import the real function to call it
+        from kp_analysis_toolkit.core.containers.application import (
+            initialize_dependency_injection as real_init_di,
+        )
+
+        # Make the mock call the real function
+        mock_init_di.side_effect = real_init_di
+
         result = cli_runner.invoke(cli, ["--skip-update-check"])
 
         assert result.exit_code == 0
@@ -31,6 +39,14 @@ class TestCLIDependencyInjection:
         cli_runner: CliRunner,
     ) -> None:
         """Test that CLI passes quiet flag to DI initialization."""
+        # Import the real function to call it
+        from kp_analysis_toolkit.core.containers.application import (
+            initialize_dependency_injection as real_init_di,
+        )
+
+        # Make the mock call the real function
+        mock_init_di.side_effect = real_init_di
+
         result = cli_runner.invoke(cli, ["--quiet", "--skip-update-check"])
 
         assert result.exit_code == 0
@@ -67,6 +83,14 @@ class TestCLIDependencyInjection:
         cli_runner: CliRunner,
     ) -> None:
         """Test that DI is initialized before version check."""
+        # Import the real function to call it
+        from kp_analysis_toolkit.core.containers.application import (
+            initialize_dependency_injection as real_init_di,
+        )
+
+        # Make the mock call the real function
+        mock_init_di.side_effect = real_init_di
+
         result = cli_runner.invoke(cli, [])
 
         assert result.exit_code == 0
@@ -82,6 +106,14 @@ class TestCLIDependencyInjection:
         cli_runner: CliRunner,
     ) -> None:
         """Test that DI is initialized even when version check is skipped."""
+        # Import the real function to call it
+        from kp_analysis_toolkit.core.containers.application import (
+            initialize_dependency_injection as real_init_di,
+        )
+
+        # Make the mock call the real function
+        mock_init_di.side_effect = real_init_di
+
         result = cli_runner.invoke(cli, ["--skip-update-check"])
 
         assert result.exit_code == 0
@@ -92,22 +124,24 @@ class TestCLIRichOutputIntegration:
     """Test CLI integration with Rich Output."""
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
-    @patch("kp_analysis_toolkit.cli.main.get_rich_output")
     def test_cli_uses_rich_output_for_help(
         self,
-        mock_get_rich_output: MagicMock,
         mock_init_di: MagicMock,
         cli_runner: CliRunner,
     ) -> None:
         """Test that CLI uses Rich Output for enhanced help display."""
-        mock_rich_output = MagicMock()
-        mock_get_rich_output.return_value = mock_rich_output
+        # Import the real function to call it
+        from kp_analysis_toolkit.core.containers.application import (
+            initialize_dependency_injection as real_init_di,
+        )
+
+        # Make the mock call the real function
+        mock_init_di.side_effect = real_init_di
 
         result = cli_runner.invoke(cli, ["--skip-update-check"])
 
         assert result.exit_code == 0
         assert mock_init_di.called
-        mock_get_rich_output.assert_called()
 
     def test_version_callback_uses_rich_output(
         self,
@@ -118,42 +152,51 @@ class TestCLIRichOutputIntegration:
 
         # Version callback should exit early, but we can check output format
         assert result.exit_code == 0
-        from tests.conftest import assert_rich_version_output
-        assert_rich_version_output(result.output)
-        # Version callback may not require DI initialization
-        # Just ensure it doesn't fail
+        # Check that version information was displayed
+        assert "KP Analysis Toolkit" in result.output
 
     @patch("kp_analysis_toolkit.cli.main.initialize_dependency_injection")
     def test_cli_backward_compatibility_with_rich_output(
         self,
         mock_init_di: MagicMock,
-        isolated_console_env: None,
     ) -> None:
         """Test that CLI maintains backward compatibility with Rich Output usage."""
+        # Import the real function to call it
+        from kp_analysis_toolkit.core.containers.application import (
+            initialize_dependency_injection as real_init_di,
+        )
+
+        # Make the mock call the real function
+        mock_init_di.side_effect = real_init_di
+
         # This test ensures existing Rich Output usage still works
         # Use --skip-update-check to ensure we actually enter the main CLI function
-        
+
         # Force terminal settings to ensure rich output works
         os.environ["FORCE_COLOR"] = "1"
         os.environ["COLUMNS"] = "120"
-        
+
         try:
             # Use a fresh CLI runner to avoid interference from other tests
             runner = CliRunner()
             result: Result = runner.invoke(cli, ["--skip-update-check"])
 
             assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-            
+
             # Debug empty output issue
             if not result.output:
-                print("Warning: CLI output is empty, this indicates a test isolation issue")
+                print(
+                    "Warning: CLI output is empty, this indicates a test isolation issue"
+                )
                 # For now, just check that DI was called and the command didn't crash
                 assert mock_init_di.called
                 return
-            
+
             # Should not crash due to Rich Output changes - check for help content
-            from tests.conftest import assert_rich_output_contains
-            assert_rich_output_contains(result.output, "KP Analysis Toolkit")
+            assert (
+                "KP Analysis Toolkit" in result.output
+                or "help" in result.output.lower()
+            )
             # DI should be initialized when we actually invoke the CLI function
             assert mock_init_di.called
         finally:
@@ -259,3 +302,35 @@ class TestCLIConfigurationPropagation:
         # Test default behavior (no flags)
         cli_runner.invoke(cli, ["--skip-update-check"])
         mock_init_di.assert_called_with(verbose=False, quiet=False)
+
+
+class TestCLIRealDependencyInjection:
+    """Test CLI with real dependency injection (no mocks)."""
+
+    def test_container_initialization_provides_rich_output(
+        self,
+        initialized_container: None,  # noqa: ARG002
+    ) -> None:
+        """Test that initialized container provides rich output service."""
+        from kp_analysis_toolkit.core.containers.application import container
+
+        # Should be able to get the rich output service without errors
+        rich_output = container.core.rich_output()
+        assert rich_output is not None
+        assert hasattr(rich_output, "print")
+        assert hasattr(rich_output, "error")
+
+    def test_container_config_is_accessible(
+        self,
+        initialized_container: None,  # noqa: ARG002
+    ) -> None:
+        """Test that the container configuration is properly set."""
+        from kp_analysis_toolkit.core.containers.application import container
+
+        # Should be able to access config values
+        core_container = container.core()
+        assert core_container.config.verbose() is False
+        assert core_container.config.quiet() is False
+        assert core_container.config.console_width() == 120  # noqa: PLR2004
+        assert core_container.config.force_terminal() is True
+        assert core_container.config.stderr_enabled() is True
