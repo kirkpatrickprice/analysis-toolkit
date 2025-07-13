@@ -1,3 +1,0 @@
-This is a test RTF document.
-It contains some basic formatted text with bold and italic formatting.
-This should be converted to plain text.
