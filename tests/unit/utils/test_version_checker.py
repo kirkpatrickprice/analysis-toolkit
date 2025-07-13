@@ -94,13 +94,10 @@ class TestVersionChecker:
         """Test prompt_for_upgrade displays upgrade information."""
         checker = VersionChecker()
 
-        with patch(
-            "kp_analysis_toolkit.utils.version_checker.get_rich_output",
-        ) as mock_rich:
-            mock_rich_instance = Mock()
-            mock_rich.return_value = mock_rich_instance
+        # Create a mock rich output service
+        mock_rich_instance = Mock()
 
-            result = checker.prompt_for_upgrade("2.1.0")
+        result = checker.prompt_for_upgrade("2.1.0", mock_rich_instance)
 
         # New implementation returns None and displays info
         assert result is None
@@ -120,8 +117,11 @@ class TestCheckAndPromptUpdate:
         mock_checker.check_for_updates.return_value = (False, __version__)
         mock_checker_class.return_value = mock_checker
 
+        # Create mock rich output service
+        mock_rich = Mock()
+
         # Should not raise any exception and should not exit
-        check_and_prompt_update()
+        check_and_prompt_update(mock_rich)
 
         mock_checker.check_for_updates.assert_called_once()
         mock_checker.prompt_for_upgrade.assert_not_called()
@@ -133,15 +133,19 @@ class TestCheckAndPromptUpdate:
         mock_checker.check_for_updates.return_value = (False, None)
         mock_checker_class.return_value = mock_checker
 
+        # Create mock rich output service
+        mock_rich = Mock()
+
         # Should not raise any exception
-        check_and_prompt_update()
+        check_and_prompt_update(mock_rich)
 
         mock_checker.check_for_updates.assert_called_once()
         mock_checker.prompt_for_upgrade.assert_not_called()
 
     @patch("kp_analysis_toolkit.utils.version_checker.VersionChecker")
     def test_update_available_shows_info_and_exits(
-        self, mock_checker_class: Mock,
+        self,
+        mock_checker_class: Mock,
     ) -> None:
         """Test when update is available, shows info and exits."""
         newer_version = _get_next_minor_version(__version__)
@@ -149,9 +153,14 @@ class TestCheckAndPromptUpdate:
         mock_checker.check_for_updates.return_value = (True, newer_version)
         mock_checker_class.return_value = mock_checker
 
+        # Create mock rich output service
+        mock_rich = Mock()
+
         with patch("sys.exit") as mock_exit:
-            check_and_prompt_update()
+            check_and_prompt_update(mock_rich)
 
         mock_checker.check_for_updates.assert_called_once()
-        mock_checker.prompt_for_upgrade.assert_called_once_with(newer_version)
+        mock_checker.prompt_for_upgrade.assert_called_once_with(
+            newer_version, mock_rich
+        )
         mock_exit.assert_called_once_with(0)

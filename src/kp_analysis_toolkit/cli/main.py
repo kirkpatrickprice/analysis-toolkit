@@ -27,9 +27,10 @@ from kp_analysis_toolkit.cli.utils.system_utils import (
     get_python_version_string,
 )
 from kp_analysis_toolkit.core.containers.application import (
+    container,
     initialize_dependency_injection,
 )
-from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
 # Configure Rich Click for enhanced help formatting
@@ -59,7 +60,7 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
     if not value or ctx.resilient_parsing:
         return
 
-    console: RichOutputService = get_rich_output()
+    console: RichOutputService = container.core.rich_output()
 
     # Collect module information
     modules = get_module_versions()
@@ -130,11 +131,12 @@ def cli(
 
     # Always run version check unless explicitly skipped
     if not skip_update_check:
-        check_and_prompt_update()
+        rich_service = container.core.rich_output()
+        check_and_prompt_update(rich_service)
 
     # If no subcommand was invoked and no help was requested, show help
     if ctx.invoked_subcommand is None:
-        console = get_rich_output()
+        console = container.core.rich_output()
         _show_enhanced_help(console)
 
 
@@ -230,7 +232,7 @@ def _show_enhanced_help(console: RichOutputService) -> None:
 
 def _show_deprecation_warning(legacy_cmd: str, new_cmd: str) -> None:
     """Show deprecation warning for legacy commands."""
-    console = get_rich_output()
+    console = container.core.rich_output()
 
     console.warning(f"The '{legacy_cmd}' command is deprecated.")
     console.info(f"Please use '{new_cmd}' instead.")

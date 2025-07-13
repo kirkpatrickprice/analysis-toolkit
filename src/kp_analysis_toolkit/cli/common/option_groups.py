@@ -6,11 +6,14 @@ consistent help text formatting across all CLI commands.
 """
 
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import rich_click as click
 
-F = TypeVar("F", bound=Callable)
+# Type alias for option group structure
+OptionGroupDict = dict[str, Any]
+
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def command_option_groups(command_name: str) -> Callable[[F], F]:
@@ -84,12 +87,12 @@ def _setup_option_groups_for_command(command_name: str) -> None:
         # Ensure we have the OPTION_GROUPS dict initialized
         if not hasattr(click.rich_click, "OPTION_GROUPS"):
             click.rich_click.OPTION_GROUPS = {}
-        click.rich_click.OPTION_GROUPS[command_name] = script_groups
+        click.rich_click.OPTION_GROUPS[command_name] = script_groups  # type: ignore[assignment]
     else:
         # Use standard grouping for most commands
         if not hasattr(click.rich_click, "OPTION_GROUPS"):
             click.rich_click.OPTION_GROUPS = {}
-        click.rich_click.OPTION_GROUPS[command_name] = standard_groups
+        click.rich_click.OPTION_GROUPS[command_name] = standard_groups  # type: ignore[assignment]
 
 
 def setup_command_option_groups(command_name: str) -> None:

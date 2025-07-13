@@ -5,9 +5,10 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.models.types import ConfigValue, PathLike, T
-from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
 # Import for enhanced error display (conditional to avoid circular imports)
 try:
@@ -66,8 +67,8 @@ def validate_program_config(config_class: type[T], **kwargs: ConfigValue) -> T:
             error_messages.append(f"{field}: {message}")
 
         combined_message: str = "; ".join(error_messages)
-        message: str = f"Configuration validation failed: {combined_message}"
-        raise ValueError(message) from e
+        error_msg: str = f"Configuration validation failed: {combined_message}"
+        raise ValueError(error_msg) from e
 
 
 def handle_fatal_error(
@@ -99,7 +100,7 @@ def handle_fatal_error(
 
     """
     if rich_output is None:
-        rich_output = get_rich_output()
+        rich_output = container.core.rich_output()
 
     rich_output.error(f"{error_prefix}: {error}")
 
@@ -153,7 +154,7 @@ def handle_enhanced_fatal_error(
         options = EnhancedErrorOptions()
 
     if rich_output is None:
-        rich_output = get_rich_output()
+        rich_output = container.core.rich_output()
 
     if _ENHANCED_ERROR_AVAILABLE:
         # Use enhanced error display
@@ -222,8 +223,8 @@ def validate_input_file(
         raise ValueError(message)
 
     if must_exist and not path.is_file():
-        message: str = f"Path is not a file: {path}"
-        raise ValueError(message)
+        file_message: str = f"Path is not a file: {path}"
+        raise ValueError(file_message)
 
     # Check file extension if specified
     if required_extensions:
@@ -236,11 +237,11 @@ def validate_input_file(
         file_extension: str = path.suffix.lower()
         if file_extension not in normalized_extensions:
             ext_list: str = ", ".join(normalized_extensions)
-            message: str = (
+            extension_message: str = (
                 f"Invalid file extension '{file_extension}'. "
                 f"Expected one of: {ext_list}"
             )
-            raise ValueError(message)
+            raise ValueError(extension_message)
 
     return path
 
@@ -291,31 +292,31 @@ def validate_output_path(
         if create_if_missing:
             try:
                 target_dir.mkdir(parents=True, exist_ok=True)
-                rich_output = get_rich_output()
+                rich_output = container.core.rich_output()
                 rich_output.debug(f"Created directory: {target_dir}")
             except OSError as e:
                 message: str = f"Failed to create directory {target_dir}: {e}"
                 raise ValueError(message) from e
         else:
-            message: str = f"Output directory does not exist: {target_dir}"
-            raise ValueError(message)
+            missing_dir_message: str = f"Output directory does not exist: {target_dir}"
+            raise ValueError(missing_dir_message)
 
     # Verify the target directory is actually a directory
     if not target_dir.is_dir():
-        message: str = f"Path is not a directory: {target_dir}"
-        raise ValueError(message)
+        not_dir_message: str = f"Path is not a directory: {target_dir}"
+        raise ValueError(not_dir_message)
 
     # For files, check if we can write to the parent directory
     if is_file:
         # Check write permissions by testing parent directory
         if not target_dir.stat().st_mode & 0o200:  # Check write permission
-            message: str = f"No write permission for directory: {target_dir}"
-            raise ValueError(message)
+            permission_message: str = f"No write permission for directory: {target_dir}"
+            raise ValueError(permission_message)
 
         # If file already exists, check if it's writable
         if path.exists() and not path.is_file():
-            message: str = f"Output path exists but is not a file: {path}"
-            raise ValueError(message)
+            not_file_message: str = f"Output path exists but is not a file: {path}"
+            raise ValueError(not_file_message)
 
     return path
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import rich_click as click
 
@@ -15,10 +16,13 @@ from kp_analysis_toolkit.cli.common.decorators import (
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
+from kp_analysis_toolkit.core.containers.application import container
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
 from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_csv
-from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
 # Configure option groups for this command
 # Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
@@ -32,7 +36,7 @@ setup_command_option_groups("nipper")
 @start_directory_option()
 def process_command_line(_infile: str, source_files_path: str) -> None:
     """Process a Nipper CSV file and expand it into a more readable format."""
-    rich_output: RichOutputService = get_rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
 
     # Get input file or determine if processing all files
     try:
@@ -57,7 +61,7 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
         program_config = validate_program_config(
             ProgramConfig,
             input_file=selected_file,
-            source_files_path=source_files_path,  # type: ignore  # noqa: PGH003
+            source_files_path=source_files_path,
         )
     except ValueError as e:
         handle_fatal_error(e, error_prefix="Configuration validation failed")
@@ -93,7 +97,7 @@ def _process_all_csv_files(file_list: list[Path]) -> None:
         process_files_with_config,
     )
 
-    def format_nipper_success(file_path: Path, result: tuple) -> str:
+    def format_nipper_success(file_path: Path, result: tuple[Any, Any]) -> str:
         """Format success message for Nipper processing."""
         program_config, _ = result
         return f"Processed: {file_path.name} -> {program_config.output_file.name}"

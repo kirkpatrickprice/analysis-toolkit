@@ -29,6 +29,7 @@ from kp_analysis_toolkit.cli.utils.table_layouts import (
     create_file_listing_table,
     create_system_info_table,
 )
+from kp_analysis_toolkit.core.containers.application import container
 from kp_analysis_toolkit.process_scripts import (
     __version__ as process_scripts_version,
 )
@@ -45,15 +46,16 @@ from kp_analysis_toolkit.process_scripts.search_engine import (
     load_yaml_config,
 )
 from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
-from kp_analysis_toolkit.utils.rich_output import RichOutput, get_rich_output
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from kp_analysis_toolkit.core.services.rich_output import RichOutputService
     from kp_analysis_toolkit.process_scripts.models.results.base import (
         SearchResult,
         SearchResults,
     )
+    from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
     from kp_analysis_toolkit.process_scripts.models.systems import Systems
 
 # Configure option groups for this command
@@ -102,7 +104,7 @@ setup_command_option_groups("scripts")
     help="Print system details found in FILESPEC and then exit",
     is_flag=True,
 )
-def process_command_line(**cli_config: dict) -> None:
+def process_command_line(**cli_config: dict[str, Any]) -> None:
     """Process collector script results files (formerly adv-searchfor)."""
     """Convert the click config to a ProgramConfig object and perform validation."""
     try:
@@ -141,7 +143,7 @@ def process_command_line(**cli_config: dict) -> None:
 
 def list_audit_configs(program_config: ProgramConfig) -> None:
     """List all available audit configuration files."""
-    rich_output = get_rich_output()
+    rich_output = container.core.rich_output()
     create_list_command_header(rich_output, "Available Audit Configuration Files")
 
     # Create a Rich table for configuration files
@@ -158,7 +160,7 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
     max_details_items = 3  # Limit displayed details in verbose mode
 
     for config_file in process_systems.get_config_files(program_config.config_path):
-        yaml_data: dict[str, Any] = load_yaml_config(config_file)
+        yaml_data: YamlConfig = load_yaml_config(config_file)
         relative_path = str(config_file.relative_to(program_config.config_path))
 
         if program_config.verbose:
@@ -179,13 +181,13 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
 
 def list_sections() -> None:
     """List all sections found in the specified source files."""
-    rich_output = get_rich_output()
+    rich_output = container.core.rich_output()
     rich_output.info("Listing sections... (feature not yet implemented)")
 
 
 def list_source_files(program_config: ProgramConfig) -> None:
     """List all source files found in the specified path."""
-    rich_output = get_rich_output()
+    rich_output = container.core.rich_output()
     create_list_command_header(rich_output, "Source Files")
 
     source_files = list(process_systems.get_source_files(program_config))
@@ -214,7 +216,7 @@ def list_source_files(program_config: ProgramConfig) -> None:
 
 def list_systems(program_config: ProgramConfig) -> None:
     """List all systems found in the specified source files."""
-    rich_output = get_rich_output()
+    rich_output = container.core.rich_output()
     create_list_command_header(rich_output, "Systems Found")
 
     systems = list(process_systems.enumerate_systems_from_source_files(program_config))
@@ -260,9 +262,12 @@ def list_systems(program_config: ProgramConfig) -> None:
     display_list_summary(rich_output, len(systems), "systems")
 
 
-def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> None:
+def print_verbose_config(
+    cli_config: dict[str, Any],
+    program_config: ProgramConfig,
+) -> None:
     """Print the program configuration in verbose mode using Rich formatting."""
-    rich_output: RichOutput = get_rich_output(verbose=True)
+    rich_output: RichOutputService = container.core.rich_output()
 
     # Display configuration using Rich
     rich_output.configuration_table(
@@ -275,7 +280,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
 
 def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
     """Process the source files and execute searches."""
-    rich_output = get_rich_output()
+    rich_output = container.core.rich_output()
     time_stamp: str = get_timestamp()
 
     rich_output.header("Processing Source Files")

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import rich_click as click
 
@@ -15,10 +16,10 @@ from kp_analysis_toolkit.cli.common.decorators import (
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
+from kp_analysis_toolkit.core.containers.application import container
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
 from kp_analysis_toolkit.rtf_to_text.process_rtf import process_rtf_file
-from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 # Configure option groups for this command
 # Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
@@ -33,7 +34,7 @@ setup_command_option_groups("rtf-to-text")
 def process_command_line(_infile: str, source_files_path: str) -> None:
     """Convert RTF files to plain text format with ASCII encoding."""
     # Get the rich output console
-    console = get_rich_output()
+    console = container.core.rich_output()
 
     # Get the input file using the enhanced common logic
     try:
@@ -104,7 +105,7 @@ def _process_all_files(file_list: list[Path]) -> None:
         process_files_with_config,
     )
 
-    def format_rtf_success(file_path: Path, result: tuple) -> str:
+    def format_rtf_success(file_path: Path, result: tuple[Any, Any]) -> str:
         """Format success message for RTF conversion."""
         program_config, _ = result
         return f"Converted: {file_path.name} -> {program_config.output_file.name}"

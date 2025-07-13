@@ -13,8 +13,9 @@ from rich.panel import Panel
 from rich.table import Table
 
 from kp_analysis_toolkit.cli.utils.table_layouts import create_version_info_table
+from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.utils.rich_output import RichOutputService, get_rich_output
 
 
 class VersionDisplayOptions(KPATBaseModel):
@@ -111,7 +112,7 @@ def display_grouped_help(ctx: click.Context, command_name: str) -> None:
         command_name: Name of the command to show help for
 
     """
-    console = get_rich_output()
+    console = container.core.rich_output()
 
     # Show command header with emoji and description
     console.header(f"🔧 {command_name} Command")
