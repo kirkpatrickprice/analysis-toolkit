@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import rich_click as click
 from dependency_injector.wiring import Provide, inject
@@ -70,7 +70,11 @@ def process_command_line(
         handle_fatal_error(e, error_prefix="Configuration validation failed")
 
     try:
-        rtf_service.convert_file(program_config.input_file, program_config.output_file)
+        # Pydantic validation ensures input_file is Path (not None) after validation
+        input_file: Path = cast("Path", program_config.input_file)
+        # Pydantic computed field returns Path, but mypy sees it as Callable
+        output_file: Path = cast("Path", program_config.output_file)
+        rtf_service.convert_file(input_file, output_file)
     except (ValueError, FileNotFoundError, OSError) as e:
         handle_fatal_error(e, error_prefix="Error processing RTF file")
 
@@ -97,14 +101,14 @@ def _create_rtf_config(file_path: Path) -> ProgramConfig:
 
 
 def _process_single_file_with_service(
-    file_path: Path,
+    program_config: ProgramConfig,
     rtf_service: RtfToTextService,
 ) -> tuple[ProgramConfig, None]:
     """
     Process a single RTF file using the DI service.
 
     Args:
-        file_path: Path to the RTF file to process
+        program_config: Configuration for the RTF conversion
         rtf_service: The RTF to text service to use
 
     Returns:
@@ -116,8 +120,11 @@ def _process_single_file_with_service(
         OSError: If output file cannot be written
 
     """
-    program_config = _create_rtf_config(file_path)
-    rtf_service.convert_file(program_config.input_file, program_config.output_file)
+    # Pydantic validation ensures input_file is Path (not None) after validation
+    input_file: Path = cast("Path", program_config.input_file)
+    # Pydantic computed field returns Path, but mypy sees it as Callable
+    output_file: Path = cast("Path", program_config.output_file)
+    rtf_service.convert_file(input_file, output_file)
     return (program_config, None)
 
 
@@ -137,9 +144,9 @@ def _process_all_files_with_service(
         program_config, _ = result
         return f"Converted: {file_path.name} -> {program_config.output_file.name}"
 
-    def processor_wrapper(file_path: Path) -> tuple[ProgramConfig, None]:
+    def processor_wrapper(program_config: ProgramConfig) -> tuple[ProgramConfig, None]:
         """Wrapper to use the DI service with batch processing."""
-        return _process_single_file_with_service(file_path, rtf_service)
+        return _process_single_file_with_service(program_config, rtf_service)
 
     # Configure batch processing
     batch_config = BatchProcessingConfig(

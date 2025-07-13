@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
     from kp_analysis_toolkit.rtf_to_text.services.rtf_converter import (
@@ -105,7 +106,7 @@ class RtfToTextService:
                 self.convert_file(input_file, output_path)
                 successful_conversions += 1
 
-            except Exception as e:
+            except (FileNotFoundError, ValueError, OSError) as e:
                 self.rich_output.error(f"Failed to convert {input_file}: {e}")
                 # Continue processing other files
 

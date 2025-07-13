@@ -46,6 +46,7 @@ def wire_application_container() -> None:
     container.wire(
         modules=[
             "kp_analysis_toolkit.cli",
+            "kp_analysis_toolkit.cli.commands.rtf_to_text",
         ],
     )
 

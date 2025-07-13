@@ -78,10 +78,11 @@ class TestRtfToTextIntegration:
             # Test directory discovery
             discovered_files = rtf_service.discover_rtf_files(tmpdir_path)
 
-            assert len(discovered_files) == 2
+            expected_file_count = 2
+            assert len(discovered_files) == expected_file_count
             assert rtf_file1 in discovered_files
             assert rtf_file2 in discovered_files
-            assert txt_file not in [f for f in discovered_files]
+            assert txt_file not in list(discovered_files)
 
             # Test single file discovery
             single_file_result = rtf_service.discover_rtf_files(rtf_file1)

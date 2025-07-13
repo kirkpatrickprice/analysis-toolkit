@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from pathlib import Path  # noqa: TC003  # Path is used at runtime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -87,7 +87,8 @@ class RtfConverterService:
         plain_text = rtf_to_text(rtf_content)
 
         self.rich_output.debug(f"Successfully converted {rtf_file_path} using striprtf")
-        return plain_text
+        # Ensure we return a string even if striprtf returns Any
+        return str(plain_text) if plain_text is not None else ""
 
     def _convert_with_basic_parser(self, rtf_file_path: Path) -> str:
         """
@@ -131,14 +132,15 @@ class RtfConverterService:
             result = text.strip()
 
             self.rich_output.debug(
-                f"Successfully converted {rtf_file_path} using basic parser"
+                f"Successfully converted {rtf_file_path} using basic parser",
             )
-            return result
 
         except Exception as e:
             error_msg = f"Failed to process RTF file {rtf_file_path}: {e}"
             self.rich_output.error(error_msg)
             raise ValueError(error_msg) from e
+        else:
+            return result
 
     def save_as_text(
         self,
@@ -165,7 +167,9 @@ class RtfConverterService:
 
             # Write the plain text to output file with specified encoding
             output_file_path.write_text(
-                text_content, encoding=encoding, errors="ignore"
+                text_content,
+                encoding=encoding,
+                errors="ignore",
             )
 
             self.rich_output.debug(f"Successfully saved text to {output_file_path}")
