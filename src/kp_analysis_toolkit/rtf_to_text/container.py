@@ -1,14 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from dependency_injector import containers, providers
-
-if TYPE_CHECKING:
-    from kp_analysis_toolkit.core.containers.core import CoreContainer
-    from kp_analysis_toolkit.core.containers.file_processing import (
-        FileProcessingContainer,
-    )
 
 
 class RtfToTextContainer(containers.DeclarativeContainer):
@@ -16,16 +8,20 @@ class RtfToTextContainer(containers.DeclarativeContainer):
 
     # Dependencies from core containers
     core = providers.DependenciesContainer()
-    file_processing = providers.DependenciesContainer()
 
-    # Module-specific services would go here
-    # (Currently RTF to text only uses shared services)
+    # RTF Processing Services
+    rtf_converter_service = providers.Factory(
+        "kp_analysis_toolkit.rtf_to_text.services.rtf_converter.RtfConverterService",
+        rich_output=core.rich_output,
+        file_processing=core.file_processing,
+    )
 
     # Main Module Service
     rtf_to_text_service = providers.Factory(
         "kp_analysis_toolkit.rtf_to_text.service.RtfToTextService",
-        file_processing=file_processing.file_processing_service,
+        rtf_converter=rtf_converter_service,
         rich_output=core.rich_output,
+        file_processing=core.file_processing,
     )
 
 
@@ -42,24 +38,7 @@ def wire_rtf_to_text_container() -> None:
     """
     container.wire(
         modules=[
-            "kp_analysis_toolkit.rtf_to_text.cli",
             "kp_analysis_toolkit.rtf_to_text.service",
-            "kp_analysis_toolkit.rtf_to_text.process_rtf",
+            "kp_analysis_toolkit.rtf_to_text.services.rtf_converter",
         ],
     )
-
-
-def configure_rtf_to_text_container(
-    core_container: CoreContainer,
-    file_processing_container: FileProcessingContainer,
-) -> None:
-    """
-    Configure the RTF to text container with its dependencies.
-
-    Args:
-        core_container: The core services container
-        file_processing_container: The file processing container
-
-    """
-    container.core.override(core_container)
-    container.file_processing.override(file_processing_container)
