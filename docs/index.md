@@ -91,19 +91,19 @@ Most security assessments follow these patterns:
 
 1. Run OS-specific collection scripts on target systems
 2. Use Process Scripts module to analyze collected data
-3. Generate Excel reports for findings documentation
+3. Review Excel reports for findings
 
 **Network Analysis Workflow:**
 
 1. Export Nipper scan results to CSV format
 2. Use Nipper Expander to transform data structure
-3. Analyze expanded data with Excel pivot tables
+3. Analyze expanded data with Excel sort/filter and pivot tables
 
-**Configuration Analysis Workflow:**
+**Network Configuration Analysis Workflow:**
 
-1. Collect device configurations (often in RTF format)
+1. Collect device configurations (sometimes in RTF format)
 2. Use RTF Converter to standardize to plain text
-3. Process text files with Process Scripts module
+3. Process text files with Nipper
 
 ## Need Help?
 

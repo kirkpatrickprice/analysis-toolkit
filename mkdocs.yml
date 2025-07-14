@@ -61,6 +61,10 @@ nav:
     - tutorials/README.md
   - Reference:
     - reference/README.md
+  - Troubleshooting:
+    - troubleshooting/README.md
+    - Common Issues: troubleshooting/common-issues.md
+    - Installation Issues: troubleshooting/installation-issues.md
   - API Reference:
     - api/README.md
   - Architecture:
@@ -82,8 +86,6 @@ nav:
     - Excel Utils DI Migration: implementation/excel-utils-di-migration-plan.md
     - File Processing DI Migration: implementation/file-processing-dependency-injection-migration-plan.md
     - PyTest Fixture Migration: implementation/pytest-fixture-organization-migration-plan.md
-  - Troubleshooting:
-    - troubleshooting/README.md
 
 # Markdown extensions for technical documentation
 markdown_extensions:
@@ -142,11 +144,6 @@ extra:
   # social:
   #   - icon: fontawesome/brands/github
   #     link: https://github.com/kirkpatrickprice/analysis-toolkit
-  
-  # Analytics (for future hosting)
-  # analytics:
-  #   provider: google
-  #   property: G-XXXXXXXXXX
 
 # Repository integration (commented out for local use, easy to enable later)
 # repo_url: https://github.com/kirkpatrickprice/analysis-toolkit
