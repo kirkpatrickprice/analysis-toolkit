@@ -16,8 +16,7 @@ This directory contains:
 
 ### Installation Issues
 - Dependency problems
-- Python environment issues
-- Permission errors
+- PIPX Command not Found
 
 ### Runtime Errors
 - File not found errors

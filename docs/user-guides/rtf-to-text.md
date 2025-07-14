@@ -1,6 +1,6 @@
 # RTF to Text Converter
 
-The RTF to Text converter is a subcommand of the KP Analysis Toolkit that converts Rich Text Format (RTF) files to plain text files using ASCII encoding.  A common-enough use case is when a customer provides a router/firewall configuration as an RTF document instead of as a plaintext file.
+The RTF to Text converter is a subcommand of the KP Analysis Toolkit that converts Rich Text Format (RTF) files to plain text files using ASCII encoding.  A common-enough use case is when a customer provides a router/firewall configuration as an RTF document instead of as a plaintext file.  The plaintext file can then be submitted to Nipper for processing.
 
 ## Usage
 

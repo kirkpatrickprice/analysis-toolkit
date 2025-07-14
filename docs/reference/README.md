@@ -1,6 +1,6 @@
 # Reference Documentation
 
-Comprehensive reference materials for all CLI commands and configuration options.
+Reference materials for all CLI commands and configuration options.
 
 ## Contents
 

@@ -52,10 +52,19 @@ nav:
   - Home: index.md
   - User Guides: 
     - user-guides/README.md
+    - Installation: user-guides/installation.md
+    - Updating: user-guides/updating.md
+    - Process Scripts: user-guides/process-scripts.md
+    - Nipper Expander: user-guides/nipper-expander.md
+    - RTF to Text: user-guides/rtf-to-text.md
   - Tutorials:
     - tutorials/README.md
   - Reference:
     - reference/README.md
+  - Troubleshooting:
+    - troubleshooting/README.md
+    - Common Issues: troubleshooting/common-issues.md
+    - Installation Issues: troubleshooting/installation-issues.md
   - API Reference:
     - api/README.md
   - Architecture:
@@ -74,11 +83,9 @@ nav:
     - implementation/README.md
     - CLI Refactoring: implementation/cli-refactoring-recommendations.md
     - Dependency Injection Plan: implementation/dependency-injection-implementation-plan.md
-    - Excel Export DI Migration: implementation/excel-export-dependency-injection-migration-plan.md
+    - Excel Utils DI Migration: implementation/excel-utils-di-migration-plan.md
     - File Processing DI Migration: implementation/file-processing-dependency-injection-migration-plan.md
     - PyTest Fixture Migration: implementation/pytest-fixture-organization-migration-plan.md
-  - Troubleshooting:
-    - troubleshooting/README.md
 
 # Markdown extensions for technical documentation
 markdown_extensions:
@@ -137,11 +144,6 @@ extra:
   # social:
   #   - icon: fontawesome/brands/github
   #     link: https://github.com/kirkpatrickprice/analysis-toolkit
-  
-  # Analytics (for future hosting)
-  # analytics:
-  #   provider: google
-  #   property: G-XXXXXXXXXX
 
 # Repository integration (commented out for local use, easy to enable later)
 # repo_url: https://github.com/kirkpatrickprice/analysis-toolkit

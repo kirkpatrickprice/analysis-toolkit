@@ -33,4 +33,5 @@
     * Implement new behavior for upgrade notifications as in-process upgrades resulted in locked, open files
 
 **07/12/2025** v2.1.0
-    Refactor to use Dependency Injection patterns throughout application
+    * Boring architecture changes to refactor to use Dependency Injection patterns throughout application
+    * This will create a foundation to more easily add features in the future
