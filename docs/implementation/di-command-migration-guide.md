@@ -118,6 +118,7 @@ class <FeatureService>(Protocol):
     """Protocol for <specific feature> operations."""
 
     def <primary_method>(self, <params>) -> <return_type>:
+        """One-line docstring to capture the intent of the method."""
         ...
 
 
@@ -125,6 +126,7 @@ class <CommandService>(Protocol):
     """Protocol for the main <command> service orchestration."""
 
     def <orchestration_method>(self, <params>) -> <return_type>:
+        """One-line docstring to capture the intent of the method."""
        ...
 ```
 
