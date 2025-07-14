@@ -7,9 +7,7 @@ if TYPE_CHECKING:
 
     from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
-    from kp_analysis_toolkit.rtf_to_text.services.rtf_converter import (
-        RtfConverterService,
-    )
+    from kp_analysis_toolkit.rtf_to_text.protocols import RtfConverter
 
 
 class RtfToTextService:
@@ -17,7 +15,7 @@ class RtfToTextService:
 
     def __init__(
         self,
-        rtf_converter: RtfConverterService,
+        rtf_converter: RtfConverter,
         rich_output: RichOutputService,
         file_processing: FileProcessingService,
     ) -> None:
