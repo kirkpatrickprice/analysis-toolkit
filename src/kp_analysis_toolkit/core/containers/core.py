@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from dependency_injector import containers, providers
 
 if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.csv_processing.protocols import CSVProcessor
     from kp_analysis_toolkit.core.services.excel_export.protocols import (
         WorkbookEngine,
     )
@@ -145,4 +146,12 @@ class CoreContainer(containers.DeclarativeContainer):
                 file_validator=file_validator,
             ),
         )
+    )
+
+    # CSV Processing Service - Factory provider for stateless CSV operations
+    # Each CSV processing operation should use fresh instances for isolation
+    csv_processor_service: providers.Factory[CSVProcessor] = providers.Factory(
+        "kp_analysis_toolkit.core.services.csv_processing.service.CSVProcessorService",
+        file_processing=file_processing_service,
+        rich_output=rich_output,
     )
