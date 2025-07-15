@@ -54,7 +54,7 @@ class CSVProcessorService:
 
         """
         # Validate file exists using file processing service
-        if not self.file_processing.validate_file_exists(file_path):
+        if not self.file_processing.file_validator.validate_file_exists(file_path):
             error_msg: str = f"CSV file not found: {file_path}"
             self.rich_output.error(error_msg)
             raise FileNotFoundError(error_msg)
