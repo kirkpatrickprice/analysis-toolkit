@@ -32,11 +32,11 @@ class TestCSVProcessorService:
     def test_csv_processor_service_initialization(self) -> None:
         """Test that CSVProcessorService can be initialized."""
         # Create mocks for dependencies
-        file_processing = Mock(spec=FileProcessingService)
-        rich_output = Mock(spec=RichOutputService)
+        file_processing: Mock = Mock(spec=FileProcessingService)
+        rich_output: Mock = Mock(spec=RichOutputService)
 
         # Initialize service
-        service = CSVProcessorService(
+        service: CSVProcessorService = CSVProcessorService(
             file_processing=file_processing,
             rich_output=rich_output,
         )
@@ -47,14 +47,14 @@ class TestCSVProcessorService:
     def test_read_csv_file_success(self, tmp_path: Path) -> None:
         """Test successful CSV file reading."""
         # Create test CSV file
-        test_file = tmp_path / "test.csv"
-        test_content = "Name,Age,City\nJohn,30,NYC\nJane,25,LA\n"
+        test_file: Path = tmp_path / "test.csv"
+        test_content: str = "Name,Age,City\nJohn,30,NYC\nJane,25,LA\n"
         test_file.write_text(test_content, encoding="utf-8")
 
         # Create mocks
-        file_processing = Mock(spec=FileProcessingService)
-        file_validator = Mock(spec=FileValidator)
-        rich_output = Mock(spec=RichOutputService)
+        file_processing: Mock = Mock(spec=FileProcessingService)
+        file_validator: Mock = Mock(spec=FileValidator)
+        rich_output: Mock = Mock(spec=RichOutputService)
 
         # Configure mocks
         file_processing.file_validator = file_validator
@@ -62,13 +62,13 @@ class TestCSVProcessorService:
         file_processing.detect_encoding.return_value = "utf-8"
 
         # Initialize service
-        service = CSVProcessorService(
+        service: CSVProcessorService = CSVProcessorService(
             file_processing=file_processing,
             rich_output=rich_output,
         )
 
         # Test read_csv_file
-        result = service.read_csv_file(test_file)
+        result: pd.DataFrame = service.read_csv_file(test_file)
 
         # Verify DataFrame content
         assert isinstance(result, pd.DataFrame)
@@ -86,19 +86,19 @@ class TestCSVProcessorService:
     def test_read_csv_file_not_found(self, tmp_path: Path) -> None:
         """Test CSV file reading when file doesn't exist."""
         # Non-existent file
-        test_file = tmp_path / "nonexistent.csv"
+        test_file: Path = tmp_path / "nonexistent.csv"
 
         # Create mocks
-        file_processing = Mock(spec=FileProcessingService)
-        file_validator = Mock(spec=FileValidator)
-        rich_output = Mock(spec=RichOutputService)
+        file_processing: Mock = Mock(spec=FileProcessingService)
+        file_validator: Mock = Mock(spec=FileValidator)
+        rich_output: Mock = Mock(spec=RichOutputService)
 
         # Configure validation to fail
         file_processing.file_validator = file_validator
         file_validator.validate_file_exists.return_value = False
 
         # Initialize service
-        service = CSVProcessorService(
+        service: CSVProcessorService = CSVProcessorService(
             file_processing=file_processing,
             rich_output=rich_output,
         )
@@ -118,14 +118,14 @@ class TestCSVProcessorService:
     def test_read_csv_file_encoding_detection_failure(self, tmp_path: Path) -> None:
         """Test CSV reading when encoding detection fails."""
         # Create test CSV file
-        test_file = tmp_path / "test.csv"
-        test_content = "Name,Age\nJohn,30\n"
+        test_file: Path = tmp_path / "test.csv"
+        test_content: str = "Name,Age\nJohn,30\n"
         test_file.write_text(test_content, encoding="utf-8")
 
         # Create mocks
-        file_processing = Mock(spec=FileProcessingService)
-        file_validator = Mock(spec=FileValidator)
-        rich_output = Mock(spec=RichOutputService)
+        file_processing: Mock = Mock(spec=FileProcessingService)
+        file_validator: Mock = Mock(spec=FileValidator)
+        rich_output: Mock = Mock(spec=RichOutputService)
 
         # Configure mocks - encoding detection fails
         file_processing.file_validator = file_validator
@@ -133,13 +133,13 @@ class TestCSVProcessorService:
         file_processing.detect_encoding.return_value = None
 
         # Initialize service
-        service = CSVProcessorService(
+        service: CSVProcessorService = CSVProcessorService(
             file_processing=file_processing,
             rich_output=rich_output,
         )
 
-        # Test read_csv_file - should still work with utf-8 fallback
-        result = service.read_csv_file(test_file)
+        # Test read_csv_file with fallback encoding
+        result: pd.DataFrame = service.read_csv_file(test_file)
 
         # Verify DataFrame content
         assert isinstance(result, pd.DataFrame)
@@ -153,13 +153,13 @@ class TestCSVProcessorService:
     def test_read_csv_file_empty_data_error(self, tmp_path: Path) -> None:
         """Test CSV reading with empty CSV file."""
         # Create empty CSV file
-        test_file = tmp_path / "empty.csv"
+        test_file: Path = tmp_path / "empty.csv"
         test_file.write_text("", encoding="utf-8")
 
         # Create mocks
-        file_processing = Mock(spec=FileProcessingService)
-        file_validator = Mock(spec=FileValidator)
-        rich_output = Mock(spec=RichOutputService)
+        file_processing: Mock = Mock(spec=FileProcessingService)
+        file_validator: Mock = Mock(spec=FileValidator)
+        rich_output: Mock = Mock(spec=RichOutputService)
 
         # Configure mocks
         file_processing.file_validator = file_validator
@@ -167,7 +167,7 @@ class TestCSVProcessorService:
         file_processing.detect_encoding.return_value = "utf-8"
 
         # Initialize service
-        service = CSVProcessorService(
+        service: CSVProcessorService = CSVProcessorService(
             file_processing=file_processing,
             rich_output=rich_output,
         )
