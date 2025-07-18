@@ -1,15 +1,24 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from kp_analysis_toolkit.core.services.csv_processing.service import CSVProcessorService
+from kp_analysis_toolkit.core.services.excel_export.service import ExcelExportService
+from kp_analysis_toolkit.core.services.file_processing.service import (
+    FileProcessingService,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from kp_analysis_toolkit.core.services.excel_export import ExcelExportService
-    from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
-    from kp_analysis_toolkit.nipper_expander.services.csv_processor import (
+    from pandas.core.frame import DataFrame
+
+    from kp_analysis_toolkit.core.services.csv_processing import (
         CSVProcessorService,
     )
+    from kp_analysis_toolkit.core.services.excel_export import ExcelExportService
+    from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
     from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
@@ -23,10 +32,10 @@ class NipperExpanderService:
         file_processing: FileProcessingService,
         rich_output: RichOutput,
     ) -> None:
-        self.csv_processor = csv_processor
-        self.excel_export = excel_export
-        self.file_processing = file_processing
-        self.rich_output = rich_output
+        self.csv_processor: CSVProcessorService = csv_processor
+        self.excel_export: ExcelExportService = excel_export
+        self.file_processing: FileProcessingService = file_processing
+        self.rich_output: RichOutput = rich_output
 
     def execute(
         self,
@@ -41,14 +50,14 @@ class NipperExpanderService:
             self.rich_output.header("Starting Nipper Expansion")
 
             # Discover CSV files
-            csv_files = self._discover_csv_files(input_path)
+            csv_files: list[Path] = self._discover_csv_files(input_path)
 
             if not csv_files:
                 self.rich_output.warning("No CSV files found")
                 return
 
             # Process each CSV file
-            all_expanded_data = []
+            all_expanded_data: list[pd.DataFrame] = []
             for csv_file in csv_files:
                 expanded_data = self.csv_processor.process_nipper_csv(
                     csv_file,
@@ -61,12 +70,15 @@ class NipperExpanderService:
             if len(all_expanded_data) > 1:
                 import pandas as pd
 
-                combined_data = pd.concat(all_expanded_data, ignore_index=True)
+                combined_data: DataFrame = pd.concat(
+                    all_expanded_data,
+                    ignore_index=True,
+                )
             else:
                 combined_data = all_expanded_data[0]
 
             # Export to Excel
-            self.excel_export.export_dataframe(
+            self.excel_export.export_dataframe_to_excel(
                 combined_data,
                 output_path,
                 sheet_name="Expanded_Rules",
