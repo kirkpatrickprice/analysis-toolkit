@@ -161,26 +161,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     import pandas as pd
     from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
-
-
-### Service Protocols (`protocols.py`)
-
-```python
-"""Protocol definitions for Nipper Expander services."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Protocol
-
-if TYPE_CHECKING:
-    from pathlib import Path
-    import pandas as pd
-    from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
     from kp_analysis_toolkit.core.services.csv_processing.protocols import CSVProcessor
-
-
-# Note: CSVProcessor protocol is imported from core services
-# from kp_analysis_toolkit.core.services.csv_processing.protocols import CSVProcessor
 
 
 class DataExpander(Protocol):
@@ -200,14 +181,20 @@ class NipperExporter(Protocol):
         *,
         sheet_name: str = "Expanded Nipper",
         title: str = "Nipper Expanded Report - One row per device/finding",
-    ) -> None: ...
+    ) -> None:
+    """Write expanded results to Excel"""
+    ...
 
 
 class NipperExpanderService(Protocol):
     """Protocol for the main Nipper Expander service orchestration."""
     
-    def process_nipper_csv(self, program_config: ProgramConfig) -> pd.DataFrame: ...
-    def process_nipper_batch(self, input_files: list[Path], output_directory: Path) -> list[pd.DataFrame]: ...
+    def process_nipper_csv(self, file: PathLike) -> None:
+        """Process a single Nipper CSV file"""
+        ...
+    def process_nipper_batch(self, input_files: list[Path], output_directory: Path) -> None:
+        """Process all Nipper CSV files in a directory"""
+        ...
 ```
 
 ## Container Configuration
