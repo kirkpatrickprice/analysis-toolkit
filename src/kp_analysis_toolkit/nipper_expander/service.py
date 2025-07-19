@@ -17,10 +17,8 @@ if TYPE_CHECKING:
         CSVProcessorService,
     )
     from kp_analysis_toolkit.nipper_expander.protocols import (
-        NipperExporter,
-    )
-    from kp_analysis_toolkit.nipper_expander.services.data_expander import (
-        DataExpansionService,
+        NipperExpanderService,
+        NipperExporterService,
     )
     from kp_analysis_toolkit.utils.rich_output import RichOutput
 
@@ -31,13 +29,13 @@ class NipperExpanderService(NipperExpanderService):
     def __init__(
         self,
         csv_processor: CSVProcessorService,
-        data_expander: DataExpansionService,
-        nipper_exporter: NipperExporter,
+        data_expander: NipperExpanderService,
+        nipper_exporter: NipperExporterService,
         rich_output: RichOutput,
     ) -> None:
         self.csv_processor: CSVProcessorService = csv_processor
-        self.data_expander: DataExpansionService = data_expander
-        self.nipper_exporter: NipperExporter = nipper_exporter
+        self.data_expander: NipperExpanderService = data_expander
+        self.nipper_exporter: NipperExporterService = nipper_exporter
         self.rich_output: RichOutput = rich_output
 
     def process_nipper_csv(

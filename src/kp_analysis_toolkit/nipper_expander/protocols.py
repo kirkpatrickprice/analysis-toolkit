@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from kp_analysis_toolkit.models.types import PathLike
 
 
-class DataExpander(Protocol):
+class RowExpanderService(Protocol):
     """Protocol for data expansion operations."""
 
     def expand_device_rows(self, data_frame: pd.DataFrame) -> pd.DataFrame:
@@ -18,7 +18,7 @@ class DataExpander(Protocol):
         ...
 
 
-class NipperExporter(Protocol):
+class NipperExporterService(Protocol):
     """Protocol for Nipper-specific Excel export operations."""
 
     def export_nipper_results(

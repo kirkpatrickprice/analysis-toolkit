@@ -453,16 +453,18 @@ ApplicationContainer
 │   ├── FileProcessingService (Factory)
 │   └── ExcelExportService (Factory)
 │
-└── <CommandContainer> (<command>)
-    ├── core = DependenciesContainer() → CoreContainer
-    ├── <FeatureService> (Factory)
-    │   ├── rich_output → core.rich_output
-    │   └── file_processing → core.file_processing_service
-    │
-    └── <CommandService> (Factory)
-        ├── <feature_service> → <FeatureService>
-        ├── rich_output → core.rich_output
-        └── file_processing → core.file_processing_service
+├── <CommandContainer> (<command>)
+│   ├── core = DependenciesContainer() → CoreContainer
+│   ├── <FeatureService> (Factory)
+│   │   ├── rich_output → core.rich_output
+│   │   └── file_processing → core.file_processing_service
+│   │
+│   └── <CommandService> (Factory)
+│       ├── <feature_service> → <FeatureService>
+│       ├── rich_output → core.rich_output
+│       └── file_processing → core.file_processing_service
+│
+└── <CommandContainer> ...
 ```
 
 ## Provider Type Decisions

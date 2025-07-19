@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from kp_analysis_toolkit.nipper_expander.protocols import (
+    NipperExporterService,
+)
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -10,10 +14,9 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
     from kp_analysis_toolkit.models.types import PathLike
-    from kp_analysis_toolkit.nipper_expander.protocols import NipperExporter
 
 
-class NipperExporter(NipperExporter):
+class DefaultNipperExporter(NipperExporterService):
     """Protocol for Nipper-specific Excel export operations."""
 
     def __init__(
@@ -22,7 +25,7 @@ class NipperExporter(NipperExporter):
         rich_output: RichOutputService,
     ) -> None:
         """
-        Inititiaize the NipperExporter Service.
+        Inititiaize the DefaultNipperExporter Service.
 
         Args:
             rich_output: Service for rich terminal output

@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import rich_click as click
+from dependency_injector.wiring import Provide, inject
 
 from kp_analysis_toolkit.cli.common.config_validation import (
     handle_fatal_error,
@@ -16,28 +17,16 @@ from kp_analysis_toolkit.cli.common.decorators import (
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
-from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.core.containers.application import ApplicationContainer
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.enums import FileSelectionResult
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
-from kp_analysis_toolkit.nipper_expander.container import (
-    container as nipper_container,
-)
-from kp_analysis_toolkit.nipper_expander.container import (
-    wire_nipper_expander_container,
-)
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
 from kp_analysis_toolkit.nipper_expander.protocols import NipperExpanderService
-
-if TYPE_CHECKING:
-    from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 
 # Configure option groups for this command
 # Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
 setup_command_option_groups("nipper")
-
-# Instantiate the Nipper service and wire the Nipper Expander container
-nipper_service: NipperExpanderService = nipper_container.nipper_expander_service()
-wire_nipper_expander_container()
 
 
 @custom_help_option("nipper")
@@ -45,10 +34,16 @@ wire_nipper_expander_container()
 @module_version_option(nipper_expander_version, "nipper")
 @input_file_option(file_type="CSV")
 @start_directory_option()
-def process_command_line(_infile: str, source_files_path: str) -> None:
+@inject
+def process_command_line(
+    _infile: str,
+    source_files_path: str,
+    rich_output: RichOutputService = Provide[ApplicationContainer.core.rich_output],
+    nipper_service: NipperExpanderService = Provide[
+        ApplicationContainer.nipper.nipper_expander_service,
+    ],
+) -> None:
     """Process a Nipper CSV file and expand it into a more readable format."""
-    rich_output: RichOutputService = container.core.rich_output()
-
     # Get input file or determine if processing all files
     try:
         selected_file: Path | FileSelectionResult = get_input_file(
@@ -64,7 +59,7 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
     # If user chose "process all files"
     if selected_file == FileSelectionResult.PROCESS_ALL_FILES:
         file_list: list[Path] = discover_files_by_pattern(source_files_path, "*.csv")
-        _process_all_csv_files(file_list)
+        _process_all_csv_files(file_list, nipper_service=nipper_service)
         return
 
     # Single file processing (existing logic)
@@ -101,7 +96,10 @@ def _create_nipper_config(file_path: Path) -> ProgramConfig:
     )
 
 
-def _process_all_csv_files(file_list: list[Path]) -> None:
+def _process_all_csv_files(
+    file_list: list[Path],
+    nipper_service: NipperExpanderService,
+) -> None:
     """Process all CSV files in the list using the batch processing utility."""
     from kp_analysis_toolkit.cli.utils.batch_processing import (
         BatchProcessingConfig,
@@ -122,10 +120,30 @@ def _process_all_csv_files(file_list: list[Path]) -> None:
         success_message_formatter=format_nipper_success,
     )
 
+    def processor_wrapper(program_config: ProgramConfig) -> tuple[ProgramConfig, None]:
+        """Wrapper to use the DI service with batch processing."""
+        return _process_single_file_with_service(program_config, nipper_service)
+
     # Process files using the utility
     process_files_with_config(
         file_list=file_list,
         config_creator=_create_nipper_config,
-        processor=nipper_service.process_nipper_csv,
+        processor=processor_wrapper,
         config=batch_config,
     )
+
+
+def _process_single_file_with_service(
+    program_config: ProgramConfig,
+    nipper_service: NipperExpanderService,
+) -> tuple[ProgramConfig, None]:
+    """Process a single file using the nipper service."""
+    # AI-GEN: claude-3.5-sonnet|2024-12-31|function-signature-mismatch|reviewed:no
+    from pathlib import Path
+    from typing import cast
+
+    input_file: Path = cast("Path", program_config.input_file)
+    output_file: Path = cast("Path", program_config.output_file)
+    nipper_service.process_nipper_csv(input_file, output_file)
+    return (program_config, None)
+    # END AI-GEN

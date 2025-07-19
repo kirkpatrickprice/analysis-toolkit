@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
-from kp_analysis_toolkit.nipper_expander.protocols import DataExpander
+from kp_analysis_toolkit.nipper_expander.protocols import RowExpanderService
 
 if TYPE_CHECKING:
     from kp_analysis_toolkit.core.services.csv_processing import CSVProcessor
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from kp_analysis_toolkit.models.types import DisplayableValue
 
 
-class DataExpansionService(DataExpander):
+class DefaultRowExpander(RowExpanderService):
     """Service for expanding multi-value data fields into separate rows."""
 
     def __init__(
@@ -24,7 +24,7 @@ class DataExpansionService(DataExpander):
         csv_processor: CSVProcessor,
     ) -> None:
         """
-        Initialize the DataExpansionService.
+        Initialize the DefaultRowExpander.
 
         Args:
             rich_output: Service for rich terminal output
@@ -45,7 +45,8 @@ class DataExpansionService(DataExpander):
             pd.DataFrame: DataFrame with expanded rows
 
         """
-        expanded_data_frame: pd.DataFrame = pd.DataFrame()
+        expanded_rows: list[dict[str, DisplayableValue]] = []
+
         for _, row in data_frame.iterrows():
             devices_list: list[str] = self._split_devices(
                 self._validate_devices(
@@ -60,15 +61,15 @@ class DataExpansionService(DataExpander):
                         row,
                         device,
                     )
-                    expanded_data_frame.append(new_row, ignore_index=True)
+                    expanded_rows.append(new_row)
             elif devices_list:
                 # If there's only one device, keep the original row
-                expanded_data_frame.append(row, ignore_index=True)
+                expanded_rows.append(row)
             else:
                 # If no devices, remove the row
                 continue
 
-        return expanded_data_frame
+        return pd.DataFrame(expanded_rows)
 
     def _validate_devices(
         self,
@@ -115,6 +116,6 @@ class DataExpansionService(DataExpander):
         device: str,
     ) -> dict[str, DisplayableValue]:
         """Create a new row for a single device."""
-        new_row: pd.Series = original_row
+        new_row: dict[str, DisplayableValue] = original_row.to_dict()
         new_row["Devices"] = device
         return new_row

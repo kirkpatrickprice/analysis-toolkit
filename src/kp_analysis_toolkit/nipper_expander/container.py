@@ -6,9 +6,9 @@ from dependency_injector import containers, providers
 
 if TYPE_CHECKING:
     from kp_analysis_toolkit.nipper_expander.protocols import (
-        DataExpander,
         NipperExpanderService,
-        NipperExporter,
+        NipperExporterService,
+        RowExpanderService,
     )
 
 
@@ -19,16 +19,18 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
     core = providers.DependenciesContainer()
 
     # Nipper Expander Internal Services
-    data_expander_service: providers.Factory[DataExpander] = providers.Factory(
-        "kp_analysis_toolkit.nipper_expander.services.data_expander.DataExpansionService",
+    data_expander_service: providers.Factory[RowExpanderService] = providers.Factory(
+        "kp_analysis_toolkit.nipper_expander.services.data_expander.DefaultRowExpander",
         rich_output=core.rich_output,
         csv_processor=core.csv_processor_service,
     )
 
-    nipper_exporter_service: providers.Factory[NipperExporter] = providers.Factory(
-        "kp_analysis_toolkit.nipper_expander.services.nipper_exporter.NipperExporterService",
-        excel_exporter=core.excel_exporter,
-        rich_output=core.rich_output,
+    nipper_exporter_service: providers.Factory[NipperExporterService] = (
+        providers.Factory(
+            "kp_analysis_toolkit.nipper_expander.services.nipper_exporter.DefaultNipperExporter",
+            excel_exporter=core.excel_export_service,
+            rich_output=core.rich_output,
+        )
     )
 
     # Main Module Service - orchestrates everything

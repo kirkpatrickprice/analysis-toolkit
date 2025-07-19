@@ -1,9 +1,4 @@
-"""
-RichOutput service implementation for dependency injection.
-
-Move the entire RichOutput class from utils/rich_output.py to here.
-This becomes the main service implementation that other modules will inject.
-"""
+"""RichOutput service implementation for dependency injection."""
 
 from __future__ import annotations
 
@@ -402,7 +397,9 @@ class RichOutputService:
         return self._format_string(str(value), max_length)
 
     def _format_collection(
-        self, value: list[Any] | tuple[Any, ...] | set[Any], max_length: int,
+        self,
+        value: list[Any] | tuple[Any, ...] | set[Any],
+        max_length: int,
     ) -> Text:
         """Format collection values with appropriate styling."""
         if len(value) == 0:
