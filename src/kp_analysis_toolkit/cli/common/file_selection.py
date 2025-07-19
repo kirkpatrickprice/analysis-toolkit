@@ -5,6 +5,7 @@ from kp_analysis_toolkit.cli.utils.system_utils import get_file_size
 from kp_analysis_toolkit.cli.utils.table_layouts import create_file_selection_table
 from kp_analysis_toolkit.core.containers.application import container
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+from kp_analysis_toolkit.models.enums import FileSelectionResult
 
 
 def get_input_file(
@@ -14,7 +15,7 @@ def get_input_file(
     file_type_description: str = "CSV",
     *,
     include_process_all_option: bool = False,
-) -> Path | None:
+) -> Path | FileSelectionResult:
     """
     Get the input file to process.
 
@@ -29,7 +30,7 @@ def get_input_file(
         include_process_all_option: Whether to include "process all files" option in the menu
 
     Returns:
-        Path to selected file, or None if "process all files" was selected
+        Path to selected file, or FileSelectionResult.PROCESS_ALL_FILES if "process all files" was selected
 
     """
     rich_output: RichOutputService = container.core.rich_output()
@@ -72,7 +73,7 @@ def get_input_file(
     )
 
     if include_process_all_option and choice == len(dirlist) + 1:
-        return None  # Sentinel value indicating "process all files"
+        return FileSelectionResult.PROCESS_ALL_FILES  # Sentinel value indicating "process all files"
 
     return dirlist[choice - 1]
 

@@ -9,6 +9,7 @@ from click.testing import CliRunner, Result
 
 from kp_analysis_toolkit.cli.commands.rtf_to_text import process_command_line
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.models.enums import FileSelectionResult
 
 
 class TestGetInputFile:
@@ -88,8 +89,8 @@ class TestGetInputFile:
                     include_process_all_option=True,
                 )
 
-            # Should return None to indicate "process all files"
-            assert result is None
+            # Should return FileSelectionResult.PROCESS_ALL_FILES to indicate "process all files"
+            assert result == FileSelectionResult.PROCESS_ALL_FILES
 
 
 class TestProcessCommandLine:

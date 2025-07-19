@@ -133,13 +133,13 @@ class CSVProcessorService:
 
         self.rich_output.success(f"Validated required columns: {required_columns}")
 
-    def process_csv_with_validation(
+    def read_and_validate_csv_file(
         self,
         file_path: Path,
         required_columns: list[str],
     ) -> pd.DataFrame:
         """
-        Complete CSV processing pipeline with validation.
+        Read CSV file and validate required columns.
 
         Args:
             file_path: Path to the CSV file to process
@@ -160,5 +160,5 @@ class CSVProcessorService:
         # Validate required columns exist
         self.validate_required_columns(data_frame, required_columns)
 
-        self.rich_output.info(f"CSV processing complete for {file_path}")
+        self.rich_output.debug(f"CSV file {file_path} validated successfully")
         return data_frame

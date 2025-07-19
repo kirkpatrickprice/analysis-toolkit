@@ -25,7 +25,7 @@ class CSVProcessor(Protocol):
         """Validate that required columns exist in the DataFrame."""
         ...
 
-    def process_csv_with_validation(
+    def read_and_validate_csv_file(
         self,
         file_path: Path,
         required_columns: list[str],

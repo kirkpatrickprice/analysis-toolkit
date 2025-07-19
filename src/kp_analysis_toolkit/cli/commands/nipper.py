@@ -17,9 +17,16 @@ from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.models.enums import FileSelectionResult
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
+from kp_analysis_toolkit.nipper_expander.container import (
+    container as nipper_container,
+)
+from kp_analysis_toolkit.nipper_expander.container import (
+    wire_nipper_expander_container,
+)
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
-from kp_analysis_toolkit.nipper_expander.process_nipper import process_nipper_csv
+from kp_analysis_toolkit.nipper_expander.protocols import NipperExpanderService
 
 if TYPE_CHECKING:
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
@@ -27,6 +34,10 @@ if TYPE_CHECKING:
 # Configure option groups for this command
 # Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
 setup_command_option_groups("nipper")
+
+# Instantiate the Nipper service and wire the Nipper Expander container
+nipper_service: NipperExpanderService = nipper_container.nipper_expander_service()
+wire_nipper_expander_container()
 
 
 @custom_help_option("nipper")
@@ -40,7 +51,7 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
 
     # Get input file or determine if processing all files
     try:
-        selected_file = get_input_file(
+        selected_file: Path | FileSelectionResult = get_input_file(
             _infile,
             source_files_path,
             file_pattern="*.csv",
@@ -50,15 +61,15 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
     except ValueError as e:
         handle_fatal_error(e, error_prefix="File selection failed")
 
-    # If None is returned, user chose "process all files"
-    if selected_file is None:
-        file_list = discover_files_by_pattern(source_files_path, "*.csv")
+    # If user chose "process all files"
+    if selected_file == FileSelectionResult.PROCESS_ALL_FILES:
+        file_list: list[Path] = discover_files_by_pattern(source_files_path, "*.csv")
         _process_all_csv_files(file_list)
         return
 
     # Single file processing (existing logic)
     try:
-        program_config = validate_program_config(
+        program_config: ProgramConfig = validate_program_config(
             ProgramConfig,
             input_file=selected_file,
             source_files_path=source_files_path,
@@ -69,8 +80,9 @@ def process_command_line(_infile: str, source_files_path: str) -> None:
     rich_output.info(f"Processing Nipper CSV file: {program_config.input_file!s}")
 
     try:
-        process_nipper_csv(
-            program_config,
+        nipper_service.process_nipper_csv(
+            input_path=program_config.input_file,
+            output_path=program_config.output_file,
         )
 
         rich_output.success(
@@ -114,6 +126,6 @@ def _process_all_csv_files(file_list: list[Path]) -> None:
     process_files_with_config(
         file_list=file_list,
         config_creator=_create_nipper_config,
-        processor=process_nipper_csv,
+        processor=nipper_service.process_nipper_csv,
         config=batch_config,
     )

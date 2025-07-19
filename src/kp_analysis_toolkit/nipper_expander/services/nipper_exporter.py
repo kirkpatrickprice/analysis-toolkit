@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
     from kp_analysis_toolkit.models.types import PathLike
-    from kp_analysis_toolkit.nipper_expander.services.protocols import NipperExporter
+    from kp_analysis_toolkit.nipper_expander.protocols import NipperExporter
 
 
 class NipperExporter(NipperExporter):
@@ -37,7 +37,7 @@ class NipperExporter(NipperExporter):
         data_frame: pd.DataFrame,
         output_path: PathLike,
         *,
-        sheet_name: str = "Expanded Nipper",
+        sheet_name: str = "Expanded Nipper Results",
         title: str = "Nipper Expanded Report - One row per device/finding",
     ) -> None:
         """
@@ -46,7 +46,7 @@ class NipperExporter(NipperExporter):
         Args:
             data_frame (pd.DataFrame): The DataFrame to export.
             output_path (PathLike): The path where the Excel file will be saved.
-            sheet_name (str, optional): The name of the sheet in the Excel file. Defaults to "Expanded Nipper".
+            sheet_name (str, optional): The name of the sheet in the Excel file. Defaults to "Expanded Nipper Results".
             title (str, optional): The title for the report. Defaults to "Nipper Expanded Report - One row per device/finding".
 
         """

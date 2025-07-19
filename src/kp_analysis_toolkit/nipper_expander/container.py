@@ -5,28 +5,41 @@ from typing import TYPE_CHECKING
 from dependency_injector import containers, providers
 
 if TYPE_CHECKING:
-    from kp_analysis_toolkit.core.containers.core import CoreContainer
-    from kp_analysis_toolkit.core.containers.file_processing import (
-        FileProcessingContainer,
+    from kp_analysis_toolkit.nipper_expander.protocols import (
+        DataExpander,
+        NipperExpanderService,
+        NipperExporter,
     )
 
 
 class NipperExpanderContainer(containers.DeclarativeContainer):
-    """Services specific to the nipper expander module."""
+    """Services specific to the Nipper Expander module."""
 
     # Dependencies from core containers
     core = providers.DependenciesContainer()
-    file_processing = providers.DependenciesContainer()
 
-    # Module-specific services would go here
-    # (Currently nipper expander only uses shared services)
-
-    # Main Module Service
-    nipper_expander_service: providers.Factory = providers.Factory(
-        "kp_analysis_toolkit.nipper_expander.service.NipperExpanderService",
-        excel_export=core.excel_export_service,
-        file_processing=file_processing.file_processing_service,
+    # Nipper Expander Internal Services
+    data_expander_service: providers.Factory[DataExpander] = providers.Factory(
+        "kp_analysis_toolkit.nipper_expander.services.data_expander.DataExpansionService",
         rich_output=core.rich_output,
+        csv_processor=core.csv_processor_service,
+    )
+
+    nipper_exporter_service: providers.Factory[NipperExporter] = providers.Factory(
+        "kp_analysis_toolkit.nipper_expander.services.nipper_exporter.NipperExporterService",
+        excel_exporter=core.excel_exporter,
+        rich_output=core.rich_output,
+    )
+
+    # Main Module Service - orchestrates everything
+    nipper_expander_service: providers.Factory[NipperExpanderService] = (
+        providers.Factory(
+            "kp_analysis_toolkit.nipper_expander.service.NipperExpanderService",
+            csv_processor=core.csv_processor_service,
+            data_expander=data_expander_service,
+            nipper_exporter=nipper_exporter_service,
+            rich_output=core.rich_output,
+        )
     )
 
 
@@ -36,31 +49,15 @@ container = NipperExpanderContainer()
 
 def wire_nipper_expander_container() -> None:
     """
-    Wire the nipper expander container for dependency injection.
+    Wire the Nipper Expander container for dependency injection.
 
-    This function should be called when the nipper expander module is initialized
+    This function should be called when the Nipper Expander module is initialized
     to ensure all dependencies are properly wired for injection.
     """
     container.wire(
         modules=[
-            "kp_analysis_toolkit.nipper_expander.cli",
             "kp_analysis_toolkit.nipper_expander.service",
-            "kp_analysis_toolkit.nipper_expander.process_nipper",
+            "kp_analysis_toolkit.nipper_expander.services.data_expander",
+            "kp_analysis_toolkit.nipper_expander.services.nipper_exporter",
         ],
     )
-
-
-def configure_nipper_expander_container(
-    core_container: CoreContainer,
-    file_processing_container: FileProcessingContainer,
-) -> None:
-    """
-    Configure the nipper expander container with its dependencies.
-
-    Args:
-        core_container: The core services container (includes Excel export services)
-        file_processing_container: The file processing container
-
-    """
-    container.core.override(core_container)
-    container.file_processing.override(file_processing_container)

@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
+from kp_analysis_toolkit.models.enums import FileSelectionResult
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 
 
@@ -56,8 +57,8 @@ class TestEnhancedFileSelection:
                     include_process_all_option=True,
                 )
 
-            # Should return None to indicate "process all files"
-            assert result is None
+            # Should return FileSelectionResult.PROCESS_ALL_FILES to indicate "process all files"
+            assert result == FileSelectionResult.PROCESS_ALL_FILES
 
     def test_get_input_file_with_custom_file_pattern(self) -> None:
         """Test file selection with custom file pattern."""
@@ -171,8 +172,8 @@ class TestEnhancedFileSelection:
                     include_process_all_option=True,
                 )
 
-            # Should return None for "process all"
-            assert result is None
+            # Should return FileSelectionResult.PROCESS_ALL_FILES for "process all"
+            assert result == FileSelectionResult.PROCESS_ALL_FILES
 
     def test_discover_files_by_pattern_recursive(self) -> None:
         """Test recursive file discovery functionality."""
