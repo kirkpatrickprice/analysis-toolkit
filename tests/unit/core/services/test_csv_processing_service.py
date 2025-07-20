@@ -288,7 +288,7 @@ class TestCSVProcessorService:
         rich_output.debug.assert_called_once()
         assert "No required columns to validate" in rich_output.debug.call_args[0][0]
 
-    def test_process_csv_with_validation_success(self, tmp_path: Path) -> None:
+    def test_read_and_validate_csv_file_success(self, tmp_path: Path) -> None:
         """Test complete CSV processing pipeline success."""
         # Create test CSV file
         test_file = tmp_path / "test.csv"
@@ -311,20 +311,22 @@ class TestCSVProcessorService:
             rich_output=rich_output,
         )
 
-        # Test process_csv_with_validation
+        # Test read_and_validate_csv_file
         required_columns = ["Name", "Age"]
-        result = service.process_csv_with_validation(test_file, required_columns)
+        result = service.read_and_validate_csv_file(test_file, required_columns)
 
         # Verify DataFrame content
         assert isinstance(result, pd.DataFrame)
         assert len(result) == EXPECTED_ROWS_BASIC
         assert list(result.columns) == ["Name", "Age", "City"]
 
-        # Verify completion message was logged
-        rich_output.info.assert_called()
-        assert "CSV processing complete" in str(rich_output.info.call_args_list)
+        # Verify debug message was logged
+        rich_output.debug.assert_called()
+        debug_calls = str(rich_output.debug.call_args_list)
+        assert "CSV file" in debug_calls
+        assert "validated successfully" in debug_calls
 
-    def test_process_csv_with_validation_file_not_found(self, tmp_path: Path) -> None:
+    def test_read_and_validate_csv_file_file_not_found(self, tmp_path: Path) -> None:
         """Test complete CSV processing pipeline with file not found."""
         # Non-existent file
         test_file = tmp_path / "nonexistent.csv"
@@ -344,11 +346,11 @@ class TestCSVProcessorService:
             rich_output=rich_output,
         )
 
-        # Test process_csv_with_validation should raise FileNotFoundError
+        # Test read_and_validate_csv_file should raise FileNotFoundError
         with pytest.raises(FileNotFoundError):
-            service.process_csv_with_validation(test_file, ["Name"])
+            service.read_and_validate_csv_file(test_file, ["Name"])
 
-    def test_process_csv_with_validation_missing_columns(self, tmp_path: Path) -> None:
+    def test_read_and_validate_csv_file_missing_columns(self, tmp_path: Path) -> None:
         """Test complete CSV processing pipeline with missing columns."""
         # Create test CSV file
         test_file = tmp_path / "test.csv"
@@ -371,10 +373,10 @@ class TestCSVProcessorService:
             rich_output=rich_output,
         )
 
-        # Test process_csv_with_validation with missing required column
+        # Test read_and_validate_csv_file with missing required column
         required_columns = ["Name", "Age", "City"]
         with pytest.raises(KeyError):
-            service.process_csv_with_validation(test_file, required_columns)
+            service.read_and_validate_csv_file(test_file, required_columns)
 
     def test_service_implements_protocol(self) -> None:
         """Test that CSVProcessorService implements the CSVProcessor protocol."""
@@ -391,7 +393,7 @@ class TestCSVProcessorService:
         # Verify service implements protocol methods
         assert hasattr(service, "read_csv_file")
         assert hasattr(service, "validate_required_columns")
-        assert hasattr(service, "process_csv_with_validation")
+        assert hasattr(service, "read_and_validate_csv_file")
 
         # Test that service can be used as protocol type
         csv_processor: CSVProcessor = service
