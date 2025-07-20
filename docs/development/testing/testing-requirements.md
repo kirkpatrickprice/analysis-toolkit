@@ -1,10 +1,10 @@
-# CLI Testing Standards
+# Testing Requirements
 
 This document outlines the testing standards and best practices for components in the analysis toolkit.
 
 ## Shared Fixtures
 
-All tests should use the shared pytest fixtures defined in `tests/conftest.py`. These fixtures provide consistent, reusable testing infrastructure.  Refer to this file for the latest implementations of all fixtures.  Create additional fixtures for any testing components that should be standardized for use across the test suite.
+All tests should use the shared pytest fixtures defined in `tests/conftest.py` and `tests\fixtures\`. These fixtures provide consistent, reusable testing infrastructure.  Refer to this file for the latest implementations of all fixtures.  Create additional fixtures for any testing components that should be standardized for use across the test suite.
 
 ## 1. Testing Standards
 
@@ -209,16 +209,56 @@ def test_service_instance_behavior(container_initialized):
 ```
 
 
-## Future Enhancements
+## Test Naming Conventions
 
-Potential improvements to the CLI testing infrastructure:
+### File Naming
+- Unit tests: `test_<module_name>.py`
+- Integration tests: `test_<feature>_integration.py`
+- CLI tests: `test_<command>_cli.py`
+- Workflow tests: `test_<workflow>_workflow.py`
+- Regression tests: `test_<issue_description>_regression.py`
 
-- **Custom assertion helpers**: Helper functions for common assertion patterns
-- **Mock service fixtures**: Shared fixtures for commonly mocked services
-- **Performance testing**: Infrastructure for testing performance
+### Class Naming
+- Unit test classes: `Test<ClassName>` or `Test<ModuleName>`
+- Integration test classes: `Test<Feature>Integration`
+- CLI test classes: `Test<Command>CLI`
+- Workflow test classes: `Test<Workflow>Workflow`
+
+### Method Naming
+- Use descriptive names that explain the test scenario
+- Follow pattern: `test_<action>_when_<condition>_then_<expected_result>`
+- Examples:
+  - `test_should_process_csv_when_valid_input_provided`
+  - `test_raises_error_when_file_not_found`
+  - `test_creates_excel_output_when_processing_succeeds`
+
+## Common Test Commands
+
+```bash
+# Development workflow - fast feedback
+pytest tests/unit/ -v
+
+# Pre-commit validation
+pytest tests/unit/ tests/integration/ -v
+
+# Full test suite (excluding performance)
+pytest tests/ --ignore=tests/performance/ -v
+
+# Specific module testing
+pytest tests/unit/nipper_expander/ -v
+
+# CLI tests only
+pytest tests/ -k "cli" -v
+
+# Run by markers
+pytest tests/ -m "unit" -v
+pytest tests/ -m "not slow" -v
+
+# Performance testing
+pytest tests/performance/ -v --benchmark-only
+```
 
 ## Related Documentation
 
 - [Test Directory Organization](test-directory-organization.md) - Overall test structure
-- [Shared Fixtures Analysis](test-directory-organization.md#shared-fixtures-analysis-summary) - Details on all shared fixtures
-- [Development Standards](README.md) - General development guidelines
+- [Pytest Fixture Organization](pytest-fixture-organization.md) - Defining and using shared fixtures
