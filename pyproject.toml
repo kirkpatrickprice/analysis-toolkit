@@ -67,12 +67,21 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src", "tests"]
 markers = [
-    "unit: Fast unit tests",
-    "integration: Integration tests", 
+    "batch_processing: Batch processing tests",
+    "cli: CLI tests",
+    "core: Core DI functionality tests",
+    "csv_processing: Core CSV processing tests",
     "e2e: End-to-end tests",
-    "regression: Regression tests",
+    "excel_export: Core Excel export tests",
+    "file_processing: Core file processing tests",
+    "integration: Integration tests", 
+    "nipper: Nipper Expander tests",
     "performance: Performance tests",
+    "regression: Regression tests",
+    "rtf: RTF processing tests",
+    "rich_output: Core Rich Output tests",
     "slow: Tests that take longer to run",
+    "unit: Fast unit tests",
 ]
 
 [dependency-groups]

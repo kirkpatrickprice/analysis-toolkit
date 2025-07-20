@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 from kp_analysis_toolkit.core.services.csv_processing.service import CSVProcessorService
 from kp_analysis_toolkit.nipper_expander.protocols import (
-    NipperExpanderService,
+    NipperExporterService,
+    RowExpanderService,
 )
 
 if TYPE_CHECKING:
@@ -17,24 +18,24 @@ if TYPE_CHECKING:
         CSVProcessorService,
     )
     from kp_analysis_toolkit.nipper_expander.protocols import (
-        NipperExpanderService,
         NipperExporterService,
+        RowExpanderService,
     )
     from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
-class NipperExpanderService(NipperExpanderService):
+class DefaultNipperExpanderService:
     """Main service for the Nipper Expander module."""
 
     def __init__(
         self,
         csv_processor: CSVProcessorService,
-        data_expander: NipperExpanderService,
+        data_expander: RowExpanderService,
         nipper_exporter: NipperExporterService,
         rich_output: RichOutput,
     ) -> None:
         self.csv_processor: CSVProcessorService = csv_processor
-        self.data_expander: NipperExpanderService = data_expander
+        self.data_expander: RowExpanderService = data_expander
         self.nipper_exporter: NipperExporterService = nipper_exporter
         self.rich_output: RichOutput = rich_output
 
@@ -48,7 +49,7 @@ class NipperExpanderService(NipperExpanderService):
 
         Args:
             input_path: Path to the input Nipper CSV file
-            output_path: Path to the output Nipper CSV file
+            output_path: Path to the output Excel file
 
         Raises (in order of likelihood):
             FileNotFoundError: Input CSV file not found or output directory doesn't exist

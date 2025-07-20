@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from kp_analysis_toolkit.nipper_expander.service import (
-    NipperExpanderService as MainNipperService,
+    DefaultNipperExpanderService as MainNipperService,
 )
 from kp_analysis_toolkit.nipper_expander.services.data_expander import (
     DefaultRowExpander,

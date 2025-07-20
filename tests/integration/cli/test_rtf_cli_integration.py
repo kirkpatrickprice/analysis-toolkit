@@ -12,6 +12,9 @@ from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.models.enums import FileSelectionResult
 
 
+@pytest.mark.rtf
+@pytest.mark.file_processing
+@pytest.mark.integration
 class TestGetInputFile:
     """Test the get_input_file function."""
 
@@ -93,6 +96,9 @@ class TestGetInputFile:
             assert result == FileSelectionResult.PROCESS_ALL_FILES
 
 
+@pytest.mark.cli
+@pytest.mark.rtf
+@pytest.mark.integration
 class TestProcessCommandLine:
     """Test the CLI command functionality."""
 
@@ -101,6 +107,7 @@ class TestProcessCommandLine:
         result: Result = cli_runner.invoke(process_command_line, ["--help"])
         assert result.exit_code == 0
         from tests.conftest import assert_rich_help_output
+
         assert_rich_help_output(result.output, "Convert RTF files to plain text format")
 
     def test_process_command_line_with_invalid_file(
@@ -108,7 +115,9 @@ class TestProcessCommandLine:
         cli_runner: CliRunner,
     ) -> None:
         """Test error handling with invalid file."""
-        result: Result = cli_runner.invoke(process_command_line, ["-f", "nonexistent.rtf"])
+        result: Result = cli_runner.invoke(
+            process_command_line, ["-f", "nonexistent.rtf"]
+        )
         assert result.exit_code == 1
         assert "Error processing RTF file" in result.output
 

@@ -3,6 +3,8 @@
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 from kp_analysis_toolkit.core.services.file_processing import (
     FileProcessingService,
 )
@@ -13,6 +15,9 @@ from kp_analysis_toolkit.core.services.file_processing.protocols import (
 )
 
 
+@pytest.mark.file_processing
+@pytest.mark.core
+@pytest.mark.unit
 class TestFileProcessingService:
     """Test the FileProcessingService class."""
 

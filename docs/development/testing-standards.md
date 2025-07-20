@@ -11,6 +11,7 @@ All tests should use the shared pytest fixtures defined in `tests/conftest.py`. 
 - **Use Shared Fixtures** -- Do not create test infrastructure directly in the tests.  Create them in `tests/conftest.py`
 - **Embrace DI** -- The future of this application uses the `dependency-injector` framework to create services that are reused in the business logic.  Tests will favor DI-based implementations with secondary tests for non-DI fall-back for interim backwards-compatability
 - **Directory and Naming Standards** -- Standards for test names and the use of test directories are located in [`docs/development/test-directory-organization.md`](test-directory-organization.md)
+- **Mark all tests** -- Using the markers defined in [pyproject.toml](/pyproject.toml)
 
 ### 2. Fixture Parameter Order
 When using multiple fixtures and mocks, follow this parameter order:

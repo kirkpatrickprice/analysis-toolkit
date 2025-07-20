@@ -2,6 +2,8 @@
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from kp_analysis_toolkit.core.containers.file_processing import FileProcessingContainer
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.core.services.file_processing.encoding import (
@@ -15,6 +17,9 @@ if TYPE_CHECKING:
     from kp_analysis_toolkit.core.containers.core import CoreContainer
 
 
+@pytest.mark.file_processing
+@pytest.mark.core
+@pytest.mark.unit
 class TestFileProcessingContainer:
     """Test the FileProcessingContainer for dependency injection."""
 
@@ -53,7 +58,8 @@ class TestFileProcessingContainer:
         assert isinstance(service, RobustEncodingDetector)
 
     def test_hashing_service_creation(
-        self, real_core_container: "CoreContainer",
+        self,
+        real_core_container: "CoreContainer",
     ) -> None:
         """Test that SHA384FileHashGenerator can be created from container."""
         container = FileProcessingContainer()

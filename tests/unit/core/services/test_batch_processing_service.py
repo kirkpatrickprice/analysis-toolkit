@@ -23,6 +23,9 @@ TEST_FILE_COUNT_MEDIUM = 3
 EXPECTED_SUCCESS_RATE = 100.0
 
 
+@pytest.mark.batch_processing
+@pytest.mark.core
+@pytest.mark.unit
 class TestDefaultBatchProcessingService:
     """Test the DefaultBatchProcessingService class."""
 

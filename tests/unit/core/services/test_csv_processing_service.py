@@ -26,6 +26,9 @@ EXPECTED_ROWS_BASIC = 2
 EXPECTED_ROWS_SINGLE = 1
 
 
+@pytest.mark.csv_processing
+@pytest.mark.core
+@pytest.mark.unit
 class TestCSVProcessorService:
     """Test the CSVProcessorService class."""
 

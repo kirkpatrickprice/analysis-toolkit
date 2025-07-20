@@ -36,7 +36,7 @@ class NipperExpanderContainer(containers.DeclarativeContainer):
     # Main Module Service - orchestrates everything
     nipper_expander_service: providers.Factory[NipperExpanderService] = (
         providers.Factory(
-            "kp_analysis_toolkit.nipper_expander.service.NipperExpanderService",
+            "kp_analysis_toolkit.nipper_expander.service.DefaultNipperExpanderService",
             csv_processor=core.csv_processor_service,
             data_expander=data_expander_service,
             nipper_exporter=nipper_exporter_service,
