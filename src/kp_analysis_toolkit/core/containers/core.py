@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 from dependency_injector import containers, providers
 
 if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.batch_processing.protocols import (
+        BatchProcessingService,
+    )
     from kp_analysis_toolkit.core.services.csv_processing.protocols import CSVProcessor
     from kp_analysis_toolkit.core.services.excel_export.protocols import (
         WorkbookEngine,
@@ -154,4 +157,13 @@ class CoreContainer(containers.DeclarativeContainer):
         "kp_analysis_toolkit.core.services.csv_processing.service.CSVProcessorService",
         file_processing=file_processing_service,
         rich_output=rich_output,
+    )
+
+    # Batch Processing Service - Singleton to maintain consistent behavior and avoid
+    # recreating dependencies for each batch operation. Progress tracking and error
+    # handling should be consistent across the application.
+    batch_processing_service: providers.Singleton[BatchProcessingService] = providers.Singleton(
+        "kp_analysis_toolkit.core.services.batch_processing.service.DefaultBatchProcessingService",
+        rich_output=rich_output,
+        file_processing=file_processing_service,
     )

@@ -166,17 +166,19 @@ def extract_file_paths(config: Any) -> tuple[Path, Path]:
 
 ## Implementation Priority
 
-### Phase 1: Core Infrastructure (High Priority)
-1. Add `process_files_with_service` function to batch processing utility
-2. Create standard success message formatters
-3. Add helper function for file path extraction
+### Phase 1: Core Service Implementation (High Priority)
+1. Create `BatchProcessingService` as a core DI service
+2. Add service to `CoreContainer` with proper dependency injection
+3. Implement `process_files_with_service` method within the service
+4. Create standard success message formatters
 
-### Phase 2: Command Refactoring (Medium Priority)
-1. Refactor `rtf_to_text` command to use new pattern
-2. Refactor `nipper_expander` command to use new pattern
-3. Remove redundant wrapper functions
+### Phase 2: Simultaneous Command Refactoring (High Priority)
+1. Refactor both `rtf_to_text` and `nipper_expander` commands simultaneously
+2. Replace direct batch processing imports with DI service injection
+3. Remove all wrapper functions from both commands
+4. Update both commands to use the new service pattern
 
-### Phase 3: Enhanced Features (Low Priority)
+### Phase 3: Enhanced Features (Medium Priority)
 1. Add auto-detection for common service patterns
 2. Create command-specific batch processing helpers
 3. Add configuration validation for batch operations
@@ -200,28 +202,138 @@ def extract_file_paths(config: Any) -> tuple[Path, Path]:
 
 ## Migration Strategy
 
-### Backward Compatibility
-- Keep existing `process_files_with_config` function for compatibility
-- Mark deprecated functions with appropriate warnings
-- Provide migration guide for future commands
+### Direct Implementation Approach
+Since only `rtf_to_text` and `nipper_expander` currently use batch processing, both commands can be refactored simultaneously without backward compatibility concerns.
+
+### Implementation Steps
+1. **Create the Service**: Implement `BatchProcessingService` in the core services
+2. **Register in DI Container**: Add service to `CoreContainer` with proper dependencies
+3. **Refactor Both Commands**: Update both commands simultaneously to use the new service
+4. **Remove Old Utility**: Delete the old `batch_processing.py` utility module
+5. **Update Tests**: Modify tests to use the new service pattern
 
 ### Testing Strategy
-- Unit tests for new batch processing functions
-- Integration tests for refactored commands
+- Unit tests for the new `BatchProcessingService`
+- Integration tests for both refactored commands
+- Remove tests for deprecated batch processing utility
 - Performance comparison between old and new patterns
 
 ### Documentation Updates
-- Update CLI command documentation
-- Create examples for new batch processing patterns
-- Document best practices for service integration
+- Update CLI command documentation for both commands
+- Create examples for the new batch processing service pattern
+- Document best practices for service integration in future commands
+
+## Should Batch Processing Be a Core DI Service?
+
+### Current State
+The `batch_processing` utility currently operates as a standalone utility module that:
+- Imports the global `container` instance from `core.containers.application`
+- Directly accesses `container.core.rich_output()` when `RichOutputService` is not provided
+- Functions as a stateless utility library
+
+### Analysis: Benefits of DI Service Implementation
+
+#### **Pros:**
+
+1. **Proper Dependency Management**
+   - Eliminates direct container access (`container.core.rich_output()`)
+   - Makes dependencies explicit through constructor injection
+   - Enables proper testing with mock dependencies
+
+2. **Service Layer Consistency**
+   - Aligns with the project's DI architecture pattern
+   - Provides a clean service interface for batch operations
+   - Enables service composition and reusability
+
+3. **Enhanced Testability**
+   - Easy to inject mock services for unit testing
+   - No global container dependencies in tests
+   - Better isolation of batch processing logic
+
+4. **Configuration Management**
+   - Can accept configuration through DI container
+   - Centralizes batch processing configuration
+   - Enables environment-specific settings
+
+#### **Cons:**
+
+1. **Increased Complexity**
+   - Requires service registration in core container
+   - Adds another layer of abstraction
+   - May be overkill for utility functions
+
+2. **Breaking Change**
+   - Current direct import usage would need refactoring
+   - Migration effort for existing code
+   - Potential impact on CLI command structure
+
+### Recommendation: **Yes, implement as a Core DI Service**
+
+#### **Rationale:**
+The batch processing functionality has evolved beyond simple utility functions to a complex orchestration system that:
+- Manages multiple dependencies (`RichOutputService`, error handling, progress tracking)
+- Maintains state during processing operations
+- Provides cross-cutting concerns for file processing commands
+- Would benefit from proper dependency injection patterns
+
+#### **Proposed Implementation:**
+
+```python
+# src/kp_analysis_toolkit/core/services/batch_processing/service.py
+class BatchProcessingService:
+    """Core service for batch file processing operations."""
+    
+    def __init__(
+        self,
+        rich_output: RichOutputService,
+        file_processing: FileProcessingService,
+    ) -> None:
+        self.rich_output = rich_output
+        self.file_processing = file_processing
+    
+    def process_files_with_service(
+        self,
+        file_list: list[Path],
+        config_creator: Callable[[Path], Any],
+        service_method: Callable[[Path, Path], None],
+        config: BatchProcessingConfig | None = None,
+    ) -> BatchResult:
+        """Process files using a service method directly."""
+        # Implementation with injected dependencies
+```
+
+```python
+# In CoreContainer
+batch_processing_service: providers.Singleton[BatchProcessingService] = (
+    providers.Singleton(
+        BatchProcessingService,
+        rich_output=rich_output,
+        file_processing=file_processing_service,
+    )
+)
+```
+
+#### **Migration Strategy:**
+1. **Phase 1**: Create the `BatchProcessingService` implementation in core services
+2. **Phase 2**: Simultaneously refactor both `rtf_to_text` and `nipper_expander` commands 
+3. **Phase 3**: Remove the old `batch_processing.py` utility module completely
+
+#### **Service Interface Benefits:**
+- Commands receive `BatchProcessingService` through DI injection
+- No direct container access needed
+- Easy to mock for testing
+- Consistent with other core services
+- Enables future enhancements (parallel processing, caching, etc.)
 
 ## Conclusion
 
-The current batch processing pattern has evolved into an overly complex system with significant code duplication. The proposed simplifications will:
+The current batch processing pattern has evolved into an overly complex system with significant code duplication. The proposed simplifications, **combined with implementing batch processing as a core DI service**, will:
 
 1. **Reduce Complexity**: Eliminate unnecessary wrapper functions and tuple handling
-2. **Improve Consistency**: Standardize patterns across all file processing commands
+2. **Improve Consistency**: Standardize patterns across all file processing commands  
 3. **Enhance Maintainability**: Make it easier to add new commands and modify existing ones
 4. **Better Type Safety**: Reduce type casting and improve type inference
+5. **Proper Architecture**: Align with DI patterns and eliminate global container access
+6. **Enhanced Testability**: Enable proper dependency injection for testing
 
-The implementation should be done in phases to maintain backward compatibility while gradually migrating to the simplified pattern.
+The implementation can be done as a clean refactoring since only two commands are affected, eliminating the need for gradual migration or compatibility layers.

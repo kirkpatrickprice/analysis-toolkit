@@ -138,7 +138,7 @@ def _process_single_file_with_service(
     nipper_service: NipperExpanderService,
 ) -> tuple[ProgramConfig, None]:
     """Process a single file using the nipper service."""
-    # AI-GEN: claude-3.5-sonnet|2024-12-31|function-signature-mismatch|reviewed:no
+    # AI-GEN: claude-3.5-sonnet|2024-12-31|function-signature-mismatch|reviewed:yes
     from pathlib import Path
     from typing import cast
 
