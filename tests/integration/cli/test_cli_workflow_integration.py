@@ -2,11 +2,14 @@
 
 from unittest.mock import Mock, patch
 
+import pytest
 from click.testing import CliRunner
 
 from kp_analysis_toolkit.cli import cli
 
 
+@pytest.mark.cli
+@pytest.mark.integration
 class TestCLIVersionChecking:
     """Integration tests for CLI version checking functionality."""
 
@@ -63,6 +66,7 @@ class TestCLIVersionChecking:
 
         assert result.exit_code == 0
         from tests.conftest import assert_rich_version_output
+
         assert_rich_version_output(result.output)
 
     @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
@@ -77,6 +81,7 @@ class TestCLIVersionChecking:
         assert result.exit_code == 0
         mock_check_update.assert_called_once()
         from tests.conftest import assert_rich_help_output
+
         assert_rich_help_output(result.output, "Process collector script results files")
 
     @patch("kp_analysis_toolkit.cli.main.check_and_prompt_update")
@@ -91,4 +96,5 @@ class TestCLIVersionChecking:
         assert result.exit_code == 0
         mock_check_update.assert_called_once()
         from tests.conftest import assert_rich_help_output
+
         assert_rich_help_output(result.output, "Process a Nipper CSV file")

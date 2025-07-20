@@ -5,10 +5,7 @@ from typing import TYPE_CHECKING
 from dependency_injector import containers, providers
 
 if TYPE_CHECKING:
-    from kp_analysis_toolkit.rtf_to_text.service import RtfToTextService
-    from kp_analysis_toolkit.rtf_to_text.services.rtf_converter import (
-        RtfConverterService,
-    )
+    from kp_analysis_toolkit.rtf_to_text.protocols import RtfConverter, RtfToTextService
 
 
 class RtfToTextContainer(containers.DeclarativeContainer):
@@ -18,7 +15,7 @@ class RtfToTextContainer(containers.DeclarativeContainer):
     core = providers.DependenciesContainer()
 
     # RTF Processing Services
-    rtf_converter_service: providers.Factory[RtfConverterService] = providers.Factory(
+    rtf_converter_service: providers.Factory[RtfConverter] = providers.Factory(
         "kp_analysis_toolkit.rtf_to_text.services.rtf_converter.RtfConverterService",
         rich_output=core.rich_output,
         file_processing=core.file_processing_service,

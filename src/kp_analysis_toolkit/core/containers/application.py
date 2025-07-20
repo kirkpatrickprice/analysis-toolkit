@@ -5,6 +5,7 @@ from __future__ import annotations
 from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.core.containers.core import CoreContainer
+from kp_analysis_toolkit.nipper_expander.container import NipperExpanderContainer
 from kp_analysis_toolkit.rtf_to_text.container import RtfToTextContainer
 
 
@@ -17,6 +18,10 @@ class ApplicationContainer(containers.DeclarativeContainer):
     # Module containers
     rtf_to_text: providers.Container[RtfToTextContainer] = providers.Container(
         RtfToTextContainer,
+        core=core,
+    )
+    nipper: providers.Container[NipperExpanderContainer] = providers.Container(
+        NipperExpanderContainer,
         core=core,
     )
 
@@ -47,14 +52,22 @@ def wire_application_container() -> None:
         modules=[
             "kp_analysis_toolkit.cli",
             "kp_analysis_toolkit.cli.commands.rtf_to_text",
+            "kp_analysis_toolkit.cli.commands.nipper",
         ],
     )
 
-    # Wire module containers
+    # Wire command containers
     container.rtf_to_text().wire(
         modules=[
             "kp_analysis_toolkit.rtf_to_text.service",
             "kp_analysis_toolkit.rtf_to_text.services.rtf_converter",
+        ],
+    )
+    container.nipper().wire(
+        modules=[
+            "kp_analysis_toolkit.nipper_expander.service",
+            "kp_analysis_toolkit.nipper_expander.services.data_expander",
+            "kp_analysis_toolkit.nipper_expander.services.nipper_exporter",
         ],
     )
 

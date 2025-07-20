@@ -11,3 +11,9 @@ class MessageType(Enum):
     DEBUG = "debug"
     HEADER = "header"
     SUBHEADER = "subheader"
+
+
+class FileSelectionResult(Enum):
+    """Results from file selection operations."""
+
+    PROCESS_ALL_FILES = "process_all_files"

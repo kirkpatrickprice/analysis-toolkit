@@ -3,11 +3,15 @@
 import os
 from unittest.mock import MagicMock, patch
 
+import pytest
 from click.testing import CliRunner, Result
 
 from kp_analysis_toolkit.cli import cli
 
 
+@pytest.mark.cli
+@pytest.mark.core
+@pytest.mark.integration
 class TestCLIDependencyInjection:
     """Test CLI integration with dependency injection system."""
 
@@ -120,6 +124,9 @@ class TestCLIDependencyInjection:
         assert mock_init_di.called
 
 
+@pytest.mark.cli
+@pytest.mark.rich_output
+@pytest.mark.integration
 class TestCLIRichOutputIntegration:
     """Test CLI integration with Rich Output."""
 
@@ -186,7 +193,7 @@ class TestCLIRichOutputIntegration:
             # Debug empty output issue
             if not result.output:
                 print(
-                    "Warning: CLI output is empty, this indicates a test isolation issue"
+                    "Warning: CLI output is empty, this indicates a test isolation issue",
                 )
                 # For now, just check that DI was called and the command didn't crash
                 assert mock_init_di.called
@@ -206,6 +213,8 @@ class TestCLIRichOutputIntegration:
                     del os.environ[var]
 
 
+@pytest.mark.cli
+@pytest.mark.integration
 class TestCLIErrorHandling:
     """Test CLI error handling with dependency injection."""
 
@@ -233,6 +242,8 @@ class TestCLIErrorHandling:
         assert "KP Analysis Toolkit" in result.output
 
 
+@pytest.mark.cli
+@pytest.mark.integration
 class TestCLISubcommandIntegration:
     """Test CLI subcommand integration with dependency injection."""
 
@@ -271,6 +282,9 @@ class TestCLISubcommandIntegration:
         mock_init_di.assert_called()
 
 
+@pytest.mark.cli
+@pytest.mark.core
+@pytest.mark.integration
 class TestCLIConfigurationPropagation:
     """Test that CLI configuration properly propagates to dependency injection."""
 
@@ -304,6 +318,9 @@ class TestCLIConfigurationPropagation:
         mock_init_di.assert_called_with(verbose=False, quiet=False)
 
 
+@pytest.mark.cli
+@pytest.mark.core
+@pytest.mark.integration
 class TestCLIRealDependencyInjection:
     """Test CLI with real dependency injection (no mocks)."""
 

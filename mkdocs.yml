@@ -70,6 +70,7 @@ nav:
   - Architecture:
     - architecture/README.md
     - Service Package Pattern: architecture/service-package-pattern.md
+    - CLI Command Pattern: architecture/di-command-pattern.md
     - DI Service Types: architecture/di-service-type.md
     - UI Service Layer Separation: architecture/ui-service-layer-separation.md
   - Development:

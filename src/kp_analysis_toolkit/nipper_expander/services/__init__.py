@@ -17,7 +17,7 @@ class CSVReader(Protocol):
     def validate_csv_structure(self, data_frame: pd.DataFrame) -> bool: ...
 
 
-class DataExpander(Protocol):
+class RowExpander(Protocol):
     """Protocol for data expansion operations."""
 
     def expand_ranges(
@@ -53,7 +53,7 @@ class CSVProcessorService:
     def __init__(
         self,
         csv_reader: CSVReader,
-        data_expander: DataExpander,
+        data_expander: RowExpander,
         data_validator: DataValidator,
         rich_output: RichOutput,
     ) -> None:

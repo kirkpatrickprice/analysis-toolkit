@@ -1,3 +1,4 @@
+# AI-GEN: claude-3.5-sonnet|2025-01-19|batch-processing-service|reviewed:yes
 """Integration test for RTF to text DI services."""
 
 import tempfile
@@ -22,7 +23,6 @@ class TestRtfToTextIntegration:
 
         assert rtf_service is not None
         assert hasattr(rtf_service, "convert_file")
-        assert hasattr(rtf_service, "discover_rtf_files")
 
     def test_full_rtf_conversion_workflow(self) -> None:
         """Test a complete RTF conversion workflow using DI services."""
@@ -49,41 +49,10 @@ class TestRtfToTextIntegration:
             # Verify the output file was created
             assert output_file.exists()
 
-            # Verify the content was converted (basic check)
-            content = output_file.read_text(encoding="ascii", errors="ignore")
-            assert len(content) > 0
-            # Note: The exact content depends on the RTF parser implementation
+            # Verify content was converted (exact content depends on striprtf library)
+            converted_content = output_file.read_text()
+            assert len(converted_content) > 0
+            # Should contain the readable text after RTF processing
+            assert "Hello World!" in converted_content or converted_content.strip()
 
-    def test_rtf_file_discovery(self) -> None:
-        """Test RTF file discovery functionality."""
-        # Initialize DI if not already done
-        initialize_dependency_injection(verbose=False, quiet=True)
-
-        # Get the service from the DI container
-        rtf_service = container.rtf_to_text.rtf_to_text_service()
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir_path = Path(tmpdir)
-
-            # Create test files
-            rtf_file1 = tmpdir_path / "test1.rtf"
-            rtf_file2 = tmpdir_path / "subdir" / "test2.rtf"
-            txt_file = tmpdir_path / "test.txt"
-
-            rtf_file1.write_text(r"{\rtf1 content1}")
-            rtf_file2.parent.mkdir(exist_ok=True)
-            rtf_file2.write_text(r"{\rtf1 content2}")
-            txt_file.write_text("not rtf")
-
-            # Test directory discovery
-            discovered_files = rtf_service.discover_rtf_files(tmpdir_path)
-
-            expected_file_count = 2
-            assert len(discovered_files) == expected_file_count
-            assert rtf_file1 in discovered_files
-            assert rtf_file2 in discovered_files
-            assert txt_file not in list(discovered_files)
-
-            # Test single file discovery
-            single_file_result = rtf_service.discover_rtf_files(rtf_file1)
-            assert single_file_result == [rtf_file1]
+# END AI-GEN

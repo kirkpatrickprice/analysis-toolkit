@@ -1,89 +1,83 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from kp_analysis_toolkit.core.services.csv_processing.service import CSVProcessorService
+from kp_analysis_toolkit.nipper_expander.protocols import (
+    NipperExporterService,
+    RowExpanderService,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from kp_analysis_toolkit.core.services.excel_export import ExcelExportService
-    from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
-    from kp_analysis_toolkit.nipper_expander.services.csv_processor import (
+    import pandas as pd
+
+    from kp_analysis_toolkit.core.services.csv_processing import (
         CSVProcessorService,
+    )
+    from kp_analysis_toolkit.nipper_expander.protocols import (
+        NipperExporterService,
+        RowExpanderService,
     )
     from kp_analysis_toolkit.utils.rich_output import RichOutput
 
 
-class NipperExpanderService:
+class DefaultNipperExpanderService:
     """Main service for the Nipper Expander module."""
 
     def __init__(
         self,
         csv_processor: CSVProcessorService,
-        excel_export: ExcelExportService,
-        file_processing: FileProcessingService,
+        data_expander: RowExpanderService,
+        nipper_exporter: NipperExporterService,
         rich_output: RichOutput,
     ) -> None:
-        self.csv_processor = csv_processor
-        self.excel_export = excel_export
-        self.file_processing = file_processing
-        self.rich_output = rich_output
+        self.csv_processor: CSVProcessorService = csv_processor
+        self.data_expander: RowExpanderService = data_expander
+        self.nipper_exporter: NipperExporterService = nipper_exporter
+        self.rich_output: RichOutput = rich_output
 
-    def execute(
+    def process_nipper_csv(
         self,
         input_path: Path,
         output_path: Path,
-        *,
-        expand_ranges: bool = True,
-        expand_lists: bool = True,
     ) -> None:
-        """Execute Nipper expansion workflow."""
+        """
+        Process one Nipper CSV file and export the expanded results to an Excel file.
+
+        Args:
+            input_path: Path to the input Nipper CSV file
+            output_path: Path to the output Excel file
+
+        Raises (in order of likelihood):
+            FileNotFoundError: Input CSV file not found or output directory doesn't exist
+            PermissionError: Insufficient permissions to read input or write output
+            ValueError: Invalid CSV data, missing required columns, or data format issues
+            pd.errors.ParserError: Malformed CSV file structure
+            pd.errors.EmptyDataError: Input CSV file is empty
+            UnicodeDecodeError: File encoding problems
+            OSError: File system errors (disk space, invalid paths)
+            MemoryError: Insufficient memory for processing large datasets
+
+        """
         try:
-            self.rich_output.header("Starting Nipper Expansion")
-
-            # Discover CSV files
-            csv_files = self._discover_csv_files(input_path)
-
-            if not csv_files:
-                self.rich_output.warning("No CSV files found")
-                return
-
-            # Process each CSV file
-            all_expanded_data = []
-            for csv_file in csv_files:
-                expanded_data = self.csv_processor.process_nipper_csv(
-                    csv_file,
-                    expand_ranges=expand_ranges,
-                    expand_lists=expand_lists,
-                )
-                all_expanded_data.append(expanded_data)
-
-            # Combine all data if multiple files
-            if len(all_expanded_data) > 1:
-                import pandas as pd
-
-                combined_data = pd.concat(all_expanded_data, ignore_index=True)
-            else:
-                combined_data = all_expanded_data[0]
-
-            # Export to Excel
-            self.excel_export.export_dataframe(
-                combined_data,
-                output_path,
-                sheet_name="Expanded_Rules",
+            data_frame: pd.DataFrame = self.csv_processor.read_and_validate_csv_file(
+                input_path,
+                required_columns=["Devices"],
             )
 
-            self.rich_output.success(
-                f"Successfully expanded {len(csv_files)} CSV files to {output_path}",
+            expanded_data_frame: pd.DataFrame = self.data_expander.expand_device_rows(
+                data_frame,
+            )
+
+            self.nipper_exporter.export_nipper_results(
+                expanded_data_frame,
+                output_path,
             )
 
         except Exception as e:
-            self.rich_output.error(f"Nipper Expansion failed: {e}")
+            message: str = f"Failed to process Nipper CSV file {input_path}: {e}"
+            self.rich_output.error(message)
             raise
-
-    def _discover_csv_files(self, path: Path) -> list[Path]:
-        """Discover CSV files in the input path."""
-        if path.is_file() and path.suffix.lower() == ".csv":
-            return [path]
-        if path.is_dir():
-            return list(path.glob("*.csv"))
-        return []
