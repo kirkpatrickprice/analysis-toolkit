@@ -196,7 +196,8 @@ class TestFileDiscoveryService:
             service.discover_files_by_pattern(nonexistent_path, "*.txt")
 
     def test_discover_files_by_pattern_file_instead_of_directory(
-        self, tmp_path: Path
+        self,
+        tmp_path: Path,
     ) -> None:
         """Test file discovery when base path is a file, not a directory."""
         # Create a test file
@@ -227,7 +228,8 @@ class TestFileDiscoveryService:
         assert isinstance(results, list)
 
     def test_discover_files_by_pattern_directories_excluded(
-        self, tmp_path: Path
+        self,
+        tmp_path: Path,
     ) -> None:
         """Test that directories are excluded from file discovery results."""
         # Create files and directories
