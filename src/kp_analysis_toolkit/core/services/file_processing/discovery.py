@@ -5,14 +5,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from kp_analysis_toolkit.core.services.file_processing.protocols import (
+    FileDiscoverer,
+)
+
 if TYPE_CHECKING:
-    from kp_analysis_toolkit.core.services.file_processing.protocols import (
-        FileDiscoveryService,
-    )
     from kp_analysis_toolkit.models.types import PathLike
 
 
-class FileDiscoveryService(FileDiscoveryService):
+class FileDiscoveryService(FileDiscoverer):
     """Service for discovering files in a directory based on a pattern."""
 
     def discover_files_by_pattern(
@@ -53,5 +54,5 @@ class FileDiscoveryService(FileDiscoveryService):
             raise ValueError(error_message)
 
         if recursive:
-            return list(base_path.rglob(pattern))
-        return list(base_path.glob(pattern))
+            return [path for path in base_path.rglob(pattern) if path.is_file()]
+        return [path for path in base_path.glob(pattern) if path.is_file()]

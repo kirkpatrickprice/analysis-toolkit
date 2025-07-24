@@ -107,7 +107,6 @@ class PathUtilities(Protocol):
         base_path: PathLike,
         filename_prefix: str,
         extension: str,
-        timestamp: str | None = None,
     ) -> Path:
         """
         Generate a timestamped file path.
@@ -116,7 +115,6 @@ class PathUtilities(Protocol):
             base_path: Base directory for the file
             filename_prefix: Prefix for the filename
             extension: File extension
-            timestamp: Timestamp string to include in the filename (default: current timestamp)
 
         Returns:
             A Path object representing the generated file path
