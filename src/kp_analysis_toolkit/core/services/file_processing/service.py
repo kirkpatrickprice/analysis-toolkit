@@ -35,6 +35,7 @@ class FileProcessingService:
             encoding_detector: Service for detecting file encodings
             hash_generator: Service for generating file hashes
             file_validator: Service for validating file paths
+            file_discovery: Service for finding files
             rich_output: Service for rich console output
 
         """

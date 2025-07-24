@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         FileValidator,
         HashGenerator,
     )
+    from kp_analysis_toolkit.core.services.timestamp import TimeStamper
 
 from kp_analysis_toolkit.core.services.excel_export.formatting import (
     DefaultColumnWidthAdjuster,
@@ -36,7 +37,6 @@ from kp_analysis_toolkit.core.services.excel_export.table_generation import (
 )
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
-from kp_analysis_toolkit.core.services.timestamp import TimeStamper
 from kp_analysis_toolkit.models.rich_config import RichOutputConfig
 
 
