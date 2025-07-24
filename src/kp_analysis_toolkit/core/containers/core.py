@@ -36,6 +36,7 @@ from kp_analysis_toolkit.core.services.excel_export.table_generation import (
 )
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+from kp_analysis_toolkit.core.services.timestamp import TimeStamper
 from kp_analysis_toolkit.models.rich_config import RichOutputConfig
 
 
@@ -162,8 +163,15 @@ class CoreContainer(containers.DeclarativeContainer):
     # Batch Processing Service - Singleton to maintain consistent behavior and avoid
     # recreating dependencies for each batch operation. Progress tracking and error
     # handling should be consistent across the application.
-    batch_processing_service: providers.Singleton[BatchProcessingService] = providers.Singleton(
-        "kp_analysis_toolkit.core.services.batch_processing.service.DefaultBatchProcessingService",
-        rich_output=rich_output,
-        file_processing=file_processing_service,
+    batch_processing_service: providers.Singleton[BatchProcessingService] = (
+        providers.Singleton(
+            "kp_analysis_toolkit.core.services.batch_processing.service.DefaultBatchProcessingService",
+            rich_output=rich_output,
+            file_processing=file_processing_service,
+        )
+    )
+
+    # Timestamp service to provide a consistent timestamp generation capability for all areas of the toolkit
+    timestamp_service: providers.Factory[TimeStamper] = providers.Factory(
+        "kp_analysis_toolkit.core.services.timestamp.TimeStampService",
     )
