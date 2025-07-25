@@ -7,5 +7,6 @@ cross-domain accessibility through pytest's discovery mechanism.
 
 from tests.fixtures.di_fixtures import *  # noqa: F403
 from tests.fixtures.mock_fixtures import *  # noqa: F403
+from tests.fixtures.parallel_processing_fixtures import *  # noqa: F403
 from tests.fixtures.rtf_fixtures import *  # noqa: F403
 from tests.fixtures.system_fixtures import *  # noqa: F403
