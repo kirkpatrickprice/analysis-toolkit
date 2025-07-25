@@ -11,10 +11,12 @@ from .protocols import (
     ProgressTracker,
     TaskResult,
 )
+from .service import DefaultParallelProcessingService
 from .task_result import DefaultTaskResult
 
 __all__: list[str] = [
     "DefaultInterruptHandler",
+    "DefaultParallelProcessingService",
     "DefaultProgressTracker",
     "DefaultTaskResult",
     "ExecutorFactory",
