@@ -10,6 +10,8 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import rich.progress
 
+from kp_analysis_toolkit.models.base import KPATBaseModel
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
@@ -18,6 +20,12 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.core.services.parallel_processing.progress_tracker import (
         DefaultProgressTracker,
+    )
+    from kp_analysis_toolkit.core.services.parallel_processing.service import (
+        DefaultParallelProcessingService,
+    )
+    from kp_analysis_toolkit.core.services.parallel_processing.task_result import (
+        DefaultTaskResult,
     )
 
 
@@ -29,16 +37,25 @@ if TYPE_CHECKING:
 @pytest.fixture
 def mock_process_pool_executor() -> MagicMock:
     """Create a mock ProcessPoolExecutor for testing."""
+    from concurrent.futures import Future
+
     executor: MagicMock = MagicMock(spec=concurrent.futures.ProcessPoolExecutor)
 
     # Setup context manager behavior
     executor.__enter__.return_value = executor
     executor.__exit__.return_value = None
 
-    # Setup default submission behavior
-    mock_future: MagicMock = MagicMock(spec=concurrent.futures.Future)
-    mock_future.result.return_value = "mock_result"
-    executor.submit.return_value = mock_future
+    # Setup a proper future mock with required attributes for as_completed
+    def create_mock_future(return_value: object = "mock_result") -> Future[object]:
+        # Create a real Future object, but with controlled result
+        future: Future[object] = Future()
+        future.set_result(return_value)
+        return future
+
+    # Setup default submission behavior that calls the task and returns its result
+    executor.submit.side_effect = lambda wrapper_fn, *args: create_mock_future(
+        wrapper_fn(*args)
+    )
 
     return executor
 
@@ -46,16 +63,24 @@ def mock_process_pool_executor() -> MagicMock:
 @pytest.fixture
 def mock_thread_pool_executor() -> MagicMock:
     """Create a mock ThreadPoolExecutor for testing."""
+    from concurrent.futures import Future
+
     executor: MagicMock = MagicMock(spec=concurrent.futures.ThreadPoolExecutor)
 
     # Setup context manager behavior
     executor.__enter__.return_value = executor
     executor.__exit__.return_value = None
 
+    # Setup a proper future that works with as_completed
+    def create_mock_future(return_value: object = "mock_result") -> Future[object]:
+        future: Future[object] = Future()
+        future.set_result(return_value)
+        return future
+
     # Setup default submission behavior
-    mock_future: MagicMock = MagicMock(spec=concurrent.futures.Future)
-    mock_future.result.return_value = "mock_result"
-    executor.submit.return_value = mock_future
+    executor.submit.side_effect = lambda wrapper_fn, *args: create_mock_future(
+        wrapper_fn(*args)
+    )
 
     return executor
 
@@ -127,7 +152,7 @@ def mock_progress_tracker() -> MagicMock:
         ProgressTracker,
     )
 
-    tracker: MagicMock = Mock(spec=ProgressTracker)
+    tracker: MagicMock = MagicMock(spec=ProgressTracker)
 
     # Setup context manager behavior
     tracker.__enter__.return_value = tracker
@@ -153,7 +178,7 @@ def mock_interrupt_handler() -> MagicMock:
         InterruptHandler,
     )
 
-    handler: MagicMock = Mock(spec=InterruptHandler)
+    handler: MagicMock = MagicMock(spec=InterruptHandler)
 
     # Setup context manager behavior
     handler.__enter__.return_value = handler
@@ -190,25 +215,24 @@ def mock_signal_handler() -> Generator[MagicMock, Any, None]:
 
 
 @pytest.fixture
-def sample_kpat_model() -> MagicMock:
+def sample_kpat_model() -> KPATBaseModel:
     """Create a sample KPATBaseModel instance for testing."""
-    from kp_analysis_toolkit.models.base import KPATBaseModel
-
     model = MagicMock(spec=KPATBaseModel)
     model.model_dump.return_value = {"test": "data"}
     model.model_validate.return_value = model
 
+    # Cast for type checking but keep runtime behavior
     return model
 
 
 @pytest.fixture
-def mock_task_result_success(sample_kpat_model: MagicMock) -> MagicMock:
+def mock_task_result_success(sample_kpat_model: KPATBaseModel) -> MagicMock:
     """Create a mock successful TaskResult for testing."""
     from kp_analysis_toolkit.core.services.parallel_processing.protocols import (
         TaskResult,
     )
 
-    result: MagicMock = Mock(spec=TaskResult)
+    result: MagicMock = MagicMock(spec=TaskResult)
     result.success = True
     result.error = None
     result.result = sample_kpat_model
@@ -223,7 +247,7 @@ def mock_task_result_failure() -> MagicMock:
         TaskResult,
     )
 
-    result: MagicMock = Mock(spec=TaskResult)
+    result: MagicMock = MagicMock(spec=TaskResult)
     result.success = False
     result.error = Exception("Test error")
 
@@ -238,11 +262,13 @@ def mock_task_result_failure() -> MagicMock:
 
 
 @pytest.fixture
-def mock_callable_tasks(sample_kpat_model: MagicMock) -> list[Callable[[], MagicMock]]:
+def mock_callable_tasks(
+    sample_kpat_model: KPATBaseModel,
+) -> list[Callable[[], KPATBaseModel]]:
     """Create a list of mock callable tasks for testing."""
 
-    def create_mock_task(return_value: MagicMock) -> Callable[[], MagicMock]:
-        def mock_task() -> MagicMock:
+    def create_mock_task(return_value: KPATBaseModel) -> Callable[[], KPATBaseModel]:
+        def mock_task() -> KPATBaseModel:
             return return_value
 
         return mock_task
@@ -278,7 +304,7 @@ def mock_parallel_processing_service() -> MagicMock:
         ParallelProcessingService,
     )
 
-    service: MagicMock = Mock(spec=ParallelProcessingService)
+    service: MagicMock = MagicMock(spec=ParallelProcessingService)
 
     # Setup default behaviors
     service.execute_in_parallel.return_value = []
@@ -497,6 +523,152 @@ def task_id() -> rich.progress.TaskID:
 def other_task_id() -> rich.progress.TaskID:
     """Create another TaskID for testing multiple tasks."""
     return rich.progress.TaskID(2)
+
+
+# =============================================================================
+# TASK RESULT FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def sample_error() -> ValueError:
+    """Create a sample error for TaskResult failure testing."""
+    return ValueError("Test error message")
+
+
+@pytest.fixture
+def sample_runtime_error() -> RuntimeError:
+    """Create a sample runtime error for TaskResult failure testing."""
+    return RuntimeError("Test runtime error")
+
+
+@pytest.fixture
+def real_task_result_success(sample_kpat_model: KPATBaseModel) -> DefaultTaskResult:
+    """Create a real successful DefaultTaskResult instance for testing."""
+    from kp_analysis_toolkit.core.services.parallel_processing.task_result import (
+        DefaultTaskResult,
+    )
+
+    return DefaultTaskResult.create_success(sample_kpat_model)
+
+
+@pytest.fixture
+def real_task_result_failure(sample_error: ValueError) -> DefaultTaskResult:
+    """Create a real failed DefaultTaskResult instance for testing."""
+    from kp_analysis_toolkit.core.services.parallel_processing.task_result import (
+        DefaultTaskResult,
+    )
+
+    return DefaultTaskResult.create_failure(sample_error)
+
+
+@pytest.fixture
+def default_parallel_processing_service(
+    mock_process_pool_executor_factory: MagicMock,
+    mock_progress_tracker: MagicMock,
+    mock_interrupt_handler: MagicMock,
+    mock_task_result_factory: Callable[[], MagicMock],
+) -> DefaultParallelProcessingService:
+    """Create a real DefaultParallelProcessingService instance for testing."""
+    from kp_analysis_toolkit.core.services.parallel_processing.service import (
+        DefaultParallelProcessingService,
+    )
+
+    return DefaultParallelProcessingService(
+        executor_factory=mock_process_pool_executor_factory,
+        progress_tracker=mock_progress_tracker,
+        interrupt_handler=mock_interrupt_handler,
+        task_result_factory=mock_task_result_factory,
+    )
+
+
+@pytest.fixture
+def large_task_list(
+    sample_kpat_model: KPATBaseModel,
+) -> list[Callable[[], KPATBaseModel]]:
+    """Create a large list of mock callable tasks for batching tests."""
+
+    def create_mock_task(return_value: KPATBaseModel) -> Callable[[], KPATBaseModel]:
+        def mock_task() -> KPATBaseModel:
+            return return_value
+
+        return mock_task
+
+    # Create 50 tasks for testing batching logic
+    return [create_mock_task(sample_kpat_model) for _ in range(50)]
+
+
+@pytest.fixture
+def empty_tasks() -> list[Callable[[], KPATBaseModel]]:
+    """Create an empty list of tasks."""
+    return []
+
+
+@pytest.fixture
+def failing_callable_task() -> Callable[[], KPATBaseModel]:
+    """Create a mock callable task that raises an exception."""
+
+    def failing_task() -> KPATBaseModel:
+        msg: str = "Task execution failed"
+        raise RuntimeError(msg)
+
+    return failing_task
+
+
+@pytest.fixture
+def interrupted_interrupt_handler() -> MagicMock:
+    """Create a mock InterruptHandler that simulates interruption scenarios."""
+    from kp_analysis_toolkit.core.services.parallel_processing.protocols import (
+        InterruptHandler,
+    )
+
+    handler: MagicMock = MagicMock(spec=InterruptHandler)
+
+    # Setup context manager behavior
+    handler.__enter__.return_value = handler
+    handler.__exit__.return_value = None
+
+    # Setup interrupt state (interrupted at stage 1)
+    handler.is_interrupted.return_value = True
+    handler.get_interrupt_stage.return_value = 1
+    handler.should_cancel_queued_tasks.return_value = True
+    handler.should_terminate_active_tasks.return_value = False
+    handler.should_immediate_exit.return_value = False
+
+    # Setup methods
+    handler.setup.return_value = None
+    handler.cleanup.return_value = None
+    handler.handle_interrupt_stage.return_value = None
+
+    return handler
+
+
+@pytest.fixture
+def immediate_exit_interrupt_handler() -> MagicMock:
+    """Create a mock InterruptHandler that simulates immediate exit scenarios."""
+    from kp_analysis_toolkit.core.services.parallel_processing.protocols import (
+        InterruptHandler,
+    )
+
+    handler: MagicMock = MagicMock(spec=InterruptHandler)
+
+    # Setup context manager behavior
+    handler.__enter__.return_value = handler
+    handler.__exit__.return_value = None
+
+    # Setup interrupt state (immediate exit at stage 3)
+    handler.is_interrupted.return_value = True
+    handler.get_interrupt_stage.return_value = 3
+    handler.should_cancel_queued_tasks.return_value = True
+    handler.should_terminate_active_tasks.return_value = True
+    handler.should_immediate_exit.return_value = True
+
+    # Setup methods
+    handler.setup.return_value = None
+    handler.cleanup.return_value = None
+    handler.handle_interrupt_stage.return_value = None
+
+    return handler
 
 
 # END AI-GEN
