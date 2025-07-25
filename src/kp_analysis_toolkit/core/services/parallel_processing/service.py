@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import math
+from concurrent.futures._base import Future
 from typing import TYPE_CHECKING
 
 from kp_analysis_toolkit.core.services.parallel_processing.protocols import (
@@ -191,74 +192,126 @@ class DefaultParallelProcessingService(ParallelProcessingService):
             List of execution results in original order
 
         """
-        results: list[KPATBaseModel] = []
         task_id: rich.progress.TaskID = self._progress_tracker.track_progress(
             total=len(tasks),
             description=description,
         )
 
         try:
-            # Create executor for parallel processing
             executor: Executor = self._executor_factory.create_executor(max_workers)
-
             with executor:
-                # Submit all tasks unless interrupted
-                future_to_index: dict[
-                    concurrent.futures.Future[KPATBaseModel],
-                    int,
-                ] = {}
-
-                for i, task in enumerate(tasks):
-                    # Check for interruption before submitting more tasks
-                    if self._interrupt_handler.should_cancel_queued_tasks():
-                        break
-
-                    # Submit task and track its index
-                    future: Future[KPATBaseModel] = executor.submit(
-                        self._execute_single_task,
-                        task,
+                # Submit tasks and handle submission-level interrupts
+                future_to_index: dict[Future[KPATBaseModel], int] = (
+                    self._submit_tasks_with_interrupt_handling(
+                        tasks,
+                        executor,
                     )
-                    future_to_index[future] = i
+                )
 
-                # Initialize results list with None values
-                results = [None] * len(tasks)  # type: ignore[list-item]
+                # Process results with execution-level interrupts
+                results: list[KPATBaseModel] = (
+                    self._process_task_results_with_interrupt_handling(
+                        future_to_index,
+                        tasks,
+                        task_id,
+                    )
+                )
 
-                # Process completed tasks as they finish
-                import concurrent.futures
-
-                for future in concurrent.futures.as_completed(future_to_index):
-                    # Check for termination request
-                    if self._interrupt_handler.should_terminate_active_tasks():
-                        # Cancel remaining futures
-                        for remaining_future in future_to_index:
-                            if not remaining_future.done():
-                                remaining_future.cancel()
-                        break
-
-                    # Check for immediate exit request
-                    if self._interrupt_handler.should_immediate_exit():
-                        msg: str = "Immediate termination requested"
-                        raise InterruptedError(msg)
-
-                    # Get task result
-                    task_index: int = future_to_index[future]
-                    try:
-                        task_result: KPATBaseModel = future.result()
-                        results[task_index] = task_result
-                    except (RuntimeError, ValueError, OSError):
-                        # Handle specific task execution errors
-                        # For now, we'll continue and let None remain in results
-                        # Future enhancement: configurable error handling strategy
-                        pass
-
-                    self._progress_tracker.update_progress(task_id)
+                return results
 
         finally:
             self._progress_tracker.complete_progress(task_id)
 
+    def _submit_tasks_with_interrupt_handling(
+        self,
+        tasks: list[Callable[[], KPATBaseModel]],
+        executor: Executor,
+    ) -> dict[concurrent.futures.Future[KPATBaseModel], int]:
+        """Submit tasks to executor with interrupt handling during submission."""
+        future_to_index: dict[concurrent.futures.Future[KPATBaseModel], int] = {}
+
+        # Submit tasks until interrupted
+        for i, task in enumerate(tasks):
+            if self._interrupt_handler.should_cancel_queued_tasks():
+                break
+
+            future: Future[KPATBaseModel] = executor.submit(
+                self._execute_single_task,
+                task,
+            )
+            future_to_index[future] = i
+
+        # Cancel queued tasks if interrupt occurred during submission
+        if self._interrupt_handler.should_cancel_queued_tasks():
+            self._cancel_queued_futures(future_to_index)
+
+        return future_to_index
+
+    def _process_task_results_with_interrupt_handling(
+        self,
+        future_to_index: dict[concurrent.futures.Future[KPATBaseModel], int],
+        tasks: list[Callable[[], KPATBaseModel]],
+        task_id: rich.progress.TaskID,
+    ) -> list[KPATBaseModel]:
+        """Process task results with interrupt handling during execution."""
+        results: list[KPATBaseModel | None] = [None] * len(tasks)
+
+        import concurrent.futures
+
+        for future in concurrent.futures.as_completed(future_to_index):
+            # Handle termination requests
+            if self._interrupt_handler.should_terminate_active_tasks():
+                self._cancel_remaining_futures(future_to_index)
+                break
+
+            # Handle immediate exit requests
+            if self._interrupt_handler.should_immediate_exit():
+                msg: str = "Immediate termination requested"
+                raise InterruptedError(msg)
+
+            # Process individual task result
+            self._process_single_task_result(future, future_to_index, results, task_id)
+
         # Filter out None values for partial results
-        filtered_results: list[KPATBaseModel] = [r for r in results if r is not None]
-        return filtered_results
+        return [r for r in results if r is not None]
+
+    def _cancel_queued_futures(
+        self,
+        future_to_index: dict[concurrent.futures.Future[KPATBaseModel], int],
+    ) -> None:
+        """Cancel futures that are queued but not yet running."""
+        for future in future_to_index:
+            if not future.running():
+                future.cancel()
+
+    def _cancel_remaining_futures(
+        self,
+        future_to_index: dict[concurrent.futures.Future[KPATBaseModel], int],
+    ) -> None:
+        """Cancel all remaining futures that are not done."""
+        for future in future_to_index:
+            if not future.done():
+                future.cancel()
+
+    def _process_single_task_result(
+        self,
+        future: concurrent.futures.Future[KPATBaseModel],
+        future_to_index: dict[concurrent.futures.Future[KPATBaseModel], int],
+        results: list[KPATBaseModel | None],
+        task_id: rich.progress.TaskID,
+    ) -> None:
+        """Process result from a single completed task."""
+        task_index: int = future_to_index[future]
+        try:
+            task_result: KPATBaseModel = future.result()
+            results[task_index] = task_result
+        except (RuntimeError, ValueError, OSError):
+            # Handle specific task execution errors
+            # For now, we'll continue and let None remain in results
+            # Future enhancement: configurable error handling strategy
+            pass
+
+        self._progress_tracker.update_progress(task_id)
 
     def _execute_batched_tasks_with_tracking(
         self,
@@ -290,7 +343,7 @@ class DefaultParallelProcessingService(ParallelProcessingService):
 
         try:
             for batch_num in range(total_batches):
-                # Check for batch cancellation
+                # Check for batch cancellation (prevents new batches)
                 if self._interrupt_handler.should_cancel_queued_tasks():
                     break
 
@@ -301,7 +354,7 @@ class DefaultParallelProcessingService(ParallelProcessingService):
                     start_idx:end_idx
                 ]
 
-                # Execute current batch
+                # Execute current batch - this now handles interrupts properly
                 batch_results: list[KPATBaseModel] = self._execute_single_batch(
                     batch_tasks=batch_tasks,
                     max_workers=max_workers,
@@ -311,8 +364,14 @@ class DefaultParallelProcessingService(ParallelProcessingService):
                 all_results.extend(batch_results)
 
                 # Check for termination after batch completion
+                # This catches interrupts that occurred during batch execution
                 if self._interrupt_handler.should_terminate_active_tasks():
                     break
+
+                # Also check for immediate exit after each batch
+                if self._interrupt_handler.should_immediate_exit():
+                    msg: str = "Immediate termination requested"
+                    raise InterruptedError(msg)
 
         finally:
             self._progress_tracker.complete_progress(task_id)
@@ -326,7 +385,11 @@ class DefaultParallelProcessingService(ParallelProcessingService):
         task_id: rich.progress.TaskID,
     ) -> list[KPATBaseModel]:
         """
-        Execute a single batch of tasks.
+        Execute a single batch of tasks with proper interrupt handling.
+
+        Handles two levels of interrupt scenarios:
+        1. Interrupt during task submission - cancels queued tasks in current batch
+        2. Interrupt during task execution - terminates active tasks in current batch
 
         Args:
             batch_tasks: Tasks in this batch
@@ -334,53 +397,122 @@ class DefaultParallelProcessingService(ParallelProcessingService):
             task_id: Progress task ID for updates
 
         Returns:
-            Results from batch execution
+            Results from batch execution (may be partial if interrupted)
 
         """
-        batch_results: list[KPATBaseModel] = []
         executor: Executor = self._executor_factory.create_executor(max_workers)
 
         with executor:
-            # Submit all tasks in batch
-            future_to_task: dict[
-                concurrent.futures.Future[KPATBaseModel],
-                Callable[[], KPATBaseModel],
-            ] = {}
-            for task in batch_tasks:
-                if self._interrupt_handler.should_cancel_queued_tasks():
-                    break
-                future: Future[KPATBaseModel] = executor.submit(
-                    self._execute_single_task,
-                    task,
+            # Submit batch tasks with interrupt handling
+            future_to_task: dict[Future[KPATBaseModel], Callable[[], KPATBaseModel]] = (
+                self._submit_batch_tasks_with_interrupt_handling(
+                    batch_tasks,
+                    executor,
                 )
-                future_to_task[future] = task
+            )
 
-            # Collect results as they complete
-            import concurrent.futures
+            # Process batch results with interrupt handling
+            return self._process_batch_results_with_interrupt_handling(
+                future_to_task,
+                task_id,
+            )
 
-            for future in concurrent.futures.as_completed(future_to_task):
-                if self._interrupt_handler.should_terminate_active_tasks():
-                    # Cancel remaining futures in batch
-                    for remaining_future in future_to_task:
-                        if not remaining_future.done():
-                            remaining_future.cancel()
-                    break
+    def _submit_batch_tasks_with_interrupt_handling(
+        self,
+        batch_tasks: list[Callable[[], KPATBaseModel]],
+        executor: Executor,
+    ) -> dict[concurrent.futures.Future[KPATBaseModel], Callable[[], KPATBaseModel]]:
+        """Submit batch tasks to executor with interrupt handling during submission."""
+        future_to_task: dict[
+            concurrent.futures.Future[KPATBaseModel],
+            Callable[[], KPATBaseModel],
+        ] = {}
 
-                if self._interrupt_handler.should_immediate_exit():
-                    msg: str = "Immediate termination requested"
-                    raise InterruptedError(msg)
+        # Submit tasks until interrupted
+        for task in batch_tasks:
+            if self._interrupt_handler.should_cancel_queued_tasks():
+                break
+            future: Future[KPATBaseModel] = executor.submit(
+                self._execute_single_task,
+                task,
+            )
+            future_to_task[future] = task
 
-                try:
-                    result: KPATBaseModel = future.result()
-                    batch_results.append(result)
-                except (RuntimeError, ValueError, OSError):
-                    # Handle specific task execution errors
-                    # For now, we'll continue - future enhancement: configurable error handling
-                    pass
+        # Cancel queued tasks if interrupt occurred during submission
+        if self._interrupt_handler.should_cancel_queued_tasks():
+            self._cancel_queued_batch_futures(future_to_task)
 
-                self._progress_tracker.update_progress(task_id)
+        return future_to_task
+
+    def _process_batch_results_with_interrupt_handling(
+        self,
+        future_to_task: dict[
+            concurrent.futures.Future[KPATBaseModel],
+            Callable[[], KPATBaseModel],
+        ],
+        task_id: rich.progress.TaskID,
+    ) -> list[KPATBaseModel]:
+        """Process batch results with interrupt handling during execution."""
+        batch_results: list[KPATBaseModel] = []
+
+        import concurrent.futures
+
+        for future in concurrent.futures.as_completed(future_to_task):
+            # Handle termination requests
+            if self._interrupt_handler.should_terminate_active_tasks():
+                self._cancel_remaining_batch_futures(future_to_task)
+                break
+
+            # Handle immediate exit requests
+            if self._interrupt_handler.should_immediate_exit():
+                msg: str = "Immediate termination requested"
+                raise InterruptedError(msg)
+
+            # Process individual batch task result
+            self._process_single_batch_task_result(future, batch_results, task_id)
 
         return batch_results
+
+    def _cancel_queued_batch_futures(
+        self,
+        future_to_task: dict[
+            concurrent.futures.Future[KPATBaseModel],
+            Callable[[], KPATBaseModel],
+        ],
+    ) -> None:
+        """Cancel batch futures that are queued but not yet running."""
+        for future in future_to_task:
+            if not future.running():
+                future.cancel()
+
+    def _cancel_remaining_batch_futures(
+        self,
+        future_to_task: dict[
+            concurrent.futures.Future[KPATBaseModel],
+            Callable[[], KPATBaseModel],
+        ],
+    ) -> None:
+        """Cancel all remaining batch futures that are not done."""
+        for future in future_to_task:
+            if not future.done():
+                future.cancel()
+
+    def _process_single_batch_task_result(
+        self,
+        future: concurrent.futures.Future[KPATBaseModel],
+        batch_results: list[KPATBaseModel],
+        task_id: rich.progress.TaskID,
+    ) -> None:
+        """Process result from a single completed batch task."""
+        try:
+            result: KPATBaseModel = future.result()
+            batch_results.append(result)
+        except (RuntimeError, ValueError, OSError):
+            # Handle specific task execution errors
+            # For now, we'll continue - future enhancement: configurable error handling
+            pass
+
+        self._progress_tracker.update_progress(task_id)
 
     def _execute_single_task(self, task: Callable[[], KPATBaseModel]) -> KPATBaseModel:
         """
