@@ -29,7 +29,7 @@ class ProcessPoolExecutorFactory(ExecutorFactory):
 
         """
         if max_workers <= 0:
-            msg = f"max_workers must be greater than 0, got {max_workers}"
+            msg: str = f"max_workers must be greater than 0, got {max_workers}"
             raise ValueError(msg)
 
         try:
@@ -44,10 +44,10 @@ class ProcessPoolExecutorFactory(ExecutorFactory):
                 mp_context=None,  # Use default multiprocessing context
             )
         except OSError as e:
-            msg = (
+            error_msg: str = (
                 f"Failed to create ProcessPoolExecutor with {max_workers} workers: {e}"
             )
-            raise OSError(msg) from e
+            raise OSError(error_msg) from e
 
 
 class ThreadPoolExecutorFactory(ExecutorFactory):
@@ -69,7 +69,7 @@ class ThreadPoolExecutorFactory(ExecutorFactory):
 
         """
         if max_workers <= 0:
-            msg = f"max_workers must be greater than 0, got {max_workers}"
+            msg: str = f"max_workers must be greater than 0, got {max_workers}"
             raise ValueError(msg)
 
         try:
@@ -83,8 +83,10 @@ class ThreadPoolExecutorFactory(ExecutorFactory):
                 thread_name_prefix="kpat-worker",
             )
         except OSError as e:
-            msg = f"Failed to create ThreadPoolExecutor with {max_workers} workers: {e}"
-            raise OSError(msg) from e
+            error_msg: str = (
+                f"Failed to create ThreadPoolExecutor with {max_workers} workers: {e}"
+            )
+            raise OSError(error_msg) from e
 
 
 # END AI-GEN

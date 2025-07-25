@@ -5,10 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from kp_analysis_toolkit.core.services.parallel_processing.protocols import TaskResult
-
 if TYPE_CHECKING:
     from kp_analysis_toolkit.models.base import KPATBaseModel
+
+from kp_analysis_toolkit.core.services.parallel_processing.protocols import TaskResult
 
 
 class DefaultTaskResult(TaskResult):
@@ -34,16 +34,16 @@ class DefaultTaskResult(TaskResult):
 
         """
         if success and result is None:
-            msg = "result is required when success=True"
+            msg: str = "result is required when success=True"
             raise ValueError(msg)
 
         if not success and error is None:
             msg = "error is required when success=False"
             raise ValueError(msg)
 
-        self._success = success
-        self._result = result
-        self._error = error
+        self._success: bool = success
+        self._result: KPATBaseModel | None = result
+        self._error: Exception | None = error
 
     @property
     def success(self) -> bool:
@@ -68,7 +68,9 @@ class DefaultTaskResult(TaskResult):
 
         """
         if not self._success:
-            msg = "Cannot access result when task failed. Check success property first."
+            msg: str = (
+                "Cannot access result when task failed. Check success property first."
+            )
             raise ValueError(msg)
 
         # We know result is not None because we validated it in __init__
@@ -105,10 +107,10 @@ class DefaultTaskResult(TaskResult):
     def __repr__(self) -> str:
         """Return string representation of the task result."""
         if self._success:
-            result_type = type(self._result).__name__ if self._result else "None"
+            result_type: str = type(self._result).__name__ if self._result else "None"
             return f"DefaultTaskResult(success=True, result_type={result_type})"
 
-        error_type = type(self._error).__name__ if self._error else "None"
+        error_type: str = type(self._error).__name__ if self._error else "None"
         return f"DefaultTaskResult(success=False, error_type={error_type})"
 
 

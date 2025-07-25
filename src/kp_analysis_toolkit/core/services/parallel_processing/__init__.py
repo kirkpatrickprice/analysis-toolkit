@@ -2,6 +2,7 @@
 """Parallel processing service package for dependency injection."""
 
 from .executor_factory import ProcessPoolExecutorFactory, ThreadPoolExecutorFactory
+from .progress_tracker import DefaultProgressTracker
 from .protocols import (
     ExecutorFactory,
     InterruptHandler,
@@ -11,7 +12,8 @@ from .protocols import (
 )
 from .task_result import DefaultTaskResult
 
-__all__ = [
+__all__: list[str] = [
+    "DefaultProgressTracker",
     "DefaultTaskResult",
     "ExecutorFactory",
     "InterruptHandler",

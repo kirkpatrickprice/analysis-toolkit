@@ -37,7 +37,19 @@ class ExecutorFactory(Protocol):
 
 
 class ProgressTracker(Protocol):
-    """Protocol for tracking progress across parallel operations."""
+    """
+    Protocol for tracking progress across parallel operations.
+
+    Can be used standalone with:
+    tracker.track_progress() to create progress tasks
+    tracker.update_progress() to update progress
+    tracker.complete_progress() to mark tasks complete
+
+    Can be used as a context manager for automatic cleanup:
+        with progress_tracker:
+            # progress operations here
+            # cleanup happens automatically
+    """
 
     def track_progress(self, total: int, description: str) -> rich.progress.TaskID:
         """
@@ -79,6 +91,42 @@ class ProgressTracker(Protocol):
 
         Raises:
             ValueError: If task_id is invalid
+
+        """
+        ...
+
+    def __enter__(self) -> Self:
+        """
+        Context manager entry - sets up progress tracking.
+
+        Returns:
+            Self for use in context manager
+
+        Raises:
+            RuntimeError: If progress tracking cannot be initialized
+
+        """
+        ...
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
+        """
+        Context manager exit - ensures progress cleanup happens.
+
+        Cleans up any active progress contexts and tasks regardless of
+        whether an exception occurred. Does not suppress exceptions.
+
+        Args:
+            exc_type: Exception type if an exception occurred
+            exc_val: Exception value if an exception occurred
+            exc_tb: Exception traceback if an exception occurred
+
+        Returns:
+            None (does not suppress exceptions)
 
         """
         ...
