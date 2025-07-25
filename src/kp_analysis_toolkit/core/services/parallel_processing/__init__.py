@@ -1,18 +1,29 @@
 # AI-GEN: GitHub Copilot|2025-01-24|parallel-processing-init|reviewed:no
 """Parallel processing service package for dependency injection."""
 
-from .executor_factory import ProcessPoolExecutorFactory, ThreadPoolExecutorFactory
-from .interrupt_handler import DefaultInterruptHandler
-from .progress_tracker import DefaultProgressTracker
-from .protocols import (
+from kp_analysis_toolkit.core.services.parallel_processing.executor_factory import (
+    ProcessPoolExecutorFactory,
+    ThreadPoolExecutorFactory,
+)
+from kp_analysis_toolkit.core.services.parallel_processing.interrupt_handler import (
+    DefaultInterruptHandler,
+)
+from kp_analysis_toolkit.core.services.parallel_processing.progress_tracker import (
+    DefaultProgressTracker,
+)
+from kp_analysis_toolkit.core.services.parallel_processing.protocols import (
     ExecutorFactory,
     InterruptHandler,
     ParallelProcessingService,
     ProgressTracker,
     TaskResult,
 )
-from .service import DefaultParallelProcessingService
-from .task_result import DefaultTaskResult
+from kp_analysis_toolkit.core.services.parallel_processing.service import (
+    DefaultParallelProcessingService,
+)
+from kp_analysis_toolkit.core.services.parallel_processing.task_result import (
+    DefaultTaskResult,
+)
 
 __all__: list[str] = [
     "DefaultInterruptHandler",
