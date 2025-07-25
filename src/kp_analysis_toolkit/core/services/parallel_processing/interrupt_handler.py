@@ -67,10 +67,12 @@ class DefaultInterruptHandler(InterruptHandler):
         try:
             # Store original signal handlers
             self._original_sigint_handler = signal.signal(
-                signal.SIGINT, self._handle_interrupt
+                signal.SIGINT,
+                self._handle_interrupt,
             )
             self._original_sigterm_handler = signal.signal(
-                signal.SIGTERM, self._handle_interrupt
+                signal.SIGTERM,
+                self._handle_interrupt,
             )
 
             # Reset interrupt stage
