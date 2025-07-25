@@ -13,6 +13,13 @@ import rich.progress
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
+    from kp_analysis_toolkit.core.services.parallel_processing.interrupt_handler import (
+        DefaultInterruptHandler,
+    )
+    from kp_analysis_toolkit.core.services.parallel_processing.progress_tracker import (
+        DefaultProgressTracker,
+    )
+
 
 # =============================================================================
 # EXECUTOR FACTORY FIXTURES
@@ -330,6 +337,166 @@ def value_error_executor_factory() -> MagicMock:
     factory.create_executor.side_effect = ValueError("Invalid max_workers")
 
     return factory
+
+
+# =============================================================================
+# PROGRESS TRACKER IMPLEMENTATION FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def mock_rich_progress_context() -> MagicMock:
+    """Create a mock Rich Progress context for testing DefaultProgressTracker."""
+    progress_context: MagicMock = MagicMock()
+    progress_context.__enter__.return_value = progress_context
+    progress_context.__exit__.return_value = None
+
+    # Mock progress.add_task() to return a consistent task ID
+    # Accept both positional and keyword arguments
+    def mock_add_task(*_args: str, **_kwargs: int) -> rich.progress.TaskID:
+        task_id = rich.progress.TaskID(1)
+        # Add task to tasks dict for tracking
+        mock_task = MagicMock()
+        mock_task.total = _kwargs.get("total", 100)
+        progress_context.tasks[task_id] = mock_task
+        return task_id
+
+    progress_context.add_task.side_effect = mock_add_task
+
+    # Mock progress.tasks property for task access
+    progress_context.tasks = {}
+
+    return progress_context
+
+
+@pytest.fixture
+def mock_rich_output_service(mock_rich_progress_context: MagicMock) -> MagicMock:
+    """Create a mock RichOutputService for testing progress tracker and interrupt handler."""
+    from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+
+    service: MagicMock = Mock(spec=RichOutputService)
+
+    # Mock progress context creation
+    service.progress.return_value = mock_rich_progress_context
+
+    # Mock output methods
+    service.info.return_value = None
+    service.warning.return_value = None
+    service.error.return_value = None
+
+    return service
+
+
+@pytest.fixture
+def default_progress_tracker(
+    mock_rich_output_service: MagicMock,
+) -> DefaultProgressTracker:
+    """Create a DefaultProgressTracker instance for testing."""
+    from kp_analysis_toolkit.core.services.parallel_processing.progress_tracker import (
+        DefaultProgressTracker,
+    )
+
+    return DefaultProgressTracker(mock_rich_output_service)
+
+
+# =============================================================================
+# INTERRUPT HANDLER IMPLEMENTATION FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def mock_signal_module() -> Generator[MagicMock, Any, None]:
+    """Create a mock signal module for testing interrupt handler."""
+    from unittest.mock import patch
+
+    with patch(
+        "kp_analysis_toolkit.core.services.parallel_processing.interrupt_handler.signal",
+    ) as mock_signal:
+        # Mock signal handlers
+        mock_signal.SIGINT = 2
+        mock_signal.SIGTERM = 15
+        mock_signal.signal.return_value = None
+
+        yield mock_signal
+
+
+@pytest.fixture
+def mock_sys_exit() -> Generator[MagicMock, Any, None]:
+    """Create a mock sys.exit for testing interrupt handler immediate exit."""
+    from unittest.mock import patch
+
+    with patch("sys.exit") as mock_exit:
+        yield mock_exit
+
+
+@pytest.fixture
+def default_interrupt_handler(
+    mock_rich_output_service: MagicMock,
+) -> DefaultInterruptHandler:
+    """Create a DefaultInterruptHandler instance for testing."""
+    from kp_analysis_toolkit.core.services.parallel_processing.interrupt_handler import (
+        DefaultInterruptHandler,
+    )
+
+    return DefaultInterruptHandler(mock_rich_output_service)
+
+
+# =============================================================================
+# INTERRUPT STAGE FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def interrupt_stage_no_interrupt() -> int:
+    """Return the constant for no interrupt stage."""
+    return 0
+
+
+@pytest.fixture
+def interrupt_stage_cancel_queued() -> int:
+    """Return the constant for cancel queued tasks stage."""
+    return 1
+
+
+@pytest.fixture
+def interrupt_stage_terminate_active() -> int:
+    """Return the constant for terminate active tasks stage."""
+    return 2
+
+
+@pytest.fixture
+def interrupt_stage_immediate_exit() -> int:
+    """Return the constant for immediate exit stage."""
+    return 3
+
+
+# =============================================================================
+# TASK ID FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def valid_task_id() -> rich.progress.TaskID:
+    """Create a valid TaskID for testing."""
+    return rich.progress.TaskID(1)
+
+
+@pytest.fixture
+def invalid_task_id() -> rich.progress.TaskID:
+    """Create an invalid TaskID for testing."""
+    return rich.progress.TaskID(999)
+
+
+@pytest.fixture
+def task_id() -> rich.progress.TaskID:
+    """Create a TaskID for testing (alias for valid_task_id)."""
+    return rich.progress.TaskID(1)
+
+
+@pytest.fixture
+def other_task_id() -> rich.progress.TaskID:
+    """Create another TaskID for testing multiple tasks."""
+    return rich.progress.TaskID(2)
 
 
 # END AI-GEN
