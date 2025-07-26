@@ -54,7 +54,7 @@ def mock_process_pool_executor() -> MagicMock:
 
     # Setup default submission behavior that calls the task and returns its result
     executor.submit.side_effect = lambda wrapper_fn, *args: create_mock_future(
-        wrapper_fn(*args)
+        wrapper_fn(*args),
     )
 
     return executor
@@ -79,7 +79,7 @@ def mock_thread_pool_executor() -> MagicMock:
 
     # Setup default submission behavior
     executor.submit.side_effect = lambda wrapper_fn, *args: create_mock_future(
-        wrapper_fn(*args)
+        wrapper_fn(*args),
     )
 
     return executor

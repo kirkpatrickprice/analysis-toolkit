@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from kp_analysis_toolkit.models.base import KPATBaseModel
+
 if TYPE_CHECKING:
     from collections.abc import Callable
     from unittest.mock import MagicMock
@@ -54,7 +56,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
     def test_execute_in_parallel_success(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test successful parallel execution with valid tasks."""
@@ -79,7 +81,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
         default_parallel_processing_service: DefaultParallelProcessingService,
     ) -> None:
         """Test that empty tasks list raises ValueError."""
-        empty_tasks: list[Callable[[], MagicMock]] = []
+        empty_tasks: list[Callable[[], KPATBaseModel]] = []
         max_workers: int = 2
 
         with pytest.raises(ValueError, match="Tasks list cannot be empty"):
@@ -91,7 +93,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
     def test_execute_in_parallel_zero_max_workers_raises_value_error(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that zero max_workers raises ValueError."""
         max_workers: int = 0
@@ -105,7 +107,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
     def test_execute_in_parallel_negative_max_workers_raises_value_error(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that negative max_workers raises ValueError."""
         max_workers: int = -1
@@ -122,7 +124,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
         mock_progress_tracker: MagicMock,
         mock_interrupt_handler: MagicMock,
         mock_task_result_factory: Callable[[], MagicMock],
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that execute_in_parallel uses interrupt handler and progress tracker as context managers."""
         service: DefaultParallelProcessingService = DefaultParallelProcessingService(
@@ -148,7 +150,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
     def test_execute_in_parallel_calls_dependencies(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that execute_in_parallel calls its dependencies appropriately."""
         max_workers: int = 2
@@ -169,7 +171,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
     def test_execute_in_parallel_with_custom_description(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test execute_in_parallel with custom description."""
         max_workers: int = 2
@@ -191,7 +193,7 @@ class TestDefaultParallelProcessingServiceExecuteInParallel:
         mock_progress_tracker: MagicMock,
         interrupted_interrupt_handler: MagicMock,
         mock_task_result_factory: Callable[[], MagicMock],
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test execute_in_parallel behavior with interruption."""
         service: DefaultParallelProcessingService = DefaultParallelProcessingService(
@@ -222,7 +224,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_success(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test successful batched execution with large task list."""
@@ -247,7 +249,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_auto_batch_size(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test batched execution with auto-calculated batch size."""
@@ -272,7 +274,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
         default_parallel_processing_service: DefaultParallelProcessingService,
     ) -> None:
         """Test that empty tasks list raises ValueError."""
-        empty_tasks: list[Callable[[], MagicMock]] = []
+        empty_tasks: list[Callable[[], KPATBaseModel]] = []
         max_workers: int = 2
         batch_size: int = 5
 
@@ -286,7 +288,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_zero_max_workers_raises_value_error(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that zero max_workers raises ValueError."""
         max_workers: int = 0
@@ -302,7 +304,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_negative_max_workers_raises_value_error(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that negative max_workers raises ValueError."""
         max_workers: int = -1
@@ -318,7 +320,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_zero_batch_size_raises_value_error(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that zero batch_size raises ValueError."""
         max_workers: int = 2
@@ -334,7 +336,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_negative_batch_size_raises_value_error(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that negative batch_size raises ValueError."""
         max_workers: int = 2
@@ -353,7 +355,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
         mock_progress_tracker: MagicMock,
         mock_interrupt_handler: MagicMock,
         mock_task_result_factory: Callable[[], MagicMock],
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that execute_with_batching uses interrupt handler and progress tracker as context managers."""
         service: DefaultParallelProcessingService = DefaultParallelProcessingService(
@@ -381,7 +383,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_calls_dependencies(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that execute_with_batching calls its dependencies appropriately."""
         max_workers: int = 2
@@ -407,7 +409,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
         mock_progress_tracker: MagicMock,
         interrupted_interrupt_handler: MagicMock,
         mock_task_result_factory: Callable[[], MagicMock],
-        large_task_list: list[Callable[[], MagicMock]],
+        large_task_list: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test execute_with_batching behavior with interruption."""
         service: DefaultParallelProcessingService = DefaultParallelProcessingService(
@@ -434,7 +436,7 @@ class TestDefaultParallelProcessingServiceExecuteWithBatching:
     def test_execute_with_batching_small_task_list(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test batched execution with small task list (fewer tasks than batch size)."""
@@ -470,7 +472,7 @@ class TestDefaultParallelProcessingServiceEdgeCases:
         def single_task() -> MagicMock:
             return sample_kpat_model
 
-        tasks: list[Callable[[], MagicMock]] = [single_task]
+        tasks: list[Callable[[], KPATBaseModel]] = [single_task]
         max_workers: int = 1
 
         results: list[KPATBaseModel] = (
@@ -493,7 +495,7 @@ class TestDefaultParallelProcessingServiceEdgeCases:
         def single_task() -> MagicMock:
             return sample_kpat_model
 
-        tasks: list[Callable[[], MagicMock]] = [single_task]
+        tasks: list[Callable[[], KPATBaseModel]] = [single_task]
         max_workers: int = 1
         batch_size: int = 1
 
@@ -511,7 +513,7 @@ class TestDefaultParallelProcessingServiceEdgeCases:
     def test_max_workers_equals_task_count(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test execution where max_workers equals number of tasks."""
@@ -531,7 +533,7 @@ class TestDefaultParallelProcessingServiceEdgeCases:
     def test_max_workers_exceeds_task_count(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test execution where max_workers exceeds number of tasks."""
@@ -551,7 +553,7 @@ class TestDefaultParallelProcessingServiceEdgeCases:
     def test_batch_size_equals_task_count(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test batched execution where batch_size equals number of tasks."""
@@ -573,7 +575,7 @@ class TestDefaultParallelProcessingServiceEdgeCases:
     def test_batch_size_one(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
         sample_kpat_model: MagicMock,
     ) -> None:
         """Test batched execution with batch_size=1."""
@@ -638,14 +640,16 @@ class TestDefaultParallelProcessingServiceProtocolCompliance:
     def test_execute_in_parallel_returns_list(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that execute_in_parallel returns a list."""
         max_workers: int = 2
 
-        results = default_parallel_processing_service.execute_in_parallel(
-            tasks=mock_callable_tasks,
-            max_workers=max_workers,
+        results: list[KPATBaseModel] = (
+            default_parallel_processing_service.execute_in_parallel(
+                tasks=mock_callable_tasks,
+                max_workers=max_workers,
+            )
         )
 
         assert isinstance(results, list)
@@ -653,7 +657,7 @@ class TestDefaultParallelProcessingServiceProtocolCompliance:
     def test_execute_with_batching_returns_list(
         self,
         default_parallel_processing_service: DefaultParallelProcessingService,
-        mock_callable_tasks: list[Callable[[], MagicMock]],
+        mock_callable_tasks: list[Callable[[], KPATBaseModel]],
     ) -> None:
         """Test that execute_with_batching returns a list."""
         max_workers: int = 2
