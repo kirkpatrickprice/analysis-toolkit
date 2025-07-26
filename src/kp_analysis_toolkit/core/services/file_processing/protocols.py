@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from kp_analysis_toolkit.models.types import PathLike
+
 
 class EncodingDetector(Protocol):
     """Protocol for file encoding detection."""
@@ -67,6 +69,55 @@ class FileValidator(Protocol):
 
         Returns:
             True if the directory exists and is a directory, False otherwise
+
+        """
+        ...
+
+
+class FileDiscoverer(Protocol):
+    """Protocol for discovering files in a directory."""
+
+    def discover_files_by_pattern(
+        self,
+        base_path: PathLike,
+        pattern: str = "*",
+        *,
+        recursive: bool = False,
+    ) -> list[Path]:
+        """
+        Discover files matching a pattern in a directory.
+
+        Args:
+            base_path: Directory to search for files
+            pattern: Glob pattern to match files
+            recursive: If True, search subdirectories recursively (default: False)
+
+        Returns:
+            List of Path objects for all matching files
+
+        """
+        ...
+
+
+class PathUtilities(Protocol):
+    """Protocol for path utilities."""
+
+    def generate_timestamped_path(
+        self,
+        base_path: PathLike,
+        filename_prefix: str,
+        extension: str,
+    ) -> Path:
+        """
+        Generate a timestamped file path.
+
+        Args:
+            base_path: Base directory for the file
+            filename_prefix: Prefix for the filename
+            extension: File extension
+
+        Returns:
+            A Path object representing the generated file path
 
         """
         ...

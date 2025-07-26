@@ -7,9 +7,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from kp_analysis_toolkit.core.services.file_processing.protocols import (
+        EncodingDetector,
+        FileDiscoverer,
+        FileValidator,
+        HashGenerator,
+    )
+    from kp_analysis_toolkit.models.types import PathLike
     from kp_analysis_toolkit.utils.rich_output import RichOutput
-
-    from .protocols import EncodingDetector, FileValidator, HashGenerator
 
 
 class FileProcessingService:
@@ -20,6 +25,7 @@ class FileProcessingService:
         encoding_detector: EncodingDetector,
         hash_generator: HashGenerator,
         file_validator: FileValidator,
+        file_discovery: FileDiscoverer,
         rich_output: RichOutput,
     ) -> None:
         """
@@ -29,12 +35,14 @@ class FileProcessingService:
             encoding_detector: Service for detecting file encodings
             hash_generator: Service for generating file hashes
             file_validator: Service for validating file paths
+            file_discovery: Service for finding files
             rich_output: Service for rich console output
 
         """
         self.encoding_detector: EncodingDetector = encoding_detector
         self.hash_generator: HashGenerator = hash_generator
         self.file_validator: FileValidator = file_validator
+        self.file_discovery: FileDiscoverer = file_discovery
         self.rich_output: RichOutput = rich_output
 
     def process_file(self, file_path: Path) -> dict[str, str | None]:
@@ -91,3 +99,28 @@ class FileProcessingService:
 
         """
         return self.hash_generator.generate_hash(file_path)
+
+    def discover_files_by_pattern(
+        self,
+        base_path: PathLike,
+        pattern: str = "*",
+        *,
+        recursive: bool = False,
+    ) -> list[Path]:
+        """
+        Discover files matching a pattern in a directory.
+
+        Args:
+            base_path: Directory to search for files
+            pattern: Glob pattern to match files (default: "*")
+            recursive: If True, search subdirectories recursively (default: False)
+
+        Returns:
+            List of Path objects for all matching files
+
+        """
+        return self.file_discovery.discover_files_by_pattern(
+            base_path,
+            pattern,
+            recursive=recursive,
+        )
