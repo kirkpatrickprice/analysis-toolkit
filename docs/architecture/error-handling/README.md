@@ -1,0 +1,1 @@
+placeholder content for patterns related to error handling including methods provided through common interfaces under the `cli` package

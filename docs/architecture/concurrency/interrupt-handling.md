@@ -1,0 +1,1 @@
+Document graceful shutdown and interrupt handling

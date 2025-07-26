@@ -1,0 +1,1 @@
+data flow details for RTF to Text command

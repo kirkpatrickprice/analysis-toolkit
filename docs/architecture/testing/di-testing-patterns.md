@@ -1,0 +1,1 @@
+Document mock vs real DI testing patterns and when to use each

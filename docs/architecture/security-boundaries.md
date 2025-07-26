@@ -1,0 +1,1 @@
+Document security boundaries between CLI, core services, and file processing
