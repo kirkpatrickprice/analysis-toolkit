@@ -114,7 +114,6 @@ class ExamplePattern:
         """Execute the pattern with given input."""
         # Pattern implementation
         return self._dependency.process(input_data)
-# END AI-GEN
 ```
 
 ## 5. Implementation Guide
@@ -153,7 +152,6 @@ class ExampleModel(KPATBaseModel):
         default=None,
         description="Optional field with default value"
     )
-# END AI-GEN
 ```
 
 #### Services (`services/<service_name>.py`)
@@ -178,7 +176,6 @@ class DefaultService:
         """Implementation of primary operation."""
         # Service logic here
         return self._dependency.process(input_data)
-# END AI-GEN
 ```
 
 ### 5.3 Testing Strategy
@@ -206,7 +203,6 @@ class TestDefaultService:
         # Assert
         assert result is not None
         mock_dependency.process.assert_called_once_with("test_input")
-# END AI-GEN
 ```
 
 #### Integration Testing
@@ -220,7 +216,6 @@ class TestServiceIntegration:
         """Test complete workflow with real dependencies."""
         # Integration test implementation
         pass
-# END AI-GEN
 ```
 
 ## 6. Configuration and Dependencies
@@ -238,7 +233,6 @@ class Container(containers.DeclarativeContainer):
         DefaultService,
         dependency=providers.Dependency()
     )
-# END AI-GEN
 ```
 
 ### 6.2 Configuration Models
@@ -260,7 +254,6 @@ class ComponentConfig(KPATBaseModel):
         le=1000,
         description="Numeric setting with validation"
     )
-# END AI-GEN
 ```
 
 ### 7.1 Glossary

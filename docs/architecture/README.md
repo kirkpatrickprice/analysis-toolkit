@@ -1,49 +1,56 @@
 # Architecture Documentation
 
-High-level system design and architectural decisions.
+Comprehensive system design and architectural documentation for the KP Analysis Toolkit.
 
-## Contents
+## Quick Navigation
 
-This directory contains:
+### 🏗️ **[Dependency Injection](dependency-injection/README.md)**
+Service-based architecture with type-safe dependency injection, promoting modularity and testability.
 
-- **System Overview** - High-level architecture overview
-- **Component Design** - Individual component architecture
-- **Data Flow** - How data moves through the system
-- **Integration Patterns** - How components interact
-- **Design Decisions** - Architectural choices and rationale
+### 🖥️ **[CLI Architecture](cli/README.md)**  
+Rich-Click based command line interface with custom help systems, option grouping, and decorator patterns.
 
-## Architecture Topics
+### ⚡ **[Concurrency](concurrency/README.md)**
+Multi-core parallel processing with graceful interrupt handling and Rich console integration.
 
-### System Architecture
-- Overall system structure
-- Module organization
-- Dependency relationships
-- Interface definitions
+### 📊 **[Data Architecture](data-models/README.md)**
+Pydantic-based data models with comprehensive validation and command-specific schemas.
 
-### Data Architecture
-- Data models and schemas
-- File format handling
-- Configuration management
-- Result processing
+## System Overview
 
-### CLI Architecture
-- Command structure
-- User interface patterns
-- Error handling strategies
-- Progress reporting
-- Rich-Click integration patterns
-- Custom help system design
-- Option grouping architecture
-- Decorator pattern implementation
+The KP Analysis Toolkit follows a modular, service-oriented architecture built on these core principles:
 
-### Concurrency Architecture
-- Parallel processing system design
-- Multi-stage interrupt handling
-- Process and thread pool management
-- Memory-efficient task batching
-- Cross-platform signal handling
-- Progress tracking integration
-- Rich console output coordination
+- **Type Safety**: Comprehensive type hints and Pydantic validation throughout
+- **Dependency Injection**: Clean separation of concerns through injectable services  
+- **Parallel Processing**: Efficient multi-core utilization for large dataset processing
+- **Rich User Experience**: Modern CLI with progress indicators and formatted output
+- **Testability**: Interface-based design enabling comprehensive testing strategies
+
+## Architecture Overview
+
+The system is organized into several key architectural layers:
+
+### Core Services Layer
+Foundation services used across all commands:
+- File processing and validation
+- Configuration management  
+- Error handling and logging
+- Progress tracking and reporting
+
+### Application Services Layer  
+Command-agnostic business logic:
+- Search and filtering operations
+- Data transformation pipelines
+- Output formatting and export
+- Parallel processing orchestration
+
+### Command Services Layer
+Command-specific implementations:
+- Process Scripts: PowerShell/Bash script analysis
+- RTF to Text: Rich Text Format conversion  
+- Nipper Expander: Network configuration processing
+
+## Data Flow Architecture
 
 ### Service Layer Architecture
 - Business logic organization
@@ -56,8 +63,9 @@ This directory contains:
 - [ ] System architecture overview
 - [x] CLI command architecture (see `cli/` subdirectory)
 - [x] Concurrency architecture (see `concurrency/` subdirectory)
+- [x] Data models architecture (see `data-models/` subdirectory)
+- [x] Data flows architecture (see `data-flows/` subdirectory)
 - [ ] Service layer design
-- [ ] Data model architecture
 - [ ] Error handling architecture
 - [ ] Configuration system design
 - [ ] Batch processing architecture
@@ -78,3 +86,21 @@ The concurrency and parallel processing architecture is documented in the `concu
 
 - **[Parallel Processing Architecture](concurrency/parallel-processing-architecture.md)** - Main parallel processing system with ProcessPoolExecutor/ThreadPoolExecutor patterns, dependency injection integration, and Rich console output coordination
 - **[Interrupt Handling Architecture](concurrency/interrupt-handling.md)** - Multi-stage interrupt handling system for graceful cancellation with three escalating levels: graceful → urgent → immediate termination
+
+## Data Architecture Documentation
+
+The data modeling and processing architecture is comprehensively documented with an overview and specialized subdirectories:
+
+- **[Data Architecture Overview](data-architecture.md)** - High-level overview of data modeling and processing architecture integration
+
+### Data Models Architecture
+
+The `data-models/` subdirectory contains comprehensive documentation for the Pydantic-based data modeling system:
+
+- **[Data Models Architecture](data-models/data-models-architecture.md)** - Complete guide to the data modeling system including KPATBaseModel inheritance patterns, validation strategies, field validators, cross-field validation, and integration with core services
+
+### Data Flows Architecture
+
+The `data-flows/` subdirectory contains comprehensive documentation for data processing workflows:
+
+- **[Data Flows Architecture](data-flows/data-flows-architecture.md)** - Complete guide to pipeline-based data processing including file processing flows, CSV processing pipelines, Excel export coordination, batch processing patterns, and service orchestration through dependency injection
