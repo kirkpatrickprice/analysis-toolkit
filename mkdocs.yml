@@ -68,11 +68,38 @@ nav:
   - API Reference:
     - api/README.md
   - Architecture:
-    - architecture/README.md
-    - Service Package Pattern: architecture/service-package-pattern.md
-    - CLI Command Pattern: architecture/di-command-pattern.md
-    - DI Service Types: architecture/di-service-type.md
-    - UI Service Layer Separation: architecture/ui-service-layer-separation.md
+      - architecture/README.md
+      - Overview: architecture/data-architecture.md
+      - CLI Architecture:
+          - architecture/cli/README.md
+          - CLI Details:
+            - Architecture Patterns: architecture/cli/cli-architecture-patterns.md
+            - Decorator Patterns: architecture/cli/cli-decorator-patterns.md
+            - Help System: architecture/cli/cli-help-system.md
+            - Option Groups: architecture/cli/cli-option-groups.md
+      - Concurrency:
+          - architecture/concurrency/README.md
+          - Concurrency Details:
+            - Parallel Processing: architecture/concurrency/parallel-processing-architecture.md
+            - Interrupt Handling: architecture/concurrency/interrupt-handling.md
+      - Data Architecture:
+          - Data Models:
+            - architecture/data-models/README.md
+            - Overview: architecture/data-models/data-models-architecture.md
+            - Sub-Command Details:
+              - Process Scripts: architecture/data-models/process-scripts-data-models.md
+              - RTF to Text: architecture/data-models/rtf-to-text-data-models.md
+              - Nipper Expander: architecture/data-models/nipper-expander-data-models.md
+              - YAML Configuration: architecture/data-models/yaml-search-configuration.md
+          - Data Flows:
+            - architecture/data-flows/README.md
+            - Overview: architecture/data-flows/data-flows-architecture.md
+      - Dependency Injection:
+        - architecture/dependency-injection/README.md
+        - Specific DI Patterns:
+          - Service Package Pattern: architecture/dependency-injection/service-package-pattern.md
+          - DI Service Types: architecture/dependency-injection/di-service-type.md
+          - UI Service Layer Separation: architecture/dependency-injection/ui-service-layer-separation.md
   - Development:
     - development/README.md
     - Testing Standards: development/testing-standards.md
@@ -103,7 +130,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+          format: !!python/name:pymdownx.superfences.fence_div_format
   
   # Content formatting
   - toc:
@@ -158,8 +185,6 @@ copyright: Copyright &copy; 2025 Randy Bartels
 # extra_css:
 #   - stylesheets/extra.css
 
-# Additional JavaScript (for future features)
-# extra_javascript:
-#   - javascripts/mathjax.js
-#   - https://polyfill.io/v3/polyfill.min.js?features=es6
-#   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+# Additional JavaScript for Mermaid diagrams
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js

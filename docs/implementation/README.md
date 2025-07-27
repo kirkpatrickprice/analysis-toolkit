@@ -23,6 +23,7 @@ This section contains detailed implementation plans, technical specifications, a
 - **[CLI Option Groups](cli-option-groups.md)** - Organizing command-line options
 - **[CLI Output Formatting](cli-output-formatting-analysis.md)** - Improving output presentation
 - **[CLI Core Implementation](cli.md)** - Core CLI functionality
+- **[CLI Architecture Documentation](../architecture/cli/README.md)** - Comprehensive CLI architecture patterns and design decisions
 
 ## Development Support
 

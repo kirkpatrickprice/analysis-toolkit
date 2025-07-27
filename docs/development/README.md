@@ -41,6 +41,10 @@ This directory contains:
 - [Test Directory Organization](test-directory-organization.md) - Test structure and shared fixtures
 - [GitHub Actions Pipeline Analysis](github-actions-pipeline-analysis.md) - CI/CD pipeline review and recommendations
 
+### Architecture
+- [CLI Architecture Documentation](../architecture/cli/README.md) - Comprehensive CLI architecture patterns, help system, and option grouping
+- [Concurrency Architecture Documentation](../architecture/concurrency/README.md) - Parallel processing and interrupt handling system design
+
 ## Completed Development Docs
 
 - [x] [CLI Testing Standards](cli-testing-standards.md) - CLI testing best practices and shared fixtures

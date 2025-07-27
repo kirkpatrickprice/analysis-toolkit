@@ -1,0 +1,1 @@
+Document integration testing patterns for concurrent processing including issues with mocking ProcessPoolExecutor due to pickling limitations
