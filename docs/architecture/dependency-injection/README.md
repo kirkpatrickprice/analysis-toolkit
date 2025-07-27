@@ -11,23 +11,25 @@ Our dependency injection architecture follows these key principles:
 - **Testability**: Easy mocking and testing through interface abstractions
 - **Separation of concerns**: Clear boundaries between UI, business logic, and data layers
 
+All DI functions are provided with the [`dependency-injector`](https://pypi.org/project/dependency-injector/) framework.
+
 ## Architecture Components
 
-### [Service Package Pattern](service-package-pattern.md)
+### [Core Service Pattern](di-core-service-pattern.md)
 Learn about our service package organization and how services are structured and registered.
+
+### [Command Service Pattern](di-command-pattern.md)
+Describes how to implement a service for a new toolkit subcommand.
 
 ### [DI Service Types](di-service-type.md) 
 Understand the different types of services in our system and their roles.
-
-### [UI Service Layer Separation](ui-service-layer-separation.md)
-Explore how we separate user interface concerns from business logic through dependency injection.
 
 ## Service Relationships
 
 The dependency injection system organizes services into three main layers:
 
+- **Application Services**: Assembly of all services within the application including `core` and `<per-command>` services
 - **Core Services**: Fundamental services used across all commands (`core` package)
-- **Application Services**: Command-agnostic application logic (`application` package)  
 - **Command Services**: Command-specific business logic (`<per_command>` packages)
 
 ## Performance Considerations
@@ -38,9 +40,10 @@ The system uses lazy imports to improve load time performance, ensuring that com
 
 For developers new to our DI system:
 
-1. Start with the [Service Package Pattern](service-package-pattern.md) to understand basic organization
-2. Review [DI Service Types](di-service-type.md) to understand available abstractions
-3. Explore [UI Service Layer Separation](ui-service-layer-separation.md) for practical implementation patterns
+1. Start with the [Core Service Pattern](di-core-service-pattern.md) to understand the basic services that are available throughout the toolkit
+2. Take a look at the implementations in `service.py` files in each sub scommand to see how they consume services from `core` while also providing their own services
+3. Examine the integration through the `core.containers.application` module to see how all services are unified under one application context
+4. If implementing a new service, review [DI Service Types](di-service-type.md) to understand use cases for singletons, factories, and other implementation types
 
 ## Implementation Details
 

@@ -96,9 +96,10 @@ nav:
             - Overview: architecture/data-flows/data-flows-architecture.md
       - Dependency Injection:
         - architecture/dependency-injection/README.md
-        - Service Package Pattern: architecture/dependency-injection/service-package-pattern.md
-        - DI Service Types: architecture/dependency-injection/di-service-type.md
-        - UI Service Layer Separation: architecture/dependency-injection/ui-service-layer-separation.md
+        - Specific DI Patterns:
+          - Service Package Pattern: architecture/dependency-injection/service-package-pattern.md
+          - DI Service Types: architecture/dependency-injection/di-service-type.md
+          - UI Service Layer Separation: architecture/dependency-injection/ui-service-layer-separation.md
   - Development:
     - development/README.md
     - Testing Standards: development/testing-standards.md
