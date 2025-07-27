@@ -39,19 +39,13 @@ Problem-solving guides and common issues.
 - Installation issues
 - FAQ
 
-### 🏗️ **implementation/**
-Implementation details and technical decisions.
-- Design decisions
-- Refactoring plans
-- Implementation summaries
-- Technical specifications
-
 ### 🏛️ **architecture/**
 High-level system design and architecture.
 - System overview
 - Component diagrams
 - Data flow
 - Integration patterns
+- CLI Architecture (Rich-Click patterns, help system, option grouping)
 
 ### 👨‍💻 **development/**
 Developer-focused documentation.
@@ -59,6 +53,13 @@ Developer-focused documentation.
 - Contributing guidelines
 - Code standards
 - Testing procedures
+
+### 🏗️ **implementation/**
+Implementation details and technical decisions.
+- Design decisions
+- Refactoring plans
+- Implementation summaries
+- Technical specifications
 
 ### 🔌 **api/**
 API documentation and interfaces.

@@ -69,10 +69,15 @@ nav:
     - api/README.md
   - Architecture:
     - architecture/README.md
-    - Service Package Pattern: architecture/service-package-pattern.md
-    - CLI Command Pattern: architecture/di-command-pattern.md
-    - DI Service Types: architecture/di-service-type.md
-    - UI Service Layer Separation: architecture/ui-service-layer-separation.md
+    - Service Package Pattern: architecture/dependency-injection/service-package-pattern.md
+    - DI Service Types: architecture/dependency-injection/di-service-type.md
+    - UI Service Layer Separation: architecture/dependency-injection/ui-service-layer-separation.md
+    - CLI Architecture:
+      - architecture/cli/README.md
+      - CLI Architecture Patterns: architecture/cli/cli-architecture-patterns.md
+      - CLI Decorator Patterns: architecture/cli/cli-decorator-patterns.md
+      - CLI Help System: architecture/cli/cli-help-system.md
+      - CLI Option Groups: architecture/cli/cli-option-groups.md
   - Development:
     - development/README.md
     - Testing Standards: development/testing-standards.md
