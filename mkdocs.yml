@@ -78,6 +78,10 @@ nav:
       - CLI Decorator Patterns: architecture/cli/cli-decorator-patterns.md
       - CLI Help System: architecture/cli/cli-help-system.md
       - CLI Option Groups: architecture/cli/cli-option-groups.md
+    - Concurrency Architecture:
+      - architecture/concurrency/README.md
+      - Parallel Processing: architecture/concurrency/parallel-processing-architecture.md
+      - Interrupt Handling: architecture/concurrency/interrupt-handling.md
   - Development:
     - development/README.md
     - Testing Standards: development/testing-standards.md

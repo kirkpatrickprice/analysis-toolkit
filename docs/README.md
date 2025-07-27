@@ -46,6 +46,7 @@ High-level system design and architecture.
 - Data flow
 - Integration patterns
 - CLI Architecture (Rich-Click patterns, help system, option grouping)
+- Parallel Processing capabilities
 
 ### 👨‍💻 **development/**
 Developer-focused documentation.

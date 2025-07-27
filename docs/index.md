@@ -116,7 +116,7 @@ Most security assessments follow these patterns:
 
 - **[API Reference](api/README.md)** - Programmatic usage and integration
 - **[Tutorials](tutorials/README.md)** - Step-by-step learning materials
-- **[Architecture](architecture/README.md)** - System design and CLI architecture patterns
+- **[Architecture](architecture/README.md)** - System design, CLI architecture patterns, and concurrency design
 
 **Found a Bug or Have a Feature Request?**
 

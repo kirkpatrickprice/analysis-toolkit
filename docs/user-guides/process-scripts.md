@@ -218,5 +218,6 @@ The tool recognizes various section types:
 ## Performance and Scalability
 
 - **Memory-efficient** streaming for large files
+- **Parallel processing** for multiple files with automatic multi-core utilization
 - **Configurable result limits** to manage output size
-- **Progress indicators** for long-running analyses
+- **Progress indicators** for long-running analyses with interrupt handling (Ctrl+C)

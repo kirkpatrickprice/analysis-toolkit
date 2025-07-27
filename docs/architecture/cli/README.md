@@ -113,6 +113,7 @@ The CLI architecture is built on Rich-Click (enhanced Click framework) with cust
 
 ## Related Documentation
 
+- **[Concurrency Architecture](../concurrency/README.md)** - Parallel processing integration with CLI commands
 - **[Development Standards](../../development/README.md)** - Code standards and testing procedures
 - **[Implementation Plans](../../implementation/README.md)** - CLI refactoring and migration plans
 - **[User Guides](../../user-guides/README.md)** - End-user CLI documentation

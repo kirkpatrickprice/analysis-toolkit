@@ -43,6 +43,7 @@ This directory contains:
 
 ### Architecture
 - [CLI Architecture Documentation](../architecture/cli/README.md) - Comprehensive CLI architecture patterns, help system, and option grouping
+- [Concurrency Architecture Documentation](../architecture/concurrency/README.md) - Parallel processing and interrupt handling system design
 
 ## Completed Development Docs
 

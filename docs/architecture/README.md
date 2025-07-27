@@ -36,6 +36,15 @@ This directory contains:
 - Option grouping architecture
 - Decorator pattern implementation
 
+### Concurrency Architecture
+- Parallel processing system design
+- Multi-stage interrupt handling
+- Process and thread pool management
+- Memory-efficient task batching
+- Cross-platform signal handling
+- Progress tracking integration
+- Rich console output coordination
+
 ### Service Layer Architecture
 - Business logic organization
 - Service interfaces
@@ -46,6 +55,7 @@ This directory contains:
 
 - [ ] System architecture overview
 - [x] CLI command architecture (see `cli/` subdirectory)
+- [x] Concurrency architecture (see `concurrency/` subdirectory)
 - [ ] Service layer design
 - [ ] Data model architecture
 - [ ] Error handling architecture
@@ -61,3 +71,10 @@ The CLI architecture is comprehensively documented in the `cli/` subdirectory:
 - **[CLI Decorator Patterns](cli/cli-decorator-patterns.md)** - Shared option decorators for consistent CLI patterns across commands
 - **[CLI Help System](cli/cli-help-system.md)** - Custom help system architecture addressing Rich-Click limitations with grouped option displays
 - **[CLI Option Groups](cli/cli-option-groups.md)** - Option grouping strategies for organizing help displays by functional purpose
+
+## Concurrency Architecture Documentation
+
+The concurrency and parallel processing architecture is documented in the `concurrency/` subdirectory:
+
+- **[Parallel Processing Architecture](concurrency/parallel-processing-architecture.md)** - Main parallel processing system with ProcessPoolExecutor/ThreadPoolExecutor patterns, dependency injection integration, and Rich console output coordination
+- **[Interrupt Handling Architecture](concurrency/interrupt-handling.md)** - Multi-stage interrupt handling system for graceful cancellation with three escalating levels: graceful → urgent → immediate termination
