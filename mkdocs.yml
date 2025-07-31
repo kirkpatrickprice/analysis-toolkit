@@ -114,6 +114,8 @@ nav:
     - Excel Utils DI Migration: implementation/excel-utils-di-migration-plan.md
     - File Processing DI Migration: implementation/file-processing-dependency-injection-migration-plan.md
     - PyTest Fixture Migration: implementation/pytest-fixture-organization-migration-plan.md
+    - Migration Planning Docs:
+      - Process Scripts Migration: implementation/migration_planning/di-process-scripts-migration.md
 
 # Markdown extensions for technical documentation
 markdown_extensions:
