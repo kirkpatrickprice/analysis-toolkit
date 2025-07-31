@@ -5,6 +5,7 @@ from kp_analysis_toolkit.core.services.file_processing.encoding import (
     RobustEncodingDetector,
 )
 from kp_analysis_toolkit.core.services.file_processing.protocols import (
+    ContentStreamer,
     EncodingDetector,
     FileValidator,
     HashGenerator,
@@ -12,12 +13,19 @@ from kp_analysis_toolkit.core.services.file_processing.protocols import (
 from kp_analysis_toolkit.core.services.file_processing.service import (
     FileProcessingService,
 )
+from kp_analysis_toolkit.core.services.file_processing.streaming import (
+    FileContentStreamer,
+    MultiPatternContentStreamer,
+)
 
 __all__: list[str] = [
     "CharsetNormalizerEncodingDetector",
+    "ContentStreamer",
     "EncodingDetector",
+    "FileContentStreamer",
     "FileProcessingService",
     "FileValidator",
     "HashGenerator",
+    "MultiPatternContentStreamer",
     "RobustEncodingDetector",
 ]

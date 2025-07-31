@@ -16,6 +16,9 @@ Multi-core parallel processing with graceful interrupt handling and Rich console
 ### 📊 **[Data Architecture](data-models/README.md)**
 Pydantic-based data models with comprehensive validation and command-specific schemas.
 
+### ⚡ **[Performance Architecture](performance/README.md)**
+Content streaming patterns and performance optimization strategies for efficient file processing.
+
 ## System Overview
 
 The KP Analysis Toolkit follows a modular, service-oriented architecture built on these core principles:

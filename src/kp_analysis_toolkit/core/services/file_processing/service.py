@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from kp_analysis_toolkit.core.services.file_processing.protocols import (
+        ContentStreamer,
         EncodingDetector,
         FileDiscoverer,
         FileValidator,
@@ -124,3 +125,41 @@ class FileProcessingService:
             pattern,
             recursive=recursive,
         )
+
+    def create_content_streamer(
+        self,
+        file_path: Path,
+        encoding: str | None = None,
+    ) -> ContentStreamer:
+        """
+        Create a content streamer for efficient file reading.
+
+        Args:
+            file_path: Path to the file to stream
+            encoding: Character encoding (auto-detected if None)
+
+        Returns:
+            A ContentStreamer instance for the file
+
+        Raises:
+            ValueError: If encoding cannot be detected or file is invalid
+
+        """
+        # Import here to avoid circular import
+        from kp_analysis_toolkit.core.services.file_processing.streaming import (
+            FileContentStreamer,
+        )
+
+        # Validate file exists
+        if not self.file_validator.validate_file_exists(file_path):
+            msg = f"File does not exist: {file_path}"
+            raise ValueError(msg)
+
+        # Auto-detect encoding if not provided
+        if encoding is None:
+            encoding = self.encoding_detector.detect_encoding(file_path)
+            if encoding is None:
+                msg = f"Could not detect encoding for file: {file_path}"
+                raise ValueError(msg)
+
+        return FileContentStreamer(file_path, encoding)
