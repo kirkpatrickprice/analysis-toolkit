@@ -47,7 +47,7 @@ class RichOutputProtocol(Protocol):
     def message(self, text: str, *, force: bool = False) -> None: ...
 
 
-class RichOutputService:
+class RichOutputService(RichOutputProtocol):
     """
     RichOutput service implementation.
 
