@@ -1,4 +1,4 @@
-from kp_analysis_toolkit.process_scripts.models.enums import (
+from kp_analysis_toolkit.process_scripts.models.types.enums import (
     DistroFamilyType,
     OSFamilyType,
     ProducerType,

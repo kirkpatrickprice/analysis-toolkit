@@ -5,12 +5,12 @@ from unittest.mock import Mock
 
 import pytest
 
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 from kp_analysis_toolkit.process_scripts.search_engine import search_multiline
 
 if TYPE_CHECKING:
-    from kp_analysis_toolkit.process_scripts.models.results.base import SearchResult
+    from kp_analysis_toolkit.process_scripts.models.results.search import SearchResult
 
 
 class TestSearchMultiline:

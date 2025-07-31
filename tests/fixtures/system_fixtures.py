@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, ProducerType
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.types.enums import OSFamilyType, ProducerType
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 
 
 @pytest.fixture

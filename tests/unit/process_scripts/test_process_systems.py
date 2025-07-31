@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from kp_analysis_toolkit.process_scripts.models.enums import ProducerType
+from kp_analysis_toolkit.process_scripts.models.types.enums import ProducerType
 from kp_analysis_toolkit.process_scripts.process_systems import (
     enumerate_systems_from_source_files,
     get_config_files,

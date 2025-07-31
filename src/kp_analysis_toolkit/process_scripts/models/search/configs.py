@@ -2,24 +2,10 @@ from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
-from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
-
-
-class MergeFieldConfig(KPATBaseModel):
-    """Configuration for merging multiple source columns into a single destination column."""
-
-    source_columns: list[str]
-    dest_column: str
-
-    @field_validator("source_columns")
-    @classmethod
-    def validate_source_columns(cls, value: list[str]) -> list[str]:
-        min_source_columns: int = 2
-        """Validate that at least two source columns are specified."""
-        if len(value) < min_source_columns:
-            message: str = "merge_fields must specify at least two source_columns"
-            raise ValueError(message)
-        return value
+from kp_analysis_toolkit.process_scripts.models.search.filters import SystemFilter
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import (
+    MergeFieldConfig,
+)
 
 
 class GlobalConfig(KPATBaseModel, ConfigModel):
@@ -137,3 +123,17 @@ class SearchConfig(KPATBaseModel, ConfigModel):
             merged_data["full_scan"] = global_config.full_scan
 
         return SearchConfig(**merged_data)
+
+
+class IncludeConfig(KPATBaseModel):
+    """Configuration for including other YAML files."""
+
+    files: list[str]
+
+
+class YamlConfig(KPATBaseModel, ConfigModel):
+    """Complete YAML configuration file structure."""
+
+    global_config: GlobalConfig | None = None
+    search_configs: dict[str, SearchConfig]
+    include_configs: dict[str, IncludeConfig]

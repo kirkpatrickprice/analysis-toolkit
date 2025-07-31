@@ -2,11 +2,10 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode
 
 # KPAT CLI
-results/
 testdata/**/results/
 testdata/rtf/*_converted*.*
-conf.d/test.yaml
 testdata/nipper/*.xlsx
+conf.d/test.yaml
 src/kp_analysis_toolkit/process_scripts/conf.d/test.yaml
 mypy-report/**
 

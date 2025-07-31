@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 
 if TYPE_CHECKING:
     from pathlib import Path

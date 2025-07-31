@@ -38,11 +38,11 @@ from kp_analysis_toolkit.process_scripts import process_systems
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_search_results_to_excel,
 )
-from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, SysFilterAttr
+from kp_analysis_toolkit.process_scripts.models.types.enums import OSFamilyType, SysFilterAttr
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
-from kp_analysis_toolkit.process_scripts.models.results.base import SearchResults
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.results.search import SearchResults
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import SearchConfig
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
     load_search_configs,
@@ -429,7 +429,9 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
 
     # Execute searches
     os_results = _execute_searches(
-        search_configs, systems, verbose=program_config.verbose
+        search_configs,
+        systems,
+        verbose=program_config.verbose,
     )
 
     # Export results

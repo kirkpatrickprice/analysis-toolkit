@@ -1,7 +1,7 @@
 from pydantic import Field, computed_field
 
 from kp_analysis_toolkit.process_scripts.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.search.configs import SearchConfig
 
 
 class SearchResult(KPATBaseModel):

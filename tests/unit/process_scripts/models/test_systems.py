@@ -3,12 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from kp_analysis_toolkit.process_scripts.models.enums import (
+from kp_analysis_toolkit.process_scripts.models.types.enums import (
     DistroFamilyType,
     OSFamilyType,
     ProducerType,
 )
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 
 win_file = Path("testdata/process_scripts/windows/windows10pro-cb19044-kp0.4.7.txt")
 mac_file = Path("testdata/process_scripts/macos/macos-13.3.1-kp0.1.0.txt")

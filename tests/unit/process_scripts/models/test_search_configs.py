@@ -1,10 +1,10 @@
 import pytest
 
-from kp_analysis_toolkit.process_scripts.models.search.base import (
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import (
     GlobalConfig,
     SearchConfig,
 )
-from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
+from kp_analysis_toolkit.process_scripts.models.search.filters import SystemFilter
 
 
 class TestSearchConfig:

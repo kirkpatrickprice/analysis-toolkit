@@ -14,7 +14,7 @@ from openpyxl.utils.exceptions import IllegalCharacterError
 from openpyxl.worksheet.worksheet import Worksheet
 
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
-from kp_analysis_toolkit.process_scripts.models.results.base import (
+from kp_analysis_toolkit.process_scripts.models.results.search import (
     SearchResult,
     SearchResults,
 )

@@ -12,26 +12,28 @@ from typing import IO, Any, LiteralString
 import yaml
 
 from kp_analysis_toolkit.process_scripts import GLOBALS
-from kp_analysis_toolkit.process_scripts.models.enums import (
-    OSFamilyType,
-)
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
-from kp_analysis_toolkit.process_scripts.models.results.base import (
+from kp_analysis_toolkit.process_scripts.models.results.search import (
     SearchResult,
     SearchResults,
 )
-from kp_analysis_toolkit.process_scripts.models.search.base import (
-    MergeFieldConfig,
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
+from kp_analysis_toolkit.process_scripts.models.search.configs import (
     SearchConfig,
+    YamlConfig,
 )
-from kp_analysis_toolkit.process_scripts.models.search.sys_filters import (
+from kp_analysis_toolkit.process_scripts.models.search.filters import (
     SysFilterAttr,
     SysFilterComparisonOperators,
     SystemFilter,
 )
-from kp_analysis_toolkit.process_scripts.models.search.yaml import YamlConfig
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
-from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import (
+    MergeFieldConfig,
+)
+from kp_analysis_toolkit.process_scripts.models.types import (
+    OSFamilyType,
+    SysFilterValueType,
+)
 from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 

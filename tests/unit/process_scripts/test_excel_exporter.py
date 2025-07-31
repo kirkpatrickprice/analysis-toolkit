@@ -8,12 +8,12 @@ from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_results_by_os_type,
     export_search_results_to_excel,
 )
-from kp_analysis_toolkit.process_scripts.models.results.base import (
+from kp_analysis_toolkit.process_scripts.models.results.search import (
     SearchResult,
     SearchResults,
 )
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 
 
 def _setup_excel_writer_mock(mock_writer: MagicMock, mock_to_excel: MagicMock) -> None:

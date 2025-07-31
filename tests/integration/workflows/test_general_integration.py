@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-from kp_analysis_toolkit.process_scripts.models.enums import ProducerType
+from kp_analysis_toolkit.process_scripts.models.types.enums import ProducerType
 from kp_analysis_toolkit.process_scripts.process_systems import get_producer_type
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 

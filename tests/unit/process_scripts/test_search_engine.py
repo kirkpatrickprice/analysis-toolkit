@@ -2,7 +2,9 @@ from typing import Any
 
 import pytest  # noqa: F401
 
-from kp_analysis_toolkit.process_scripts.models.search.base import MergeFieldConfig
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import (
+    MergeFieldConfig,
+)
 from kp_analysis_toolkit.process_scripts.search_engine import merge_result_fields
 
 

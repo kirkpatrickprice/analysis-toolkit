@@ -2,15 +2,15 @@
 
 from unittest.mock import patch
 
-from kp_analysis_toolkit.process_scripts.models.enums import (
+from kp_analysis_toolkit.process_scripts.models.types.enums import (
     DistroFamilyType,
     OSFamilyType,
     ProducerType,
     SysFilterAttr,
     SysFilterComparisonOperators,
 )
-from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
-from kp_analysis_toolkit.process_scripts.models.systems import Systems
+from kp_analysis_toolkit.process_scripts.models.search.filters import SystemFilter
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 from kp_analysis_toolkit.process_scripts.search_engine import (
     _filter_excel_illegal_chars,
     compare_values,

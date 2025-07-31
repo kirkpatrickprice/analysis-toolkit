@@ -7,9 +7,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
-    from kp_analysis_toolkit.process_scripts.models.results.base import SearchResult
-    from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
-    from kp_analysis_toolkit.process_scripts.models.systems import Systems
+    from kp_analysis_toolkit.process_scripts.models.results.search import SearchResult
+    from kp_analysis_toolkit.process_scripts.models.results.system import Systems
+    from kp_analysis_toolkit.process_scripts.models.search.merge_fields import (
+        SearchConfig,
+    )
     from kp_analysis_toolkit.process_scripts.services.enhanced_excel_export import (
         EnhancedExcelExportService,
     )

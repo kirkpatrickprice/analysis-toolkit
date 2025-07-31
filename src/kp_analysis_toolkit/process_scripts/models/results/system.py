@@ -6,7 +6,7 @@ from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.base import (
     FileModel,
 )
-from kp_analysis_toolkit.process_scripts.models.enums import (
+from kp_analysis_toolkit.process_scripts.models.types import (
     DistroFamilyType,
     OSFamilyType,
     ProducerType,
