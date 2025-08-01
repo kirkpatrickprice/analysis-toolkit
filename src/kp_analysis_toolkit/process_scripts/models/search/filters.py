@@ -3,7 +3,7 @@ from enum import StrEnum
 from pydantic import field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.models.base import EnumStrMixin
+from kp_analysis_toolkit.process_scripts.models.mixins import EnumStrMixin
 from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
 
 

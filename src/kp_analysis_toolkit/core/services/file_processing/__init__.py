@@ -15,7 +15,6 @@ from kp_analysis_toolkit.core.services.file_processing.service import (
 )
 from kp_analysis_toolkit.core.services.file_processing.streaming import (
     FileContentStreamer,
-    MultiPatternContentStreamer,
 )
 
 __all__: list[str] = [
@@ -26,6 +25,5 @@ __all__: list[str] = [
     "FileProcessingService",
     "FileValidator",
     "HashGenerator",
-    "MultiPatternContentStreamer",
     "RobustEncodingDetector",
 ]

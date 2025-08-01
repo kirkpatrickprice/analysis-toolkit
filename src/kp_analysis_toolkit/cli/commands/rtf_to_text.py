@@ -17,7 +17,6 @@ from kp_analysis_toolkit.cli.common.decorators import (
 )
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
-from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.core.containers.application import ApplicationContainer
 from kp_analysis_toolkit.core.services.batch_processing.models import (
     BatchProcessingConfig,
@@ -26,6 +25,7 @@ from kp_analysis_toolkit.core.services.batch_processing.models import (
 from kp_analysis_toolkit.core.services.batch_processing.service import (
     BatchProcessingService,
 )
+from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.models.enums import FileSelectionResult
 from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
@@ -51,6 +51,9 @@ def process_command_line(
     batch_service: BatchProcessingService = Provide[
         ApplicationContainer.core.batch_processing_service
     ],
+    file_processing_service: FileProcessingService = Provide[
+        ApplicationContainer.core.file_processing_service,
+    ],
 ) -> None:
     """Convert RTF files to plain text format with ASCII encoding."""
     # Get the input file using the enhanced common logic
@@ -67,7 +70,11 @@ def process_command_line(
 
     # Handle "process all files" case
     if selected_file == FileSelectionResult.PROCESS_ALL_FILES:
-        file_list = discover_files_by_pattern(source_files_path, "*.rtf")
+        file_list: list[Path] = file_processing_service.discover_files_by_pattern(
+            base_path=source_files_path,
+            pattern="*.rtf",
+            recursive=False,
+        )
         _process_all_files_with_service(file_list, rtf_service, batch_service)
         return
 

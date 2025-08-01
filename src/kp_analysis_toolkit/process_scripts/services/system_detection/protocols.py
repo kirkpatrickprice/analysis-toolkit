@@ -6,16 +6,23 @@ from typing import Protocol
 from kp_analysis_toolkit.core.services.file_processing.protocols import ContentStreamer
 from kp_analysis_toolkit.process_scripts.models.results.system import Systems
 from kp_analysis_toolkit.process_scripts.models.search.filters import SystemFilter
+from kp_analysis_toolkit.process_scripts.models.types import (
+    DistroFamilyType,
+    OSFamilyType,
+    ProducerType,
+)
 
 
 class OSDetector(Protocol):
     """Protocol for operating system detection."""
 
-    def detect_os(self, content_stream: ContentStreamer) -> str | None:
-        """Detect OS using targeted content patterns."""
+    def detect_os(
+        self, content_stream: ContentStreamer, producer_type: ProducerType
+    ) -> dict[str, str | None]:
+        """Detect OS details using targeted content patterns."""
         ...
 
-    def get_supported_os_types(self) -> list[str]:
+    def get_supported_os_types(self) -> list[OSFamilyType]:
         """Get list of supported OS types."""
         ...
 
@@ -23,8 +30,10 @@ class OSDetector(Protocol):
 class ProducerDetector(Protocol):
     """Protocol for detecting system/software producers."""
 
-    def detect_producer(self, content_stream: ContentStreamer, file_path: Path) -> str | None:
-        """Detect producer using early file content (typically first 10 lines)."""
+    def detect_producer(
+        self, content_stream: ContentStreamer
+    ) -> tuple[ProducerType, str] | None:
+        """Detect producer and version using early file content (typically first 20 lines)."""
         ...
 
     def get_known_producers(self) -> list[str]:
@@ -35,11 +44,13 @@ class ProducerDetector(Protocol):
 class DistroClassifier(Protocol):
     """Protocol for Linux distribution classification."""
 
-    def classify_distribution(self, os_info: str, content_stream: ContentStreamer) -> str | None:
+    def classify_distribution(
+        self, content_stream: ContentStreamer, os_info: str
+    ) -> DistroFamilyType:
         """Classify Linux distribution using specific content patterns."""
         ...
 
-    def get_supported_distributions(self) -> list[str]:
+    def get_supported_distributions(self) -> list[DistroFamilyType]:
         """Get list of supported distributions."""
         ...
 
@@ -66,4 +77,6 @@ class SystemDetectionService(Protocol):
     ) -> list[Systems]:
         """Filter systems based on criteria."""
         ...
+
+
 # END AI-GEN

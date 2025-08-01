@@ -6,6 +6,7 @@ from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.core.containers.core import CoreContainer
 from kp_analysis_toolkit.nipper_expander.container import NipperExpanderContainer
+from kp_analysis_toolkit.process_scripts.container import ProcessScriptsContainer
 from kp_analysis_toolkit.rtf_to_text.container import RtfToTextContainer
 
 
@@ -23,6 +24,11 @@ class ApplicationContainer(containers.DeclarativeContainer):
     nipper: providers.Container[NipperExpanderContainer] = providers.Container(
         NipperExpanderContainer,
         core=core,
+    )
+
+    # Lazy-initialized process_scripts container
+    process_scripts: providers.Singleton[ProcessScriptsContainer] = providers.Singleton(
+        ProcessScriptsContainer,
     )
 
 
@@ -45,6 +51,9 @@ def configure_application_container(
     container.core().config.force_terminal.from_value(force_terminal)
     container.core().config.stderr_enabled.from_value(stderr_enabled)
 
+    # Configure process_scripts container with dependencies
+    container.process_scripts().core.override(container.core())
+
 
 def wire_application_container() -> None:
     """Wire the main application container for CLI integration."""
@@ -53,6 +62,7 @@ def wire_application_container() -> None:
             "kp_analysis_toolkit.cli",
             "kp_analysis_toolkit.cli.commands.rtf_to_text",
             "kp_analysis_toolkit.cli.commands.nipper",
+            "kp_analysis_toolkit.cli.commands.scripts",
         ],
     )
 
@@ -68,6 +78,14 @@ def wire_application_container() -> None:
             "kp_analysis_toolkit.nipper_expander.service",
             "kp_analysis_toolkit.nipper_expander.services.data_expander",
             "kp_analysis_toolkit.nipper_expander.services.nipper_exporter",
+        ],
+    )
+
+    # Wire process_scripts container
+    container.process_scripts().wire(
+        modules=[
+            "kp_analysis_toolkit.process_scripts.service",
+            "kp_analysis_toolkit.process_scripts.services.system_detection",
         ],
     )
 

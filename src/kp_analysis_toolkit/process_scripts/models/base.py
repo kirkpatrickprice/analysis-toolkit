@@ -1,132 +1,18 @@
 """Base classes and utilities for the KPAT Process Scripts models."""
 
 from collections.abc import Callable, Generator
-from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import ConfigDict, field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.models.types import SysFilterValueType
+from kp_analysis_toolkit.process_scripts.models.mixins import PathValidationMixin
 from kp_analysis_toolkit.utils.get_file_encoding import detect_encoding
 from kp_analysis_toolkit.utils.hash_generator import hash_string
 
 if TYPE_CHECKING:
     from _hashlib import HASH
-
-
-class EnumStrMixin:
-    """Mixin to add case-insensitive string matching to Enum classes."""
-
-    @classmethod
-    def _missing_(cls, value: str) -> Enum:
-        """
-        Handle case when a value doesn't match any enum member.
-
-        This allows for case-insensitive matching when creating enum values from strings.
-        Example: MyEnum("windows") will match MyEnum.WINDOWS even though the case differs.
-
-        Args:
-            value: The value that didn't match any enum member
-
-        Returns:
-            The matching enum value (case-insensitive)
-
-        Raises:
-            ValueError: If no case-insensitive match is found
-
-        """
-        if isinstance(value, str):
-            # Try case-insensitive matching
-            for enum_value in cls:
-                if value.lower() == enum_value.value.lower():
-                    return enum_value
-
-        # If no match was found
-        valid_values: str = ", ".join(str(e.value) for e in cls)
-        message: str = f"Invalid value '{value}'. Valid values are: {valid_values}"
-        raise ValueError(message)
-
-
-class PathValidationMixin:
-    """Mixin providing path validation methods."""
-
-    @classmethod
-    def validate_path_exists(cls, path: Path | str) -> Path:
-        """Validate that a path exists and return its absolute path."""
-        if isinstance(path, str):
-            path = Path(path)
-
-        if not path.exists():
-            message: str = f"Path {path} does not exist"
-            raise ValueError(message)
-        return path.absolute()
-
-    @classmethod
-    def validate_file_exists(cls, file: Path | str) -> Path:
-        """Validate that a file exists and return its absolute path."""
-        path: Path = cls.validate_path_exists(file)
-        if not path.is_file():
-            message: str = f"Path {path} is not a file"
-            raise ValueError(message)
-        return path
-
-    @classmethod
-    def validate_directory_exists(cls, dir_path: Path | str) -> Path:
-        """Validate that a directory exists and return its absolute path."""
-        path: Path = cls.validate_path_exists(dir_path)
-        if not path.is_dir():
-            message: str = f"Path {path} is not a directory"
-            raise ValueError(message)
-        return path
-
-
-class ValidationMixin:
-    """Mixin providing common validation methods."""
-
-    @classmethod
-    def validate_positive_integer(
-        cls,
-        value: int,
-        *,
-        allow_neg_one: bool = False,
-    ) -> int:
-        """Validate that a value is a positive integer."""
-        if allow_neg_one and value == -1:
-            return value
-
-        if value <= 0:
-            message: str = f"Value {value} must be a positive integer"
-            raise ValueError(message)
-        return value
-
-    @classmethod
-    def validate_non_empty_string(cls, value: str | None) -> str | None:
-        """Validate that a string is not empty if provided."""
-        if value is not None and value.strip() == "":
-            message: str = "String cannot be empty"
-            raise ValueError(message)
-        return value
-
-    @classmethod
-    def validate_sys_filter_value(
-        cls,
-        value: SysFilterValueType,
-        comp_op: str,
-        *,
-        collection_allowed: bool = True,
-    ) -> SysFilterValueType:
-        """Validate filter value based on comparison operator."""
-        if not collection_allowed and isinstance(value, list | set):
-            message: str = f"Operator '{comp_op}' cannot be used with collection values"
-            raise ValueError(message)
-
-        if collection_allowed and not isinstance(value, list | set):
-            message: str = f"Operator '{comp_op}' requires a collection value"
-            raise ValueError(message)
-
-        return value
 
 
 class FileModel(PathValidationMixin):

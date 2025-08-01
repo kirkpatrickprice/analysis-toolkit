@@ -17,11 +17,7 @@ The `ContentStreamer` pattern has been implemented as part of the core `FileProc
    - Concrete implementation for file-based streaming
    - Provides caching for repeated header access
    - Supports regex pattern matching with early termination
-
-3. **`MultiPatternContentStreamer`** (`core.services.file_processing.streaming`)
-   - Advanced implementation for multiple pattern searches
    - Single-pass file reading for multiple detectors
-   - Callback-based pattern processing
 
 4. **Enhanced `FileProcessingService`** (`core.services.file_processing.service`)
    - Factory method: `create_content_streamer(file_path, encoding=None)`
@@ -195,41 +191,6 @@ results = content_stream.search_multiple_patterns(security_patterns)
 for pattern_name, matches in results.items():
     if matches:
         process_security_finding(pattern_name, matches)
-```
-
-#### Finding-Based Callbacks
-```python
-# Process scripts with findings processor
-findings = []
-
-def process_firewall_rule(line: str) -> None:
-    rule = parse_firewall_rule(line)
-    if rule.is_high_risk():
-        findings.append(SecurityFinding(
-            category="Firewall",
-            severity="High",
-            description=f"High risk rule found: {rule.description}"
-        ))
-
-def process_patch(line: str) -> None:
-    patch = parse_patch_info(line)
-    if patch.is_missing_critical():
-        findings.append(SecurityFinding(
-            category="Patching",
-            severity="Critical",
-            description=f"Missing critical patch: {patch.id}"
-        ))
-
-# Multiple pattern callbacks in a single file read
-callbacks = {
-    "firewall_rules": (r"firewall.+(?:allow|deny|reject).+(?:any|0\.0\.0\.0)", 
-                      process_firewall_rule),
-    "system_patches": (r"patch.+(?:KB\d+).+(?:missing|failed)", 
-                      process_patch),
-    # Many more pattern callbacks...
-}
-
-content_stream.stream_with_multiple_callbacks(callbacks)
 ```
 
 #### Producer Detection (System Detection Service)

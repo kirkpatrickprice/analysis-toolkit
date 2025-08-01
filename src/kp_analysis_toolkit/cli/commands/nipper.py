@@ -16,9 +16,9 @@ from kp_analysis_toolkit.cli.common.decorators import (
 )
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
-from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
 from kp_analysis_toolkit.core.containers.application import ApplicationContainer
 from kp_analysis_toolkit.core.services.batch_processing import BatchProcessingService
+from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.models.enums import FileSelectionResult
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_version
@@ -46,6 +46,9 @@ def process_command_line(
     batch_service: BatchProcessingService = Provide[
         ApplicationContainer.core.batch_processing_service,
     ],
+    file_processing_service: FileProcessingService = Provide[
+        ApplicationContainer.core.file_processing_service,
+    ],
 ) -> None:
     """Process a Nipper CSV file and expand it into a more readable format."""
     # Get input file or determine if processing all files
@@ -62,7 +65,11 @@ def process_command_line(
 
     # If user chose "process all files"
     if selected_file == FileSelectionResult.PROCESS_ALL_FILES:
-        file_list: list[Path] = discover_files_by_pattern(source_files_path, "*.csv")
+        file_list: list[Path] = file_processing_service.discover_files_by_pattern(
+            base_path=source_files_path,
+            pattern="*.csv",
+            recursive=False,
+        )
         _process_all_files_with_service(file_list, nipper_service, batch_service)
         return
 

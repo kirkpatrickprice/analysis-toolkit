@@ -311,8 +311,6 @@ def discover_and_process_files(
         )
 
     """
-    from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
-
     if config is None:
         config = BatchProcessingConfig()
 
@@ -329,9 +327,10 @@ def discover_and_process_files(
 
     # Discover files
     try:
-        file_list = discover_files_by_pattern(
-            base_path,
-            file_pattern,
+        file_processing_service = container.core.file_processing_service()
+        file_list = file_processing_service.discover_files_by_pattern(
+            base_path=base_path,
+            pattern=file_pattern,
             recursive=recursive,
         )
     except ValueError as e:

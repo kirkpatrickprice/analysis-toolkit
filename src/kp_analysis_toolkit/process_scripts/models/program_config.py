@@ -4,8 +4,8 @@ from pydantic import computed_field, field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts import GLOBALS
-from kp_analysis_toolkit.process_scripts.models.base import (
-    ConfigModel,
+from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
+from kp_analysis_toolkit.process_scripts.models.mixins import (
     PathValidationMixin,
     ValidationMixin,
 )

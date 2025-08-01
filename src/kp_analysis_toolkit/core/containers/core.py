@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.core.services.file_processing.protocols import (
         EncodingDetector,
+        FileDiscoverer,
         FileValidator,
         HashGenerator,
     )
@@ -138,6 +139,11 @@ class CoreContainer(containers.DeclarativeContainer):
         "kp_analysis_toolkit.utils.file_validator.PathLibFileValidator",
     )
 
+    # File discovery service
+    file_discovery: providers.Factory[FileDiscoverer] = providers.Factory(
+        "kp_analysis_toolkit.core.services.file_processing.discovery.FileDiscoveryService",
+    )
+
     # File Processing Service with DI integration
     file_processing_service: providers.Factory[FileProcessingService] = (
         providers.Factory(
@@ -148,6 +154,7 @@ class CoreContainer(containers.DeclarativeContainer):
                 encoding_detector=encoding_detector,
                 hash_generator=hash_generator,
                 file_validator=file_validator,
+                file_discovery=file_discovery,
             ),
         )
     )

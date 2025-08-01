@@ -1,111 +1,152 @@
-from collections.abc import Generator
-from pathlib import Path
+"""System detection service for analyzing system configuration files."""
 
-from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
-from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from kp_analysis_toolkit.process_scripts.models.results.system import Systems
-from kp_analysis_toolkit.process_scripts.models.search.filters import SystemFilter
+from kp_analysis_toolkit.process_scripts.models.types import (
+    OSFamilyType,
+    ProducerType,
+)
 from kp_analysis_toolkit.process_scripts.services.system_detection.protocols import (
-    DistroClassifier,
     OSDetector,
     ProducerDetector,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kp_analysis_toolkit.core.services.file_processing.service import (
+        FileProcessingService,
+    )
+    from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+    from kp_analysis_toolkit.process_scripts.services.system_detection.protocols import (
+        DistroClassifier,
+        OSDetector,
+        ProducerDetector,
+    )
+
 
 class SystemDetectionService:
-    """Service for detecting and analyzing system configuration files."""
+    """Service for detecting and analyzing systems from configuration files."""
 
     def __init__(
         self,
-        os_detector: OSDetector,
         producer_detector: ProducerDetector,
+        os_detector: OSDetector,
         distro_classifier: DistroClassifier,
         file_processing: FileProcessingService,
         rich_output: RichOutputService,
     ) -> None:
-        """Initialize with injected dependencies including core services."""
-        self.os_detector: OSDetector = os_detector
+        """
+        Initialize the system detection service.
+
+        Args:
+            producer_detector: Service for detecting producers
+            os_detector: Service for detecting OS details
+            distro_classifier: Service for classifying Linux distributions
+            file_processing: Service for file processing operations
+            rich_output: Service for rich console output
+
+        """
         self.producer_detector: ProducerDetector = producer_detector
+        self.os_detector: OSDetector = os_detector
         self.distro_classifier: DistroClassifier = distro_classifier
         self.file_processing: FileProcessingService = file_processing
         self.rich_output: RichOutputService = rich_output
 
-    def enumerate_systems_from_files(
-        self,
-        source_directory: Path,
-        file_spec: str = "*.txt",
-    ) -> Generator[Systems, None, None]:
-        """Discover and analyze system files in source directory."""
-        # This function should enumerate the files to process
-        # For example, it will read the files in config.source_files
-        # and return a list of files to process list of OSFamilyType objects
+    def enumerate_systems_from_files(self, file_paths: list[Path]) -> list[Systems]:
+        """
+        Analyze multiple files to extract system information.
 
-        for file in self.file_processing.discover_files_by_pattern(
-            base_path=source_directory, pattern=file_spec
-        ):
-            # Process each file and add the results to the list
+        Args:
+            file_paths: List of file paths to analyze
 
-            encoding: str | None = self.file_processing.detect_encoding(file)
-            if encoding is None:
-                # Skip files where encoding cannot be determined
-                continue
+        Returns:
+            List of Systems objects containing detected system information
 
-            producer, producer_version = self.producer_detector.detect_producer(
-                file, encoding
+        """
+        systems: list[Systems] = []
+        for file_path in file_paths:
+            system: Systems | None = self._analyze_system_file(file_path)
+            if system:
+                systems.append(system)
+        return systems
+
+    def _analyze_system_file(self, file_path: Path) -> Systems | None:
+        """
+        Analyze a single file to extract system information.
+
+        Args:
+            file_path: Path to the file to analyze
+
+        Returns:
+            Systems object if system information is found, None otherwise
+
+        """
+        try:
+            # Create content streamer to efficiently read file
+            streamer = self.file_processing.create_content_streamer(file_path)
+
+            # Detect producer information
+            producer_info = self.producer_detector.detect_producer(streamer)
+            if not producer_info:
+                self.rich_output.warning(
+                    f"No producer information found in {file_path}",
+                )
+                return None
+
+            producer_type, producer_version = producer_info
+            os_family = self._get_os_family_from_producer(producer_type)
+
+            # Get OS-specific details
+            os_details = self.os_detector.detect_os(streamer, producer_type)
+
+            # For Linux systems, classify the distribution
+            if os_family == OSFamilyType.LINUX:
+                os_name = (
+                    os_details.get("os_pretty_name")
+                    or os_details.get("system_os")
+                    or ""
+                )
+                distro_family = self.distro_classifier.classify_distribution(
+                    streamer,
+                    os_name,
+                )
+                os_details["distro_family"] = distro_family
+
+            # Generate file hash
+            file_hash = self.file_processing.generate_hash(file_path)
+
+            return Systems(
+                system_name=file_path.stem,
+                os_family=os_family,
+                producer=producer_type,
+                producer_version=producer_version,
+                file=file_path,
+                file_hash=file_hash,
+                **os_details,
             )
 
-            # Skip files where producer cannot be determined
-            if producer == ProducerType.OTHER:
-                warning(f"Skipping file due to unknown producer: {file}")
-                continue
+        except (OSError, ValueError) as e:
+            self.rich_output.warning(f"Error analyzing file {file_path}: {e}")
+            return None
 
-            distro_family: DistroFamilyType | None = None
-            match producer:
-                case ProducerType.KPNIXAUDIT:
-                    os_family: OSFamilyType = OSFamilyType.LINUX
-                    distro_family = get_distro_family(
-                        file=file,
-                        encoding=encoding,
-                    )
-                case ProducerType.KPWINAUDIT:
-                    os_family: OSFamilyType = OSFamilyType.WINDOWS
-                case ProducerType.KPMACAUDIT:
-                    os_family: OSFamilyType = OSFamilyType.DARWIN
-            system_os, os_details = get_system_details(
-                file=file,
-                encoding=encoding,
-                producer=producer,
-            )
-            system_dict: dict[
-                str, str | Path, OSFamilyType | DistroFamilyType | None
-            ] = {
-                "system_id": uuid4().hex,  # Generate a unique system ID
-                "system_name": file.stem,  # Use the file name (without the extension) as the system name
-                "file_hash": generate_file_hash(file),
-                "file": file.absolute(),
-                "system_os": system_os,
-                "os_details": os_details,
-                "encoding": encoding,
-                "os_family": os_family,
-                "distro_family": distro_family,
-                "producer": producer,
-                "producer_version": producer_version,
-            }
-            if os_details:
-                system_dict.update(os_details)
-            system = Systems(**system_dict)
-            yield system
+    def _get_os_family_from_producer(self, producer_type: ProducerType) -> OSFamilyType:
+        """
+        Determine OS family from producer type.
 
-    def analyze_system_file(self, file_path: Path) -> Systems:
-        """Analyze individual system file to extract system information."""
-        # Use file_processing service for file reading and encoding detection
-        # Implementation from current system analysis logic
+        Args:
+            producer_type: The detected producer type
 
-    def filter_systems_by_criteria(
-        self,
-        systems: list[Systems],
-        filters: list[SystemFilter] | None,
-    ) -> list[Systems]:
-        """Filter systems based on system filter criteria."""
-        # Implementation from current filter_systems_by_criteria function
-        # SystemFilter imported from: kp_analysis_toolkit.process_scripts.models.search.filters
+        Returns:
+            Corresponding OS family type
+
+        """
+        producer_to_os_map = {
+            ProducerType.KPWINAUDIT: OSFamilyType.WINDOWS,
+            ProducerType.KPNIXAUDIT: OSFamilyType.LINUX,
+            ProducerType.KPMACAUDIT: OSFamilyType.DARWIN,
+        }
+        return producer_to_os_map.get(producer_type, OSFamilyType.OTHER)

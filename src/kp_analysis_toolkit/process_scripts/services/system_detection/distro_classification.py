@@ -1,35 +1,79 @@
-class DefaultDistroFamilyClassifier:
-    def get_distro_family(file: Path, encoding: str) -> DistroFamilyType | None:
+# AI-GEN: gpt-4o|2025-01-30|system-detection-modular-refactor|reviewed:no
+"""Distribution classification implementation for system detection service."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from kp_analysis_toolkit.process_scripts.models.types import DistroFamilyType
+from kp_analysis_toolkit.process_scripts.services.system_detection.protocols import (
+    DistroClassifier,
+)
+
+if TYPE_CHECKING:
+    from kp_analysis_toolkit.core.services.file_processing.protocols import ContentStreamer
+
+
+class DefaultDistroFamilyClassifier(DistroClassifier):
+    """Default implementation for Linux distribution family classification."""
+
+    def classify_distribution(self, content_stream: ContentStreamer, os_info: str) -> DistroFamilyType:
         """
-        Get the Linux family type based on the source file.
+        Classify Linux distribution family based on content and OS information.
 
         Args:
-            file (Path): The Path object of the file.
-            encoding (str): The file encoding.
+            content_stream: Content streamer for the file
+            os_info: OS information string
 
         Returns:
-            DistroFamilyType: The Linux family type (e.g. Debian, Redhat, Alpine, etc.) or None if it couldn't be determined.
+            Distribution family type
 
         """
-        # This function should determine the Linux family based on the regular expressions provided below
-        # For example, you can use regex or string matching to identify the family
+        os_info_lower = os_info.lower()
 
-        regex_patterns: dict[str, str] = {
-            "deb": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Debian|Gentoo|Kali.*|Knoppix|Mint|Raspbian|PopOS|Ubuntu)',
-            "rpm": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Alma|Amazon|CentOS|ClearOS|Fedora|Mandriva|Oracle|(Red Hat)|Redhat|Rocky|SUSE|openSUSE)',
-            "apk": r'^System_VersionInformation::/etc/os-release::NAME="(?P<family>Alpine)',
+        # Define distribution mappings
+        distro_mappings = {
+            DistroFamilyType.DEB: ["ubuntu", "debian", "mint", "kali"],
+            DistroFamilyType.RPM: [
+                "rhel",
+                "centos",
+                "fedora",
+                "red hat",
+                "suse",
+                "opensuse",
+            ],
+            DistroFamilyType.APK: ["alpine"],
         }
 
-        with file.open("r", encoding=encoding) as f:
-            for line in f:
-                for family, pattern in regex_patterns.items():
-                    regex_result: re.Match[str] | None = re.search(
-                        pattern,
-                        line,
-                        re.IGNORECASE,
-                    )
-                    if regex_result:
-                        # If a match is found, return the corresponding details
-                        return DistroFamilyType(family)
-        # If no match is found, return OTHER
+        # Check for known distributions by name
+        for family, keywords in distro_mappings.items():
+            if any(keyword in os_info_lower for keyword in keywords):
+                return family
+
+        # If not detected from name, try to detect from package manager presence
+        package_manager_mappings = {
+            DistroFamilyType.DEB: ["apt", "dpkg"],
+            DistroFamilyType.RPM: ["yum", "rpm"],
+            DistroFamilyType.APK: ["apk"],
+        }
+
+        for line in content_stream.stream_pattern_matches(
+            r"apt|dpkg|yum|rpm|apk|zypper",
+            max_matches=1,
+        ):
+            line_lower = line.lower()
+            for family, managers in package_manager_mappings.items():
+                if any(manager in line_lower for manager in managers):
+                    return family
+
         return DistroFamilyType.OTHER
+
+    def get_supported_distributions(self) -> list[DistroFamilyType]:
+        """
+        Get list of supported distributions.
+
+        Returns:
+            List of supported distribution family types
+
+        """
+        return [DistroFamilyType.DEB, DistroFamilyType.RPM, DistroFamilyType.APK, DistroFamilyType.OTHER]
