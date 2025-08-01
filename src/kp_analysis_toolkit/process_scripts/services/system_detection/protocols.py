@@ -17,7 +17,9 @@ class OSDetector(Protocol):
     """Protocol for operating system detection."""
 
     def detect_os(
-        self, content_stream: ContentStreamer, producer_type: ProducerType
+        self,
+        content_stream: ContentStreamer,
+        producer_type: ProducerType,
     ) -> dict[str, str | None]:
         """Detect OS details using targeted content patterns."""
         ...
@@ -31,7 +33,8 @@ class ProducerDetector(Protocol):
     """Protocol for detecting system/software producers."""
 
     def detect_producer(
-        self, content_stream: ContentStreamer
+        self,
+        content_stream: ContentStreamer,
     ) -> tuple[ProducerType, str] | None:
         """Detect producer and version using early file content (typically first 20 lines)."""
         ...
@@ -45,7 +48,9 @@ class DistroClassifier(Protocol):
     """Protocol for Linux distribution classification."""
 
     def classify_distribution(
-        self, content_stream: ContentStreamer, os_info: str
+        self,
+        content_stream: ContentStreamer,
+        os_info: str,
     ) -> DistroFamilyType:
         """Classify Linux distribution using specific content patterns."""
         ...

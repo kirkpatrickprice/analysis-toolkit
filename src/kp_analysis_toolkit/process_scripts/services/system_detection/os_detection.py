@@ -23,7 +23,9 @@ class RegexOSDetector(OSDetector):
     """OS detection using regex patterns."""
 
     def detect_os(
-        self, content_stream: ContentStreamer, producer_type: ProducerType
+        self,
+        content_stream: ContentStreamer,
+        producer_type: ProducerType,
     ) -> dict[str, str | None]:
         """
         Detect OS details from system content.
@@ -55,7 +57,8 @@ class RegexOSDetector(OSDetector):
         return [OSFamilyType.WINDOWS, OSFamilyType.LINUX, OSFamilyType.DARWIN]
 
     def _get_windows_details(
-        self, content_stream: ContentStreamer
+        self,
+        content_stream: ContentStreamer,
     ) -> dict[str, str | None]:
         """
         Extract Windows-specific system details.
@@ -67,7 +70,7 @@ class RegexOSDetector(OSDetector):
             Dictionary of Windows-specific details
 
         """
-        details = {
+        details: dict[str, str | None] = {
             "product_name": None,
             "release_id": None,
             "current_build": None,
@@ -81,7 +84,9 @@ class RegexOSDetector(OSDetector):
         ):
             # Extract ProductName
             if "ProductName" in line:
-                match = re.search(r"ProductName[:\s]+(.+)", line, re.IGNORECASE)
+                match: re.Match[str] | None = re.search(
+                    r"ProductName[:\s]+(.+)", line, re.IGNORECASE
+                )
                 if match:
                     details["product_name"] = match.group(1).strip()
                     details["system_os"] = match.group(1).strip()
@@ -107,7 +112,8 @@ class RegexOSDetector(OSDetector):
         return details
 
     def _get_linux_details(
-        self, content_stream: ContentStreamer
+        self,
+        content_stream: ContentStreamer,
     ) -> dict[str, str | None]:
         """
         Extract Linux-specific system details.
@@ -145,7 +151,8 @@ class RegexOSDetector(OSDetector):
         return details
 
     def _get_darwin_details(
-        self, content_stream: ContentStreamer
+        self,
+        content_stream: ContentStreamer,
     ) -> dict[str, str | None]:
         """
         Extract Darwin/macOS-specific system details.

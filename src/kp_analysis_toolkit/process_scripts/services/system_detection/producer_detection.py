@@ -21,7 +21,8 @@ class SignatureProducerDetector(ProducerDetector):
     """Producer detection using signature patterns."""
 
     def detect_producer(
-        self, content_stream: ContentStreamer
+        self,
+        content_stream: ContentStreamer,
     ) -> tuple[ProducerType, str] | None:
         """
         Detect system producer from content signatures.
