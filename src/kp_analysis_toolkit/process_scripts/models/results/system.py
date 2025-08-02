@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 from pydantic import Field
 
@@ -59,3 +60,23 @@ class Systems(KPATBaseModel, FileModel):
     def is_mac(self) -> bool:
         """Check if the system is Darwin (macOS)."""
         return self.os_family == OSFamilyType.DARWIN
+
+    def get_relative_file_path(self, base_directory: Path | None = None) -> str:
+        """
+        Get a display-friendly relative file path.
+
+        Args:
+            base_directory: Base directory to calculate relative path from
+
+        Returns:
+            Relative path string if base_directory provided, otherwise filename
+
+        """
+        if base_directory:
+            try:
+                relative_path = self.file.relative_to(base_directory)
+                return str(relative_path)
+            except ValueError:
+                # If file is not relative to base_directory, use just the filename
+                return self.file.name
+        return self.file.name

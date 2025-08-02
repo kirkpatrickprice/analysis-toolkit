@@ -61,7 +61,7 @@ def process_command_line(**cli_config: dict[str, Any]) -> None:
     # Add default out_path for list-systems since it's not needed
     if cli_config.get("list_systems", False) and "out_path" not in cli_config:
         cli_config["out_path"] = "dummy_output.xlsx"  # Not used for list-systems
-    
+
     # Convert the click config to a ProgramConfig object and perform validation
     try:
         program_config = validate_program_config(ProgramConfig, **cli_config)
@@ -80,7 +80,7 @@ def process_command_line(**cli_config: dict[str, Any]) -> None:
     # For now, just show a message that other functionality is not implemented
     rich_output: RichOutputService = container.core.rich_output()
     rich_output.info(
-        "Full process scripts functionality not yet implemented. Use --list-systems to see available systems."
+        "Full process scripts functionality not yet implemented. Use --list-systems to see available systems.",
     )
 
 
@@ -123,8 +123,14 @@ def list_systems(program_config: ProgramConfig) -> None:
             filtered_data = {
                 k: v
                 for k, v in system_data.items()
-                if k not in ["system_name", "file_hash"]
+                if k not in ["system_name", "file_hash", "system_id"]
             }
+            # Replace the file path with a relative path for display
+            if "file" in filtered_data:
+                filtered_data["file"] = system.get_relative_file_path(
+                    program_config.source_files_path
+                )
+
             details_text = format_verbose_details(
                 rich_output,
                 filtered_data,

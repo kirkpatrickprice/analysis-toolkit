@@ -116,8 +116,9 @@ class SystemDetectionService:
                 )
                 os_details["distro_family"] = distro_family
 
-            # Generate file hash
+            # Generate file hash and detect encoding
             file_hash = self.file_processing.generate_hash(file_path)
+            encoding = self.file_processing.detect_encoding(file_path)
 
             return Systems(
                 system_name=file_path.stem,
@@ -126,6 +127,7 @@ class SystemDetectionService:
                 producer_version=producer_version,
                 file=file_path,
                 file_hash=file_hash,
+                encoding=encoding,
                 **os_details,
             )
 
