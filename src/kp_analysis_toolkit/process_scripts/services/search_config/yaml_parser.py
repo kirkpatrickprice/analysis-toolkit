@@ -62,10 +62,7 @@ class PyYamlParser:
 
     def _validate_all_sections(self, data: dict[str, str | bool | float]) -> bool:
         """Validate all sections in the YAML data."""
-        for key, value in data.items():
-            if not self._validate_section(key, value):
-                return False
-        return True
+        return all(self._validate_section(key, value) for key, value in data.items())
 
     def _validate_section(self, key: str, value: str | bool | float) -> bool:
         """Validate a single section of the YAML data."""
@@ -101,6 +98,7 @@ class PyYamlParser:
         """Validate that the regex pattern is compilable."""
         try:
             re.compile(regex)
-            return True
         except re.error:
             return False
+        else:
+            return True

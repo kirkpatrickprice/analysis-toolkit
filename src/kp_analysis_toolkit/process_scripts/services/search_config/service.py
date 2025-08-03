@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
     from kp_analysis_toolkit.process_scripts.models.search.configs import (
         SearchConfig,
@@ -68,13 +69,14 @@ class SearchConfigService:
             )
 
             self.rich_output.debug(f"Loaded {len(all_configs)} search configurations")
-            return all_configs
 
         except Exception as e:
             self.rich_output.error(
                 f"Failed to load search configurations from {config_file}: {e}",
             )
             raise
+        else:
+            return all_configs
 
     def _load_yaml_config(self, config_file: Path) -> YamlConfig:
         """
@@ -91,26 +93,26 @@ class SearchConfigService:
             FileNotFoundError: If configuration file doesn't exist
 
         """
-        try:
-            if not config_file.exists():
-                raise FileNotFoundError(f"Configuration file not found: {config_file}")
+        if not config_file.exists():
+            msg = f"Configuration file not found: {config_file}"
+            raise FileNotFoundError(msg)
 
+        try:
             # Load raw YAML data
             raw_data: dict[str, str | bool | float] = self.yaml_parser.load_yaml(
                 config_file,
             )
-
-            # Validate basic structure
-            if not self.yaml_parser.validate_yaml_structure(raw_data):
-                raise ValueError(f"Invalid YAML structure in {config_file}")
-
-            # Convert to structured models
-            return self._parse_yaml_data(raw_data)
-
         except Exception as e:
-            raise ValueError(
-                f"Failed to load YAML config from {config_file}: {e}",
-            ) from e
+            msg = f"Failed to load YAML config from {config_file}: {e}"
+            raise ValueError(msg) from e
+
+        # Validate basic structure
+        if not self.yaml_parser.validate_yaml_structure(raw_data):
+            msg = f"Invalid YAML structure in {config_file}"
+            raise ValueError(msg)
+
+        # Convert to structured models
+        return self._parse_yaml_data(raw_data)
 
     def _parse_yaml_data(self, data: dict[str, str | bool | float]) -> YamlConfig:
         """
@@ -195,7 +197,7 @@ class SearchConfigService:
                     included_configs = self.load_search_configs(include_path)
                     all_configs.extend(included_configs)
 
-                except Exception as e:
+                except (ValueError, FileNotFoundError, OSError) as e:
                     self.rich_output.warning(
                         f"Failed to load included file {include_path}: {e}",
                     )
@@ -220,12 +222,12 @@ class SearchConfigService:
             yaml_config = self._load_yaml_config(config_file)
 
             # Validate each search configuration
-            for name, search_config in yaml_config.search_configs.items():
+            for name in yaml_config.search_configs:
                 try:
                     # Pydantic validation happens automatically during model creation
                     # Additional validation can be added here if needed
                     pass
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     validation_errors.append(f"Search config '{name}': {e}")
 
             # Validate include files exist
@@ -240,7 +242,7 @@ class SearchConfigService:
                             f"Include '{include_name}': File not found: {include_path}",
                         )
 
-        except Exception as e:
+        except (ValueError, FileNotFoundError, OSError, TypeError) as e:
             validation_errors.append(f"Failed to parse configuration file: {e}")
 
         return validation_errors
@@ -258,7 +260,7 @@ class SearchConfigService:
         """
         return self.file_resolver.find_include_files(config_dir, "*.yaml")
 
-    def load_yaml_config(self, config_file: Path):
+    def load_yaml_config(self, config_file: Path) -> YamlConfig:
         """
         Public method to load YAML configuration for external use.
 
