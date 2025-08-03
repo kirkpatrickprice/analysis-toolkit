@@ -4,6 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from kp_analysis_toolkit.process_scripts.models.results.system import Systems
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -49,8 +51,10 @@ class ProcessScriptsService:
             # Extract systems from each file
             systems: list[Systems] = []
             for file_path in discovered_files:
-                file_systems = self.system_detection.enumerate_systems_from_files(
-                    [file_path]
+                file_systems: list[Systems] = (
+                    self.system_detection.enumerate_systems_from_files(
+                        [file_path],
+                    )
                 )
                 systems.extend(file_systems)
 

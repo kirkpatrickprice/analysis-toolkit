@@ -6,7 +6,7 @@ from kp_analysis_toolkit.process_scripts.models.types.os_types import (
 )
 from kp_analysis_toolkit.process_scripts.models.types.producer_types import ProducerType
 
-# Define type aliases for primitive and collection types to imrove reusability and readability
+# Define type aliases for primitive and collection types to improve reusability and readability
 type PrimitiveType = str | int | float | bool
 type CollectionType = (
     list[str] | list[int] | list[float] | set[str] | set[int] | set[float]

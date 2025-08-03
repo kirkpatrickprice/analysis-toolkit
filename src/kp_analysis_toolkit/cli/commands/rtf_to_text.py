@@ -18,12 +18,10 @@ from kp_analysis_toolkit.cli.common.decorators import (
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
 from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.core.containers.application import ApplicationContainer
-from kp_analysis_toolkit.core.services.batch_processing.models import (
+from kp_analysis_toolkit.core.services.batch_processing import (
     BatchProcessingConfig,
-    ErrorHandlingStrategy,
-)
-from kp_analysis_toolkit.core.services.batch_processing.service import (
     BatchProcessingService,
+    ErrorHandlingStrategy,
 )
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 from kp_analysis_toolkit.models.enums import FileSelectionResult

@@ -27,6 +27,7 @@ from kp_analysis_toolkit.cli.utils.table_layouts import (
     create_system_info_table,
 )
 from kp_analysis_toolkit.core.containers.application import container
+from kp_analysis_toolkit.models.types import ConfigValue
 from kp_analysis_toolkit.process_scripts import (
     __version__ as process_scripts_version,
 )
@@ -56,8 +57,14 @@ setup_command_option_groups("scripts")
     help="Print system details found in FILESPEC and then exit",
     is_flag=True,
 )
-def process_command_line(**cli_config: dict[str, Any]) -> None:
-    """Process collector script results files (formerly adv-searchfor)."""
+def process_command_line(**cli_config: ConfigValue) -> None:
+    """
+    Process collector script results files (formerly adv-searchfor).
+
+    Args:
+        **cli_config: CLI configuration parameters as dict[str, ConfigValue]
+
+    """
     # Add default out_path for list-systems since it's not needed
     if cli_config.get("list_systems", False) and "out_path" not in cli_config:
         cli_config["out_path"] = "dummy_output.xlsx"  # Not used for list-systems
