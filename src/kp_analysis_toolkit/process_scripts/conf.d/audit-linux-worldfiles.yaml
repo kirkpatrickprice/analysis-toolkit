@@ -7,10 +7,6 @@ global:
 08_worldFiles_01_interesting_world_writable_files:
   regex: 'WorldFiles::.*?(?P<permissions>.[-rwx]{9}).*?(?P<path>(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin|/opt|/lib(?!/docker)|/mnt).*)'
   excel_sheet_name: World-Writable Files
-  only_matching: True
-  field_list:
-    - permissions
-    - path
   comment: |-
     This is a filtered list of files that are writable by any user on the system.  We're focusing on files that are in the following locations, as there are several more that are required by the operating system.
 
@@ -30,4 +26,9 @@ global:
       - /mnt -- Where remote (e.g. NFS) or external (e.g. USB drives) file systems are usually mounted (we're excluding /lib/docker)
       - (/usr)/bin -- locations of OS binaries used by users
       - (/usr)/sbin -- Where privileged binaries are kept
+  keywords: ['worldfiles', 'writable', 'file permissions']
+  only_matching: True
+  field_list:
+    - permissions
+    - path
 

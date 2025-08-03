@@ -27,6 +27,7 @@ global:
         Debian-based: https://manpages.ubuntu.com/manpages/focal/en/man7/crypto-policies.7.html
     
     Importantly, it covers OpenSSH, OpenSSL, IPSec (LibreSWAN), DNSSec (Bind) and OpenJDK.
+  keywords: ['security tools', 'crypto', 'openssl', 'ipsec']
 05_security_01_aide_status:
   regex: 'Security_HidsAIDEConfig::Aide (?P<version>.*)'
   excel_sheet_name: AIDE FIM Status
@@ -35,6 +36,7 @@ global:
     - version
   comment: |-
     AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the version of the AIDE software installed on the system.
+  keywords: ['security tools', 'aide', 'fim']
 05_security_01_aide_config:
   regex: 'Security_HidsAIDEConfig::.*conf.*?::(?!#)(?P<setting>.*)'
   excel_sheet_name: AIDE FIM Config
@@ -45,6 +47,7 @@ global:
     AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the content of the aide.conf file(s).  You can use this to determine which files and directories are being monitored by AIDE.
 
     Reference: https://linux.die.net/man/5/aide.conf if you need some help interpreting the config
+  keywords: ['security tools', 'aide', 'fim']
 05_security_02_carbonblack_status:
   regex: 'Security_HidsCarbonBlack::(?!UID)'
   excel_sheet_name: CarbonBlack Status
@@ -53,11 +56,13 @@ global:
     It might also be the answer for FIM and a few other things.
 
     The methods we used to try to collect some data are not fool-proof.  You might need to poke around in the Running_Processes file looking for "cbagent" or "cbdaemon".  See Confluence for links to CB documentation on process names: https://kirkpatrickprice.atlassian.net/l/cp/ydpx11eH
+  keywords: ['security tools', 'carbonblack', 'edr', 'anti-virus', 'fim']
 05_security_03_ossec_status:
   regex: 'Security_HidsOSSECConfig::'
   excel_sheet_name: OSSEC Status
   comment: |-
     Open Source Security (OSSEC) is a popular, FOSS HIDS for Linux and Windows.  The ossec.conf file is valid for both the OSSEC agent and the Wuzah agent.
+  keywords: ['security tools', 'ossec', 'hids', 'fim']
 05_security_04_tripwire_status:
   regex: 'Security_HidsTripwireConfig::'
   excel_sheet_name: Tripwire Status
@@ -65,16 +70,19 @@ global:
     TripWire used to be what AIDE has become -- freely available FIM for Linux.  But TW decided to go the all-commercial route, and AIDE is now the freely available one.
 
     Anyway, some customers might be running actual TripWire, so we try to pull the configs for review.
+  keywords: ['security tools', 'tripwire', 'fim']
 05_security_05_ipsec_config:
   regex: 'Security_IPSecConfig::'
   excel_sheet_name: IPSec Config
   comment: |-
     The Linux kernel supports IPSec connections, so we'll grab the configurations if it's enabled.  Check out our Confluence page for auditing Ciphersuites at: https://kirkpatrickprice.atlassian.net/l/c/4121Zw4B
+  keywords: ['security tools', 'ipsec', 'vpn']
 05_security_06_openldap_config:
   regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
   excel_sheet_name: OpenLDAP Config
   comment: |-
     OpenLDAP is a directory server for Linux servers.  If being used, it's probably the central source of identity for all production Linux servers.  We're only grabbing the config file, so other checks such as password policy and group memberships will need to done elsewhere.
+  keywords: ['security tools', 'openldap', 'users']
 05_security_07_openvpn_config:
   regex: 'Security_OpenVPNConfig::'
   excel_sheet_name: OpenVPN Config
@@ -82,19 +90,23 @@ global:
     OpenVPN might be the answer for remote access VPNs for administrator access, or it might be used in a site-to-site (Layer 3) VPN similar to IPSec.
 
     Note: Our testing for OpenVPN is only known to work when OpenVPN is installed from OS packages.  OpenVPN Access Server is a distinct product from OpenVPN and these methods might not be accurate on that product.
+  keywords: ['security tools', 'openvpn', 'vpn']
 05_security_08_clamav:
   regex: 'Security_AVClamAVInfo'
   excel_sheet_name: ClamAV Config
   comment: |-
     ClamAV for Linux.  Far from the best, but still we collect the configs in case that's the answer for "Linux AV".
     If you see reference to it (e.g., in the Cron_Jobs results), FreshClam is the process that checks for AV signature updates.  You should see that this process runs at least daily to update the signature files.
+  keywords: ['security tools', 'clamav', 'anti-virus']
 05_security_09_crowdstrike:
   regex: 'Security_HidsCrowdStrike::(?!UID)'
   excel_sheet_name: CrowdStrike Status
   comment: |-
     CrowdStrike is a cloud-based HIDS agent from CrowdStrike.com.  The only check is to see that the service is running, but you should also check the running processes for something similar to "falcon"
+  keywords: ['security tools', 'crowdstrike', 'hids', 'fim']
 05_security_10_snort:
   regex: 'Security_NIDSSnortConfig'
   excel_sheet_name: Snort Config
   comment: |-
     Snort used to be all the rage as a Network IDS back when data centers had everything.  It's use has dwindled, but we grab the configs if it's being used.
+  keywords: ['security tools', 'snort', 'ids', 'network']

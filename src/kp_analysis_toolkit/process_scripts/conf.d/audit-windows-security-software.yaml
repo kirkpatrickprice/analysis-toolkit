@@ -7,20 +7,6 @@ global:
 04_secsoft_01_av_status_security_center:
   regex: 'AntiVirus_AVStatus::((displayName[ ]+:[ ]+)(?P<displayName>.*)|(productState[ ]+:[ ]+(?P<productState>\d+))|(Enabled[ ]+:[ ]+(?P<avEnabled>.*))|(AntispywareEnabled[ ]+:[ ]+(?P<antispywareEnabled>.*))|(AntivirusEnabled[ ]+:[ ]+(?P<antivirusEnabled>.*))|(BehaviorMonitorEnabled[ ]+:[ ]+(?P<behaviorMonitorEnabled>.*))|(OnAccessProtectionEnabled[ ]+:[ ]+(?P<onAccessProtectionEnabled>.*))|(AntispywareSignatureAge[ ]+:[ ]+(?P<antispywareSignatureAge>\d+))|(LastfullscanAge[ ]+:[ ]+(?P<lastfullscanAge>\d+))|(LastQuickScanAge[ ]+:[ ]+(?P<lastQuickScanAge>\d+))|(ProductStatus[ ]+:[ ]+(?P<productStatus>\d+)))'
   excel_sheet_name: AV Status (Security Center)
-  field_list:
-    - displayName
-    - productState
-    - avEnabled
-    - antispywareEnabled
-    - antivirusEnabled
-    - behaviorMonitorEnabled
-    - onAccessProtectionEnabled
-    - antispywareSignatureAge
-    - lastfull_scanAge
-    - lastQuickScanAge
-    - productStatus
-  only_matching: True
-  multiline: True
   comment: |-
     This shows results coming from Windows Security Center.  Exactly how different products use SC is a bit of mystery, but for clients using Microsoft Defender, this should give reliable data.
     For ProductState (not ProductStatus -- sorry for the confusing names -- they come from Micorosft)
@@ -46,3 +32,18 @@ global:
         ProductState=397312 = Up to Date Defs, ON Access Scanning ON
       Other antivirus products will need to be researched
     For the other fields: These are known to provide good data for Microsoft Defender.  For other products, they could entirely unreliable.  For Defender, these field names should be self-explanatory, but https://learn.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpcomputerstatus has some more details on what the fields mean.
+  keywords: ['security tools', 'anti-virus']
+  field_list:
+    - displayName
+    - productState
+    - avEnabled
+    - antispywareEnabled
+    - antivirusEnabled
+    - behaviorMonitorEnabled
+    - onAccessProtectionEnabled
+    - antispywareSignatureAge
+    - lastfull_scanAge
+    - lastQuickScanAge
+    - productStatus
+  only_matching: True
+  multiline: True

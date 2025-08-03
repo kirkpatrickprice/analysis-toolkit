@@ -7,13 +7,6 @@ global:
 05_worldFiles_01_interesting_world_writable_files:
   regex: 'WorldFiles-(?P<location>.*?)::(?!.*(Cache|Preferences/Audio/Data)).*?(?P<permissions>.[-rwx]+)\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+).*?(?P<path>/\w+/.*)'
   excel_sheet_name: World-Writable Files
-  only_matching: True
-  field_list:
-    - location
-    - permissions
-    - owner
-    - group
-    - path
   comment: |-
     This is a filtered list of files that are writable by any user on the system.  We're focusing on files that are in the following locations, as recommended by the CIS MacOS 13 Benchmark.
 
@@ -27,3 +20,11 @@ global:
       - /System/Volumes/Data/System -- Operating system files, but sometimes applications insist on being installed here.  To quote the CIS Benchmark directly: "Macs with writable files in System should be investigated forensically. A file with open writable permissions is a sign of at best a rogue application. It could also be a sign of a computer compromise and a persistent presence on the system."
       - /Applications -- All system-wide installed applications.  World-writable application folders would allow any user to update the application files, including installing malicious software instead.
       - /System/Data/System/Library -- System-wide configurations, but sometimes applications insist on being installed here.  You can safely ignore any folders that include "Cache" or "Preferences/Audio/Data".
+  keywords: ['worldfiles', 'writable', 'file permissions']
+  only_matching: True
+  field_list:
+    - location
+    - permissions
+    - owner
+    - group
+    - path

@@ -7,14 +7,6 @@ global:
 03_logging_01_auditd_status:
   regex: 'Logging_AuditdStatus::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)|(Logging_AuditConfig::/etc/security/audit_control::(expire-after:(?P<expireAfter>.*)|flags:(?P<allUserFlags>.*)))'
   excel_sheet_name: AuditD Status
-  only_matching: True
-  full_scan: True
-  field_list:
-    - pid
-    - exitStatus
-    - label
-    - expireAfter
-    - allUserFlags
   comment: |-
     Apple System Log (ASL, as implemented in AuditD) performs kernel-level logging.  For instance, it's a common way to generate file system access logs and some FIM products (e.g. Rapid7) actually require it as they are only monitoring AuditD events.
 
@@ -33,14 +25,18 @@ global:
       - fr/fw: File read/write
       - nt: Network
       - no: Invalid class
+  keywords: ['auditd', 'logging']
+  only_matching: True
+  full_scan: True
+  field_list:
+    - pid
+    - exitStatus
+    - label
+    - expireAfter
+    - allUserFlags
 03_logging_01_auditd_user_logging:
   regex: 'Logging_AuditConfig::/etc/security/audit_user::(?P<user>\w+):(?P<alwaysAudit>[\w+,-^]+):(?P<neverAudit>[\w+,-^]+)'
   excel_sheet_name: AuditD User Logging
-  only_matching: True
-  field_list:
-    - user
-    - alwaysAudit
-    - neverAudit
   comment: |-
     These results include all of the user-specific logging overrides.  This will be useful specifically in a PCI assessment where all actions taken by a user with root/admin permissions need to be logged.  You might also find it useful in other situations.
 
@@ -52,27 +48,28 @@ global:
       - fr/fw: File read/write
       - nt: Network
       - no: Invalid class
+  keywords: ['auditd', 'logging']
+  only_matching: True
+  field_list:
+    - user
+    - alwaysAudit
+    - neverAudit
 03_logging_02_install_log_retention:
   regex: 'Logging_InstallLog::/etc/asl/com.apple.install::\*\s+file\s+(?P<destination>[/\w.]+)((.*?file_max=(?P<file_max>\w+).*?all_max=(?P<all_max>\w+))|(.*ttl=(?P<ttl>\d+)))'
   excel_sheet_name: Install Log Retention
+  comment: |-
+    macOS writes information pertaining to system-related events to the file /var/log/install.log.  The retention period for this log file is set in the /etc/asl/com.apple.install configuration file.
+    Specifically, we want to see 'ttl=365' or greater.  We do NOT want to see 'file_max' or 'all_max=' followed by a file size.
+  keywords: ['logging', 'syslog', 'log retention']
   only_matching: True
   field_list:
     - destination
     - file_max
     - all_max
     - ttl
-  comment: |-
-    macOS writes information pertaining to system-related events to the file /var/log/install.log.  The retention period for this log file is set in the /etc/asl/com.apple.install configuration file.
-    Specifically, we want to see 'ttl=365' or greater.  We do NOT want to see 'file_max' or 'all_max=' followed by a file size.
 03_logging_04_logfile_permissions:
   regex: 'Logging_AuditPermissions::d(?P<permissions>[rwx-]+)\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>audit|log.?)'
   excel_sheet_name: Logfile Permissions
-  only_matching: True
-  field_list: 
-    - dir
-    - permissions
-    - owner
-    - group
   comment: |-
     These results include the file system permissions for the the folders used to write logs (/var/audit and /var/log).  Permissions should be limited to only those with a need to read log files.  Compare the owner and group permissions to expectations (it may be necessary to review group memberships as well).  "Other" should have no permissions to these folders.
 
@@ -85,6 +82,13 @@ global:
       - Read means that users can see the directory contents listed when browsing the file system (files have their own permissions block)
       - Write means that users can create new files in the directory
       - Execute means they can change into the directory
+  keywords: ['logging', 'syslog']
+  only_matching: True
+  field_list: 
+    - dir
+    - permissions
+    - owner
+    - group
 03_logging_04_syslog_config:
   regex: 'Logging_SyslogConfig::(?P<configFile>[\w/.]+)::(?!#)(?P<line>[?>\w].*)'
   excel_sheet_name: Syslog Config
@@ -98,16 +102,10 @@ global:
         - lines with /dev/null (thrown away)
         - lines with file names such as /var/log/auth.log (sent to this file)
         - Retention criteria (e.g. sized-based with file_max=50M or all_max=150M, and time-based such as ttl=365)
+  keywords: ['logging', 'syslog']
 03_logging_04_firewall_logging:
   regex: 'Logging_Firewall-firewall::(EnableLogging=(?P<fwEnableLogging>.*)|LoggingOption=(?P<fwLoggingOption>.*))|Logging_Firewall-alf::(loggingenabled=(?P<alfEnableLogging>.*)|loggingoption=(?P<alfLoggingOption>.*))'
   excel_sheet_name: Firewall Logging
-  only_matching: True
-  multiline: True
-  field_list:
-    - fwEnableLogging
-    - fwLoggingOption
-    - alfEnableLogging
-    - alfLoggingOption
   comment: |-
     Firewall logging should be enabled to capture events from the MacOS desktop firewall (socketFilter)
     
@@ -116,13 +114,22 @@ global:
       - fwLoggingOption: detail
       - alfLoggingEnabled: 1
       - alfLoggingOption: 4
+  keywords: ['logging', 'syslog', 'firewall logging']
+  only_matching: True
+  multiline: True
+  field_list:
+    - fwEnableLogging
+    - fwLoggingOption
+    - alfEnableLogging
+    - alfLoggingOption
 03_logging_07_logging_samples:
   regex: 'Logging_Samples-(?P<logfile>[A-Za-z.]+)-(?P<head_tail>head|tail)::(?P<logentry>.*)'
   excel_sheet_name: Logging Samples
+  comment: |-
+    We collect samples of various logs below.  To save space, we collect only the first ('head') and last ('tail') 25 lines of each file to confirm that events were and continue to be written to the logs.  If you need to see more of some log files, you'll need to ask for those separately.
+  keywords: ['logging', 'syslog', 'log samples']
   field_list:
     - 'logfile'
     - 'head_tail'
     - 'logentry'
   only_matching: True
-  comment: |-
-    We collect samples of various logs below.  To save space, we collect only the first ('head') and last ('tail') 25 lines of each file to confirm that events were and continue to be written to the logs.  If you need to see more of some log files, you'll need to ask for those separately.
