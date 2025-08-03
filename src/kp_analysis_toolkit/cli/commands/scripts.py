@@ -112,8 +112,6 @@ def list_systems(program_config: ProgramConfig) -> None:
     if table is None:  # Quiet mode
         return
 
-    max_detail_fields = 5  # Limit displayed details in verbose mode
-
     for system in systems:
         row_data = [system.system_name, format_hash_display(system.file_hash or "")]
 
@@ -128,13 +126,12 @@ def list_systems(program_config: ProgramConfig) -> None:
             # Replace the file path with a relative path for display
             if "file" in filtered_data:
                 filtered_data["file"] = system.get_relative_file_path(
-                    program_config.source_files_path
+                    program_config.source_files_path,
                 )
 
             details_text = format_verbose_details(
                 rich_output,
                 filtered_data,
-                max_items=max_detail_fields,
                 max_value_length=60,
             )
             row_data.append(details_text)

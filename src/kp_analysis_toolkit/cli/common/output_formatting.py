@@ -314,7 +314,7 @@ def create_commands_help_table(
 def format_verbose_details(
     rich_output: RichOutputService,
     data_dict: dict[str, Any],
-    max_items: int = 3,
+    max_items: int | None = None,
     max_value_length: int = 60,
 ) -> str:
     """
@@ -332,11 +332,12 @@ def format_verbose_details(
     """
     details = []
     for key, value in data_dict.items():
-        formatted_value = rich_output.format_value(value, max_value_length)
-        details.append(f"{key}: {formatted_value}")
+        if value:
+            formatted_value = rich_output.format_value(value, max_value_length)
+            details.append(f"{key}: {formatted_value}")
 
     details_text = "\n".join(details[:max_items])
-    if len(data_dict) > max_items:
+    if max_items and len(data_dict) > max_items:
         remaining = len(data_dict) - max_items
         details_text += f"\n... and {remaining} more"
 
