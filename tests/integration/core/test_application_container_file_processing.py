@@ -173,7 +173,7 @@ class TestFileProcessingContainerWiring:
         core_container.unwire()
 
     def test_global_container_singleton_behavior(
-        self, container_initialized: None
+        self, container_initialized: None,
     ) -> None:
         """Test that global container maintains singleton services."""
         # Container is properly initialized by the fixture
@@ -193,7 +193,7 @@ class TestFileProcessingContainerWiring:
         assert container1 is container2, "Core container should be singleton"
 
     def test_application_container_dependency_injection(
-        self, container_initialized: None
+        self, container_initialized: None,
     ) -> None:
         """Test that file processing container gets core dependencies correctly."""
         # Reconfigure with specific settings for this test

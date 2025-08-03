@@ -34,8 +34,10 @@ There are help sections at the top of each of the provided YAML files, but the m
 
 | Option        | Description |
 |---------------|-------------|
-| `regex`         | Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html. |
-| `comment`       | A helpful comment that will be added to the output file to describe how to use this particular set of search results. |
+| `regex`         | **(Required)** Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html. |
+| `excel_sheet_name` | **(Required)** A name that will be used for the Excel worksheet when the results are exported |
+| `comment`       | **(Required)** A helpful comment that will be added to the output file to describe how to use this particular set of search results. |
+| `keywords`      | **(Required)** Key words for the results.  Added to the Search Summary worksheet in the Excel results file |
 | `max_results`   | Maximum number of results to return per System (default: -1 - unlimited). |
 | `only_matching` | Only provide the matching string instead of the full line (default: full line). |
 | `unique`        | Only display one instance of each match. |

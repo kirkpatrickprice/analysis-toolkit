@@ -12,8 +12,8 @@ from kp_analysis_toolkit.process_scripts.models.results.search import (
     SearchResult,
     SearchResults,
 )
-from kp_analysis_toolkit.process_scripts.models.search.merge_fields import SearchConfig
 from kp_analysis_toolkit.process_scripts.models.results.system import Systems
+from kp_analysis_toolkit.process_scripts.models.search.merge_fields import SearchConfig
 
 
 def _setup_excel_writer_mock(mock_writer: MagicMock, mock_to_excel: MagicMock) -> None:

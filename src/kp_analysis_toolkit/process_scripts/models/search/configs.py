@@ -25,6 +25,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     regex: str
     comment: str | None = None
     excel_sheet_name: str
+    keywords: list[str] | None = None
     max_results: int = -1
     field_list: list[str] | None = None
     only_matching: bool = False

@@ -160,14 +160,16 @@ class ProcessScriptsService:
             self.rich_output.debug(f"Generating hierarchy report for: {config_file}")
 
             # Initialize statistics collection
-            search_stats = {
+            search_stats: dict[str, int | dict | set] = {
                 "total_searches": 0,
                 "searches_by_os_family": {},
                 "files_processed": 0,
+                "error_count": 0,
+                "all_keywords": set(),
             }
 
             # Build the tree and collect statistics
-            tree = self._build_config_tree(
+            tree: dict[str, str | list] = self._build_config_tree(
                 config_file,
                 visited_files=set(),
                 stats=search_stats,
@@ -204,26 +206,29 @@ class ProcessScriptsService:
 
         """
         if config_file in visited_files:
-            return {"error": f"Circular include detected: {config_file}"}
+            error_msg: str = f"Circular include detected: {config_file}"
+            if stats is not None:
+                stats["error_count"] += 1
+            return {"error": error_msg}
 
         visited_files.add(config_file)
 
         try:
             # Load the YAML configuration directly
-            yaml_config = self.search_config.load_yaml_config(config_file)
+            yaml_config: object = self.search_config.load_yaml_config(config_file)
 
             # Collect statistics if provided
             if stats is not None:
                 stats["files_processed"] += 1
 
-            tree_node = {
+            tree_node: dict[str, str | list] = {
                 "file": config_file.name,
                 "path": str(config_file),
                 "children": [],
             }
 
             # Extract OS family from global config for statistics
-            os_family = self._extract_os_family(yaml_config)
+            os_family: str = self._extract_os_family(yaml_config)
 
             # Process different sections using helper methods
             self._process_global_config(yaml_config, tree_node)
@@ -238,7 +243,10 @@ class ProcessScriptsService:
             self._process_search_configs(yaml_config, tree_node, os_family, stats)
 
         except (FileNotFoundError, ValueError, OSError) as e:
-            return {"error": f"Failed to process {config_file}: {e}"}
+            error_msg: str = f"Failed to process {config_file}: {e}"
+            if stats is not None:
+                stats["error_count"] += 1
+            return {"error": error_msg}
         else:
             return tree_node
         finally:
@@ -274,7 +282,7 @@ class ProcessScriptsService:
     ) -> None:
         """Process include configurations and add to tree node."""
         for include_name, include_config in yaml_config.include_configs.items():
-            include_node = {
+            include_node: dict[str, str | list] = {
                 "type": "include",
                 "name": include_name,
                 "children": [],
@@ -282,12 +290,12 @@ class ProcessScriptsService:
 
             # Process each file in the include
             for include_file in include_config.files:
-                include_path = self.search_config.file_resolver.resolve_path(
+                include_path: Path = self.search_config.file_resolver.resolve_path(
                     config_file.parent,
                     include_file,
                 )
                 if include_path.exists():
-                    child_tree = self._build_config_tree(
+                    child_tree: dict[str, str | list] = self._build_config_tree(
                         include_path,
                         visited_files.copy(),
                         indent_level + 1,
@@ -295,9 +303,12 @@ class ProcessScriptsService:
                     )
                     include_node["children"].append(child_tree)
                 else:
+                    error_msg: str = f"File not found: {include_path}"
+                    if stats is not None:
+                        stats["error_count"] += 1
                     include_node["children"].append(
                         {
-                            "error": f"File not found: {include_path}",
+                            "error": error_msg,
                         },
                     )
 
@@ -314,13 +325,13 @@ class ProcessScriptsService:
         if not yaml_config.search_configs:
             return
 
-        searches_node = {
+        searches_node: dict[str, str | list] = {
             "type": "searches",
             "children": [],
         }
 
         # Count searches and categorize by OS family
-        search_count = len(yaml_config.search_configs)
+        search_count: int = len(yaml_config.search_configs)
         if stats is not None:
             stats["total_searches"] += search_count
             if os_family not in stats["searches_by_os_family"]:
@@ -329,7 +340,17 @@ class ProcessScriptsService:
 
         for search_name, search_config in yaml_config.search_configs.items():
             # Use excel_sheet_name if available, otherwise use the search name
-            display_name = search_config.excel_sheet_name or search_name
+            display_name: str = search_config.excel_sheet_name or search_name
+
+            # Collect keywords if present
+            if (
+                stats is not None
+                and hasattr(search_config, "keywords")
+                and search_config.keywords
+                and isinstance(search_config.keywords, list)
+            ):
+                stats["all_keywords"].update(search_config.keywords)
+
             searches_node["children"].append(
                 {
                     "type": "search",
@@ -351,11 +372,11 @@ class ProcessScriptsService:
             Formatted summary string
 
         """
-        parts = []
+        parts: list[str] = []
 
         if global_config.sys_filter:
             for filter_item in global_config.sys_filter:
-                filter_str = f"sys_filter {filter_item.attr.value} {filter_item.comp.value} {filter_item.value}"
+                filter_str: str = f"sys_filter {filter_item.attr.value} {filter_item.comp.value} {filter_item.value}"
                 parts.append(filter_str)
 
         if global_config.max_results is not None:

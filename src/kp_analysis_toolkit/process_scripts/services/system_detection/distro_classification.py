@@ -11,7 +11,9 @@ from kp_analysis_toolkit.process_scripts.services.system_detection.protocols imp
 )
 
 if TYPE_CHECKING:
-    from kp_analysis_toolkit.core.services.file_processing.protocols import ContentStreamer
+    from kp_analysis_toolkit.core.services.file_processing.protocols import (
+        ContentStreamer,
+    )
 
 
 class DefaultDistroFamilyClassifier(DistroClassifier):

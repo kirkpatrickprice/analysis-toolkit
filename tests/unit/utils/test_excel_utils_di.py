@@ -67,7 +67,7 @@ class TestExcelUtilsDI:
         result = sanitize_sheet_name("Test Sheet")
 
         mock_service.sheet_name_sanitizer.sanitize_sheet_name.assert_called_once_with(
-            "Test Sheet"
+            "Test Sheet",
         )
         assert result == "DI_Result"
 
@@ -118,7 +118,7 @@ class TestExcelUtilsDI:
         output_path = Path("test.xlsx")
 
         export_dataframe_to_excel(
-            test_data, output_path, "Sheet1", "Title", as_table=True
+            test_data, output_path, "Sheet1", "Title", as_table=True,
         )
 
         mock_service.export_dataframe_to_excel.assert_called_once_with(

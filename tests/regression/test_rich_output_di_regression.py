@@ -37,7 +37,7 @@ class TestRichOutputDIRegression:
         assert service.quiet is False
         # Use tolerant assertion for CI environments
         from tests.conftest import assert_console_width_tolerant
-        assert_console_width_tolerant(service.console.width, 100)  # noqa: PLR2004
+        assert_console_width_tolerant(service.console.width, 100)
 
     def test_backward_compatibility_maintained(self) -> None:
         """Test that existing code continues to work."""

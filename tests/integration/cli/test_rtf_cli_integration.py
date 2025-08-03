@@ -116,7 +116,7 @@ class TestProcessCommandLine:
     ) -> None:
         """Test error handling with invalid file."""
         result: Result = cli_runner.invoke(
-            process_command_line, ["-f", "nonexistent.rtf"]
+            process_command_line, ["-f", "nonexistent.rtf"],
         )
         assert result.exit_code == 1
         assert "Error processing RTF file" in result.output

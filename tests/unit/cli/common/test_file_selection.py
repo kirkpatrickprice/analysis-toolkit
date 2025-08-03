@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
-from kp_analysis_toolkit.models.enums import FileSelectionResult
 from kp_analysis_toolkit.cli.utils.path_helpers import discover_files_by_pattern
+from kp_analysis_toolkit.models.enums import FileSelectionResult
 
 
 @pytest.mark.usefixtures("initialized_container")

@@ -72,7 +72,7 @@ class DefaultProgressTracker(ProgressTracker):
 
         # Add task to active progress
         task_id: rich.progress.TaskID = self._active_progress.add_task(
-            description, total=total
+            description, total=total,
         )
         self._active_tasks[task_id] = description
 

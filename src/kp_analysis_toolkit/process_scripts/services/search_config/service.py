@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+from kp_analysis_toolkit.process_scripts.services.search_config.protocols import (
+    FileResolver,
+    YamlParser,
+)
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -14,7 +20,6 @@ if TYPE_CHECKING:
     )
     from kp_analysis_toolkit.process_scripts.services.search_config.protocols import (
         FileResolver,
-        IncludeProcessor,
         YamlParser,
     )
 
@@ -26,14 +31,12 @@ class SearchConfigService:
         self,
         yaml_parser: YamlParser,
         file_resolver: FileResolver,
-        include_processor: IncludeProcessor,
         rich_output: RichOutputService,
     ) -> None:
         """Initialize with required services."""
-        self.yaml_parser = yaml_parser
-        self.file_resolver = file_resolver
-        self.include_processor = include_processor
-        self.rich_output = rich_output
+        self.yaml_parser: YamlParser = yaml_parser
+        self.file_resolver: FileResolver = file_resolver
+        self.rich_output: RichOutputService = rich_output
 
     def load_search_configs(self, config_file: Path) -> list[SearchConfig]:
         """
@@ -94,7 +97,7 @@ class SearchConfigService:
 
         """
         if not config_file.exists():
-            msg = f"Configuration file not found: {config_file}"
+            msg: str = f"Configuration file not found: {config_file}"
             raise FileNotFoundError(msg)
 
         try:
@@ -107,9 +110,11 @@ class SearchConfigService:
             raise ValueError(msg) from e
 
         # Validate basic structure
-        if not self.yaml_parser.validate_yaml_structure(raw_data):
-            msg = f"Invalid YAML structure in {config_file}"
-            raise ValueError(msg)
+        try:
+            self.yaml_parser.validate_yaml_structure(raw_data)
+        except (ValueError, TypeError) as e:
+            msg = f"Invalid YAML structure in {config_file}: {e}"
+            raise ValueError(msg) from e
 
         # Convert to structured models
         return self._parse_yaml_data(raw_data)

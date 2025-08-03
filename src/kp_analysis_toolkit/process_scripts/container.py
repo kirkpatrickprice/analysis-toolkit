@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from dependency_injector import containers, providers
 
 from kp_analysis_toolkit.process_scripts.services.system_detection import (
@@ -14,44 +16,40 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
     """Services specific to the process scripts module."""
 
     # Dependencies from core containers
-    core = providers.DependenciesContainer()
+    core: providers.DependenciesContainer = providers.DependenciesContainer()
 
     # Search Configuration Services (process_scripts specific)
-    yaml_parser = providers.Factory(
+    yaml_parser: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.services.search_config.yaml_parser.PyYamlParser",
+        file_processing=core.file_processing_service,
     )
 
-    file_resolver = providers.Factory(
+    file_resolver: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.services.search_config.file_resolver.StandardFileResolver",
         file_processing=core.file_processing_service,
     )
 
-    include_processor = providers.Factory(
-        "kp_analysis_toolkit.process_scripts.services.search_config.include_processor.StandardIncludeProcessor",
-    )
-
-    search_config_service = providers.Factory(
+    search_config_service: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.services.search_config.service.SearchConfigService",
         yaml_parser=yaml_parser,
         file_resolver=file_resolver,
-        include_processor=include_processor,
         rich_output=core.rich_output,
     )
 
     # System Detection Services (process_scripts specific)
-    producer_detector = providers.Factory(
+    producer_detector: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.services.system_detection.producer_detection.SignatureProducerDetector",
     )
 
-    os_detector = providers.Factory(
+    os_detector: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.services.system_detection.os_detection.RegexOSDetector",
     )
 
-    distro_classifier = providers.Factory(
+    distro_classifier: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.services.system_detection.distro_classification.DefaultDistroFamilyClassifier",
     )
 
-    system_detection_service = providers.Factory(
+    system_detection_service: providers.Singleton[Any] = providers.Singleton(
         SystemDetectionService,
         producer_detector=producer_detector,
         os_detector=os_detector,
@@ -61,7 +59,7 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
     )
 
     # Main Module Service
-    process_scripts_service = providers.Factory(
+    process_scripts_service: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.service.ProcessScriptsService",
         system_detection=system_detection_service,
         file_processing=core.file_processing_service,
@@ -71,7 +69,7 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
 
 
 # Module's global container instance
-container = ProcessScriptsContainer()
+container: ProcessScriptsContainer = ProcessScriptsContainer()
 
 
 def wire_process_scripts_container() -> None:

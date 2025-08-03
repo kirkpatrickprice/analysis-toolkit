@@ -1,6 +1,7 @@
 # AI-GEN: CopilotChat|2025-07-31|KPAT-ListSystems|reviewed:no
 """CLI command for process scripts functionality."""
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import rich_click as click
@@ -33,8 +34,6 @@ from kp_analysis_toolkit.process_scripts import (
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
     from kp_analysis_toolkit.process_scripts.models.results.system import Systems
     from kp_analysis_toolkit.process_scripts.service import ProcessScriptsService
@@ -85,7 +84,10 @@ def process_command_line(**cli_config: ConfigValue) -> None:
 
     # Convert the click config to a ProgramConfig object and perform validation
     try:
-        program_config = validate_program_config(ProgramConfig, **cli_config)
+        program_config: ProgramConfig = validate_program_config(
+            ProgramConfig,
+            **cli_config,
+        )
     except ValueError as e:
         handle_fatal_error(e, error_prefix="Configuration validation failed")
 
@@ -107,7 +109,7 @@ def process_command_line(**cli_config: ConfigValue) -> None:
         return
 
     # For now, just show a message that other functionality is not implemented
-    rich_output = container.core.rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
     rich_output.info(
         "Full process scripts functionality not yet implemented. Use --list-systems to see available systems.",
     )
@@ -115,7 +117,7 @@ def process_command_line(**cli_config: ConfigValue) -> None:
 
 def list_systems(program_config: ProgramConfig) -> None:
     """List all systems found in the specified source files."""
-    rich_output = container.core.rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
     create_list_command_header(rich_output, "Systems Found")
 
     # Get the process scripts service from the container
@@ -125,7 +127,7 @@ def list_systems(program_config: ProgramConfig) -> None:
 
     # Discover and analyze systems
     systems: list[Systems] = process_scripts_service.list_systems(
-        input_directory=program_config.source_files_path,
+        input_directory=program_config.source_files_path or Path.cwd(),
         file_pattern=program_config.source_files_spec,
     )
 
@@ -144,12 +146,15 @@ def list_systems(program_config: ProgramConfig) -> None:
         return
 
     for system in systems:
-        row_data = [system.system_name, format_hash_display(system.file_hash or "")]
+        row_data: list[str] = [
+            system.system_name,
+            format_hash_display(system.file_hash or ""),
+        ]
 
         if program_config.verbose:
             # Create details string for verbose mode with excluded fields
-            system_data = system.model_dump()
-            filtered_data = {
+            system_data: dict[str, Any] = system.model_dump()
+            filtered_data: dict[str, Any] = {
                 k: v
                 for k, v in system_data.items()
                 if k not in ["system_name", "file_hash", "system_id"]
@@ -160,7 +165,7 @@ def list_systems(program_config: ProgramConfig) -> None:
                     program_config.source_files_path,
                 )
 
-            details_text = format_verbose_details(
+            details_text: str = format_verbose_details(
                 rich_output,
                 filtered_data,
                 max_value_length=60,
@@ -178,7 +183,7 @@ def print_verbose_config(
     program_config: ProgramConfig,
 ) -> None:
     """Print the program configuration in verbose mode using Rich formatting."""
-    rich_output = container.core.rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
 
     # Display configuration using Rich
     rich_output.configuration_table(
@@ -197,7 +202,7 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
         program_config: A `process_scripts` ProgramConfig object
 
     """
-    rich_output = container.core.rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
     create_list_command_header(rich_output, "Audit Configurations")
 
     # Get the process scripts service from the container
@@ -215,7 +220,7 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
         return
 
     # Create a Rich table for audit configurations
-    table: Table | None = Table(
+    table: Table = Table(
         title="Audit Configurations",
         show_header=True,
         header_style="bold magenta",
@@ -236,7 +241,7 @@ def audit_config_report(program_config: ProgramConfig) -> None:
         program_config: A `process_scripts` ProgramConfig object
 
     """
-    rich_output = container.core.rich_output()
+    rich_output: RichOutputService = container.core.rich_output()
     create_list_command_header(rich_output, "Audit Configuration Report")
 
     # Get the process scripts service from the container
@@ -245,21 +250,34 @@ def audit_config_report(program_config: ProgramConfig) -> None:
     )
 
     # Get the root configuration file path
-    root_config_file = program_config.config_path / program_config.audit_config_file
+    audit_config_file_path: str = str(
+        program_config.audit_config_file or "audit-all.yaml",
+    )
+    root_config_file: Path = program_config.config_path / audit_config_file_path
 
     try:
         # Generate the hierarchical report
-        report_data = process_scripts_service.generate_config_hierarchy_report(
-            root_config_file,
+        report_data: dict[str, Any] = (
+            process_scripts_service.generate_config_hierarchy_report(
+                root_config_file,
+            )
         )
 
         # Extract tree and statistics
         if "tree" in report_data and "statistics" in report_data:
-            config_tree = report_data["tree"]
-            stats = report_data["statistics"]
+            config_tree: dict[str, Any] = report_data["tree"]
+            stats: dict[str, Any] = report_data["statistics"]
+
+            # Count errors in the tree to ensure we catch all of them
+            tree_error_count: int = _count_errors_in_tree(config_tree)
+            if tree_error_count > stats.get("error_count", 0):
+                stats["error_count"] = tree_error_count
 
             # Display the tree structure
             _display_config_tree(rich_output, config_tree, indent_level=0)
+
+            # Display keywords summary
+            _display_keywords_summary(rich_output, stats)
 
             # Display statistics summary
             _display_statistics_summary(rich_output, stats)
@@ -275,9 +293,38 @@ def audit_config_report(program_config: ProgramConfig) -> None:
         rich_output.error(f"Configuration processing error: {e}")
 
 
+def _count_errors_in_tree(tree_node: dict[str, Any]) -> int:
+    """
+    Recursively count errors in a configuration tree.
+
+    Args:
+        tree_node: Tree node to count errors in
+
+    Returns:
+        Total number of errors found in the tree
+
+    """
+    if not isinstance(tree_node, dict):
+        return 0
+
+    error_count: int = 0
+
+    # Check if this node has an error
+    if "error" in tree_node:
+        error_count += 1
+
+    # Recursively check children
+    if "children" in tree_node and isinstance(tree_node["children"], list):
+        for child in tree_node["children"]:
+            if isinstance(child, dict):
+                error_count += _count_errors_in_tree(child)
+
+    return error_count
+
+
 def _display_config_tree(
     rich_output: "RichOutputService",
-    tree_node: dict[str, str | list],
+    tree_node: dict[str, Any],
     indent_level: int = 0,
 ) -> None:
     """
@@ -289,7 +336,7 @@ def _display_config_tree(
         indent_level: Current indentation level
 
     """
-    indent = "    " * indent_level
+    indent: str = "    " * indent_level
 
     if "error" in tree_node:
         rich_output.error(f"{indent}Error: {tree_node['error']}")
@@ -308,7 +355,7 @@ def _display_config_tree(
 
 def _display_child_node(
     rich_output: "RichOutputService",
-    child_node: dict[str, str | list],
+    child_node: dict[str, Any],
     indent_level: int,
 ) -> None:
     """
@@ -320,13 +367,13 @@ def _display_child_node(
         indent_level: Current indentation level
 
     """
-    indent = "    " * indent_level
+    indent: str = "    " * indent_level
 
     if "error" in child_node:
         rich_output.error(f"{indent}Error: {child_node['error']}")
         return
 
-    child_type = child_node.get("type", "unknown")
+    child_type: str = str(child_node.get("type", "unknown"))
 
     if child_type == "global":
         _display_global_node(rich_output, child_node, indent)
@@ -340,7 +387,7 @@ def _display_child_node(
 
 def _display_global_node(
     rich_output: "RichOutputService",
-    child_node: dict[str, str | list],
+    child_node: dict[str, Any],
     indent: str,
 ) -> None:
     """Display a global configuration node."""
@@ -349,12 +396,12 @@ def _display_global_node(
 
 def _display_include_node(
     rich_output: "RichOutputService",
-    child_node: dict[str, str | list],
+    child_node: dict[str, Any],
     indent_level: int,
 ) -> None:
     """Display an include configuration node."""
-    indent = "    " * indent_level
-    include_name = child_node.get("name", "unknown_include")
+    indent: str = "    " * indent_level
+    include_name: str = str(child_node.get("name", "unknown_include"))
     rich_output.info(f"{indent}- {include_name}")
 
     # Display included files
@@ -366,7 +413,7 @@ def _display_include_node(
 
 def _display_searches_node(
     rich_output: "RichOutputService",
-    child_node: dict[str, str | list],
+    child_node: dict[str, Any],
     indent: str,
 ) -> None:
     """Display a searches container node."""
@@ -376,23 +423,47 @@ def _display_searches_node(
     if "children" in child_node:
         for search in child_node["children"]:
             if isinstance(search, dict) and search.get("type") == "search":
-                search_name = search.get("name", "Unknown Search")
+                search_name: str = str(search.get("name", "Unknown Search"))
                 rich_output.info(f"{indent}    - {search_name}")
 
 
 def _display_search_node(
     rich_output: "RichOutputService",
-    child_node: dict[str, str | list],
+    child_node: dict[str, Any],
     indent: str,
 ) -> None:
     """Display an individual search node."""
-    search_name = child_node.get("name", "Unknown Search")
+    search_name: str = str(child_node.get("name", "Unknown Search"))
     rich_output.info(f"{indent}- {search_name}")
+
+
+def _display_keywords_summary(
+    rich_output: "RichOutputService",
+    stats: dict[str, Any],
+) -> None:
+    """
+    Display a summary of all keywords found in configuration files.
+
+    Args:
+        rich_output: Rich output service for display
+        stats: Statistics dictionary containing keywords set
+
+    """
+    all_keywords: set[Any] = stats.get("all_keywords", set())
+
+    if all_keywords:
+        rich_output.info("\n🔑 Keywords:")
+        # Convert set to sorted list for alphabetical display
+        sorted_keywords: list[str] = sorted(str(keyword) for keyword in all_keywords)
+        for keyword in sorted_keywords:
+            rich_output.info(f"   - {keyword}")
+    else:
+        rich_output.info("\n🔑 Keywords: None found")
 
 
 def _display_statistics_summary(
     rich_output: "RichOutputService",
-    stats: dict[str, int | dict],
+    stats: dict[str, Any],
 ) -> None:
     """
     Display a summary of configuration statistics.
@@ -410,8 +481,15 @@ def _display_statistics_summary(
         f"   Total search configurations: {stats.get('total_searches', 0)}",
     )
 
+    # Display error count
+    error_count: int = int(stats.get("error_count", 0))
+    if error_count > 0:
+        rich_output.error(f"   Total errors encountered: {error_count}")
+    else:
+        rich_output.info("   Total errors encountered: 0")
+
     # Display breakdown by OS family
-    searches_by_os = stats.get("searches_by_os_family", {})
+    searches_by_os: dict[Any, Any] = stats.get("searches_by_os_family", {})
     if searches_by_os:
         rich_output.info("   Search configurations by OS family:")
         for os_family, count in sorted(searches_by_os.items()):

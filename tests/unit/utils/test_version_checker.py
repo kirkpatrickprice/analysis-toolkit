@@ -161,6 +161,6 @@ class TestCheckAndPromptUpdate:
 
         mock_checker.check_for_updates.assert_called_once()
         mock_checker.prompt_for_upgrade.assert_called_once_with(
-            newer_version, mock_rich
+            newer_version, mock_rich,
         )
         mock_exit.assert_called_once_with(0)

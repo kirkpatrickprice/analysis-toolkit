@@ -53,7 +53,7 @@ class TestGetTimestamp:
         mock_container.core.timestamp_service.return_value = mock_timestamp_service
 
         with patch(
-            "kp_analysis_toolkit.core.containers.application.container", mock_container
+            "kp_analysis_toolkit.core.containers.application.container", mock_container,
         ):
             result = get_timestamp()
 
@@ -77,7 +77,7 @@ class TestGetTimestamp:
         mock_container.core.timestamp_service.return_value = mock_timestamp_service
 
         with patch(
-            "kp_analysis_toolkit.core.containers.application.container", mock_container
+            "kp_analysis_toolkit.core.containers.application.container", mock_container,
         ):
             # Call the function
             result = get_timestamp()
@@ -105,7 +105,7 @@ class TestGetTimestamp:
         ]
 
         with patch(
-            "kp_analysis_toolkit.core.containers.application.container", mock_container
+            "kp_analysis_toolkit.core.containers.application.container", mock_container,
         ):
             # Call multiple times
             result1 = get_timestamp()
@@ -135,7 +135,7 @@ class TestGetTimestamp:
         mock_container.core.timestamp_service.return_value = mock_timestamp_service
 
         with patch(
-            "kp_analysis_toolkit.core.containers.application.container", mock_container
+            "kp_analysis_toolkit.core.containers.application.container", mock_container,
         ):
             # Simulate nipper_expander usage pattern
             stem = "test_file"
@@ -177,7 +177,7 @@ class TestGetTimestamp:
         mock_container.core.timestamp_service.return_value = mock_timestamp_service
 
         with patch(
-            "kp_analysis_toolkit.core.containers.application.container", mock_container
+            "kp_analysis_toolkit.core.containers.application.container", mock_container,
         ):
             result = get_timestamp()
 
@@ -217,7 +217,7 @@ class TestGetTimestamp:
         mock_container.core.timestamp_service.return_value = mock_timestamp_service
 
         with patch(
-            "kp_analysis_toolkit.core.containers.application.container", mock_container
+            "kp_analysis_toolkit.core.containers.application.container", mock_container,
         ):
             # Test can be imported and called without issues
             from kp_analysis_toolkit.utils.get_timestamp import (

@@ -85,7 +85,7 @@ class RegexOSDetector(OSDetector):
             # Extract ProductName
             if "ProductName" in line:
                 match: re.Match[str] | None = re.search(
-                    r"ProductName[:\s]+(.+)", line, re.IGNORECASE
+                    r"ProductName[:\s]+(.+)", line, re.IGNORECASE,
                 )
                 if match:
                     details["product_name"] = match.group(1).strip()
