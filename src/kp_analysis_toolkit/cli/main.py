@@ -33,7 +33,12 @@ from kp_analysis_toolkit.core.containers.application import (
 from kp_analysis_toolkit.core.services.rich_output import RichOutputService
 from kp_analysis_toolkit.utils.version_checker import check_and_prompt_update
 
-# Configure Rich Click for enhanced help formatting
+# Initialize dependency injection early for CLI operations
+# This ensures DI is available for callbacks and other early CLI operations
+initialize_dependency_injection(verbose=False, quiet=False)
+
+# Configure Rich Click for enhanced help formatting (main CLI only)
+# Individual commands use standard Click help for simplicity
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.USE_MARKDOWN = True
 click.rich_click.SHOW_ARGUMENTS = True
@@ -44,7 +49,7 @@ click.rich_click.STYLE_OPTION = "bold cyan"
 click.rich_click.STYLE_ARGUMENT = "bold cyan"
 click.rich_click.STYLE_COMMAND = "bold cyan"
 click.rich_click.STYLE_SWITCH = "bold green"
-click.rich_click.MAX_WIDTH = 100
+click.rich_click.MAX_WIDTH = 120  # Increase width to reduce wrapping
 
 # Note: Global option groups are set up via individual command configuration
 # to avoid wildcard conflicts with specific command configurations
@@ -126,8 +131,9 @@ def cli(
     ctx.ensure_object(dict)
     ctx.obj["quiet"] = quiet
 
-    # Initialize dependency injection once for all commands
-    initialize_dependency_injection(verbose=False, quiet=quiet)
+    # Update the quiet setting in the core container
+    # (DI was initialized early with default settings)
+    container.core().config.quiet.from_value(quiet)
 
     # Always run version check unless explicitly skipped
     if not skip_update_check:
@@ -141,58 +147,6 @@ def cli(
 
 
 # Add module commands to the CLI
-# Configure option groups for multi-command CLI structure
-click.rich_click.OPTION_GROUPS = getattr(click.rich_click, "OPTION_GROUPS", {})
-
-# Scripts command option groups
-click.rich_click.OPTION_GROUPS["scripts"] = [
-    {
-        "name": "Configuration & Input",
-        "options": ["--conf", "--start-dir", "--filespec"],
-    },
-    {
-        "name": "Information Options",
-        "options": [
-            "--list-audit-configs",
-            "--list-sections",
-            "--list-source-files",
-            "--list-systems",
-        ],
-    },
-    {
-        "name": "Output & Control",
-        "options": ["--out-path", "--verbose"],
-    },
-    {
-        "name": "Information & Control",
-        "options": ["--version"],
-    },
-]
-
-# RTF-to-text command option groups
-click.rich_click.OPTION_GROUPS["rtf-to-text"] = [
-    {
-        "name": "Input & Processing Options",
-        "options": ["--in-file", "--start-dir"],
-    },
-    {
-        "name": "Information & Control",
-        "options": ["--version"],
-    },
-]
-
-# Nipper command option groups
-click.rich_click.OPTION_GROUPS["nipper"] = [
-    {
-        "name": "Input & Processing Options",
-        "options": ["--in-file", "--start-dir"],
-    },
-    {
-        "name": "Information & Control",
-        "options": ["--version"],
-    },
-]
-
 cli.add_command(scripts_process_command_line, name="scripts")  # type: ignore[arg-type]
 cli.add_command(nipper_process_command_line, name="nipper")  # type: ignore[arg-type]
 cli.add_command(rtf_process_command_line, name="rtf-to-text")  # type: ignore[arg-type]

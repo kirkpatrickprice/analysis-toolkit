@@ -16,11 +16,12 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin, ConfigM
 
     program_path: Path = Path(__file__).parent.parent
     config_path: Path = program_path / GLOBALS["CONF_PATH"]
-    audit_config_file: Path | str | None = None
+    audit_config_file: Path | str | None = "audit-all.yaml"
     source_files_path: Path | None = None
     source_files_spec: str
     out_path: str
     list_audit_configs: bool = False
+    audit_config_report: bool = False
     list_sections: bool = False
     list_source_files: bool = False
     list_systems: bool = False
@@ -28,7 +29,7 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin, ConfigM
 
     @field_validator("audit_config_file")
     @classmethod
-    def validate_audit_config_file(cls, value: Path | None, values: dict) -> Path:
+    def validate_audit_config_file(cls, value: Path | str | None, values: dict) -> Path:
         """Validate the audit configuration file path."""
         if value is None:
             message: str = "Audit configuration file is required."

@@ -9,13 +9,11 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     validate_program_config,
 )
 from kp_analysis_toolkit.cli.common.decorators import (
-    custom_help_option,
     input_file_option,
     module_version_option,
     start_directory_option,
 )
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
-from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.core.containers.application import ApplicationContainer
 from kp_analysis_toolkit.core.services.batch_processing import BatchProcessingService
 from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
@@ -25,12 +23,9 @@ from kp_analysis_toolkit.nipper_expander import __version__ as nipper_expander_v
 from kp_analysis_toolkit.nipper_expander.models.program_config import ProgramConfig
 from kp_analysis_toolkit.nipper_expander.protocols import NipperExpanderService
 
-# Configure option groups for this command
-# Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
-setup_command_option_groups("nipper")
+# Note: Using standard Click help for simplicity
 
 
-@custom_help_option("nipper")
 @click.command(name="nipper")
 @module_version_option(nipper_expander_version, "nipper")
 @input_file_option(file_type="CSV")

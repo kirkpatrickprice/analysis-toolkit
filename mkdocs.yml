@@ -55,6 +55,7 @@ nav:
     - Installation: user-guides/installation.md
     - Updating: user-guides/updating.md
     - Process Scripts: user-guides/process-scripts.md
+    - YAML Help: user-guides/YAML Help.md
     - Nipper Expander: user-guides/nipper-expander.md
     - RTF to Text: user-guides/rtf-to-text.md
   - Tutorials:

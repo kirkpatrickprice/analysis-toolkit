@@ -16,6 +16,28 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
     # Dependencies from core containers
     core = providers.DependenciesContainer()
 
+    # Search Configuration Services (process_scripts specific)
+    yaml_parser = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.search_config.yaml_parser.PyYamlParser",
+    )
+
+    file_resolver = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.search_config.file_resolver.StandardFileResolver",
+        file_processing=core.file_processing_service,
+    )
+
+    include_processor = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.search_config.include_processor.StandardIncludeProcessor",
+    )
+
+    search_config_service = providers.Factory(
+        "kp_analysis_toolkit.process_scripts.services.search_config.service.SearchConfigService",
+        yaml_parser=yaml_parser,
+        file_resolver=file_resolver,
+        include_processor=include_processor,
+        rich_output=core.rich_output,
+    )
+
     # System Detection Services (process_scripts specific)
     producer_detector = providers.Factory(
         "kp_analysis_toolkit.process_scripts.services.system_detection.producer_detection.SignatureProducerDetector",
@@ -43,6 +65,7 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         "kp_analysis_toolkit.process_scripts.service.ProcessScriptsService",
         system_detection=system_detection_service,
         file_processing=core.file_processing_service,
+        search_config=search_config_service,
         rich_output=core.rich_output,
     )
 
@@ -62,5 +85,6 @@ def wire_process_scripts_container() -> None:
         modules=[
             "kp_analysis_toolkit.process_scripts.service",
             "kp_analysis_toolkit.process_scripts.services.system_detection",
+            "kp_analysis_toolkit.process_scripts.services.search_config",
         ],
     )

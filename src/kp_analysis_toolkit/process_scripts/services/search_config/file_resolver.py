@@ -1,7 +1,12 @@
 # AI-GEN: GitHub Copilot|2025-07-29|fix/di/scripts-migration|reviewed:yes
-from pathlib import Path
+from __future__ import annotations
 
-from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
 
 
 class StandardFileResolver:
@@ -15,7 +20,7 @@ class StandardFileResolver:
         """Resolve relative path against base path - YAML-specific logic."""
         # This is domain-specific YAML include resolution logic
         # Should NOT be in core service
-        resolved: Path = base_path.parent / relative_path
+        resolved: Path = base_path / relative_path
         return resolved.resolve()
 
     def find_include_files(self, config_dir: Path, pattern: str) -> list[Path]:

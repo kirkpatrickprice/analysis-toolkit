@@ -4,13 +4,16 @@
 You can author your own search configurations as YAML files.  For instance, if you have some custom searches for a specific customer, you can save them for reuse when working them next year.
 
 A YAML file is just a text file with a ".yaml" extension.  Some pre-defined YAML files are provided as part of the Analysis Toolkit:
+```
     .../conf.d
         audit-windows.yaml      Set of searches appropriate for use with Windows systems
         audit-linux.yaml        Set of searches appropriate for use with Linux systems
+```
 
 Reference these files for the basic structure of what a configuration section should look like.  There are also examples of most (all?) options that you can model your own after.
 
 You can also include the contents in other YAML files by using the "include_<unique_but_arbitrary_name>:" section within your own files.
+
 ```yaml
 myfile.yaml
   include_audit_windows:
@@ -28,8 +31,9 @@ This will bring in all of the checks in `audit-windows.yaml` and the tool knows 
 There are help sections at the top of each of the provided YAML files, but the most authoritative list of available options is provided here.
 
 ### Configuration sections
+
 | Option        | Description |
--------------------------------
+|---------------|-------------|
 | `regex`         | Python-compatible, CaSeInSenSiTiVe regex to use https://docs.python.org/3/howto/regex.html. |
 | `comment`       | A helpful comment that will be added to the output file to describe how to use this particular set of search results. |
 | `max_results`   | Maximum number of results to return per System (default: -1 - unlimited). |

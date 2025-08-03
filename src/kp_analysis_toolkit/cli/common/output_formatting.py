@@ -271,10 +271,26 @@ def format_option_line(param: click.Parameter) -> str | None:
     # Get help text
     help_text = getattr(param, "help", "") or "No help available"
 
-    # Format the complete line with proper spacing
-    # Use consistent width for option names (30 characters)
+    # Format the complete line with proper text wrapping
+    # Use consistent width for option names (32 characters)
     opt_part = f"{opt_display}{type_info}"
-    return f"  {opt_part:<30} {help_text}"
+
+    # Handle text wrapping with proper indentation
+    from textwrap import fill
+
+    # Calculate available width for help text (assuming 80-char total, minus option width and padding)
+    available_width = 80 - 34 - 4  # 42 chars for help text
+    indent_spaces = 34  # Width for option part + padding
+
+    # Wrap the help text with proper indentation for continuation lines
+    wrapped_help = fill(
+        help_text,
+        width=available_width,
+        initial_indent="",
+        subsequent_indent=" " * indent_spaces,
+    )
+
+    return f"  {opt_part:<32} {wrapped_help}"
 
 
 def create_commands_help_table(

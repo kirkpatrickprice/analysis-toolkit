@@ -1,107 +1,106 @@
-from kp_analysis_toolkit.models.base import KPATBaseModel
-from kp_analysis_toolkit.process_scripts.models.search.configs import (
-    GlobalConfig,
-    IncludeConfig,
-    SearchConfig,
-    YamlConfig,
-)
-from kp_analysis_toolkit.process_scripts.models.types import (
-    CollectionType,
-    ConfigurationValueType,
-)
+"""YAML parser implementation for search configurations."""
+
+from __future__ import annotations
+
+import re
+from typing import TYPE_CHECKING
+
+import yaml
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
-class SearchConfigService:
-    @classmethod
-    def load_yaml(cls, data: dict[str, ConfigurationValueType]) -> "YamlConfig":
-        """Create YamlConfig from parsed YAML dictionary."""
-        global_config = None
-        search_configs = {}
-        include_configs = {}
+class PyYamlParser:
+    """Standard YAML parser implementation using PyYAML."""
 
+    def load_yaml(self, file_path: Path) -> dict[str, str | bool | float]:
+        """
+        Load YAML file and return parsed data as dictionary.
+
+        Args:
+            file_path: Path to the YAML file to load
+
+        Returns:
+            Dictionary containing parsed YAML data
+
+        Raises:
+            ValueError: If file cannot be loaded or parsed
+            FileNotFoundError: If file doesn't exist
+
+        """
+        if not file_path.exists():
+            msg = f"YAML file not found: {file_path}"
+            raise FileNotFoundError(msg)
+
+        try:
+            with file_path.open("r", encoding="utf-8") as file:
+                data = yaml.safe_load(file)
+                return data if data is not None else {}
+        except yaml.YAMLError as e:
+            msg = f"Failed to parse YAML file {file_path}: {e}"
+            raise ValueError(msg) from e
+        except Exception as e:
+            msg = f"Failed to read YAML file {file_path}: {e}"
+            raise ValueError(msg) from e
+
+    def validate_yaml_structure(self, data: dict[str, str | bool | float]) -> bool:
+        """
+        Validate basic YAML structure for search configurations.
+
+        Args:
+            data: Parsed YAML data to validate
+
+        Returns:
+            True if structure is valid, False otherwise
+
+        """
+        if not isinstance(data, dict):
+            return False
+
+        return self._validate_all_sections(data)
+
+    def _validate_all_sections(self, data: dict[str, str | bool | float]) -> bool:
+        """Validate all sections in the YAML data."""
         for key, value in data.items():
-            if key == "global":
-                global_config = GlobalConfig(**value)
-            elif key.startswith("include_"):
-                include_configs[key] = IncludeConfig(**value)
-            else:
-                # Regular search configuration
-                config_data: CollectionType = value.copy()
+            if not self._validate_section(key, value):
+                return False
+        return True
 
-                # Set Excel sheet name if not provided
-                if "excel_sheet_name" not in config_data:
-                    config_data["excel_sheet_name"] = key
+    def _validate_section(self, key: str, value: str | bool | float) -> bool:
+        """Validate a single section of the YAML data."""
+        if key == "global":
+            return self._validate_global_section(value)
+        if key.startswith("include_"):
+            return self._validate_include_section(value)
+        return self._validate_search_section(value)
 
-                search_configs[key] = SearchConfig(name=key, **config_data)
+    def _validate_global_section(self, value: str | bool | float) -> bool:
+        """Validate global configuration section."""
+        return isinstance(value, dict)
 
-        config = cls(
-            global_config=global_config,
-            search_configs=search_configs,
-            include_configs=include_configs,
-        )
+    def _validate_include_section(self, value: str | bool | float) -> bool:
+        """Validate include configuration section."""
+        if not isinstance(value, dict) or "files" not in value:
+            return False
+        return isinstance(value["files"], list)
 
-        config.validate_configurations()
+    def _validate_search_section(self, value: str | bool | float) -> bool:
+        """Validate search configuration section."""
+        if not isinstance(value, dict):
+            return False
 
-        return config
+        # Must have 'regex' field
+        if "regex" not in value:
+            return False
 
-    # AI-GEN: GitHub Copilot|2025-07-29|fix/di/scripts-migration|reviewed:no
-    def validate_configurations(self) -> list["ValidationMessage"]:
-        """Validate search configurations for basic structural issues."""
-        messages: list[ValidationMessage] = []
+        # Validate regex pattern if present
+        return self._validate_regex_pattern(value["regex"])
 
-        # Basic validation that doesn't require business logic
-        # Sheet name validation will be handled by the service layer
-        # TODO(@flyguy62n): Implement basic configuration validation logic
-        # https://github.com/kirkpatrickprice/analysis-toolkit/issues/57
-
-        return messages
-
-    # END AI-GEN
-
-
-class ValidationMessage(KPATBaseModel):
-    """Validation message for search configurations."""
-
-    level: str  # "WARNING", "ERROR", "INFO"
-    search_name: str | None = None
-    message: str
-
-    def __str__(self) -> str:
-        if self.search_name:
-            return f"{self.level}: [{self.search_name}] {self.message}"
-        return f"{self.level}: {self.message}"
-
-
-class ConfigValidationResult(KPATBaseModel):
-    """Result of configuration validation."""
-
-    is_valid: bool
-    messages: list[ValidationMessage]
-    error_count: int = 0
-    warning_count: int = 0
-
-    # AI-GEN: GitHub Copilot|2025-07-29|fix/di/scripts-migration|reviewed:no
-    @classmethod
-    def validate(cls, config: YamlConfig) -> "ConfigValidationResult":
-        """Validate the configuration and return results."""
-        messages: list[ValidationMessage] = []
-
-        # Basic configuration validation
-        config_messages: list[ValidationMessage] = config.validate_configurations()
-        messages.extend(config_messages)
-
-        # Sheet name validation will be handled by the service layer
-        # when Excel export actually occurs, using the proper DI services
-
-        # Count errors and warnings
-        error_count: int = sum(1 for msg in messages if msg.level == "ERROR")
-        warning_count: int = sum(1 for msg in messages if msg.level == "WARNING")
-
-        return cls(
-            is_valid=error_count == 0,
-            messages=messages,
-            error_count=error_count,
-            warning_count=warning_count,
-        )
-
-    # END AI-GEN
+    def _validate_regex_pattern(self, regex: str) -> bool:
+        """Validate that the regex pattern is compilable."""
+        try:
+            re.compile(regex)
+            return True
+        except re.error:
+            return False

@@ -10,13 +10,11 @@ from kp_analysis_toolkit.cli.common.config_validation import (
     validate_program_config,
 )
 from kp_analysis_toolkit.cli.common.decorators import (
-    custom_help_option,
     input_file_option,
     module_version_option,
     start_directory_option,
 )
 from kp_analysis_toolkit.cli.common.file_selection import get_input_file
-from kp_analysis_toolkit.cli.common.option_groups import setup_command_option_groups
 from kp_analysis_toolkit.core.containers.application import ApplicationContainer
 from kp_analysis_toolkit.core.services.batch_processing import (
     BatchProcessingConfig,
@@ -29,12 +27,9 @@ from kp_analysis_toolkit.rtf_to_text import __version__ as rtf_to_text_version
 from kp_analysis_toolkit.rtf_to_text.models.program_config import ProgramConfig
 from kp_analysis_toolkit.rtf_to_text.service import RtfToTextService
 
-# Configure option groups for this command
-# Note: Rich-click option grouping currently doesn't work with multi-command CLI structures
-setup_command_option_groups("rtf-to-text")
+# Note: Using standard Click help for simplicity
 
 
-@custom_help_option("rtf-to-text")
 @click.command(name="rtf-to-text")
 @module_version_option(rtf_to_text_version, "rtf-to-text")
 @input_file_option(file_type="RTF")
