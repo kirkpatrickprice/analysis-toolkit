@@ -1,10 +1,14 @@
 import sys
 from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from kp_analysis_toolkit.process_scripts import process_systems
 from kp_analysis_toolkit.process_scripts.excel_exporter import (
     export_search_results_to_excel,
+)
+from kp_analysis_toolkit.process_scripts.file_centric_search import (
+    execute_file_centric_search,
 )
 from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, SysFilterAttr
 from kp_analysis_toolkit.process_scripts.models.program_config import (
@@ -20,8 +24,6 @@ from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 from kp_analysis_toolkit.utils.rich_output import RichOutput, get_rich_output
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from kp_analysis_toolkit.process_scripts.models.results.base import (
         SearchResult,
         SearchResults,
@@ -265,7 +267,7 @@ def print_verbose_config(cli_config: dict, program_config: ProgramConfig) -> Non
     )
 
 
-def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901, PLR0912
+def process_scipts_results(program_config: ProgramConfig) -> None:
     """Process the source files and execute searches."""
     rich_output = get_rich_output()
     time_stamp: str = get_timestamp()
@@ -287,6 +289,56 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
     )
     rich_output.info(f"Loaded {len(search_configs)} search configurations")
 
+    # Choose search approach based on configuration
+    if program_config.file_centric:
+        rich_output.info("Using file-centric search engine")
+        search_results = execute_file_centric_search(
+            search_configs, systems, program_config
+        )
+        _export_file_centric_results(
+            program_config, search_results, systems, time_stamp, rich_output
+        )
+    else:
+        rich_output.info("Using search-centric search engine")
+        _execute_search_centric_approach(
+            program_config, search_configs, systems, time_stamp, rich_output
+        )
+
+
+def _export_file_centric_results(
+    program_config: ProgramConfig,
+    search_results: list,
+    systems: list,
+    time_stamp: str,
+    rich_output: RichOutput,
+) -> None:
+    """Export results from file-centric search approach."""
+    # Initialize dictionary with all OSFamilyType values
+    os_results: dict[str, list] = {os_type.value: [] for os_type in OSFamilyType}
+
+    # Group results by OS type
+    for result in search_results:
+        os_type = _get_sysfilter_os_type(result.search_config)
+        matching_os = OSFamilyType.UNDEFINED.value
+        for enum_os in OSFamilyType:
+            if enum_os.value == os_type:
+                matching_os = enum_os.value
+                break
+        os_results[matching_os].append(result)
+
+    _export_results_by_os_type(
+        program_config, os_results, systems, time_stamp, rich_output
+    )
+
+
+def _execute_search_centric_approach(
+    program_config: ProgramConfig,
+    search_configs: list[SearchConfig],
+    systems: list,
+    time_stamp: str,
+    rich_output: RichOutput,
+) -> None:
+    """Execute the traditional search-centric approach."""
     # Initialize dictionary with all OSFamilyType values using a dictionary comprehension
     os_results: dict[str, list[SearchResult]] = {
         os_type.value: [] for os_type in OSFamilyType
@@ -335,6 +387,19 @@ def process_scipts_results(program_config: ProgramConfig) -> None:  # noqa: C901
             # Append results to the corresponding OS type list
             os_results[matching_os].append(results)
 
+    _export_results_by_os_type(
+        program_config, os_results, systems, time_stamp, rich_output
+    )
+
+
+def _export_results_by_os_type(
+    program_config: ProgramConfig,
+    os_results: dict,
+    systems: list,
+    time_stamp: str,
+    rich_output: RichOutput,
+) -> None:
+    """Export results to separate Excel files based on OS type."""
     # Export results to separate Excel files based on OS type
     rich_output.subheader("Exporting Results")
     files_created: list[str] = []
