@@ -85,6 +85,13 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         rich_output=core.rich_output,
     )
 
+    # Report Generator Services (process_scripts specific)
+    report_generator_service: providers.Singleton[Any] = providers.Singleton(
+        "kp_analysis_toolkit.process_scripts.services.report_generator.service.DefaultReportGenerator",
+        search_config=search_config_service,
+        rich_output=core.rich_output,
+    )
+
     # Main Module Service
     process_scripts_service: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.service.ProcessScriptsService",
@@ -92,6 +99,7 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         file_processing=core.file_processing_service,
         search_config=search_config_service,
         search_engine=search_engine_service,
+        report_generator=report_generator_service,
         rich_output=core.rich_output,
     )
 
@@ -113,5 +121,6 @@ def wire_process_scripts_container() -> None:
             "kp_analysis_toolkit.process_scripts.services.system_detection",
             "kp_analysis_toolkit.process_scripts.services.search_config",
             "kp_analysis_toolkit.process_scripts.services.search_engine",
+            "kp_analysis_toolkit.process_scripts.services.report_generator",
         ],
     )
