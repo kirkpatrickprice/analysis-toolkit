@@ -58,12 +58,40 @@ class ProcessScriptsContainer(containers.DeclarativeContainer):
         rich_output=core.rich_output,
     )
 
+    # Search Engine Services (process_scripts specific)
+    system_filter_service: providers.Singleton[Any] = providers.Singleton(
+        "kp_analysis_toolkit.process_scripts.services.search_engine.system_filter.DefaultSystemFilterService",
+    )
+
+    pattern_compiler: providers.Singleton[Any] = providers.Singleton(
+        "kp_analysis_toolkit.process_scripts.services.search_engine.pattern_compiler.DefaultPatternCompiler",
+    )
+
+    field_extractor: providers.Singleton[Any] = providers.Singleton(
+        "kp_analysis_toolkit.process_scripts.services.search_engine.field_extractor.DefaultFieldExtractor",
+    )
+
+    result_processor: providers.Singleton[Any] = providers.Singleton(
+        "kp_analysis_toolkit.process_scripts.services.search_engine.result_processor.DefaultResultProcessor",
+    )
+
+    search_engine_service: providers.Singleton[Any] = providers.Singleton(
+        "kp_analysis_toolkit.process_scripts.services.search_engine.service.SearchEngineService",
+        system_filter=system_filter_service,
+        pattern_compiler=pattern_compiler,
+        field_extractor=field_extractor,
+        result_processor=result_processor,
+        file_processing=core.file_processing_service,
+        rich_output=core.rich_output,
+    )
+
     # Main Module Service
     process_scripts_service: providers.Singleton[Any] = providers.Singleton(
         "kp_analysis_toolkit.process_scripts.service.ProcessScriptsService",
         system_detection=system_detection_service,
         file_processing=core.file_processing_service,
         search_config=search_config_service,
+        search_engine=search_engine_service,
         rich_output=core.rich_output,
     )
 
@@ -84,5 +112,6 @@ def wire_process_scripts_container() -> None:
             "kp_analysis_toolkit.process_scripts.service",
             "kp_analysis_toolkit.process_scripts.services.system_detection",
             "kp_analysis_toolkit.process_scripts.services.search_config",
+            "kp_analysis_toolkit.process_scripts.services.search_engine",
         ],
     )

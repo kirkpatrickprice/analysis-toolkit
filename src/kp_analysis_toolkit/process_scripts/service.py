@@ -1,27 +1,46 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from kp_analysis_toolkit.core.services.file_processing.service import (
     FileProcessingService,
 )
-from kp_analysis_toolkit.process_scripts.models.results.system import Systems
+from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+from kp_analysis_toolkit.process_scripts.services.search_config.service import (
+    SearchConfigService,
+)
+from kp_analysis_toolkit.process_scripts.services.search_engine.protocols import (
+    SearchEngineService,
+)
+from kp_analysis_toolkit.process_scripts.services.system_detection.service import (
+    SystemDetectionService,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from kp_analysis_toolkit.core.services.file_processing import FileProcessingService
     from kp_analysis_toolkit.core.services.rich_output import RichOutputService
+    from kp_analysis_toolkit.process_scripts.models.results.search import SearchResults
     from kp_analysis_toolkit.process_scripts.models.results.system import Systems
-    from kp_analysis_toolkit.process_scripts.models.search.configs import SearchConfig
+    from kp_analysis_toolkit.process_scripts.models.search.configs import (
+        GlobalConfig,
+        SearchConfig,
+        YamlConfig,
+    )
     from kp_analysis_toolkit.process_scripts.services.search_config import (
         SearchConfigService,
+    )
+    from kp_analysis_toolkit.process_scripts.services.search_engine import (
+        SearchEngineService,
     )
     from kp_analysis_toolkit.process_scripts.services.system_detection import (
         SystemDetectionService,
     )
-# END AI-GEN
+
+# Type aliases for this module
+type TreeNode = dict[str, str | list[Any]]
+type StatsDict = dict[str, int | dict[str, int] | set[str]]
 
 
 # AI-GEN: CopilotChat|2025-07-31|KPAT-ListSystems|reviewed:no
@@ -33,11 +52,13 @@ class ProcessScriptsService:
         system_detection: SystemDetectionService,
         file_processing: FileProcessingService,
         search_config: SearchConfigService,
+        search_engine: SearchEngineService,
         rich_output: RichOutputService,
     ) -> None:
         self.system_detection: SystemDetectionService = system_detection
         self.file_processing: FileProcessingService = file_processing
         self.search_config: SearchConfigService = search_config
+        self.search_engine: SearchEngineService = search_engine
         self.rich_output: RichOutputService = rich_output
 
     def list_systems(
@@ -145,7 +166,7 @@ class ProcessScriptsService:
     def generate_config_hierarchy_report(
         self,
         config_file: Path,
-    ) -> dict[str, str | list]:
+    ) -> dict[str, Any]:
         """
         Generate a hierarchical report of search configurations.
 
@@ -160,7 +181,7 @@ class ProcessScriptsService:
             self.rich_output.debug(f"Generating hierarchy report for: {config_file}")
 
             # Initialize statistics collection
-            search_stats: dict[str, int | dict | set] = {
+            search_stats: StatsDict = {
                 "total_searches": 0,
                 "searches_by_os_family": {},
                 "files_processed": 0,
@@ -169,7 +190,7 @@ class ProcessScriptsService:
             }
 
             # Build the tree and collect statistics
-            tree: dict[str, str | list] = self._build_config_tree(
+            tree: TreeNode = self._build_config_tree(
                 config_file,
                 visited_files=set(),
                 stats=search_stats,
@@ -190,8 +211,8 @@ class ProcessScriptsService:
         config_file: Path,
         visited_files: set[Path],
         indent_level: int = 0,
-        stats: dict[str, int | dict] | None = None,
-    ) -> dict[str, str | list]:
+        stats: StatsDict | None = None,
+    ) -> TreeNode:
         """
         Recursively build the configuration tree structure.
 
@@ -206,29 +227,30 @@ class ProcessScriptsService:
 
         """
         if config_file in visited_files:
-            error_msg: str = f"Circular include detected: {config_file}"
+            error_msg = f"Circular include detected: {config_file}"
             if stats is not None:
-                stats["error_count"] += 1
+                error_count = stats["error_count"]
+                if isinstance(error_count, int):
+                    stats["error_count"] = error_count + 1
             return {"error": error_msg}
 
         visited_files.add(config_file)
 
         try:
             # Load the YAML configuration directly
-            yaml_config: object = self.search_config.load_yaml_config(config_file)
+            yaml_config: YamlConfig = self.search_config.load_yaml_config(config_file)
 
             # Collect statistics if provided
             if stats is not None:
-                stats["files_processed"] += 1
+                files_processed = stats["files_processed"]
+                if isinstance(files_processed, int):
+                    stats["files_processed"] = files_processed + 1
 
-            tree_node: dict[str, str | list] = {
+            tree_node: TreeNode = {
                 "file": config_file.name,
                 "path": str(config_file),
                 "children": [],
             }
-
-            # Extract OS family from global config for statistics
-            os_family: str = self._extract_os_family(yaml_config)
 
             # Process different sections using helper methods
             self._process_global_config(yaml_config, tree_node)
@@ -240,49 +262,115 @@ class ProcessScriptsService:
                 indent_level,
                 stats,
             )
-            self._process_search_configs(yaml_config, tree_node, os_family, stats)
+            self._process_search_configs(yaml_config, tree_node, stats)
 
         except (FileNotFoundError, ValueError, OSError) as e:
-            error_msg: str = f"Failed to process {config_file}: {e}"
+            error_msg = f"Failed to process {config_file}: {e}"
             if stats is not None:
-                stats["error_count"] += 1
+                error_count = stats["error_count"]
+                if isinstance(error_count, int):
+                    stats["error_count"] = error_count + 1
             return {"error": error_msg}
         else:
             return tree_node
         finally:
             visited_files.discard(config_file)
 
-    def _extract_os_family(self, yaml_config: object) -> str:
+    def filter_applicable_searches(
+        self,
+        search_configs: list[SearchConfig],
+        systems: list[Systems],
+    ) -> list[SearchConfig]:
+        """
+        Filter search configs to only include those applicable to available systems.
+
+        This method filters out searches that would not apply to any of the available
+        systems, ensuring that progress bars and statistics only reflect searches
+        that can actually produce results.
+
+        Args:
+            search_configs: List of all search configurations
+            systems: List of available systems
+
+        Returns:
+            List of search configurations that are applicable to at least one system
+
+        """
+        return self.search_engine.filter_applicable_searches(search_configs, systems)
+
+    def execute_search(
+        self,
+        search_config: SearchConfig,
+        systems: list[Systems],
+    ) -> SearchResults:
+        """
+        Execute a single search configuration against systems.
+
+        Args:
+            search_config: Search configuration to execute
+            systems: List of systems to search
+
+        Returns:
+            SearchResults containing all matches found
+
+        """
+        return self.search_engine.execute_search(search_config, systems)
+
+    def execute_all_searches(
+        self,
+        search_configs: list[SearchConfig],
+        systems: list[Systems],
+    ) -> list[SearchResults]:
+        """
+        Execute all search configurations against systems.
+
+        Args:
+            search_configs: List of search configurations to execute
+            systems: List of systems to search
+
+        Returns:
+            List of SearchResults for all executed searches
+
+        """
+        return self.search_engine.execute_all_searches(search_configs, systems)
+
+    def _extract_os_family(self, yaml_config: YamlConfig) -> str:
         """Extract OS family from global config for statistics."""
         if yaml_config.global_config and yaml_config.global_config.sys_filter:
             for filter_item in yaml_config.global_config.sys_filter:
                 if filter_item.attr.value == "os_family":
-                    return filter_item.value
+                    return str(filter_item.value)
         return "unspecified"
 
-    def _process_global_config(self, yaml_config: object, tree_node: dict) -> None:
+    def _process_global_config(
+        self,
+        yaml_config: YamlConfig,
+        tree_node: TreeNode,
+    ) -> None:
         """Process global configuration and add to tree node."""
         if yaml_config.global_config:
             global_summary = self._format_global_config(yaml_config.global_config)
-            tree_node["children"].append(
-                {
-                    "type": "global",
-                    "summary": global_summary,
-                },
-            )
+            children = tree_node["children"]
+            if isinstance(children, list):
+                children.append(
+                    {
+                        "type": "global",
+                        "summary": global_summary,
+                    },
+                )
 
     def _process_include_configs(  # noqa: PLR0913
         self,
-        yaml_config: object,
-        tree_node: dict,
+        yaml_config: YamlConfig,
+        tree_node: TreeNode,
         config_file: Path,
         visited_files: set[Path],
         indent_level: int,
-        stats: dict[str, int | dict] | None,
+        stats: StatsDict | None,
     ) -> None:
         """Process include configurations and add to tree node."""
         for include_name, include_config in yaml_config.include_configs.items():
-            include_node: dict[str, str | list] = {
+            include_node: TreeNode = {
                 "type": "include",
                 "name": include_name,
                 "children": [],
@@ -295,37 +383,47 @@ class ProcessScriptsService:
                     include_file,
                 )
                 if include_path.exists():
-                    child_tree: dict[str, str | list] = self._build_config_tree(
+                    child_tree: TreeNode = self._build_config_tree(
                         include_path,
                         visited_files.copy(),
                         indent_level + 1,
                         stats,
                     )
-                    include_node["children"].append(child_tree)
+                    children = include_node["children"]
+                    if isinstance(children, list):
+                        children.append(child_tree)
                 else:
-                    error_msg: str = f"File not found: {include_path}"
+                    error_msg = f"File not found: {include_path}"
                     if stats is not None:
-                        stats["error_count"] += 1
-                    include_node["children"].append(
-                        {
-                            "error": error_msg,
-                        },
-                    )
+                        error_count = stats["error_count"]
+                        if isinstance(error_count, int):
+                            stats["error_count"] = error_count + 1
+                    children = include_node["children"]
+                    if isinstance(children, list):
+                        children.append(
+                            {
+                                "error": error_msg,
+                            },
+                        )
 
-            tree_node["children"].append(include_node)
+            tree_children = tree_node["children"]
+            if isinstance(tree_children, list):
+                tree_children.append(include_node)
 
     def _process_search_configs(
         self,
-        yaml_config: object,
-        tree_node: dict,
-        os_family: str,
-        stats: dict[str, int | dict] | None,
+        yaml_config: YamlConfig,
+        tree_node: TreeNode,
+        stats: StatsDict | None,
     ) -> None:
         """Process search configurations and add to tree node."""
         if not yaml_config.search_configs:
             return
 
-        searches_node: dict[str, str | list] = {
+        # Extract OS family for statistics
+        os_family: str = self._extract_os_family(yaml_config)
+
+        searches_node: TreeNode = {
             "type": "searches",
             "children": [],
         }
@@ -333,10 +431,17 @@ class ProcessScriptsService:
         # Count searches and categorize by OS family
         search_count: int = len(yaml_config.search_configs)
         if stats is not None:
-            stats["total_searches"] += search_count
-            if os_family not in stats["searches_by_os_family"]:
-                stats["searches_by_os_family"][os_family] = 0
-            stats["searches_by_os_family"][os_family] += search_count
+            total_searches = stats["total_searches"]
+            if isinstance(total_searches, int):
+                stats["total_searches"] = total_searches + search_count
+
+            searches_by_os = stats["searches_by_os_family"]
+            if isinstance(searches_by_os, dict):
+                if os_family not in searches_by_os:
+                    searches_by_os[os_family] = 0
+                current_count = searches_by_os[os_family]
+                if isinstance(current_count, int):
+                    searches_by_os[os_family] = current_count + search_count
 
         for search_name, search_config in yaml_config.search_configs.items():
             # Use excel_sheet_name if available, otherwise use the search name
@@ -349,19 +454,25 @@ class ProcessScriptsService:
                 and search_config.keywords
                 and isinstance(search_config.keywords, list)
             ):
-                stats["all_keywords"].update(search_config.keywords)
+                all_keywords = stats["all_keywords"]
+                if isinstance(all_keywords, set):
+                    all_keywords.update(search_config.keywords)
 
-            searches_node["children"].append(
-                {
-                    "type": "search",
-                    "name": display_name,
-                    "original_name": search_name,
-                },
-            )
+            searches_children = searches_node["children"]
+            if isinstance(searches_children, list):
+                searches_children.append(
+                    {
+                        "type": "search",
+                        "name": display_name,
+                        "original_name": search_name,
+                    },
+                )
 
-        tree_node["children"].append(searches_node)
+        tree_children = tree_node["children"]
+        if isinstance(tree_children, list):
+            tree_children.append(searches_node)
 
-    def _format_global_config(self, global_config: object) -> str:
+    def _format_global_config(self, global_config: GlobalConfig) -> str:
         """
         Format global configuration into a summary string.
 
