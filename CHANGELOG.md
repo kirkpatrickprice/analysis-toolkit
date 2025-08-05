@@ -1,4 +1,13 @@
-**2025-06-27**  Version 2.0.0 is a complete rewrite of the toolkit.  It merges what used to be different utilities into one common CLI.
+# KPAT Changes
+
+## 2025-08-04
+Version 2.0.6
+
+* Bumped `process_scripts` to v.0.5.0
+* implemented sleep prevention through `wakepy`
+
+## **2025-06-27**  
+Version 2.0.0 is a complete rewrite of the toolkit.  It merges what used to be different utilities into one common CLI.
 
 * Overall changes
     * Unified Click-based CLI as a starting point for future tool development
