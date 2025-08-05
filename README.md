@@ -121,6 +121,33 @@ kpat_cli --skip-update-check scripts --help
 
 **Note:** Update checking requires a network connection. Without network access, you may see a brief warning but the program continues normally.
 
+## Keep-Awake Feature
+
+The toolkit includes an automatic keep-awake feature that prevents your system from going to sleep during long-running analysis tasks. This is particularly useful when processing large datasets or running extensive searches that might take a long time to complete.
+
+### How It Works
+- **Automatic**: The keep-awake feature is enabled by default for all commands
+- **Cross-platform**: Works on Windows, macOS, and Linux systems
+- **Non-intrusive**: Only prevents sleep/hibernation, doesn't affect screen savers or manual power management
+- **Fallback protection**: If the keep-awake feature fails (e.g., due to permissions), the command continues normally, but your system could sleep mid-task
+
+### Disabling Keep-Awake
+You can disable the keep-awake feature if needed:
+
+```bash
+# Disable keep-awake for a single command
+kpat_cli --no-keep-awake scripts --start-dir /path/to/data
+
+# Example: Long-running analysis without keep-awake
+kpat_cli --no-keep-awake scripts --start-dir "C:\Audit\Data"
+```
+
+**When you might want to disable it:**
+- Running on battery power and want to allow normal power management
+- Running in automated scripts where sleep prevention isn't needed
+- System policy restrictions that prevent sleep control
+- Troubleshooting power management issues
+
 ## Usage
 
 ### Getting Started
