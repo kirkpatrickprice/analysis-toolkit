@@ -48,6 +48,7 @@ global:
 05_security_02_carbonblack_status:
   regex: 'Security_HidsCarbonBlack::(?!UID)'
   excel_sheet_name: CarbonBlack Status
+  show_missing: True
   comment: |-
     CarbonBlack is an increasinbly-popular Endpoint Detection and Response.  It's much more than AV, even though that's frequently where we first hear of it in a customer's environment.
     It might also be the answer for FIM and a few other things.
@@ -91,6 +92,7 @@ global:
 05_security_09_crowdstrike:
   regex: 'Security_HidsCrowdStrike::(?!UID)'
   excel_sheet_name: CrowdStrike Status
+  show_missing: True
   comment: |-
     CrowdStrike is a cloud-based HIDS agent from CrowdStrike.com.  The only check is to see that the service is running, but you should also check the running processes for something similar to "falcon"
 05_security_10_snort:

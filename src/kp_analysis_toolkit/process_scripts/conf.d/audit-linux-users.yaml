@@ -111,6 +111,7 @@ global:
   full_scan: True
   field_list:
     - username
+  show_missing: True
   comment: |-
     The presence of an "authorized_keys" file means that the user can authenticate through SSH using SSH public/private keys regardless of whether the user's password is disabled ("locked", see "user_status" file).
 

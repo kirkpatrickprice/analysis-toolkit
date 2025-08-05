@@ -319,9 +319,19 @@ class FileCentricSearchEngine:
         # Convert results to SearchResults objects
         search_results = []
         for config in search_configs:
+            config_results = result_collectors[config.name]
+
+            # Handle show_missing feature
+            if config.show_missing:
+                config_results = self._add_missing_system_results(
+                    config,
+                    config_results,
+                    systems,
+                )
+
             results = SearchResults(
                 search_config=config,
-                results=result_collectors[config.name],
+                results=config_results,
             )
             search_results.append(results)
 
@@ -411,6 +421,76 @@ class FileCentricSearchEngine:
         # Collect results
         for state in search_states:
             result_collectors[state.search_config.name].extend(state.results)
+
+    def _add_missing_system_results(
+        self,
+        config: SearchConfig,
+        existing_results: list[SearchResult],
+        all_systems: list[Systems],
+    ) -> list[SearchResult]:
+        """
+        Add 'NO RESULTS FOUND' entries for systems that don't have results when show_missing is enabled.
+
+        Args:
+            config: Search configuration
+            existing_results: Results that were already found
+            all_systems: All systems that were processed
+
+        Returns:
+            Combined list with existing results plus missing system entries
+
+        """
+        # Get systems that already have results
+        systems_with_results = {result.system_name for result in existing_results}
+
+        # Filter systems that apply to this search config (using same logic as _get_applicable_configs)
+        applicable_systems = []
+        for system in all_systems:
+            if self._is_system_applicable(system, config):
+                applicable_systems.append(system)
+
+        # Create "NO RESULTS FOUND" entries for systems without results
+        missing_results = []
+        for system in applicable_systems:
+            if system.system_name not in systems_with_results:
+                # Create a SearchResult indicating no matches were found
+                no_results_entry = SearchResult(
+                    system_name=system.system_name,
+                    line_number=1,  # Use line 1 as placeholder
+                    matched_text="NO RESULTS FOUND",
+                    extracted_fields=None,
+                )
+                missing_results.append(no_results_entry)
+
+        # Combine existing results with missing entries
+        # Sort by system name for consistent ordering
+        combined_results = existing_results + missing_results
+        combined_results.sort(key=lambda r: r.system_name)
+
+        return combined_results
+
+    def _is_system_applicable(self, system: Systems, config: SearchConfig) -> bool:
+        """
+        Check if a search configuration applies to a given system.
+
+        Args:
+            system: System to check
+            config: Search configuration
+
+        Returns:
+            True if the search config should be applied to this system
+
+        """
+        # Use the same filtering logic as in _get_applicable_configs
+        from kp_analysis_toolkit.process_scripts.search_engine import (
+            filter_systems_by_criteria,
+        )
+
+        if config.sys_filter:
+            filtered_systems = filter_systems_by_criteria([system], config.sys_filter)
+            return len(filtered_systems) > 0
+
+        return True
 
 
 def execute_file_centric_search(

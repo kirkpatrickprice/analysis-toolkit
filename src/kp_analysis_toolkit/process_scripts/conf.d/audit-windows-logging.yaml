@@ -45,6 +45,7 @@ global:
 05_logging_03_event_log_config:
   regex: 'Logging_AuditLogConfig::(?!PrimaryModule)(?!--)\w'
   excel_sheet_name: Event Log Config
+  show_missing: True
   comment: |-
     If logs are being pulled off in real-time by some collector agent (e.g. Splunk, FluentD, etc), then these configs should have no bearing.  If they are not, then that's a worthy recommendation.
 
@@ -56,6 +57,7 @@ global:
   field_list:
     - eventLogSource
     - logMessage
+  show_missing: True
   comment: |-
     Provides samples of Windows Event Logs (50 newest events).  Use this to test that event logs are being actively written to the Windows Event Log system.
     NOTE:  There are many tools that can collect the logs for centralized storage and analysis, but most -- if not all -- rely on the Event Log system in Windows.
