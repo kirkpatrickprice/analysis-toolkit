@@ -69,12 +69,6 @@ from kp_analysis_toolkit.process_scripts.models.program_config import ProgramCon
     help="Be verbose",
     is_flag=True,
 )
-@click.option(
-    "--file-centric",
-    default=False,
-    help="Use the new file-centric search engine for improved performance",
-    is_flag=True,
-)
 def process_command_line(**cli_config: dict) -> None:
     """Process collector script results files (formerly adv-searchfor)."""
     """Convert the click config to a ProgramConfig object and perform validation."""

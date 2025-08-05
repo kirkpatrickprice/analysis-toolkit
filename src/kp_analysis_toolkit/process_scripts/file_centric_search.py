@@ -129,7 +129,11 @@ class SearchState:
             extracted_fields = {}
             for field in self.search_config.field_list:
                 try:
-                    extracted_fields[field] = match.group(field)
+                    field_value = match.group(field)
+                    # Filter illegal characters from extracted field values
+                    extracted_fields[field] = (
+                        _filter_excel_illegal_chars(field_value) if field_value else ""
+                    )
                 except (IndexError, KeyError):
                     extracted_fields[field] = ""
 
@@ -140,12 +144,16 @@ class SearchState:
                     self.search_config.merge_fields,
                 )
 
+            # Filter illegal characters from matched text
+            matched_text = (
+                match.group(0) if self.search_config.only_matching else line.strip()
+            )
+            matched_text = _filter_excel_illegal_chars(matched_text)
+
             result = SearchResult(
                 system_name=self.system.system_name,
                 line_number=line_num,
-                matched_text=match.group(0)
-                if self.search_config.only_matching
-                else line.strip(),
+                matched_text=matched_text,
                 extracted_fields=extracted_fields,
             )
         else:
@@ -205,9 +213,10 @@ class SearchState:
         if self.search_config.field_list:
             extracted_fields = {}
             for field in self.search_config.field_list:
-                extracted_fields[field] = self.multiline_state.current_record.get(
-                    field,
-                    "",
+                field_value = self.multiline_state.current_record.get(field, "")
+                # Filter illegal characters from extracted field values
+                extracted_fields[field] = (
+                    _filter_excel_illegal_chars(field_value) if field_value else ""
                 )
 
             # Apply field merging if configured
@@ -279,12 +288,28 @@ class FileCentricSearchEngine:
                 )
                 self._process_system_file(system, search_configs, result_collectors)
         else:
-            # Use progress bar for non-verbose mode
-            for system in self.rich_output.simple_progress(
-                systems,
-                "Processing systems",
-            ):
-                self._process_system_file(system, search_configs, result_collectors)
+            # Use custom progress bar for non-verbose mode to show current filename
+            with self.rich_output.progress(
+                show_eta=True,
+                show_percentage=True,
+            ) as progress:
+                task = progress.add_task("Processing systems", total=total_systems)
+
+                for system in systems:
+                    # Update progress bar description with current file (relative to source_files_path)
+                    try:
+                        # Get relative path from source_files_path
+                        relative_path = system.file.relative_to(
+                            self.program_config.source_files_path,
+                        )
+                        current_desc = f"Processing: {relative_path}"
+                    except ValueError:
+                        # Fallback to system name if relative path fails
+                        current_desc = f"Processing: {system.system_name}"
+
+                    progress.update(task, description=current_desc)
+                    self._process_system_file(system, search_configs, result_collectors)
+                    progress.advance(task)
 
         # Convert results to SearchResults objects
         search_results = []

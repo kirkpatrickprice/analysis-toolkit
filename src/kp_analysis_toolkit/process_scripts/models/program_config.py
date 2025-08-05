@@ -25,7 +25,6 @@ class ProgramConfig(KPATBaseModel, PathValidationMixin, ValidationMixin, ConfigM
     list_source_files: bool = False
     list_systems: bool = False
     verbose: bool = False
-    file_centric: bool = False
 
     @field_validator("audit_config_file")
     @classmethod

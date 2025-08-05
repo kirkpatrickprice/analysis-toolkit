@@ -1,6 +1,5 @@
 import sys
 from collections import defaultdict
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from kp_analysis_toolkit.process_scripts import process_systems
@@ -24,6 +23,8 @@ from kp_analysis_toolkit.utils.get_timestamp import get_timestamp
 from kp_analysis_toolkit.utils.rich_output import RichOutput, get_rich_output
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from kp_analysis_toolkit.process_scripts.models.results.base import (
         SearchResult,
         SearchResults,
@@ -289,20 +290,18 @@ def process_scipts_results(program_config: ProgramConfig) -> None:
     )
     rich_output.info(f"Loaded {len(search_configs)} search configurations")
 
-    # Choose search approach based on configuration
-    if program_config.file_centric:
-        rich_output.info("Using file-centric search engine")
-        search_results = execute_file_centric_search(
-            search_configs, systems, program_config
-        )
-        _export_file_centric_results(
-            program_config, search_results, systems, time_stamp, rich_output
-        )
-    else:
-        rich_output.info("Using search-centric search engine")
-        _execute_search_centric_approach(
-            program_config, search_configs, systems, time_stamp, rich_output
-        )
+    search_results = execute_file_centric_search(
+        search_configs,
+        systems,
+        program_config,
+    )
+    _export_file_centric_results(
+        program_config,
+        search_results,
+        systems,
+        time_stamp,
+        rich_output,
+    )
 
 
 def _export_file_centric_results(
@@ -327,7 +326,11 @@ def _export_file_centric_results(
         os_results[matching_os].append(result)
 
     _export_results_by_os_type(
-        program_config, os_results, systems, time_stamp, rich_output
+        program_config,
+        os_results,
+        systems,
+        time_stamp,
+        rich_output,
     )
 
 
@@ -388,7 +391,11 @@ def _execute_search_centric_approach(
             os_results[matching_os].append(results)
 
     _export_results_by_os_type(
-        program_config, os_results, systems, time_stamp, rich_output
+        program_config,
+        os_results,
+        systems,
+        time_stamp,
+        rich_output,
     )
 
 
@@ -414,12 +421,18 @@ def _export_results_by_os_type(
         if not results:
             continue
 
+        # Only create Excel file if there are systems for this OS type
+        os_systems = systems_by_os.get(os_type, [])
+        if not os_systems:
+            if program_config.verbose:
+                rich_output.debug(
+                    f"Skipping Excel export for {os_type} - no systems found",
+                )
+            continue
+
         output_file: Path = (
             program_config.results_path / f"{os_type}_search_results-{time_stamp}.xlsx"
         )
-
-        # Filter systems to only include those for this OS type
-        os_systems = systems_by_os.get(os_type, [])
 
         export_search_results_to_excel(results, output_file, os_systems)
         files_created.append(str(output_file.relative_to(program_config.results_path)))

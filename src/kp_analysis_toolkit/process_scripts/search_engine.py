@@ -620,10 +620,8 @@ def _filter_excel_illegal_chars(text: str) -> str:
     """
     Remove characters that are illegal in Excel spreadsheets.
 
-    Excel cannot handle control characters (ASCII 0-31) except for:
-    - Tab (ASCII 9)
-    - Line feed (ASCII 10)
-    - Carriage return (ASCII 13)
+    Excel cannot handle certain control characters and Unicode characters.
+    Based on openpyxl's ILLEGAL_CHARACTERS_RE pattern and Excel documentation.
 
     Args:
         text: String that may contain illegal Excel characters
@@ -632,9 +630,65 @@ def _filter_excel_illegal_chars(text: str) -> str:
         String with illegal characters removed
 
     """
-    # Create a translation table that maps illegal characters to None
-    illegal_chars: list[str] = [chr(i) for i in range(32) if i not in (9, 10, 13)]
-    trans_table: dict[int, Any | None] = str.maketrans(dict.fromkeys(illegal_chars))
+    if not text:
+        return text
+
+    # Excel illegal characters based on openpyxl ILLEGAL_CHARACTERS_RE
+    # This includes control characters except tab (9), LF (10), and CR (13)
+    # Plus some Unicode control characters that Excel cannot handle
+    illegal_chars = []
+
+    # Control characters 0-8 (excluding tab=9)
+    illegal_chars.extend(chr(i) for i in range(9))
+
+    # Control characters 11-12 (excluding LF=10 and CR=13)
+    illegal_chars.extend(chr(i) for i in range(11, 13))
+
+    # Control characters 14-31
+    illegal_chars.extend(chr(i) for i in range(14, 32))
+
+    # Additional problematic Unicode characters
+    # Unicode control characters that Excel cannot handle
+    illegal_chars.extend(
+        [
+            "\x7f",  # DEL character
+            "\x80",
+            "\x81",
+            "\x82",
+            "\x83",
+            "\x84",
+            "\x85",
+            "\x86",
+            "\x87",
+            "\x88",
+            "\x89",
+            "\x8a",
+            "\x8b",
+            "\x8c",
+            "\x8d",
+            "\x8e",
+            "\x8f",
+            "\x90",
+            "\x91",
+            "\x92",
+            "\x93",
+            "\x94",
+            "\x95",
+            "\x96",
+            "\x97",
+            "\x98",
+            "\x99",
+            "\x9a",
+            "\x9b",
+            "\x9c",
+            "\x9d",
+            "\x9e",
+            "\x9f",
+        ],
+    )
+
+    # Create translation table to remove illegal characters
+    trans_table = str.maketrans("", "", "".join(illegal_chars))
 
     # Apply the translation table to remove illegal characters
     return text.translate(trans_table)
