@@ -182,6 +182,7 @@ global:
     - currentMode
     - configMode
     - memoryProtectionChecking
+  show_missing: True
   comment: |-
     SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
     to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
@@ -213,6 +214,7 @@ global:
     - enforceProcesses
     - complainProcesses
     - unconstrainedProcesses
+  show_missing: True
   comment: |-
     SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
     to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
@@ -313,6 +315,7 @@ global:
     - attr: producer_version
       comp: ge
       value: "0.6.19"
+  show_missing: True
   comment: |-
     For KPNIXAudit >= 0.6.19
 

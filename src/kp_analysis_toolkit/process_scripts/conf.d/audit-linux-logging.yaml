@@ -10,6 +10,7 @@ global:
   only_matching: True
   field_list:
     - status
+  show_missing: True
   comment: |-
     AuditD performs kernel-level logging.  For instance, it's a common way to generate file system access logs and some FIM products (e.g. Rapid7) actually require it as they are only monitoring AuditD events.  It can generate a lot of data and requires special tools to make the most sense out of the output, so we only grab the configs and none of the events.  Some CIS benchmarks for both Linux and Docker (and probably others) are based on AuditD, so we also check to see if it's running at all.
 
@@ -67,6 +68,7 @@ global:
     - 'head_tail'
     - 'logentry'
   only_matching: True
+  show_missing: True
   comment: |-
     We collect samples of various logs below.  To save space, we collect only the first ('head') and last ('tail') 25 lines of each file to confirm that events were and continue to be written to the logs.  If you need to see more of some log files, you'll need to ask for those separately.
 06_logging_08_datadog:

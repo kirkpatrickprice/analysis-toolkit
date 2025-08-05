@@ -104,6 +104,7 @@ global:
       dest_column: description
     - source_columns: [hfKbNum, wuKbNum]
       dest_column: kbNum
+  show_missing: True
   comment: |-
     HINT: To force Excel to recognize the date format, you may need to search for "-" and replace it with "-".  This will force Excel to recognize the date format as a date instead of text.
     
@@ -123,6 +124,7 @@ global:
   regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
   excel_sheet_name: Pending Updates
   full_scan: True
+  show_missing: True
 01_system_10_windows_update_config:
   regex: '(System_WindowsUpdateConfig::\s*UseWUServer\s+:\s+(?P<useWUServer>\d+))|(System_WindowsUpdateConfig::\s*WUServer\s+:\s+(?P<wuServer>.*))|(System_WindowsUpdateConfig::\s*ElevateNonAdmins\s+:\s+(?P<elevateNonAdmins>\d+))|(System_WindowsUpdateConfig::\s*DisableWindowsUpdateAccess\s+:\s+(?P<disableWUAccess>\d+))|(System_WindowsUpdateConfig::\s*NoAutoUpdate\s+:\s+(?P<noAutoUpdate>\s*\d+))|(System_WindowsUpdateConfig::\s*AUOptions\s+:\s+(?P<auOptions>\d+))'
   excel_sheet_name: Windows Update Config
@@ -134,7 +136,8 @@ global:
     - noAutoUpdate
     - auOptions
   multiline: True
-  only_matching: True  
+  only_matching: True
+  show_missing: True
   comment: |-
     Interpreting Windows Update settings from: http://techgenix.com/Registry-Keys-Tweaking-Windows-Update-Part1/.
       - WUServer will provide the update source if using WSUS.  If not set, WSUS is not being used to receive updates.

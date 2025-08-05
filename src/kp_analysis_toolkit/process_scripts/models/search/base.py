@@ -48,6 +48,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     multiline: bool = False
     merge_fields: list[MergeFieldConfig] | None = None
     sys_filter: list[SystemFilter] | None = None
+    show_missing: bool = False
 
     @field_validator("regex")
     @classmethod

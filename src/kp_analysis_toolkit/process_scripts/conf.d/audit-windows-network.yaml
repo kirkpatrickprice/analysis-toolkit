@@ -191,6 +191,7 @@ global:
     - attr: 'producer_version'
       comp: 'ge'
       value: '0.4.5'
+  show_missing: True
   multiline: True
   comment: |-
     A list of the peers with which the system is connected for time.  Each of the fields should be self-explanatory.

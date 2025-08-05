@@ -92,6 +92,7 @@ global:
     - title
     - version
     - recommended
+  show_missing: True
   comment: |-
     This list contains the available updates from Apple for the operation system and other Apple-provided software.
 01_system_11_pending_updates_brew:

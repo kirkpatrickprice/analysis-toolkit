@@ -108,6 +108,7 @@ global:
     - fwLoggingOption
     - alfEnableLogging
     - alfLoggingOption
+  show_missing: True
   comment: |-
     Firewall logging should be enabled to capture events from the MacOS desktop firewall (socketFilter)
     
@@ -124,5 +125,6 @@ global:
     - 'head_tail'
     - 'logentry'
   only_matching: True
+  show_missing: True
   comment: |-
     We collect samples of various logs below.  To save space, we collect only the first ('head') and last ('tail') 25 lines of each file to confirm that events were and continue to be written to the logs.  If you need to see more of some log files, you'll need to ask for those separately.

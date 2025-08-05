@@ -4,6 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import rich_click as click
+from wakepy import keep
 
 from kp_analysis_toolkit import __version__ as cli_version
 from kp_analysis_toolkit.nipper_expander import __version__ as nipper_version
@@ -113,7 +114,7 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
         install_path = "Unknown"
 
     console.info(
-        f"💻 Environment: Python {python_version} on {platform_info} ({architecture})"
+        f"💻 Environment: Python {python_version} on {platform_info} ({architecture})",
     )
     console.info(f"📦 Installation: {install_path}")
     console.print("")
@@ -136,9 +137,19 @@ def _version_callback(ctx: click.Context, _param: click.Parameter, value: bool) 
     default=False,
     help="Skip checking for updates at startup.",
 )
+@click.option(
+    "--no-keep-awake",
+    is_flag=True,
+    default=False,
+    help="Disable keep-awake feature for long-running tasks.",
+)
 @click.pass_context
-def cli(ctx: click.Context, skip_update_check: bool) -> None:  # noqa: FBT001
+def cli(ctx: click.Context, skip_update_check: bool, no_keep_awake: bool) -> None:  # noqa: FBT001
     """Command line interface for the KP Analysis Toolkit."""
+    # Store the no_keep_awake flag in context for subcommands to use
+    ctx.ensure_object(dict)
+    ctx.obj["no_keep_awake"] = no_keep_awake
+
     # Always run version check unless explicitly skipped
     if not skip_update_check:
         check_and_prompt_update()
@@ -191,12 +202,15 @@ def _show_enhanced_help(console: RichOutput) -> None:
 
     console.print("")
     console.info(
-        "Use 'kpat_cli <command> --help' for more information on a specific command."
+        "Use 'kpat_cli <command> --help' for more information on a specific command.",
     )
     console.print("")
     console.subheader("Options:")
     console.print("  --version            Show the version and exit")
     console.print("  --skip-update-check  Skip checking for updates at startup")
+    console.print(
+        "  --no-keep-awake      Disable keep-awake feature for long-running tasks",
+    )
     console.print("  --help               Show this message and exit")
 
 
@@ -247,7 +261,36 @@ legacy_nipper_expander: Callable[[], None] = _create_legacy_command(
 
 def main() -> None:
     """Main entry point for the kpat_cli command line interface."""
-    cli()
+    try:
+        # Check if keep-awake should be disabled
+        # We need to parse the arguments to check for --no-keep-awake flag
+        no_keep_awake = "--no-keep-awake" in sys.argv
+
+        if no_keep_awake:
+            # Run without keep-awake
+            cli()
+        else:
+            # Run with keep-awake to prevent system sleep during long operations
+            console = get_rich_output()
+            try:
+                with keep.running():
+                    cli()
+            except (ImportError, OSError, RuntimeError) as e:
+                # If wakepy fails (not available, permissions, etc.), fall back to running without keep-awake
+                console.warning(f"Keep-awake feature failed: {e}")
+                console.info("Continuing without keep-awake protection...")
+                cli()
+    except KeyboardInterrupt:
+        console = get_rich_output()
+        console.warning("Operation cancelled by user")
+        sys.exit(1)
+    except (SystemExit, click.ClickException):
+        # Let Click handle its own exceptions and system exits
+        raise
+    except (OSError, RuntimeError) as e:
+        console = get_rich_output()
+        console.error(f"Runtime error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
