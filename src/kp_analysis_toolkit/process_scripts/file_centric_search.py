@@ -296,16 +296,21 @@ class FileCentricSearchEngine:
                 task = progress.add_task("Processing systems", total=total_systems)
 
                 for system in systems:
-                    # Update progress bar description with current file (relative to source_files_path)
+                    # Update progress bar with fixed-width filename field
                     try:
                         # Get relative path from source_files_path
                         relative_path = system.file.relative_to(
                             self.program_config.source_files_path,
                         )
-                        current_desc = f"Processing: {relative_path}"
+                        filename_display = str(relative_path)
                     except ValueError:
                         # Fallback to system name if relative path fails
-                        current_desc = f"Processing: {system.system_name}"
+                        filename_display = system.system_name
+
+                    # Use fixed-width field (40 chars) with right justification to show
+                    # the most significant part of the filename
+                    fixed_width_filename = filename_display[-40:].rjust(40)
+                    current_desc = f"Processing: {fixed_width_filename}"
 
                     progress.update(task, description=current_desc)
                     self._process_system_file(system, search_configs, result_collectors)
