@@ -4,31 +4,6 @@ global:
       comp: eq
       value: Darwin
 
-01_system_01_kp_mac_version:
-  regex: 'KPMACVERSION: (?P<kp_mac_version>\d+\.\d+\.\d+)'
-  excel_sheet_name: KPMACAUDIT Version
-  max_results: 1
-  only_matching: True
-  field_list:
-    - 'kp_mac_version'
-  comment: |-
-    KPMacAudit version information.  Use this to confirm that all script results were produced with a recent version.
-    
-    Check the version history comments in https://github.com/kirkpatrickprice/macos-auditor/blob/main/kpmacaudit.sh
-    to determine if you're missing anything you find important.
-01_system_02_macos_version:                                                     # Debian uses the PRETTY_NAME consistently
-  regex: 'System_VersionInformation::((productname:\s+(?P<product_name>\w+))|(ProductVersion+:\s+(?P<productVersion>[\w.]+))|(BuildVersion:\s+(?P<buildVersion>\w+)))'
-  excel_sheet_name: MacOS Version
-  max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
-  only_matching: True
-  multiline: True
-  field_list:
-    - 'product_name'
-    - 'productVersion'
-    - 'buildVersion'
-  comment: |-
-    Collecting some basic information about the system.  Take a look through this section to confirm that each system is running a supported version of macOS.
-    Check out Confluence (https://kirkpatrickprice.atlassian.net/l/cp/PL1PAm9Y) for some resources on where to confirm the end-of-life status.
 01_system_03_periodic:
   regex: 'System_Periodic::/etc/periodic/(?P<frequency>(daily|weekly|monthly))/(?P<jobName>.*?)::'
   excel_sheet_name: MacOS Scheduled Jobs
@@ -84,27 +59,6 @@ global:
     - location
   comment: |-
     A list of all applications registered with the operating system.  Use this information to identify unexpected software as well as to confirm if the currently installed versions have any vulnerabilities.
-01_system_11_pending_updates_apple:
-  regex: 'System_PendingUpdates-Apple::.+Title:\s(?P<title>.*?),\s+Version:\s(?P<version>[\d.]+?),.*Recommended:\s+(?P<recommended>.*?),'
-  excel_sheet_name: Pending Updates (Apple)
-  only_matching: True
-  field_list:
-    - title
-    - version
-    - recommended
-  show_missing: True
-  comment: |-
-    This list contains the available updates from Apple for the operation system and other Apple-provided software.
-01_system_11_pending_updates_brew:
-  regex: 'System_PendingUpdates-Brew-(?P<user>\w+)::(?P<title>\w.*?)\s+(?P<currentVersion>[\w\.-]+?)\s->\s(?P<pendingVersion>[\w\.-]+)'
-  excel_sheet_name: Pending Updates (Brew)
-  only_matching: True
-  field_list:
-    - title
-    - currentVersion
-    - pendingVersion
-  comment: |-
-    Brew is a popular package management utility for MacOS systems to install 3rd-party software.  Specifically, it bypasses the Apple Store.  This list contains the available updates for Brew-installed software.
 01_system_12_running_processes:
   regex: 'System_RunningProcesses::\s+(?P<user>[\d+]+)\s+(?P<pid>\d+)\s+(?P<parentPid>\d+)\s+(?P<cpu>\d+)\s+(?P<startTime>.+?)\s+(?P<tty>.+?)\s+(?P<time>[\d:.]+)\s+(?P<command>.*)'
   excel_sheet_name: Running Processes
@@ -142,32 +96,6 @@ global:
       - PID: If there's a number in the first field, it means the service is currently running.  
       - ExitStatus: The second column displays the last exit status of the job (0 means that it exited normally).
       - Label: The third column is the job's label.
-01_system_14_system_integrity_protection:
-  regex: 'System_IntegrityProtection::System Integrity Protection status:\s(?P<status>\w+)'
-  excel_sheet_name: System Integrity Protection
-  only_matching: True
-  field_list:
-    - status
-  comment: |-
-    System Integrity Protection provides restrictions on interactions with system-level processes.
-01_system_15_amfi:
-  regex: 'System_AMFI::(?P<disabled>\d+)'
-  excel_sheet_name: Apple Mobile File Integrity
-  only_matching: True
-  field_list:
-    - disabled
-  comment: |-
-    Apple Mobile File Integrity (AMFI) is the macOS kernel module that enforces code-signing and library validation.  It's always enabled unless it's been specifically disabled.
-    
-    This check should report as '0' meaning that the service has NOT been disabled.
-01_system_16_ssv:
-  regex: 'System_SSV::Authenticated Root status:\s+(?P<status>\w+)'
-  excel_sheet_name: Sealed System Volume
-  only_matching: True
-  field_list:
-    - status
-  comment: |-
-    The Sealed System Volume (SSV) feature computes a SHA-256 hash of system files that should not change.  The hash is compared at boot time.
 01_system_17_system_prefs_locked:
   regex: 'System_SystemPrefsLocked::(?P<status>\d+)'
   excel_sheet_name: System Preferences Locked

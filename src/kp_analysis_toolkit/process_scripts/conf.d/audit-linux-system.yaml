@@ -4,64 +4,6 @@ global:
       comp: eq
       value: Linux
 
-01_system_01_kp_nix_version:
-  regex: 'KPNIXVERSION: (?P<kp_nix_version>\d+\.\d+\.\d+)'
-  excel_sheet_name: KPNIXAUDIT Version
-  max_results: 1
-  only_matching: True
-  field_list:
-    - 'kp_nix_version'
-  comment: |-
-    KPNixAudit version information.  Use this to confirm that all script results were produced with a recent version.
-    
-    Check the version history comments in https://github.com/kirkpatrickprice/linux-audit-scripts/blob/main/kpnixaudit.sh
-    to determine if you're missing anything you find important.
-01_system_02_linux_os_version:                                                     # Debian uses the PRETTY_NAME consistently
-  regex: '(?:System_VersionInformation.*PRETTY_NAME=)(?P<os_version>.*)'
-  excel_sheet_name: Linux OS Version
-  max_results: 1                                                           # Only grab the first hit / will be faster as it will move on to the next file right away
-  only_matching: True
-  field_list:
-    - 'os_version'
-  comment: |-
-    For non-RPM based distro's, this will have an accurate OS version name.  You can use this to check online if the version is still supported by the vendor.
-    For RPM-based distros such as Amazon Linux, CentOS, Oracle Linux and Red Hat, check out the "01_system_02_os_version_rpm" file for more accurate version details.
-01_system_01_bios:
-  regex: 'System_BIOS::\s+(Vendor: (?P<vendorName>.*)|(Version: (?P<version>.*))|(Release Date: (?P<releaseDate>.*)))'
-  excel_sheet_name: BIOS Information
-  max_results: 1
-  only_matching: True
-  multiline: True
-  field_list:
-    - 'vendorName'
-    - 'version'
-    - 'releaseDate'
-  comment: |-
-    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Linux
-    - attr: producer
-      comp: eq
-      value: KPNIXAUDIT
-    - attr: producer_version
-      comp: ge
-      value: "0.6.21"
-01_system_02_linux_os_version_rpm:
-  # This file only exists on RedHat-based distros (Redhat, CentOS, Oracle, etc.)
-  regex: 'System_VersionInformation::/etc/system-release::(?P<RPMVersion>.*)'
-  excel_sheet_name: RPM OS Version
-  max_results: 1
-  field_list:
-    - RPMVersion
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Linux
-    - attr: distro_family
-      comp: eq
-      value: rpm
 01_system_03_cron_jobs:
   regex: 'System_CrontabConfig::/etc/crontab::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)\s+(?P<user>\w+)(?P<command>.*)'
   excel_sheet_name: System Cron Jobs
@@ -164,35 +106,9 @@ global:
   excel_sheet_name: Supported File Systems
   comment: |-
     This is a straight-up CIS benchmark check (1.1.1.1) for which file system modules are supported by the server.  Some of these might be required in specific situationsn -- such as Docker's need for squashfs.  But if those conditions aren't present, then this is the "brown M&Ms" test to see if CIS guidelines have been followed.
-01_system_07_selinux_status:
-  regex: 'System_MACSELinuxInfo::(SELinux status:\s+(?P<status>(enabled|disabled)))|(Loaded policy name:\s+(?P<policyName>\w+))|(Current mode:\s+(?P<currentMode>\w+))|(Mode from config file:\s+(?P<configMode>\w+))|(Memory protection checking:\s+(?P<memoryProtectionChecking>.*))'
-  excel_sheet_name: SELinux Status
-  only_matching: True
-  multiline: True
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Linux
-    - attr: distro_family
-      comp: eq
-      value: rpm
-  field_list:
-    - status
-    - policyName
-    - currentMode
-    - configMode
-    - memoryProtectionChecking
-  show_missing: True
-  comment: |-
-    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
-    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
-    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
-    is installed.  SELinux is usually used on RPM-based distros such as Red Hat, CentOS, Oracle Linux and Amazon Linux.
-
-    Recommended settings:
-        - Policy name "targeted"
-        - Current mode "enforcing"
-        - Memory protection should be "actual (secure)"
+01_system_09_physical_drives:
+  regex: 'System_PHYSICALVolumes::'
+  excel_sheet_name: Physical Drives
 01_system_07_apparmor_status:
   regex: 'System_MACAppArmorInfo::(apparmor module is (?P<status>.*))|((?P<loadedProfiles>[0-9]+) profiles are loaded)|((?P<enforceProfiles>[0-9]+) profiles are in enforce mode)|((?P<complainProfiles>[0-9]+) profiles are in complain mode)|((?P<definedProcesses>[0-9]+) processes have profiles defined)|((?P<enforceProcesses>[0-9]+) processes are in enforce mode)|((?P<complainProcesses>[0-9]+) processes are in complain mode)|((?P<unconstrainedProcesses>[0-9]+) processes are unconfined but have a profile defined)'
   excel_sheet_name: AppArmor Status
@@ -246,29 +162,7 @@ global:
         - 0 (SUID_DUMP_DISABLE) = SUID programs will not be dumped (preferred)
         - 1 (SUID_DUMP_USER) = SUID programs will be dumped (bad)
         - 2 (SUID_SAFE) = SUID programs will be dumped such that the core dump files are only readable by ROOT (OK)
-01_system_10_installed_packages_deb:
-  regex: 'System_PackageInstalledSoftware-dpkg::(?P<pkg_name>\w+).*install'
-  excel_sheet_name: Installed Packages (DPKG)
-  only_matching: True
-  field_list:
-    - 'pkg_name'
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Linux
-    - attr: distro_family
-      comp: eq
-      value: deb
-    - attr: producer
-      comp: eq
-      value: KPNIXAUDIT
-    - attr: producer_version
-      comp: ge
-      value: "0.6.19"
-  comment: |-
-    For KPNIXAudit >= 0.6.19
 
-    DPKG ("Debian package") is the package manager for Debian-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
 01_system_10_installed_packages_rpm:
   regex: 'System_PackageInstalledSoftware-rpm::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
   excel_sheet_name: Installed Packages (RPM)

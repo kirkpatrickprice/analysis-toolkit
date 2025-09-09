@@ -1,0 +1,135 @@
+---
+# System Information & Asset Management configurations
+# Migrated from OS-specific files: audit-linux-system.yaml, audit-windows-system.yaml, audit-macos-system.yaml
+# A lot of asset information is included on the System Summary tab in each Excel export file
+# Duplicate information has been removed
+
+# Linux System Information configurations
+01_system_01_bios_linux:
+  regex: 'System_BIOS::\s+(Vendor: (?P<vendorName>.*)|(Version: (?P<version>.*))|(Release Date: (?P<releaseDate>.*)))'
+  excel_sheet_name: 01-BIOS Information
+  max_results: 1
+  only_matching: True
+  multiline: True
+  field_list:
+    - 'vendorName'
+    - 'version'
+    - 'releaseDate'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.21"
+
+01_system_01_bios_windows:
+  regex: 'System_BIOS::((SMBIOSBIosversion\s+:\s+(?P<SMBios_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  excel_sheet_name: 01-BIOS Information
+  max_results: 1
+  only_matching: True
+  multiline: True
+  field_list:
+    - 'SMBios_version'
+    - 'manufacturer'
+    - 'name'
+    - 'version'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+    - attr: producer
+      comp: eq
+      value: KPWINAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.4.7"
+
+01_system_04_gpo_summary:
+  regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
+  excel_sheet_name: 01-Group Policy Summary
+  comment: |-
+    This section includes a summary of how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides some of the specific policy items that have been applied.
+
+    This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+01_system_10_installed_packages_deb:
+  regex: 'System_PackageInstalledSoftware-dpkg::(?P<pkg_name>\w+).*install'
+  excel_sheet_name: 02-Installed Software (DPKG)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: deb
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    DPKG ("Debian package") is the package manager for Debian-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+
+01_system_10_installed_packages_rpm:
+  regex: 'System_PackageInstalledSoftware-rpm::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
+  excel_sheet_name: 01-Installed Software (RPM)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+    - 'install_date'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: rpm
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.19"
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    RPM ("Redhat Package Manager") is the package manager for Redhat-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+
+    The list also includes the date when the package was last installed or updated.  This provides a rough approximation of patching history, but it becomes less granular as time goes by.  Specifically, if the same package is updated in March and again in September, only the September date will be retained.
+
+01_system_05_installed_capabilities:
+  regex: 'System_InstalledCapabilities::.*Installed'
+  excel_sheet_name: 01-Installed Capabilities
+  comment: |-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+    Windows Capabilities include such things as an OpenSSH client, Notepad and Internet Explorer.
+
+01_system_06_installed_features:
+  regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
+  excel_sheet_name: 01-Installed Features
+  comment: |-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+
+01_system_08_installed_software:
+  regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
+  excel_sheet_name: 01-Installed Software
+  full_scan: True
+

@@ -28,28 +28,6 @@ global:
         Samba -- An open-source implementation of the Service Message Block (SMB) protocol used by Windows systems.  SMB is a more-or-less complete implementation that is identical to a Windows-based server.  It can even provide Active Directory services.
 
     If you find that either of these are enabled, you'll need to dig into the configuration script results (check the relevant Network_Shares* section)
-04_services_03_snmp_status:
-  regex: 'Network_SNMPInfo:: .*_status: (?P<snmpdStatus>.*)'
-  excel_sheet_name: SNMP Service Status
-  only_matching: True
-  field_list:
-    - snmpdStatus
-  comment: |-
-    This result shows the current status of the SNMP service on each system.  If it's enabled/active, you'll need to look at the other SNMP files to determine if there any issues in the config.
-04_services_03_snmpv2_communities:
-  regex: 'Network_SNMPInfo::/etc/snmp/snmpd.conf::(?P<snmpv2AccessType>r.community.?)\s+(?P<communityString>[-\w]+)\s+(?P<accessRestriction>.*)'
-  excel_sheet_name: SNMPv2 Communities
-  only_matching: True
-  field_list:
-    - snmpv2AccessType
-    - communityString
-    - accessRestriction
-  comment: |-
-    This list shows the currently configured SNMP communities for SNMPv1 and SNMPv2 implementations.  NOTE: SNMPv3 is not currently implemented in the Analysis Toolkit. If you should come across a set of SNMPv3 configurations, please send them to me and I'll work on pulling out some meaningful data.
-
-    SNMPv1 and SNMPv2 were both clear-text protocols, including for authentication which occurs by passing a simple string (the "community string").  The access model is also very simple with read-only and read-write community strings.
-    
-    SNMPv3 is strongly preferred as it can use key-based authentication to control access to SNMP info.
 04_services_04_time_peers:
   regex: 'Network_NTP-(?P<ntp_type>ntpd|chronyd|timesyncd)::([*-+ ]|(Remote address\s+: )|(\s+Server: ))(?!(RTC|Next|Last|Packet|Network))(?P<peer>([-\w.]+))'
   excel_sheet_name: NTP Peers
