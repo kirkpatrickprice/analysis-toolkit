@@ -47,14 +47,30 @@ class TestExcelTopicIntegration:
             with (
                 pytest.MonkeyPatch().context() as m,
             ):
-                # Mock pandas Excel writer and related functions
+                # Create a properly mocked Excel writer that handles context manager
                 mock_writer = MagicMock()
                 mock_writer.book = MagicMock()
-                mock_writer.sheets = {}
+                mock_writer.sheets = {"Summary": MagicMock()}
 
-                m.setattr("pandas.ExcelWriter", lambda *args, **kwargs: mock_writer)
+                # Mock the context manager behavior
+                mock_writer.__enter__ = MagicMock(return_value=mock_writer)
+                mock_writer.__exit__ = MagicMock(return_value=None)
+
+                m.setattr("pandas.ExcelWriter", lambda *_args, **_kwargs: mock_writer)
                 m.setattr(
                     "kp_analysis_toolkit.process_scripts.excel_exporter._create_results_sheet",
+                    MagicMock(),
+                )
+                m.setattr(
+                    "kp_analysis_toolkit.process_scripts.excel_exporter._create_summary_sheet",
+                    MagicMock(),
+                )
+                m.setattr(
+                    "kp_analysis_toolkit.process_scripts.excel_exporter._create_systems_summary_sheet",
+                    MagicMock(),
+                )
+                m.setattr(
+                    "kp_analysis_toolkit.process_scripts.excel_exporter._apply_worksheet_tab_colors",
                     MagicMock(),
                 )
                 m.setattr(
@@ -62,7 +78,7 @@ class TestExcelTopicIntegration:
                     MagicMock(),
                 )
 
-                # This should include topic in summary data
+                # This should include topic in summary data without failing
                 export_search_results_to_excel(search_results, output_path)
 
     def test_topic_color_assignment_consistency(self) -> None:
@@ -80,24 +96,37 @@ class TestExcelTopicIntegration:
         # Create a mock worksheet
         mock_worksheet = MagicMock()
 
-        # Mock the header row to return topic and sheet name cells
+        # Mock the header row cells with proper structure
+        mock_search_name_cell = MagicMock()
+        mock_search_name_cell.value = "Search Name"
         mock_topic_cell = MagicMock()
         mock_topic_cell.value = "Topic"
         mock_sheet_name_cell = MagicMock()
         mock_sheet_name_cell.value = "Sheet Name"
+        mock_other_cell = MagicMock()
+        mock_other_cell.value = "Total Results"
 
         # Mock the worksheet indexing to return header cells
+        # The function accesses worksheet[header_row] where header_row = 2
         mock_worksheet.__getitem__.return_value = [
-            None,  # Column A
+            mock_search_name_cell,  # Column A - Search Name
             mock_topic_cell,  # Column B - Topic
             mock_sheet_name_cell,  # Column C - Sheet Name
+            mock_other_cell,  # Column D - Other columns
         ]
 
         # Mock max_column property
         mock_worksheet.max_column = 6
 
-        # Mock cell creation
-        mock_worksheet.cell.return_value = MagicMock()
+        # Mock cell creation - return different mocks for different calls
+        def mock_cell_func(*_args: object, **_kwargs: object) -> MagicMock:
+            mock_cell = MagicMock()
+            mock_cell.fill = None
+            mock_cell.hyperlink = None
+            mock_cell.font = None
+            return mock_cell
+
+        mock_worksheet.cell.side_effect = mock_cell_func
 
         summary_data = [
             {
