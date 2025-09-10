@@ -1,0 +1,469 @@
+# Topic 7: User Account Management & Authentication
+# Configurations for user accounts, password policies, authentication controls, 
+# and identity management systems across all operating systems
+
+global:
+  topic: User Account Management & Authentication
+
+# ==========================
+# WINDOWS USER CONFIGURATIONS
+# ==========================
+
+local_admin_user_windows:
+  regex: 'Users_LocalAdministrator::((Name[ ]+:[ ]+(?P<name>[\w ]+))|(Enabled[ ]+:[ ]+(?P<enabled>[\w ]+))|(LastLogon[ ]+:[ ]+(?P<lastLogon>[\w ]+))|(PasswordLastSet[ ]+:[ ]+(?P<passwordLastSet>[\w ]+))|(PasswordRequired[ ]+:[ ]+(?P<passwordReqd>[\w ]+))|(PasswordExpires[ ]+:[ ]+(?P<passwordExpires>[\w /-:]+)))'
+  excel_sheet_name: 07-Local Admin User
+  field_list:
+    - name
+    - enabled
+    - lastLogon
+    - passwordLastSet
+    - passwordReqd
+    - passwordExpires
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Details about the local Administrator account.
+
+local_admin_group_windows:
+  regex: 'Users_LocalGroupAdministrators::(?!Members)(?!--)(?!The command completed successfully)\w'
+  excel_sheet_name: 07-Local Admin Group
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+local_password_policy_windows:
+  regex: 'Users_LocalPasswordPolicy::((Minimum password age \(days\):[ ]+)(?P<minAge>\d+)|(Maximum password age \(days\):[ ]+)(?P<maxAge>\d+)|(Minimum password length:[ ]+)(?P<minLength>\d+)|(Length of password history maintained:[ ]+)(?P<history>[\w\d]+)|(Lockout threshold:[ ]+)(?P<lockoutThreshold>[\w\d]+)|(Lockout duration \(minutes\):[ ]+)(?P<lockoutDuration>\d+)|(Lockout observation window \(minutes\):[ ]+)(?P<lockoutWindow>\d+))'
+  excel_sheet_name: 07-Local Password Policy
+  only_matching: True
+  field_list:
+    - minAge
+    - maxAge
+    - minLength
+    - history
+    - lockoutThreshold
+    - lockoutDuration
+    - lockoutWindow
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    The local computer's password policy.  This may not be the same as the domain policy.  For the domain policy, you'll need to have your customer run the KPADAudit.ps1 script.
+  full_scan: True
+
+local_users_windows:
+  regex: 'Users_LocalUsers::(?!Name)((?P<userName>[\w .$-]+?)(?P<enabled>(True|False))[ ]+(?P<lastLogon>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3}).*?(?P<userMayChangePassword>(True|False))[ ]+(?P<passwordExpires>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<passwordLastSet>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<sid>S-[\d-]+))'
+  excel_sheet_name: 07-Local Users
+  field_list:
+    - userName
+    - enabled
+    - lastLogon
+    - userMayChangePassword
+    - passwordExpires
+    - passwordLastSet
+    - sid
+  full_scan: True
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    The local computer's local user list.  All fields should be self-explanatory.  This was a particularly tricky regex pattern, so be sure to compare against the users_raw file or event the text files themselves to gain confidence.
+
+local_groups_windows:
+  regex: 'Users_LocalGroups::(((?P<groupName>[\w $.-]+))( (?P<sid>S[-\d]+))[ ]+(?P<groupDesc>[\w ]+))'
+  excel_sheet_name: 07-Local Groups
+  field_list:
+    - groupName
+    - sid
+    - groupDesc
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    A list of all of the localgroups on the system.  Everything should be self-explanatory, but the SID can be used to verify, among other things, any unique SIDs you find in clock_permissions.
+
+    This is the labeled version, which should be reliable.  But if something doesn't look right (e.g. mismatched columns) then there's also a "groups_raw" file or revert to the original text files.
+
+group_policy_summary_windows:
+  regex: 'System_GroupPolicyResults::\s*((OS Configuration:)|(Site Name:)|(CN=)|(Group Policy was applied from:)|(Domain Name:)|(Domain Type:)|(GPO:\s)|(\s+Policy:\s))'
+  excel_sheet_name: 07-Group Policy Summary
+  comment: |-
+    This section includes a summary of how Group Policy Objects have been applied.  It includes both USER and SYSTEM scopes and provides some of the specific policy items that have been applied.
+
+    This report is a summary of likely interesting items.  If additional details are needed, review the appropriate raw results file.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+# ==========================
+# LINUX USER CONFIGURATIONS
+# ==========================
+
+blank_passwd_linux:
+  regex: 'Users_BlankPasswd::'
+  excel_sheet_name: 07-Blank Passwords
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This check identifies any users with a blank password.
+
+default_passwd_hash_linux:
+  regex: '(Users_DefaultSettings::/etc/login.defs::ENCRYPT_METHOD)|(Users_PAMConfig::/etc/pam.d/common-password::password.*pam_unix.so)'
+  excel_sheet_name: 07-Default Password Hash
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    The password hash that's used by Linux when using the "passwd" command to change a user's password.  The pam.d/* files control how Linux PAM (Pluggable Authentication Modules) are configured.  And the /etc/login.defs file controls how the "shadow suite" (standard Linux utilities for managing users and passwords) is configured.
+    
+    The most important thing is that these two things agree and that they're also using good hashes.  By default, all modern Linux distros use salted SHA-512, but you might still find some MD5 or other less-than-desirable hash in use if the system been upgraded from older versions.
+
+etc_passwd_linux:
+  regex: 'Users_etcpasswdContents::/etc/passwd::(?P<username>\w+):.:(?P<uid>\w+):(?P<gid>\d+):(?P<default_group>\w+):(?P<home_path>.*?):(?P<shell>.*)'
+  excel_sheet_name: 07-Local Users
+  field_list:
+    - 'username'
+    - 'uid'
+    - 'gid'
+    - 'default_group'
+    - 'home_path'
+    - 'shell'
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    A list of all locally-defined users.  You can probably disregard any user with "/bin/false" or "/sbin/nologin" as they can't login.  Users with a shell of "sync", "shutdown" and "halt" are similarly restricted to safely shutting down the system (use "man <command>" to learn what each actually does).  
+    
+    But any user with "/bin/bash" is fair game.
+
+    These users are in addition to any that might be defined in Active Directory, OpenLDAP or other remote/network-based authentication sources.
+
+user_status_linux:
+  regex: 'Users_UserStatus::(?P<username>\w+)\s(?P<status>L.?|NP|P.?)\s(?P<last_pw_change>[0-9/-]{4,})\s(?P<min_age>.{0,1}\d+)\s(?P<max_age>.{0,1}\d+)\s(?P<warn_days>.{0,1}\d+)\s(?P<inactive_days>.{0,1}\d+)(?P<comment>.*)?' 
+  excel_sheet_name: 07-User Status
+  field_list:
+    - 'username'
+    - 'status'
+    - 'last_pw_change'
+    - 'min_age'
+    - 'max_age'
+    - 'warn_days'
+    - 'inactive_days'
+    - 'comment'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Provide the status of each user in /etc/passwd.  See https://man7.org/linux/man-pages/man1/passwd.1.html (check out the -S section about halfway down) for how to read this output.
+    
+    SPECIAL NOTE: "LOCKED" only means they can't use a passowrd to login.  SSH key-based authentication will still work if the user has a "~/.ssh/authorized_keys" file (check the "ssh_authorized_keys" file).
+
+etc_group_linux:
+  regex: 'Users_etcgroupContents::/etc/group::(?P<groupname>\w+):.:(?P<gid>\d+):(?P<members>.*)$'
+  excel_sheet_name: 07-Local Groups
+  field_list:
+    - 'groupname'
+    - 'gid'
+    - 'members'
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    A list of local groups and their memberships.  This is in addition to any groups that might be defined in Active Directory, OpenLDAP, etc. and granted local permissions.
+    
+    Of special interest:
+      sudo (and frequently "wheel") -- Users who can issue commands as root (default /etc/sudoers configuration)
+      adm -- Users who might be able to issue commands as root (check the /etc/sudoers configuration)
+      Any other group listed in the /etc/sudoers config listed in the "07_users_11_sudoers_all_commands" results file
+
+login_history_linux:
+  regex: 'Users_LoginHistory::(?!reboot)(?P<username>[-\w]+)\s+(?P<port>(pts/\d+)|(tty\d+))?\s+(?P<from>[\w.:]+)?\s+(?P<lastLogon>(\*\*.*|Mon|Tue|Wed|Thu|Fri|Sat|Sun).*)'
+  excel_sheet_name: 07-Last Logon History
+  only_matching: True
+  field_list:
+    - username
+    - port
+    - from
+    - lastLogon
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This report shows the last logon date for all current users defined in the system.  There is also a separate report that just shows users who haven't logged in more than 90 days.
+
+no_login_90_days_linux:
+  regex: 'Users_LastLog90::(?!reboot)(?P<username>[-\w]+)\s+(?P<port>(pts/\d+)|(tty\d+))?\s+(?P<from>[\w.:]+)?\s+(?P<lastLogon>(\*\*.*|Mon|Tue|Wed|Thu|Fri|Sat|Sun).*)'
+  excel_sheet_name: 07-Inactive Local Users
+  only_matching: True
+  field_list:
+    - username
+    - port
+    - from
+    - lastLogon
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This report shows the last logon date for all current system users who have not logged in for at least 90 days.  There is also a separate report that just shows the last logon date for all current users.
+
+    You'll want to compare this against:
+        - "etc_passwd" file to determine which users have shells that permit login
+        - "user_status" file to determine which users have currently usable passwords (not "locked", "L" or "LK")
+        - "ssh_authorized_keys" file to determine which users can logon with SSH public keys regardless of thei password status
+
+sudoers_all_commands_linux:
+  regex: 'Users_SudoersConfig::/etc/sudoers.*::(?!#).*ALL='
+  excel_sheet_name: 07-Sudoers Config
+  full_scan: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    The Sudoers config determines which users and groups can execute commands as ROOT by prefacing the command with "sudo <command".
+    See https://xkcd.com/149/ for a (lighthearted) visual reference of the effect that the SUDO command has and https://www.linux.com/training-tutorials/configuring-linux-sudoers-file/ for a more detailed explanation.
+
+    This report shows all of the sudoers config files that grant permissions to run all commands.  Names that are prefaced by a % are group names.  Reference "etc_group" file for group memberships.
+
+    NOTES:
+        - "%wheel" is default entry and the group is frequently empty.  It's a leftover of bygone time when the "wheel" group was used more frequently.
+        - (program_spec) the stuff between the parantheses is the programs that can be run.  "ALL" means the user can run anything as root.  Sometimes you'll see something else in there.  You'll need to look at the raw files themselves in "Sudoers" section to find the programs that can be used.
+
+ssh_authorized_keys_linux:
+  regex: 'Users_AuthorizedKeys::/home/(?P<username>[-\w]+)/\.ssh/authorized_keys.*'
+  excel_sheet_name: 07-SSH Authorized Keys
+  only_matching: True
+  full_scan: True
+  field_list:
+    - username
+  show_missing: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    The presence of an "authorized_keys" file means that the user can authenticate through SSH using SSH public/private keys regardless of whether the user's password is disabled ("locked", see "user_status" file).
+
+    This report shows all users who have an "authorized_keys" file. Specifically, it looks for patterns matching "/home/<username>/.ssh/authorized_keys", which is the default location.  Although unlikely, it is possible that a system administrator could change this location.  Check the raw files for "Network_OpenSSHServerConfig::authorizedkeysfile" if you need to.
+
+# ==========================
+# MACOS USER CONFIGURATIONS
+# ==========================
+
+auth_config_macos:
+  regex: 'Users_AuthConfig'
+  excel_sheet_name: 07-Authentication Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This list shows the authentication systems that the device is configured for.  Examples include:
+      Active Directory - self-explanatory
+      KerberosKDC - probably directly tied to Active Directory since AD is also built on Kerberos
+      shadowhash - local authentication source
+
+password_policy_macos:
+  regex: 'Users_PasswordPolicy::((maxFailedLogins=(?P<maxFailedLogins>(\d+)?))|(LockoutDuration=(?P<lockoutDuration>(\d+)?))|(minLength=(?P<minLength>(\d+)?))|(requiresAlpha=(?P<requiresAlpha>(\d+)?))|(requiresNumeric=(?P<requiresNumeric>(\d+)?))|(requiresSymbol=(?P<requiresSymbol>(\d+)?))|(maxMinutesUntilChangePassword=(?P<maxPasswordAgeMins>(\d+)?)))'
+  excel_sheet_name: 07-Local Password Policy
+  only_matching: True
+  multiline: True
+  field_list:
+    - maxFailedLogins
+    - lockoutDuration
+    - minLength
+    - requiresAlpha
+    - requiresNumeric
+    - requiresSymbol
+    - maxPasswordAgeMins
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This is the local MacOS password policy for any locally-defined accounts.  Note: MacOS can also authenticate against Active Directory or Kerberos, in which case, those policies will apply to those accounts.
+
+    For the record, 129,600 minutes is 90 days (1440 minutes per day)
+
+local_users_macos:
+  regex: 'Users_LocalUsers::((UniqueID:\s+(?P<uniqueID>([-\d]+)?))|(NFSHomeDirectory:\s+(?P<homeDir>.*))|(RecordName:\s+(?P<userName>.*))|(UserShell:\s+(?P<shell>.*)))'
+  excel_sheet_name: 07-Local Users
+  only_matching: True
+  multiline: True
+  rs_delimiter: '^Users_LocalUsers::-$'
+  field_list:
+    - userName
+    - uniqueID
+    - homeDir
+    - shell
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This is the list of all locally-defined users (not coming from Active Directory or elsewhere).  Most of them are probably service accounts, starting with an _.  It's good to know that they're there, but they should also all have /sbin/nologin or /bin/false as their user shell, which prohibits interactive use of the accounts.
+
+    Pay special attention to users who have /bin/bash, /bin/zsh, /bin/sh and similar shells as these are users who can login interactively.
+
+    Also, pay special attention to any user with uniqueID=0 as these are accounts with "root" permissions.
+
+    NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Usernames affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
+
+local_groups_macos:
+  regex: 'Users_LocalGroups::((PrimaryGroupID:\s+(?P<primaryID>(\d+)?))|(RecordName:\s+(?P<groupName>.*))|(GroupMembership:\s+(?P<members>.*)))'
+  excel_sheet_name: 07-Local Groups
+  only_matching: True
+  multiline: True
+  rs_delimiter: '^Users_LocalGroups::-$'
+  field_list:
+    - groupName
+    - primaryID
+    - members
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This is the list of all locally-defined groups (not coming from Active Directory or elsewhere).  Most of them are probably built-in accounts, starting with an _.  
+
+    Pay special attention to these groups:
+      - staff: A built-in group meant to capture all people who use this device.  This group is made the group-owner of various directories, including all user home folders.
+      - wheel: A built-in group that is granted elevated access to parts of the operating system (could also include sudo access / check the sudoers file)
+      - admin and/or sudo: A built-in group that is granted sudo access to run commands as root
+
+    NOTE: MacOS 'dscl' command output can be difficult to work with programmatically.  Records that include multiple values are sometimes printed on one line and other times printed on separate lines.  Group names affected by this will show up as <blank>, such as when the device has been integrated with Active Directory.
+
+root_status_macos:
+  regex: 'Users_RootStatus::(?P<rootStatus>.*)'
+  excel_sheet_name: 07-Root User Status
+  only_matching: True
+  field_list:
+    - rootStatus
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    The root user shouldn't be used directly and should be disabled.  This check determines if there are any authenticators configured for the root account.
+    
+    This should be 0.  A non-zero value indicates that it is possible to sign in as the root account.
+
+sudoers_config_macos:
+  regex: 'Users_SudoersConfig::/etc/sudoers.*?::[\w%].*'
+  excel_sheet_name: 07-Sudoers Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    The sudoers file controls use of the "sudo" program.  Sudo is used to grant the ability to execute commands as the root user -- effectively making users with sudo access administrators on the system.
+
+    Pay special attention to lines that grant permissions, such as:
+      - username    ALL=(ALL)ALL
+      - %groupname  ALL=(ALL)ALL
+
+    There are also a few CIS benchmark recommendations that look for specific Defaults to be configured.  Look at the CIS MacOS 13 Benchmark for more information.
+
+siri_status_macos:
+  regex: 'Users_SiriStatus-(?P<username>.*?)-Enabled::\s+"Assistant Enabled"\s+=\s+(?P<siriStatus>\d+)'
+  excel_sheet_name: 07-Siri Status
+  only_matching: True
+  field_list:
+    - username
+    - siriStatus
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    Siri can be enabled on a macOS device just like on an iPhone.  CIS Benchmark doesn't make any specific recommendations except that Siri usage should be consistent with organizational policy.
+
+password_hints_macos:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  regex: 'Users_PasswordHints::RetriesUntilHint=(?P<retriesUntilHint>.*)'
+  excel_sheet_name: 07-Password Hints
+  only_matching: True
+  field_list:
+    - retriesUntilHint
+  comment: |-
+    Passowrd hints should not be used as they are often directly related to the user's password and even when they're not, they're still just another form of "someting you know" and do regularly meet the password complexity requirements.
+    This section shows if hints are displayed on the login screen.  The value should 0 or "Unset", but a positive number indicates the number of failed login attempts before the hint will be displayed.
+
+system_prefs_locked_macos:
+  regex: 'System_SystemPrefsLocked::(?P<status>\d+)'
+  excel_sheet_name: 07-System Preferences Locked
+  only_matching: True
+  field_list:
+    - status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This setting determines whether a password is required to access system-wide preferences.  We're looking for "1" to show that the setting is enabled
+
+# Screensaver configurations
+screensaver_config_windows:
+  regex: '(System_ScreenSaverConfigGPO::(ScreenSaveActive\s*:\s*(?P<gpoScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<gpoScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<gpoScreenSaverIsSecure>\d+)))|(System_ScreenSaverConfigRunning::(ScreenSaveActive\s*:\s*(?P<localScreenSaveActive>\d+)|ScreenSaveTimeout\s*:\s*(?P<localScreenSaveTimeout>\d+)|ScreenSaverIsSecure\s*:\s*(?P<localScreenSaverIsSecure>\d+)))'
+  excel_sheet_name: 07-Screensaver Config Windows
+  field_list:
+    - gpoScreenSaveActive
+    - gpoScreenSaverIsSecure
+    - gpoScreenSaveTimeout
+    - localScreenSaveActive
+    - localScreenSaverIsSecure
+    - localScreenSaveTimeout
+  multiline: True
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Using the screensaver is a common way of locking the computer after inactivity.  Many audit standards (e.g. PCI) look for no more than 15 minutes (900 seconds), which seems reasonable.
+    There are other methods of achieving this (such as through Power Settings), but these registry keys related to using GPO and to user-directed configurations respectively.
+    Don't put too much faith in these results, especially they aren't conclusive or contradict what the customer says.
+    If this registry query comes back blank, GPO is not used to enforce screensaver settings
+      gpoScreenSaveActive        Is the screensaver enabled
+      gpoScreenSaverIsSecure     Requires a password to unlock the screensaver
+      gpoScreenSaverTimeOut      Inactivity period in seconds before the screensaver kicks in (900 seconds = 15 minutes)
+    There are also "local" variants (not enforced by GPO) for each.01_system_16_screensaver_registry
+    A list of screensaver setting from both policy and current registry values.
+
+screensaver_config_macos:
+  regex: 'Users_ScreensaverStatus-(?P<username>.*?)::(?P<screensaverTimeout>.*)'
+  excel_sheet_name: 07-Screensaver Config
+  only_matching: True
+  field_list:
+    - username
+    - screensaverTimeout
+  comment: |-
+    This is the screensaver timeout value.  For reference, 15 minutes is 900 seconds.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin

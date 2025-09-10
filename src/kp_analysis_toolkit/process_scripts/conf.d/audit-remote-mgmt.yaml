@@ -2,8 +2,11 @@
 # Remote Access configurations
 # Migrated from OS-specific files: audit-linux-ssh.yaml, audit-windows-system.yaml, audit-macos-network.yaml, audit-endpoint-protection.yaml
 
+global:
+  topic: Remote Management
+
 # SSH Configurations (Linux and macOS)
-03_ssh_01_settings:
+ssh_settings_linux_macos:
   regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
   excel_sheet_name: 04-SSH Server Settings
   only_matching: True
@@ -45,7 +48,7 @@
 
     From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
 
-03_ssh_02_crypto_weak_moduli:
+crypto_weak_moduli_linux_macos:
   regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535|2047)'
   excel_sheet_name: 04-SSH Server Weak Moduli
   field_list:
@@ -60,7 +63,7 @@
 
     On 3072- vs 2048-bit as the minimum size... I've found numerous reputable references online (e.g. Mozilla, Palo Alto, Proxmox, and others) that suggest that the minimum size should be 3072.
 
-03_ssh_07_subsystems:
+ssh_subsystems_linux_macos:
   regex: 'Network_OpenSSHServerConfig::subsystem'
   excel_sheet_name: 04-SSH Server Subsystems
   sys_filter:
@@ -71,7 +74,7 @@
     SSH Subsystems use the SSH protocol to provide additional functionality.  The only subsystem we're likely to ever run into is SFTP - note that this is not FTP/S (which is the FTP protocol over TLS).  SFTP denotes use of the SSH protocol and can be used by command line utilities such "scp" as well as GUIs such WinSCP and others.
 
 # Windows RDP Configurations
-01_system_14_rdp_config:
+rdp_config:
   regex: 'System_RDPEncryption::((SecurityLayer\s*:\s*(?P<securityLayer>\d+))|(MinEncryptionLevel\s*:\s*(?P<minEncryptionLevel>\d+)))'
   excel_sheet_name: 04-RDP Encryption Config
   comment: |-
@@ -97,7 +100,7 @@
       value: Windows
 
 # SNMP Remote Management Protocol
-01_system_17_snmp:
+snmp_windows:
   regex: 'System_SNMPConfig::'
   excel_sheet_name: 04-SNMP Config
   sys_filter:
@@ -107,16 +110,20 @@
   comment: |-
     Simple Network Management Protocol (SNMP) is a network protocol used for monitoring and managing network devices. This configuration captures SNMP settings if present on Windows systems.
 
-04_services_03_snmp_status:
+snmp_status_linux:
   regex: 'Network_SNMPInfo:: .*_status: (?P<snmpdStatus>.*)'
   excel_sheet_name: 04-SNMP Service Status
   only_matching: True
   field_list:
     - snmpdStatus
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
   comment: |-
     This result shows the current status of the SNMP service on each system.  If it's enabled/active, you'll need to look at the other SNMP files to determine if there any issues in the config.
 
-04_services_03_snmpv2_communities:
+snmpv2_communities_linux:
   regex: 'Network_SNMPInfo::/etc/snmp/snmpd.conf::(?P<snmpv2AccessType>r.community.?)\s+(?P<communityString>[-\w]+)\s+(?P<accessRestriction>.*)'
   excel_sheet_name: 04-SNMPv2 Communities
   only_matching: True
@@ -124,6 +131,10 @@
     - snmpv2AccessType
     - communityString
     - accessRestriction
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
   comment: |-
     This list shows the currently configured SNMP communities for SNMPv1 and SNMPv2 implementations.  NOTE: SNMPv3 is not currently implemented in the Analysis Toolkit. If you should come across a set of SNMPv3 configurations, please send them to me and I'll work on pulling out some meaningful data.
 
@@ -132,7 +143,7 @@
     SNMPv3 is strongly preferred as it can use key-based authentication to control access to SNMP info.
 
 # VPN Access Configurations
-05_security_05_ipsec_config:
+ipsec_config_linux:
   regex: 'Security_IPSecConfig::'
   excel_sheet_name: 04-IPSec Config
   sys_filter:
@@ -142,7 +153,16 @@
   comment: |-
     The Linux kernel supports IPSec connections, so we'll grab the configurations if it's enabled.  Check out our Confluence page for auditing Ciphersuites at: https://kirkpatrickprice.atlassian.net/l/c/4121Zw4B
 
-05_security_07_openvpn_config:
+ipsec_config_windows:
+  regex: 'Networking_IPSecConfig::'
+  excel_sheet_name: 04-IPsec Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  full_scan: True
+
+openvpn_config:
   regex: 'Security_OpenVPNConfig::'
   excel_sheet_name: 04-OpenVPN Config
   sys_filter:
@@ -155,9 +175,9 @@
     Note: Our testing for OpenVPN is only known to work when OpenVPN is installed from OS packages.  OpenVPN Access Server is a distinct product from OpenVPN and these methods might not be accurate on that product.
 
 # Windows WinRM Configurations
-02_network_16_winrm:
+winrm_config:
   regex: '(Networking_WinRM-service::\s+(AllowRemoteAccess\s+=\s+(?P<allowRemoteAccess>.*))|(AllowUnencrypted\s+=\s+(?P<allowUnencrypted>.*))|(Negotiate\s+=\s+(?P<negotiateAuth>.*))|(Basic\s+=\s+(?P<basicAuth>.*))|(Kerberos\s+=\s+(?P<kerberosAuth>.*))|(Certificate\s+=\s+(?P<certAuth>.*))|(CredSSP\s+=\s+(?P<credSSPAuth>.*)))|(Networking_WinRM-winrs::\s+AllowRemoteShellAccess\s+=\s+(?P<allowRemoteShellAccess>.*))|(Networking_WinRM-listener::\s+(Transport\s+=\s+(?P<transport>.*))|(ListeningOn\s+=\s+(?P<listeningOn>.*)))'
-  excel_sheet_name: WinRM Config
+  excel_sheet_name: 04-WinRM Config
   field_list:
     - allowRemoteAccess
     - allowRemoteShellAccess
@@ -172,15 +192,9 @@
   only_matching: True
   multiline: True
   sys_filter:
-    - attr: 'os_family'
-      comp: 'eq'
-      value: 'Windows'
-    - attr: 'producer'
-      comp: 'eq'
-      value: 'KPWINAUDIT'
-    - attr: 'producer_version'
-      comp: 'ge'
-      value: '0.4.7'
+    - attr: os_family
+      comp: eq
+      value: Windows
   comment: |-
     Windows Remote Monitoring (WinRM) provides remote management capabilities (reference: WS-MAN protocol) as well as PowerShell Remoting features
     There a few settings that should be evaluated to ensure that remote access is properly secured and encrypted

@@ -9,11 +9,14 @@ from kp_analysis_toolkit.process_scripts.excel_exporter import (
 from kp_analysis_toolkit.process_scripts.file_centric_search import (
     execute_file_centric_search,
 )
-from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType, SysFilterAttr
+from kp_analysis_toolkit.process_scripts.models.enums import OSFamilyType
 from kp_analysis_toolkit.process_scripts.models.program_config import (
     ProgramConfig,
 )
-from kp_analysis_toolkit.process_scripts.models.search.base import SearchConfig
+from kp_analysis_toolkit.process_scripts.models.search.base import (
+    SearchConfig,
+    get_sysfilter_os_type,
+)
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
     load_search_configs,
@@ -115,22 +118,34 @@ def list_audit_configs(program_config: ProgramConfig) -> None:
     max_details_items = 3  # Limit displayed details in verbose mode
 
     for config_file in process_systems.get_config_files(program_config.config_path):
-        yaml_data: dict[str, Any] = load_yaml_config(config_file)
         relative_path = str(config_file.relative_to(program_config.config_path))
 
-        if program_config.verbose:
-            # Create details string for verbose mode
-            details = []
-            for key, value in yaml_data.to_dict().items():
-                details.append(f"{key}: {rich_output.format_value(value, 60)}")
-            details_text = "\n".join(details[:max_details_items])
-            if len(yaml_data.to_dict()) > max_details_items:
-                details_text += (
-                    f"\n... and {len(yaml_data.to_dict()) - max_details_items} more"
-                )
-            table.add_row(relative_path, details_text)
-        else:
-            table.add_row(relative_path)
+        try:
+            yaml_data = load_yaml_config(config_file)
+
+            if program_config.verbose:
+                # Create details string for verbose mode
+                details = []
+                for key, value in yaml_data.to_dict().items():
+                    details.append(f"{key}: {rich_output.format_value(value, 60)}")
+                details_text = "\n".join(details[:max_details_items])
+                if len(yaml_data.to_dict()) > max_details_items:
+                    details_text += (
+                        f"\n... and {len(yaml_data.to_dict()) - max_details_items} more"
+                    )
+                table.add_row(relative_path, details_text)
+            else:
+                table.add_row(relative_path)
+
+        except ValueError as e:
+            # Handle configuration errors gracefully
+            error_msg = f"❌ ERROR: {e}"
+            if program_config.verbose:
+                table.add_row(relative_path, f"[red]{error_msg}[/red]")
+            else:
+                table.add_row(f"[red]{relative_path}[/red]")
+            # Also log the error to stderr for visibility
+            rich_output.error(f"Failed to load {relative_path}: {e}")
 
     rich_output.display_table(table)
 
@@ -317,7 +332,7 @@ def _export_file_centric_results(
 
     # Group results by OS type
     for result in search_results:
-        os_type = _get_sysfilter_os_type(result.search_config)
+        os_type = get_sysfilter_os_type(result.search_config)
         matching_os = OSFamilyType.UNDEFINED.value
         for enum_os in OSFamilyType:
             if enum_os.value == os_type:
@@ -352,7 +367,7 @@ def _execute_search_centric_approach(
         # Use verbose Rich output instead of progress bar
         rich_output.subheader("Executing Searches")
         for config in search_configs:
-            os_type: str = _get_sysfilter_os_type(config)
+            os_type: str = get_sysfilter_os_type(config)
             rich_output.debug(f"Executing search: ({os_type}) {config.name}")
 
             results: SearchResults = execute_search(config, systems)
@@ -377,7 +392,7 @@ def _execute_search_centric_approach(
             search_configs,
             "Executing searches",
         ):
-            os_type: str = _get_sysfilter_os_type(config)
+            os_type: str = get_sysfilter_os_type(config)
             results: SearchResults = execute_search(config, systems)
 
             # Find the matching OS type or default to UNDEFINED
@@ -447,13 +462,3 @@ def _export_results_by_os_type(
         rich_output.success(
             f"{len(files_created)} results files created: {', '.join(files_created)}",
         )
-
-
-def _get_sysfilter_os_type(config: SearchConfig) -> str:
-    """Get the OS type from the search configuration."""
-    # Iterate through the sys_filter list to find the first one with an os_family
-    for sysfilter in config.sys_filter:
-        if sysfilter.attr == SysFilterAttr.OS_FAMILY:
-            return sysfilter.value
-
-    return "Unknown"

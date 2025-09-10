@@ -22,7 +22,11 @@ class YamlConfig(KPATBaseModel, ConfigModel):
     include_configs: dict[str, IncludeConfig]
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "YamlConfig":
+    def from_dict(
+        cls,
+        data: dict[str, Any],
+        source_file: str | None = None,
+    ) -> "YamlConfig":
         """Create YamlConfig from parsed YAML dictionary."""
         global_config = None
         search_configs = {}
@@ -41,7 +45,19 @@ class YamlConfig(KPATBaseModel, ConfigModel):
                 if "excel_sheet_name" not in config_data:
                     config_data["excel_sheet_name"] = key
 
-                search_configs[key] = SearchConfig(name=key, **config_data)
+                # Add source file information for better error reporting
+                if source_file is not None:
+                    config_data["source_file"] = source_file
+
+                try:
+                    search_configs[key] = SearchConfig(name=key, **config_data)
+                except Exception as e:
+                    # Provide detailed error context for search configuration validation errors
+                    source_info = f" (from file: {source_file})" if source_file else ""
+                    error_msg = (
+                        f"Error in search configuration '{key}'{source_info}: {e}"
+                    )
+                    raise ValueError(error_msg) from e
 
         config = cls(
             global_config=global_config,

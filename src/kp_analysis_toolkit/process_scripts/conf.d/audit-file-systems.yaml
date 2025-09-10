@@ -1,0 +1,192 @@
+# ============================================================================
+# File System Security & Permissions Configuration
+# ============================================================================
+# Purpose: File permissions, encryption, and access controls
+# 
+# This configuration file provides audit checks for file system security
+# including world-accessible files, encryption status, permission anomalies,
+# and sensitive file access controls across all operating systems.
+# ============================================================================
+
+global:
+  topic: File System Security
+
+# World-accessible files detection (Linux)
+interesting_world_writable_files_linux:
+  regex: 'WorldFiles::.*?(?P<permissions>.[-rwx]{9}).*?(?P<path>(/home|/etc|/usr/bin|/usr/sbin|/bin|/sbin|/opt|/lib(?!/docker)|/mnt).*)'
+  excel_sheet_name: 09-World-Writable Files
+  only_matching: True
+  field_list:
+    - permissions
+    - path
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This is a filtered list of files that are writable by any user on the system.  We're focusing on files that are in the following locations, as there are several more that are required by the operating system.
+
+    See https://linuxhandbook.com/linux-directory-structure/ for info about the common directory names on the Linux file system.
+
+    Linux file system permissions are grouped into four parts:
+      - A flag -- this might be a "d" for directory, a "-" for nothing, and maybe some more (we're only going to see "d" or "blank" in these results)
+      - User -- a set of "rwx-"" for "read", "write", "execute" and "none" for what the user who owns the file/directory can do
+      - Group -- same as above, but this time for the group owner of the file.  See "etc_group" for group names and members
+      - World -- same as above, but this time for anyone who's not an owner or in a group.  These are the interesting things we're exposing in this list. 
+    
+    Locations:
+      - /home -- users home directories
+      - /etc -- configuration files for the system
+      - /opt -- Where 3rd party software is frequently installed
+      - /lib -- System libraries and frequent storage location for data used by applications
+      - /mnt -- Where remote (e.g. NFS) or external (e.g. USB drives) file systems are usually mounted (we're excluding /lib/docker)
+      - (/usr)/bin -- locations of OS binaries used by users
+      - (/usr)/sbin -- Where privileged binaries are kept
+
+# World-accessible files detection (macOS)
+interesting_world_writable_files_macos:
+  regex: 'WorldFiles-(?P<location>.*?)::(?!.*(Cache|Preferences/Audio/Data)).*?(?P<permissions>.[-rwx]+)\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+).*?(?P<path>/\w+/.*)'
+  excel_sheet_name: 09-World-Writable Files
+  only_matching: True
+  field_list:
+    - location
+    - permissions
+    - owner
+    - group
+    - path
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This is a filtered list of files that are writable by any user on the system.  We're focusing on files that are in the following locations, as recommended by the CIS MacOS 13 Benchmark.
+
+    File system permissions are grouped into four parts:
+      - A flag -- this might be a "d" for directory, a "-" for nothing (i.e. a file), and maybe some more (we're only going to see "d" or "blank" in these results)
+      - User -- a set of "rwx-"" for "read", "write", "execute" and "none" for what the user who owns the file/directory can do
+      - Group -- same as above, but this time for the group owner of the file.  See "etc_group" for group names and members
+      - World -- same as above, but this time for anyone who's not an owner or in a group.  These are the interesting things we're exposing in this list. 
+    
+    Locations:
+      - /System/Volumes/Data/System -- Operating system files, but sometimes applications insist on being installed here.  To quote the CIS Benchmark directly: "Macs with writable files in System should be investigated forensically. A file with open writable permissions is a sign of at best a rogue application. It could also be a sign of a computer compromise and a persistent presence on the system."
+      - /Applications -- All system-wide installed applications.  World-writable application folders would allow any user to update the application files, including installing malicious software instead.
+      - /System/Data/System/Library -- System-wide configurations, but sometimes applications insist on being installed here.  You can safely ignore any folders that include "Cache" or "Preferences/Audio/Data".
+
+# File system encryption - BitLocker (Windows)
+file_system_encryption_bitlocker:
+  regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
+  excel_sheet_name: 09-File System Encryption
+  field_list:
+    - 'MountPoint'
+    - 'EncryptionMethod'
+    - 'KeyProtector'
+    - 'VolumeStatus'
+    - 'ProtectionStatus'
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Capture the BitLocker status of each disk drive attached to the system.  This can be used to confirm statements such as 'All drives are encrypted with BitLocker.'
+
+# File system encryption - FileVault (macOS)
+file_system_encryption_apfs:
+  regex: 'System_FSEncryption-APFS-(status::FileVault is (?P<filevaultStatus>\w+)|haspersonalrecoverykey::(?P<hasPersonalRecoveryKey>.*)|hasinstitutionalrecoverykey::(?P<hasInstitutionalRecoveryKey>.*))'
+  excel_sheet_name: 09-File System Encryption (APFS)
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    File system encryption on MacOS is provided by FileVault.  The exact implementation depends on the file system type -- APFS or CoreStorage.
+    APFS uses the 'fdesetup' and 'diskutil ap' command sets, while CoreStorage status can be seen with the 'diskutil cs list' command.
+    See https://support.apple.com/guide/deployment/manage-filevault-with-mdm-dep0a2cb7686/web for additional information.
+
+    This file shows the results for APFS-based file systems, which is the system default on recent MacOS versions.
+
+    Apple no longer recommends using institutional recovery keys, so ideally we would see that this is disabled (https://derflounder.wordpress.com/2021/10/29/use-of-filevault-institutional-recovery-keys-no-longer-recommended-by-apple/).
+  field_list:
+    - filevaultStatus
+    - hasPersonalRecoveryKey
+    - hasInstitutionalRecoveryKey
+  only_matching: True
+  multiline: True
+
+# File system encryption - LUKS/dm-crypt (Linux)
+file_system_encryption_luks:
+  excel_sheet_name: 09-File System Encryption
+  regex: 'System_FSEncryption::(?!#)'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    We don't see if very often, but file system encryption can be provided internally by the OS using "dm-crypt" (very similar to BitLocker on Windows and FileVault on MacOS).
+
+# Supported file systems modules (Linux)
+supported_file_systems:
+  regex: 'System_FSModules::'
+  excel_sheet_name: 09-Supported File Systems
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This is a straight-up CIS benchmark check (1.1.1.1) for which file system modules are supported by the server.  Some of these might be required in specific situationsn -- such as Docker's need for squashfs.  But if those conditions aren't present, then this is the "brown M&Ms" test to see if CIS guidelines have been followed.
+
+# File system mounts (macOS)
+file_system_mounts_macos:
+  regex: 'System_FSMounts-mounts::(?P<device>.*?)\s+on\s+(?P<mountPoint>[\w/]+)\s+\((?P<options>.*)\)'
+  excel_sheet_name: 09-File System Mounts
+  only_matching: True
+  field_list:
+    - device
+    - mountPoint
+    - options
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    A list of all active file system mounts on the system.  Useful for all kinds of things including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
+
+# File system mounts (Linux)
+file_system_mounts_linux:
+  regex: 'System_FSMounts-systemctl::(?P<unit>.\s[-\w.\d]+\.mount)\s+(?P<loadState>\w+)\s+(?P<status>\w+)\s+(?P<sub>\w+)\s+(?P<description>.*)'
+  excel_sheet_name: 09-File System Mounts
+  only_matching: True
+  field_list:
+    - unit
+    - loadState
+    - status
+    - sub
+    - description
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    One of Shannon's favorites -- a list of all active file system mounts on the system.  Useful for all kinds of things 
+    including "connected to" for PCI, confirming backup destinations through NFS, connections to SMB/Windows servers, etc
+
+home_folder_permissions_macos:
+  regex: 'Users_HomeFolders::(?!.*Shared)d(?P<permissions>[rwx-]+)\+\s+\d+\s+(?P<owner>\w+)\s+(?P<group>\w+)\s+\d+\s+([A-Z]\w+)\s+\d+\s+[\d:]+\s+(?P<dir>.*)'
+  excel_sheet_name: 09-Home Folder Permissions
+  only_matching: True
+  field_list:
+    - dir
+    - permissions
+    - owner
+    - group
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    Home folders should be restricted such that only the user can access the contents.  By default ([rwxr-xr-x]), all user accounts can view the listing of files but not the files themselves (see invididual file permissions to determine what's possible there).
+
+    If this is a single-user system, this isn't as much of an issue -- that is, until a second user is added.
+
+    Ideally, we would see that home folder permissions are set to [rwx------] or [rwx--x--x].
+

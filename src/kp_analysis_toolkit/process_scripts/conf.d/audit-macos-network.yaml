@@ -1,6 +1,0 @@
-# DEPRECATED: This file has been reorganized into topic-based categories
-# Network configurations have been moved to audit-network.yaml
-# This file is maintained for backward compatibility but will be removed in a future version.
-
-# For network configurations, please use: audit-network.yaml
-# For more information about the new topic-based organization, see the user guide.

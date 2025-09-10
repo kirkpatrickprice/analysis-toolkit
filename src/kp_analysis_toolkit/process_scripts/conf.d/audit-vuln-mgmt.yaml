@@ -2,8 +2,11 @@
 # Vulnerability Management configurations
 # Migrated from OS-specific files: audit-linux-system.yaml, audit-windows-system.yaml, audit-macos-system.yaml
 
+global:
+  topic: Vulnerability Management & Patch Status
+
 # Linux Package Management and Updates
-01_system_11_package_history_deb:
+package_history_deb:
   regex: 'System_PackageInstalledSoftware-dpkg::/var/log/dpkg.log.*?::(?P<install_date>[0-9/-]{4,}).*status installed\s(?P<pkg_name>.*)'
   excel_sheet_name: 02-Update History (DPKG)
   only_matching: True
@@ -17,12 +20,6 @@
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: producer
-      comp: eq
-      value: KPNIXAUDIT
-    - attr: producer_version
-      comp: ge
-      value: "0.6.19"
   show_missing: True
   comment: |-
     For KPNIXAudit >= 0.6.19
@@ -31,7 +28,7 @@
 
     This list shows the time-and-date of each package installation action.  Since "updating packages" means "installing the new version", this also can be used to show patching history.  However, know that "installing new packages" and "patching existing packages" look the same in these logs, so it's not 100% fool-proof.
 
-01_system_07_patching:
+installed_hotfixes_windows:
   regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+\s+(AM|PM)\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
   excel_sheet_name: 02-Update History
   field_list:
@@ -65,7 +62,7 @@
       - description: A description of the update
       - kbNum: The KB number of the update
 
-01_system_12_pending_package_updates_deb:
+pending_updates_deb:
   regex: 'System_PackageManagerUpdates-apt::\s+(?P<pkg_name>((.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*)))\s+[(](?P<cur_version>.+)\s=>\s+(?P<pend_version>.+)[)]'
   excel_sheet_name: 02-Pending Updates (APT)
   only_matching: True
@@ -80,12 +77,6 @@
     - attr: distro_family
       comp: eq
       value: deb
-    - attr: producer
-      comp: eq
-      value: KPNIXAUDIT
-    - attr: producer_version
-      comp: ge
-      value: "0.6.19"
   comment: |-
     For KPNIXAudit >= 0.6.19
 
@@ -93,7 +84,7 @@
     
     The list has been pared down to critical software and has filtered out packages that don't usually contribute to the overall security of the system.  You can search the Internet for these package names and versions to see if critical CVEs have been resolved.
 
-01_system_12_pending_package_updates_labeled_rpm:
+pending_updates_rpm:
   regex: 'System_PackageManagerUpdates-dnf::(?!Last meta)(?!Available Upgrades)(?!Loaded plugins)(?!Loading mirror)(?!Updated Packages)(?!Get:)(?!Hit:)((?P<pkg_name>(.*389-ds[-\w.]*)|(.*aide[-\w.]*)|(.*ansible[-\w.]*)|(.*apache2[-\w.]*)|(.*apacheds[-\w.]*)|(.*apparmor[-\w.]*)|(.*bind[-\w.]*)|(.*cassandra[-\w.]*)|(.*chef[-\w.]*)|(.*chrony[-\w.]*)|(.*clamav[-\w.]*)|(.*containerd[-\w.]*)|(.*dnsmasq[-\w.]*)|(.*docker[-\w.]*)|(.*dovecot[-\w.]*)|(.*elastic[-\w.]*)|(.*etcd[-\w.]*)|(.*exim4[-\w.]*)|(.*ftpd[-\w.]*)|(.*gdm[-\w.]*)|(.*java[-\w.]*)|(.*jenkins[-\w.]*)|(.*jetty[-\w.]*)|(.*jq[-\w.]*)|(.*kernel.*)(.*kubectl[-\w.]*)|(.*kubernetes[-\w.]*)|(.*libc[-\w.]*)|(.*lighttpd[-\w.]*)|(.*linux-headers[-\w.]*)|(.*linux-image[-\w.]*)|(.*linux-modules[-\w.]*)|(.*maradns[-\w.]*)|(.*mysql[-\w.]*)|(.*nginx[-\w.]*)|(.*nodejs[-\w.]*)|(.*nsd[-\w.]*)|(.*ntpd[-\w.]*)|(.*openjdk[-\w.]*)|(.*openldap[-\w.]*)|(.*openssh[-\w.]*)|(.*openvpn[-\w.]*)|(.*postfix[-\w.]*)|(.*postgres[-\w.]*)|(.*puppet[-\w.]*)|(.*qmail[-\w.]*)|(.*samba[-\w.]*)|(.*selinux[-\w.]*)|(.*sendmail[-\w.]*)|(.*snapd[-\w.]*)|(.*snort[-\w.]*)|(.*squid[-\w.]*)|(.*sssd[-\w.]*)|(.*timesyncd[-\w.]*)|(.*tomcat[-\w.]*)|(.*tripwire[-\w.]*)|(.*xserver[-\w.]*)|(.*yadifa[-\w.]*))\s+(?P<pend_version>[\w\-.:]+))'
   excel_sheet_name: 02-Pending Updates (DNF)
   only_matching: True
@@ -104,12 +95,6 @@
     - attr: distro_family
       comp: eq
       value: rpm
-    - attr: producer
-      comp: eq
-      value: KPNIXAUDIT
-    - attr: producer_version
-      comp: ge
-      value: "0.6.19"
   full_scan: True
   field_list:
     - 'pkg_name'
@@ -123,7 +108,7 @@
 
     The source column indicates whether the data came from "dnf" (preferred, modern tool for RPM-based distros) or "yum" (legacy tool).  Use the DNF data if it's there.
 
-01_system_11_pending_updates_apple:
+pending_updates_apple:
   regex: 'System_PendingUpdates-Apple::.+Title:\s(?P<title>.*?),\s+Version:\s(?P<version>[\d.]+?),.*Recommended:\s+(?P<recommended>.*?),'
   excel_sheet_name: 02-Pending Updates (Apple)
   only_matching: True
@@ -139,7 +124,7 @@
   comment: |-
     This list contains the available updates from Apple for the operation system and other Apple-provided software.
 
-01_system_11_pending_updates_brew:
+pending_updates_brew:
   regex: 'System_PendingUpdates-Brew-(?P<user>\w+)::(?P<title>\w.*?)\s+(?P<currentVersion>[\w\.-]+?)\s->\s(?P<pendingVersion>[\w\.-]+)'
   excel_sheet_name: 02-Pending Updates (Brew)
   only_matching: True
@@ -154,7 +139,7 @@
   comment: |-
     Brew is a popular package management utility for MacOS systems to install 3rd-party software.  Specifically, it bypasses the Apple Store.  This list contains the available updates for Brew-installed software.
 
-01_system_09_pending_updates:
+pending_updates_windows:
   regex: 'System_PendingWindowsUpdates::(?!Title)(?!--)\w+'
   excel_sheet_name: 02-Pending Updates
   full_scan: True
@@ -164,7 +149,7 @@
       comp: eq
       value: Windows
 
-01_system_10_windows_update_config:
+windows_update_config:
   regex: '(System_WindowsUpdateConfig::\s*UseWUServer\s+:\s+(?P<useWUServer>\d+))|(System_WindowsUpdateConfig::\s*WUServer\s+:\s+(?P<wuServer>.*))|(System_WindowsUpdateConfig::\s*ElevateNonAdmins\s+:\s+(?P<elevateNonAdmins>\d+))|(System_WindowsUpdateConfig::\s*DisableWindowsUpdateAccess\s+:\s+(?P<disableWUAccess>\d+))|(System_WindowsUpdateConfig::\s*NoAutoUpdate\s+:\s+(?P<noAutoUpdate>\s*\d+))|(System_WindowsUpdateConfig::\s*AUOptions\s+:\s+(?P<auOptions>\d+))'
   excel_sheet_name: 02-Update Config
   field_list:

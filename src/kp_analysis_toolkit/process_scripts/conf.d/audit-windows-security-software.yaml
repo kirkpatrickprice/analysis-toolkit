@@ -1,9 +1,0 @@
----
-# Security software configurations have been migrated to audit-endpoint-protection.yaml  
-# This file is deprecated and kept for backward compatibility
-
-global:
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Windows

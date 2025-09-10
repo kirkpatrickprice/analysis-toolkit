@@ -201,13 +201,18 @@ def load_yaml_config(config_file: Path) -> YamlConfig:
             message: str = f"Empty YAML file: {config_file}"
             raise ValueError(message)  # noqa: TRY301
 
-        return YamlConfig.from_dict(yaml_data)
+        return YamlConfig.from_dict(yaml_data, str(config_file))
 
     except yaml.YAMLError as e:
         message = f"Invalid YAML syntax in {config_file}: {e}"
         raise ValueError(message) from e
     except Exception as e:
-        message = f"Error loading {config_file}: {e}"
+        # Check if this is a validation error from SearchConfig creation
+        if "Error in search configuration" in str(e):
+            # Re-raise with file context but preserve the search config details
+            message = f"Configuration error in {config_file}: {e}"
+        else:
+            message = f"Error loading {config_file}: {e}"
         raise ValueError(message) from e
 
 
@@ -251,7 +256,13 @@ def process_includes(yaml_config: YamlConfig, base_path: Path) -> list[SearchCon
                     )
                     all_configs.extend(included_configs)
                 except Exception as e:
-                    message = f"Error loading include file {include_path}: {e}"
+                    # Check if this is a validation error that already has search config context
+                    if "Error in search configuration" in str(e):
+                        # Already has detailed context, just add file reference
+                        message = f"Error in include file {include_path}: {e}"
+                    else:
+                        # Generic error, add more context
+                        message = f"Error loading include file {include_path}: {e}"
                     raise ValueError(message) from e
             else:
                 message = f"Include file not found: {include_path}"

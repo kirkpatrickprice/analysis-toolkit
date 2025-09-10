@@ -2,8 +2,11 @@
 # Endpoint Protection & Security Software configurations
 # Migrated from OS-specific files: audit-linux-sec-tools.yaml, audit-windows-security-software.yaml, audit-linux-system.yaml, audit-macos-system.yaml, audit-windows-system.yaml
 
+global:
+  topic: Endpoint Protection & Security Software
+
 # Linux Security Tools and HIDS/FIM Solutions
-01_system_07_selinux_status:
+selinux_status:
   regex: 'System_MACSELinuxInfo::(SELinux status:\s+(?P<status>(enabled|disabled)))|(Loaded policy name:\s+(?P<policyName>\w+))|(Current mode:\s+(?P<currentMode>\w+))|(Mode from config file:\s+(?P<configMode>\w+))|(Memory protection checking:\s+(?P<memoryProtectionChecking>.*))'
   excel_sheet_name: 03-MAC Status (SELinux)
   only_matching: True
@@ -33,7 +36,7 @@
         - Current mode "enforcing"
         - Memory protection should be "actual (secure)"
 
-01_system_07_apparmor_status:
+apparmor_status:
   regex: 'System_MACAppArmorInfo::(apparmor module is (?P<status>.*))|((?P<loadedProfiles>[0-9]+) profiles are loaded)|((?P<enforceProfiles>[0-9]+) profiles are in enforce mode)|((?P<complainProfiles>[0-9]+) profiles are in complain mode)|((?P<definedProcesses>[0-9]+) processes have profiles defined)|((?P<enforceProcesses>[0-9]+) processes are in enforce mode)|((?P<complainProcesses>[0-9]+) processes are in complain mode)|((?P<unconstrainedProcesses>[0-9]+) processes are unconfined but have a profile defined)'
   excel_sheet_name: 03-MAC Status (AppArmor)
   sys_filter:
@@ -67,30 +70,10 @@
         - All defined profiles/processes should either be in "enforce" or "complain" mode
         - No processes should be in "unconfined" status
 
-05_security_01_system_crypto_policy:
-  regex: 'Security_SystemCryptoPolicy::(?P<policy>.*)'
-  excel_sheet_name: 03-System Crypto Policy
-  only_matching: True
-  field_list:
-    - policy
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Linux
-    - attr: producer
-      comp: eq
-      value: KPNIXAUDIT
-    - attr: producer_version
-      comp: ge
-      value: 0.6.17
-  comment: |-
-    System-wide crypto policies are used differently for Debian-based and RPM-based systems.  Refer to the links below for support documentation for each:
-        RPM-based: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening
-        Debian-based: https://manpages.ubuntu.com/manpages/focal/en/man7/crypto-policies.7.html
-    
-    Importantly, it covers OpenSSH, OpenSSL, IPSec (LibreSWAN), DNSSec (Bind) and OpenJDK.
+# Configuration moved to audit-crypto-policies.yaml for topic-based organization
+# 05_security_01_system_crypto_policy
 
-05_security_01_aide_status:
+aide_status:
   regex: 'Security_HidsAIDEConfig::Aide (?P<version>.*)'
   excel_sheet_name: 03-AIDE FIM Status
   only_matching: True
@@ -103,7 +86,7 @@
   comment: |-
     AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the version of the AIDE software installed on the system.
 
-05_security_02_carbonblack_status:
+carbonblack_status_linux:
   regex: 'Security_HidsCarbonBlack::(?!UID)'
   excel_sheet_name: 03-CarbonBlack Status
   show_missing: True
@@ -117,7 +100,7 @@
 
     The methods we used to try to collect some data are not fool-proof.  You might need to poke around in the Running_Processes file looking for "cbagent" or "cbdaemon".  See Confluence for links to CB documentation on process names: https://kirkpatrickprice.atlassian.net/l/cp/ydpx11eH
 
-05_security_09_crowdstrike:
+crowdstrike_status_linux:
   regex: 'Security_HidsCrowdStrike::(?!UID)'
   excel_sheet_name: 03-CrowdStrike Status
   show_missing: True
@@ -128,7 +111,7 @@
   comment: |-
     CrowdStrike is a cloud-based HIDS agent from CrowdStrike.com.  The only check is to see that the service is running, but you should also check the running processes for something similar to "falcon"
 
-05_security_03_ossec_status:
+ossec_status_linux:
   regex: 'Security_HidsOSSECConfig::'
   excel_sheet_name: 03-OSSEC Status
   sys_filter:
@@ -138,7 +121,7 @@
   comment: |-
     Open Source Security (OSSEC) is a popular, FOSS HIDS for Linux and Windows.  The ossec.conf file is valid for both the OSSEC agent and the Wuzah agent.
 
-05_security_04_tripwire_status:
+tripwire_status_linux:
   regex: 'Security_HidsTripwireConfig::'
   excel_sheet_name: 03-Tripwire Status
   sys_filter:
@@ -150,7 +133,7 @@
 
     Anyway, some customers might be running actual TripWire, so we try to pull the configs for review.
 
-05_security_01_aide_config:
+aide_config_linux:
   regex: 'Security_HidsAIDEConfig::.*conf.*?::(?!#)(?P<setting>.*)'
   excel_sheet_name: 03-AIDE FIM Config
   only_matching: True
@@ -165,7 +148,7 @@
 
     Reference: https://linux.die.net/man/5/aide.conf if you need some help interpreting the config
 
-05_security_06_openldap_config:
+openldap_config_linux:
   regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
   excel_sheet_name: 03-OpenLDAP Config
   sys_filter:
@@ -175,7 +158,7 @@
   comment: |-
     OpenLDAP is a directory server for Linux servers.  If being used, it's probably the central source of identity for all production Linux servers.  We're only grabbing the config file, so other checks such as password policy and group memberships will need to done elsewhere.
 
-05_security_08_clamav:
+av_status_clamav:
   regex: 'Security_AVClamAVInfo'
   excel_sheet_name: 03-AV Status (ClamAV)
   sys_filter:
@@ -186,7 +169,7 @@
     ClamAV for Linux.  Far from the best, but still we collect the configs in case that's the answer for "Linux AV".
     If you see reference to it (e.g., in the Cron_Jobs results), FreshClam is the process that checks for AV signature updates.  You should see that this process runs at least daily to update the signature files.
 
-04_secsoft_01_av_status_security_center:
+av_status_security_center_windows:
   regex: 'AntiVirus_AVStatus::((displayName[ ]+:[ ]+)(?P<displayName>.*)|(productState[ ]+:[ ]+(?P<productState>\d+))|(Enabled[ ]+:[ ]+(?P<avEnabled>.*))|(AntispywareEnabled[ ]+:[ ]+(?P<antispywareEnabled>.*))|(AntivirusEnabled[ ]+:[ ]+(?P<antivirusEnabled>.*))|(BehaviorMonitorEnabled[ ]+:[ ]+(?P<behaviorMonitorEnabled>.*))|(OnAccessProtectionEnabled[ ]+:[ ]+(?P<onAccessProtectionEnabled>.*))|(AntispywareSignatureAge[ ]+:[ ]+(?P<antispywareSignatureAge>\d+))|(LastfullscanAge[ ]+:[ ]+(?P<lastfullscanAge>\d+))|(LastQuickScanAge[ ]+:[ ]+(?P<lastQuickScanAge>\d+))|(ProductStatus[ ]+:[ ]+(?P<productStatus>\d+)))'
   excel_sheet_name: 03-AV Status (Security Center)
   field_list:
@@ -234,7 +217,7 @@
       Other antivirus products will need to be researched
     For the other fields: These are known to provide good data for Microsoft Defender.  For other products, they could entirely unreliable.  For Defender, these field names should be self-explanatory, but https://learn.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpcomputerstatus has some more details on what the fields mean.
 
-01_system_08_aslr_config:
+aslr_config_linux:
   regex: 'System_MemoryASLRConfig::'
   excel_sheet_name: 03-Memory Randomization Config
   sys_filter:
@@ -249,25 +232,8 @@
       1 = Enabled (OK)
       2 = Enabled for data segments too (Best, and default for most modern systems)
 
-01_system_03_bitlocker_status:
-  regex: 'System_BitLockerStatus::(?P<MountPoint>\S+)\s+(?P<EncryptionMethod>\S+).*(?P<KeyProtector>{.*})\s+(?P<VolumeStatus>\w+crypt\w+)\s+(?P<ProtectionStatus>On|Off)'
-  excel_sheet_name: 03-BitLocker Status
-  field_list:
-    - 'MountPoint'
-    - 'EncryptionMethod'
-    - 'KeyProtector'
-    - 'VolumeStatus'
-    - 'ProtectionStatus'
-  only_matching: True
-  sys_filter:
-    - attr: os_family
-      comp: eq
-      value: Windows
-  comment: |-
-    Capture the BitLocker status of each disk drive attached to the system.  This can be used to confirm statements such as 'All drives are encrypted with BitLocker.'
-
 # macOS Security Controls and Integrity Protection  
-01_system_14_system_integrity_protection:
+system_integrity_protection_macos:
   regex: 'System_IntegrityProtection::System Integrity Protection status:\s(?P<status>\w+)'
   excel_sheet_name: 03-System Integrity Protection
   only_matching: True
@@ -280,7 +246,7 @@
   comment: |-
     System Integrity Protection provides restrictions on interactions with system-level processes.
 
-01_system_15_amfi:
+apple_amfi:
   regex: 'System_AMFI::(?P<disabled>\d+)'
   excel_sheet_name: 03-Apple Mobile File Integrity
   only_matching: True
@@ -295,7 +261,7 @@
     
     This check should report as '0' meaning that the service has NOT been disabled.
 
-01_system_16_ssv:
+apple_sealed_system_volume:
   regex: 'System_SSV::Authenticated Root status:\s+(?P<status>\w+)'
   excel_sheet_name: 03-Sealed System Volume
   only_matching: True

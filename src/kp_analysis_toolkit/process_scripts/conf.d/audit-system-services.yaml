@@ -1,0 +1,286 @@
+# Topic 8: System Services & Process Management
+# Configurations for running services, scheduled tasks, and process management
+# across all operating systems
+
+global:
+  topic: System Services & Process Management
+
+# ==========================
+# LINUX CONFIGURATIONS
+# ==========================
+
+running_processes_linux:
+  # Uses negative look-ahead '(?!...)' to ignore anything that ends with [.*] which are system process names and probably not useful
+  regex: 'System_RunningProcesses::(?!.*\[\w.*?\]$)(?P<user>[\w+]+)\s+(?P<pid>[\d]+)\s+(?P<cpuPct>[\d.]+)\s+(?P<memPct>[\d.]+)\s+(?P<vsz>\d+)\s+(?P<rss>\d+)\s+(?P<tty>[?\w/]+)\s+(?P<stat>[\w><+]+)\s+(?P<start>[\w:]+)\s+(?P<time>[\d:]+)\s+(?P<command>.*)'
+  excel_sheet_name: 08-Running Processes
+  only_matching: True
+  field_list:
+    - user
+    - pid
+    - cpuPct
+    - memPct
+    - vsz
+    - rss
+    - tty
+    - stat
+    - start
+    - time
+    - command
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This is as good as a blood test at the doctor's office.  If it's not listed here, the process isn't running. You can use it to find running anti-virus daemons, database servers, web servers, pretty much anything
+
+    The most interesting fields are:
+        - user = The username that's running the process.  If you see any web servers running as root, well... that's a really bad practice
+        - start = When did the process last start up.  If you see any really long-lived web servers, well... you can bet they haven't been patched since they were last started
+        - command = the actual process name and the options that were passed to it upon startup.  Sometimes you might find passwords or other sensitive data in the command line options
+
+      If you would like to learn more about the other fields, use "man ps" from your WSL prompt.
+
+system_services_linux:
+  regex: 'Network_ServiceInfo-systemctl::(?P<svc_name>.*?)\s(?P<status>enabled|disabled|generated|static|transient|masked|indirect).*'
+  excel_sheet_name: 08-System Services
+  field_list:
+    - 'svc_name'
+    - 'status'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    A list of all of the configured system services and their current  status.  You can use this section to confirm if certain services are installed, enabled, or disabled.
+  only_matching: True
+
+scheduled_jobs_cron_linux:
+  regex: 'System_CrontabConfig::/etc/crontab::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)\s+(?P<user>\w+)(?P<command>.*)'
+  excel_sheet_name: 08-System Cron Jobs
+  only_matching: True
+  field_list:
+    - minute
+    - hour
+    - dayOfMonth
+    - month
+    - dayOfWeek
+    - user
+    - command
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Cron is the task scheduler, so you can use this to get a list of the scheduled tasks running on a system.  E.g. backup jobs on database servers.
+    Additionally, in the raw text file results, the contents of any scripts located in /etc/cron.* are provided.  If there any interesting jobs -- like a backup job on DB server --
+    you might look at them to see if there are hard-coded passwords or other interesting bits in there.
+
+    From your WSL instance, use "man 5 crontab" to learn more.  In the meantime, the field names should be self-explanatory, but a few pointers might help:
+        - Minute, hour, day, month and day of the week values
+            - * = Any value
+            - */N = every N -- e.g. */6 in "hour" mean "every 6 hours" (actually "any hour that is divisible by 6" using a 24-hour clock)
+            - Digits mean explitly that value -- e.g. 0 in "minute" means "top of the hour"
+            - n,m = Either of the values -- e.g. 0,12 in "hour" means "at midnight and noon"
+            - n-m = A range of values -- e.g. 0-3 in "month" means "Jan,Feb,March"
+        - Day of Week starts with Sunday = 0 (or 7)
+
+scheduled_jobs_cron_files_linux:
+  regex: 'System_CrontabConfig::(?P<filename>[\w/\-.\d]+)::'
+  excel_sheet_name: 08-System Cron Files
+  only_matching: True
+  field_list:
+    - filename
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  unique: True
+
+scheduled_jobs_user_crontabs_linux:
+  regex: 'System_UserCrontab::/var/spool/cron/(crontabs)?/(?P<user>\w+)::(?P<minute>[-\d\*/\,]+)\s+(?P<hour>[-\d\*/,]+)\s+(?P<dayOfMonth>[-\d\*/\,]+)\s+(?P<month>[-\w\d\*/\,]+)\s+(?P<dayOfWeek>[-\w\d\*/\,]+)(?P<command>.*)'
+  excel_sheet_name: 08-User Cron Files
+  only_matching: True
+  field_list:
+    - user
+    - minute
+    - hour
+    - dayOfMonth
+    - month
+    - dayOfWeek
+    - command
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Cron is the task scheduler.  This list includes all per-user cron jobs, which are separate from the system-level cron jobs listed in 01_system_03_cron_jobs.
+
+scheduled_jobs_systemd_timers:
+  regex: 'System_Timers::(?P<next>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s+[A-Z]{3,4})\s+(?P<timeLeft>[0-9].*?left)\s+(?P<last>[SMTWF][a-z]{2}\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s[A-Z]{3,4})\s+(?P<passed>[0-9].*?ago)\s+(?P<unit>[A-Za-z].*?\.timer)\s+(?P<activates>[A-Za-z].*)'
+  excel_sheet_name: 08-SystemD Timers
+  only_matching: True
+  field_list:
+    - next
+    - timeLeft
+    - last
+    - passed
+    - unit
+    - activates
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: producer
+      comp: eq
+      value: KPNIXAUDIT
+    - attr: producer_version
+      comp: ge
+      value: "0.6.18"
+  comment: |-
+    In addition to the cron system, which has been around for decades, SystemD also has "timers" to schedule system jobs and other activities.  This list shows all of the currently active timers on the system.  Reference the raw results files for additional details on specific timers.
+
+linux_suid_coredump:
+  regex: 'System_MemoryCoreDump::fs.suid_dumpable'
+  excel_sheet_name: 08-SUID Core Dump Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    SUID programs run with elevated permissions and core dumps could contain sensitive system information.  One example is the "passwd" command to change a user's password.
+
+    Values:
+        - 0 (SUID_DUMP_DISABLE) = SUID programs will not be dumped (preferred)
+        - 1 (SUID_DUMP_USER) = SUID programs will be dumped (bad)
+        - 2 (SUID_SAFE) = SUID programs will be dumped such that the core dump files are only readable by ROOT (OK)
+
+# ==========================
+# WINDOWS CONFIGURATIONS
+# ==========================
+
+
+running_processes_windows:
+  regex: 'System_RunningProcesses::(ProcessName\s+:(?P<processName>.*)|Path\s+:(?P<path>.*)|(Company\s+:(?P<company>.*))|(Product\s+:(?P<product>.*))|(UserName\s+:(?P<userName>.*)))'
+  excel_sheet_name: 08-Running Processes
+  field_list:
+    - 'processName'
+    - 'path'
+    - 'company'
+    - 'product'
+    - 'userName'
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: 'os_family'
+      comp: 'eq'
+      value: 'Windows'
+  comment: |-
+    A list of all of running processes on the system.  This is useful when looking for anti-virus, user programs and really anything else that's currently listed in the Task Manager.  This file shows information for KPWinAudit versions 0.4.6 and later and includes the username running the process.
+
+    Use the information posted at https://kirkpatrickprice.atlassian.net/l/cp/pTWXbsnQ to help find useful process names.
+
+system_services_windows:
+  regex: 'System_Services::(?!DisplayName)(?!--)(?P<serviceName>(\w+\s)+)\s+(?P<status>Running|Stopped)\s+(?P<startupType>.*)'
+  excel_sheet_name: 08-System Services (Labeled)
+  field_list:
+    - 'serviceName'
+    - 'status'
+    - 'startupType'
+  only_matching: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    A list of system services and their current status.  This file includes the results in columnar listing for easier sort/filter.  Another file shows the lines exactly as they appear in the text file (without too much processing).
+
+scheduled_tasks_windows:
+  regex: 'System_ScheduledTaskInfo::\s*((?P<task_name>[A-Za-z0-9 -_]+)\s+(?P<last_run_time>[0-9]{1,2}/[0-9/:\s]+:[0-9]{1,2})\s+(?P<last_result>[0-9]+)\s+(?P<number_missed_runs>[0-9]+)\s(?P<next_run_time>.*))'
+  excel_sheet_name: 08-Scheduled Tasks
+  field_list:
+    - 'task_name'
+    - 'last_run_time'
+    - 'last_task_result'
+    - 'next_run_time'
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    A list of all scheduled tasks.  Includes last and next run time as well as the result.  At least some anti-virus could use scheduled tasks to run a weekly full scan.
+    
+    Result codes:
+      0 -- Success
+      1 -- File or path not found
+      Other codes -- https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-error-and-success-constants
+
+# ==========================
+# MACOS CONFIGURATIONS
+# ==========================
+
+scheduled_jobs_macos:
+  regex: 'System_Periodic::/etc/periodic/(?P<frequency>(daily|weekly|monthly))/(?P<jobName>.*?)::'
+  excel_sheet_name: 08-MacOS Scheduled Jobs
+  only_matching: True
+  unique: True
+  field_list:
+    - frequency
+    - jobName
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    Periodic is the MacOS task scheduler, so you can use this to get a list of the scheduled tasks running on a system.  E.g. backup jobs on database servers.
+    Additionally, in the raw text file results, the contents of any scripts located in /etc/periodic/.* are provided.  If there any interesting jobs -- like a backup job on DB server --
+    you might look at them to see if there are hard-coded passwords or other interesting bits in there.
+
+    NOTE: On a typical user system, all of the jobs could be only those which are included by default and probably won't be very interesting.
+
+running_processes_macos:
+  regex: 'System_RunningProcesses::\s+(?P<user>[\d+]+)\s+(?P<pid>\d+)\s+(?P<parentPid>\d+)\s+(?P<cpu>\d+)\s+(?P<startTime>.+?)\s+(?P<tty>.+?)\s+(?P<time>[\d:.]+)\s+(?P<command>.*)'
+  excel_sheet_name: 08-Running Processes
+  only_matching: True
+  field_list:
+    - user
+    - pid
+    - parentPid
+    - cpu
+    - startTime
+    - tty
+    - time
+    - command
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This is as good as a blood test at the doctor's office.  If it's not listed here, the process isn't running. You can use it to find running anti-virus daemons, database servers, web servers, pretty much anything
+
+    The most interesting fields are:
+        - user = The username that's running the process.  If you see any web servers running as root, well... that's a really bad practice
+        - start = When did the process last start up.  If you see any really long-lived web servers, well... you can bet they haven't been patched since they were last started
+        - command = the actual process name and the options that were passed to it upon startup.  Sometimes you might find passwords or other sensitive data in the command line options
+
+      If you would like to learn more about the other fields, use "man ps" from your WSL prompt.  While the information is not identical to MacOS, it will be pretty close.
+
+system_services_macos:
+  regex: 'System_ServiceInfo::(?P<pid>[\d-]+)\s+(?P<exitStatus>\d+)\s+(?P<label>.*)'
+  excel_sheet_name: 08-System Services
+  only_matching: True
+  field_list:
+    - pid
+    - exitStatus
+    - label
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    This section attempts to get the status of all of the running services on a system.  MacOS services are more OS feature-related (akin to Windows) than how we use the same term in Linux (network-accessible servers)
+    For network-accessible servers, see "Network_ListeningServices" below.
+    In this list:
+      - PID: If there's a number in the first field, it means the service is currently running.  
+      - ExitStatus: The second column displays the last exit status of the job (0 means that it exited normally).
+      - Label: The third column is the job's label.
