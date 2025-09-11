@@ -17,9 +17,10 @@ This guide provides tips and pointers for working with the result files generate
 - Completed set of script results processed by the `scripts` tool
 
 ### Knowledge Requirements
-The collection scripts address a [wide range of topics](scripts-categories.md) related to Linux, MacOS and Windows operating systems.  Users should be familiar with the operating systems being reviewed, including:
+The collection scripts address a [wide range of topics](scripts-categories.md) related to Linux, MacOS and Windows operating systems.  Users should be familiar with the following:
 
-- Familiarity with the auditing frameworks -- such as SOC2, HIPAA and PCI DSS -- through which the results will be interpreted
+- Operating systems being audited
+- Auditing frameworks -- such as SOC2, HIPAA and PCI DSS -- through which the results will be interpreted
 - Configuration management practices such as those published by the [Center for Internet Security](https://cisecurity.org/benchmarks)
 - File system permission management
 - Remote administration protocols such as Remote Desktop Protocol and SSH
@@ -110,7 +111,7 @@ Information on this worksheet includes:
 **Tips**
 
 - Absolutely use the hyperlinks to navigate the results from this tab
-- Excel appears to the lack a `Back` button like your web browser has.  But the short key works:
+- Excel appears to lack a `Back` button like your web browser has.  But the short key works:
     - Use `Alt-LeftArrow` to return to the Summary worksheet
 - The colors between the rows in the table and worksheet tabs at the bottom are synchronized.  If they appear more vivid on the tabs, that's Excel's doing.
 
@@ -130,6 +131,9 @@ Information on this worksheet includes:
 
 **Tips**:
 
+- Organize the results by:
+    - Using folders to group by common characteristics
+    - Renaming files to prepend a meaningful tag such as `prod_`, `endpoint_`, or `dba_` to the file
 - Use `Producer Version` to confirm that returning clients used the newest version of the collection script
 - For Windows-based systems, `Current Build` and `UBR` provide near-instant answers for:
     - Is the Operating System still supported by Microsoft?
@@ -151,7 +155,7 @@ Each detailed search result worksheet includes the following:
 ### Working with Dated Results
 Many of the search results extract date fields which can be used to determine the effectiveness of the control implementation over time.  By using Excel's PivotTable feature, we can turn these results into a calendar for a much more natural presentation.
 
-The following PivotTable took less than 60 seconds to create and clearly depicts that some systems in the sample set haven't been patched since 2022.  A serious finding indeed!
+The following PivotTable took less than 60 seconds to create and clearly depicts that some systems in the sample set haven't been patched since Q2 2023.  A serious finding indeed!
 ![Patching Calendar](../assets/kpat-scripts-results-dated-content.png "Patching Calendar")
 
 Using the results from the `Update History` worksheet, here are the steps to reproduce this Patching History calendar view:
@@ -159,6 +163,9 @@ Using the results from the `Update History` worksheet, here are the steps to rep
 1. **Convert all date-like fields:** Just because it looks like a date doesn't make it a date for Excel.  A neat trick is to `Search|Replace` some text with the same text.
 
     ![Not a date!](../assets/kpat-scripts-results-dated-content-step-1a.png "Not a date!")
+
+    **Search and Replace...**
+
     ![Now it's a date!](../assets/kpat-scripts-results-dated-content-step-1b.png "Now it's a date!")
 
     Now they're all dates!
@@ -188,6 +195,8 @@ Using the results from the `Update History` worksheet, here are the steps to rep
     ![Remove Grand Total](../assets/kpat-scripts-results-dated-content-step-4.png "Remove Grand Total")
 
 **That's it!!!** You now have a calendar view and can more easily spot the patterns in dated "Update History" results.
+
+![Patching Calendar](../assets/kpat-scripts-results-dated-content.png "Patching Calendar")
 
 ## Related Documentation
 

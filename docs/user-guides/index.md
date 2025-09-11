@@ -45,7 +45,7 @@ Each of these tools are presented in their own user guide page.
 
 See the [PowerShell Primer](powershell-primer.md) for additional help on getting started with PowerShell.
 
-**Running `kpat_cli`**
+### Running `kpat_cli`
 
 After [installation](installation.md), the `kpat_cli` command will be available.  Test it by displaying the help page.
 
@@ -55,7 +55,7 @@ kpat_cli --help
 
 ![KPAT Help](../assets/kpat-help.png "KPAT Help")
 
-#### Working with Files
+### Working with Files
 KPAT is built around working with files and folders.  Each tool receives input file(s), transforms it, and produces output files.
 
 ```mermaid
