@@ -140,7 +140,8 @@ The default configuration will process all Windows, MacOS and Linux systems (`au
 
 2. Override the default
     ```powershell
-    kpat_cli scripts -c audit-windows.yaml
+    # Extract only vulnerability management-related results
+    kpat_cli scripts -c audit-vuln-mgmt.yaml
     ```
 
 ## Output and Results

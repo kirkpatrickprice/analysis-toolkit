@@ -51,7 +51,10 @@ nav:
     - user-guides/index.md
     - PowerShell Primer: user-guides/powershell-primer.md
     - Installation: user-guides/installation.md
-    - Process Scripts: user-guides/scripts.md
+    - Process Scripts:
+      - Scripts Command: user-guides/scripts.md
+      - Working with Results: user-guides/scripts-results.md
+      - Audit Categories: user-guides/scripts-categories.md
   
 plugins:
   - search

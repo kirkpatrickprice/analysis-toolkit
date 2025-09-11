@@ -43,7 +43,7 @@ Each of these tools are presented in their own user guide page.
     C:
     ```
 
-    See the [PowerShell Primer](powershell-primer.md) for additional help on getting started with PowerShell.
+See the [PowerShell Primer](powershell-primer.md) for additional help on getting started with PowerShell.
 
 **Running `kpat_cli`**
 
