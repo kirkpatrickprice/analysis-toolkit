@@ -1,5 +1,14 @@
 # KPAT Changes
 
+## 2025-09-12
+Version 2.1.0
+
+* Reorganized search configurations into topical groups (from OS platform-based groups) [#59](https://github.com/kirkpatrickprice/analysis-toolkit/issues/59)
+* Added group-based color coding to Excel result files
+* Created user guide documentation with MkDocs
+* Added hyperlinks from Search Summary tab to each search result details worksheet [#35](https://github.com/kirkpatrickprice/analysis-toolkit/issues/35)
+* Published user guides to Github Pages at https://kirkpatrickprice.github.io/analysis-toolkit
+
 ## 2025-08-04
 Version 2.0.6
 
