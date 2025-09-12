@@ -1,0 +1,98 @@
+# Time Synchronization Audit Configuration
+# This file contains configurations for auditing time synchronization services across all operating systems
+# including NTP, Chrony, timesyncd, and Windows W32Time services.
+
+global:
+  topic: Time Synchronization
+
+# Windows Clock Permissions
+clock_permissions_windows:
+  sys_filter:
+    - attr: 'os_family'
+      comp: 'eq'
+      value: 'Windows'
+  regex: 'Time_ClockPermissions::SeSystemtimePrivilege = (?P<clockPermissions>.*)'
+  excel_sheet_name: 11-Clock Permissions
+  field_list:
+    - clockPermissions  
+  comment: |-
+    These results show this is the list of entities (Windows SIDs) with permissions to adjust the clock.  Default is *19 (Windows LSA) and *544 (Local Administrators)
+    
+    This is critical for a PCI DSS assessment, but is also important for other types of audits.
+
+# Network Time Service Status and Peers
+time_peers_linux_macos:
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Darwin]
+  regex: 'Network_NTP-(?P<ntp_type>ntpd|chronyd|timesyncd)::([*-+ ]|(Remote address\s+: )|(\s+Server: ))(?!(RTC|Next|Last|Packet|Network))(?P<peer>([-\w.]+))'
+  excel_sheet_name: 11-NTP Peers
+  field_list:
+    - 'ntp_type'
+    - 'peer'
+  show_missing: True
+  comment: |-
+    This list provides the NTP sources that each system is peered with to get its time.  For IP addresses, you can use "nslookup <IPAddress>" to try to get the DNS name.  Also be on the lookout "LOCAL" as this could mean the system is not acquiring time from anywhere.
+
+    Also, see the note in "04_services_04_time_config" about using *.pool.ntp.org.  This will show up here as inconsistent NTP sources from server to server as each system will receive a random set of pool member at start-up time.
+
+time_version_linux_macos::
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Darwin]
+  regex: 'Network_NTP-.*version'
+  excel_sheet_name: 11-NTP Version
+  comment: |-
+    You'll need this for a PCI DSS assessment
+
+time_config_linux_macos:
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Darwin]
+  regex: 'Network_NTP::.*?(?P<configFile>ntp.conf|xntp.conf|chrony.conf|timesyncd.conf)::(?!#).*?(?P<parameter>server|pool|restrict|peer|allow|deny|log|NTP)\s+(?P<value>.*)'
+  excel_sheet_name: 11-NTP Config
+  only_matching: True
+  field_list:
+    - configFile
+    - parameter
+    - value
+  comment: |-
+    This shows the current NTP configuration for the most popular NTP services -- ntpd, Chrony and timesyncd
+
+    Of special note:
+        - "restrict" / "allow" -- limit inbound connection to only these authorized sources (the different is that NTPd uses "restrict" and Chrony uses "allow", but they both accomplish the same thing)
+        - "server" / "pool" -- Sources from which to acquire time.  Note: *.pool.ntp.org is a community effort.  Anyone can "join" the pool and provide time to others.  This is a no-go for a PCI DSS assessment and you can determine if it's a problem in any other audit you might be working on.
+
+    Also note that timesyncd does not implement some necessary requirements for use in a PCI DSS cardholder data environment.  Specifically, it doesn't log changes to the clock with sufficient detail.
+
+time_peers_windows:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  regex: 'Time_W32TimePeers::(Peer:\s+(?P<peer>.*)|State:\s+(?P<state>.*)|Mode:\s+(?P<mode>.*)|Last Successful Sync Time:\s+(?P<syncTime>.*))'
+  excel_sheet_name: 11-NTP Peers
+  field_list:
+    - peer
+    - state
+    - mode
+    - syncTime
+  show_missing: True
+  multiline: True
+  comment: |-
+    A list of the peers with which the system is connected for time.  Each of the fields should be self-explanatory.
+
+    Only trusted, internal sources should be used for most devices.  These trusted time sources should query only trusted external time sources and should also peer with each other.
+
+time_logs_windows:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  regex: 'Time_W32TimeLogs::'
+  excel_sheet_name: 11-W32Time Log Sample
+  comment: |-
+    A list of Windows Event Logs related to Time Synchronization.  This is needed for PCI DSS assessment.

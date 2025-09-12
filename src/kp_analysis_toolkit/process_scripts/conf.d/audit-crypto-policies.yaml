@@ -1,0 +1,32 @@
+# ============================================================================
+# Cryptographic Controls & PKI Configuration
+# ============================================================================
+# Purpose: Encryption configurations, certificate management, and cryptographic policies
+# 
+# This configuration file provides audit checks for cryptographic controls
+# including system crypto policies, SSL/TLS configurations, cipher suites,
+# certificate management, and detection of weak cryptographic implementations
+# across all operating systems.
+# ============================================================================
+
+global:
+  topic: Crypto Policies
+
+# System crypto policies (Linux)
+system_crypto_policy_linux:
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  regex: 'Security_SystemCryptoPolicy::(?P<policy>.*)'
+  excel_sheet_name: 10-System Crypto Policy
+  only_matching: True
+  field_list:
+    - policy
+  comment: |-
+    System-wide crypto policies are used differently for Debian-based and RPM-based systems.  Refer to the links below for support documentation for each:
+        RPM-based: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening
+        Debian-based: https://manpages.ubuntu.com/manpages/focal/en/man7/crypto-policies.7.html
+    
+    Importantly, it covers OpenSSH, OpenSSL, IPSec (LibreSWAN), DNSSec (Bind) and OpenJDK.
+

@@ -1,0 +1,275 @@
+---
+# Endpoint Protection & Security Software configurations
+# Migrated from OS-specific files: audit-linux-sec-tools.yaml, audit-windows-security-software.yaml, audit-linux-system.yaml, audit-macos-system.yaml, audit-windows-system.yaml
+
+global:
+  topic: Endpoint Protection & Security Software
+
+# Linux Security Tools and HIDS/FIM Solutions
+selinux_status:
+  regex: 'System_MACSELinuxInfo::(SELinux status:\s+(?P<status>(enabled|disabled)))|(Loaded policy name:\s+(?P<policyName>\w+))|(Current mode:\s+(?P<currentMode>\w+))|(Mode from config file:\s+(?P<configMode>\w+))|(Memory protection checking:\s+(?P<memoryProtectionChecking>.*))'
+  excel_sheet_name: 03-MAC Status (SELinux)
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: rpm
+  field_list:
+    - status
+    - policyName
+    - currentMode
+    - configMode
+    - memoryProtectionChecking
+  show_missing: True
+  comment: |-
+    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
+    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
+    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
+    is installed.  SELinux is usually used on RPM-based distros such as Red Hat, CentOS, Oracle Linux and Amazon Linux.
+
+    Recommended settings:
+        - Policy name "targeted"
+        - Current mode "enforcing"
+        - Memory protection should be "actual (secure)"
+
+apparmor_status:
+  regex: 'System_MACAppArmorInfo::(apparmor module is (?P<status>.*))|((?P<loadedProfiles>[0-9]+) profiles are loaded)|((?P<enforceProfiles>[0-9]+) profiles are in enforce mode)|((?P<complainProfiles>[0-9]+) profiles are in complain mode)|((?P<definedProcesses>[0-9]+) processes have profiles defined)|((?P<enforceProcesses>[0-9]+) processes are in enforce mode)|((?P<complainProcesses>[0-9]+) processes are in complain mode)|((?P<unconstrainedProcesses>[0-9]+) processes are unconfined but have a profile defined)'
+  excel_sheet_name: 03-MAC Status (AppArmor)
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+    - attr: distro_family
+      comp: eq
+      value: deb
+  only_matching: True
+  multiline: True
+  field_list:
+    - status
+    - loadedProfiles
+    - enforceProfiles
+    - complainProfiles
+    - definedProcesses
+    - enforceProcesses
+    - complainProcesses
+    - unconstrainedProcesses
+  show_missing: True
+  comment: |-
+    SELinux and AppArmor both implement enhanced security on Linux by introducing Mandatory Access Controls (MACs)
+    to the Linux kernel.  This can, among other benefits, be used to enforce inter-process behavior beyond just the
+    user security model we're already accustomed to.  For CIS 1.6.1.1, you should find that either SELinux or AppArmor
+    is installed.  AppArmor is usually used on Debian-based distros such as Debian and Ubuntu.
+
+    Recommendations:
+        - The module should report as "loaded"
+        - There should be at least some profiles and processes defined (>0)
+        - All defined profiles/processes should either be in "enforce" or "complain" mode
+        - No processes should be in "unconfined" status
+
+# Configuration moved to audit-crypto-policies.yaml for topic-based organization
+# 05_security_01_system_crypto_policy
+
+aide_status:
+  regex: 'Security_HidsAIDEConfig::Aide (?P<version>.*)'
+  excel_sheet_name: 03-AIDE FIM Status
+  only_matching: True
+  field_list: 
+    - version
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the version of the AIDE software installed on the system.
+
+carbonblack_status_linux:
+  regex: 'Security_HidsCarbonBlack::(?!UID)'
+  excel_sheet_name: 03-CarbonBlack Status
+  show_missing: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    CarbonBlack is an increasinbly-popular Endpoint Detection and Response.  It's much more than AV, even though that's frequently where we first hear of it in a customer's environment.
+    It might also be the answer for FIM and a few other things.
+
+    The methods we used to try to collect some data are not fool-proof.  You might need to poke around in the Running_Processes file looking for "cbagent" or "cbdaemon".  See Confluence for links to CB documentation on process names: https://kirkpatrickprice.atlassian.net/l/cp/ydpx11eH
+
+crowdstrike_status_linux:
+  regex: 'Security_HidsCrowdStrike::(?!UID)'
+  excel_sheet_name: 03-CrowdStrike Status
+  show_missing: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    CrowdStrike is a cloud-based HIDS agent from CrowdStrike.com.  The only check is to see that the service is running, but you should also check the running processes for something similar to "falcon"
+
+ossec_status_linux:
+  regex: 'Security_HidsOSSECConfig::'
+  excel_sheet_name: 03-OSSEC Status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Open Source Security (OSSEC) is a popular, FOSS HIDS for Linux and Windows.  The ossec.conf file is valid for both the OSSEC agent and the Wuzah agent.
+
+tripwire_status_linux:
+  regex: 'Security_HidsTripwireConfig::'
+  excel_sheet_name: 03-Tripwire Status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    TripWire used to be what AIDE has become -- freely available FIM for Linux.  But TW decided to go the all-commercial route, and AIDE is now the freely available one.
+
+    Anyway, some customers might be running actual TripWire, so we try to pull the configs for review.
+
+aide_config_linux:
+  regex: 'Security_HidsAIDEConfig::.*conf.*?::(?!#)(?P<setting>.*)'
+  excel_sheet_name: 03-AIDE FIM Config
+  only_matching: True
+  field_list: 
+    - setting
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    AIDE (Advanced Intrusion Detection Engine) is a file integrity monitoring package for Linux.  This report provides the content of the aide.conf file(s).  You can use this to determine which files and directories are being monitored by AIDE.
+
+    Reference: https://linux.die.net/man/5/aide.conf if you need some help interpreting the config
+
+openldap_config_linux:
+  regex: 'Security_OpenLDAPConfig::(?!.*?::#)'
+  excel_sheet_name: 03-OpenLDAP Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    OpenLDAP is a directory server for Linux servers.  If being used, it's probably the central source of identity for all production Linux servers.  We're only grabbing the config file, so other checks such as password policy and group memberships will need to done elsewhere.
+
+av_status_clamav:
+  regex: 'Security_AVClamAVInfo'
+  excel_sheet_name: 03-AV Status (ClamAV)
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    ClamAV for Linux.  Far from the best, but still we collect the configs in case that's the answer for "Linux AV".
+    If you see reference to it (e.g., in the Cron_Jobs results), FreshClam is the process that checks for AV signature updates.  You should see that this process runs at least daily to update the signature files.
+
+av_status_security_center_windows:
+  regex: 'AntiVirus_AVStatus::((displayName[ ]+:[ ]+)(?P<displayName>.*)|(productState[ ]+:[ ]+(?P<productState>\d+))|(Enabled[ ]+:[ ]+(?P<avEnabled>.*))|(AntispywareEnabled[ ]+:[ ]+(?P<antispywareEnabled>.*))|(AntivirusEnabled[ ]+:[ ]+(?P<antivirusEnabled>.*))|(BehaviorMonitorEnabled[ ]+:[ ]+(?P<behaviorMonitorEnabled>.*))|(OnAccessProtectionEnabled[ ]+:[ ]+(?P<onAccessProtectionEnabled>.*))|(AntispywareSignatureAge[ ]+:[ ]+(?P<antispywareSignatureAge>\d+))|(LastfullscanAge[ ]+:[ ]+(?P<lastfullscanAge>\d+))|(LastQuickScanAge[ ]+:[ ]+(?P<lastQuickScanAge>\d+))|(ProductStatus[ ]+:[ ]+(?P<productStatus>\d+)))'
+  excel_sheet_name: 03-AV Status (Security Center)
+  field_list:
+    - displayName
+    - productState
+    - avEnabled
+    - antispywareEnabled
+    - antivirusEnabled
+    - behaviorMonitorEnabled
+    - onAccessProtectionEnabled
+    - antispywareSignatureAge
+    - lastfull_scanAge
+    - lastQuickScanAge
+    - productStatus
+  only_matching: True
+  multiline: True
+  show_missing: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    This shows results coming from Windows Security Center.  Exactly how different products use SC is a bit of mystery, but for clients using Microsoft Defender, this should give reliable data.
+    For ProductState (not ProductStatus -- sorry for the confusing names -- they come from Micorosft)
+      **IF OUTPUT IS BLANK - NO ANTI VIRUS IS INSTALLED OR REQUIRES MANUAL CHECK**.  If that happens, you might also review the running process list (System_RunningProcesses) to see if you can find the A/V binaries.  This would at least provide that A/V is running, even if other details need to tested manually.
+      AVG Antivirus productState https://mspscripts.com/get-installed-antivirus-information-2/
+        262144 | Definitions = Up to date  | Status = Disabled
+        266240 | Definitions = Up to date  | Status = Enabled
+        262160 | Definitions = Out of date | Status = Disabled
+        266256 | Definitions = Out of date | Status = Enabled
+        393216 | Definitions = Up to date  | Status = Disabled
+        393232 | Definitions = Out of date | Status = Disabled
+        393488 | Definitions = Out of date | Status = Disabled
+        397312 | Definitions = Up to date  | Status = Enabled
+        397328 | Definitions = Out of date | Status = Enabled
+      Windows Defender productState https://social.msdn.microsoft.com/Forums/en-US/6501b87e-dda4-4838-93c3-244daa355d7c/wmisecuritycenter2-productstate
+        393472 | Definitions = Up to date  | Status = Disabled
+        397584 | Definitions = Out of date | Status = Enabled
+        397568 | Definitions = Up to date  | Status = Enabled
+      McAfee productState https://kc.mcafee.com/corporate/index?page=content&id=KB90221
+        ProductState=262144 = Up to Date Defs, On Access Scanning OFF
+        ProductState=266240 = Up to Date Defs, ON Access Scanning ON
+        ProductState=393216 = Up to Date Defs, On Access Scanning OFF
+        ProductState=397312 = Up to Date Defs, ON Access Scanning ON
+      Other antivirus products will need to be researched
+    For the other fields: These are known to provide good data for Microsoft Defender.  For other products, they could entirely unreliable.  For Defender, these field names should be self-explanatory, but https://learn.microsoft.com/en-us/previous-versions/windows/desktop/defender/msft-mpcomputerstatus has some more details on what the fields mean.
+
+aslr_config_linux:
+  regex: 'System_MemoryASLRConfig::'
+  excel_sheet_name: 03-Memory Randomization Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Address Space Layout Randomization (ASLR) enhances security by randomizing memory locations, making it harder for hackers to execute buffer overflow, stack overflow and other similar attacks.  
+    
+    Possible values:
+      0 = Disabled (bad)
+      1 = Enabled (OK)
+      2 = Enabled for data segments too (Best, and default for most modern systems)
+
+# macOS Security Controls and Integrity Protection  
+system_integrity_protection_macos:
+  regex: 'System_IntegrityProtection::System Integrity Protection status:\s(?P<status>\w+)'
+  excel_sheet_name: 03-System Integrity Protection
+  only_matching: True
+  field_list:
+    - status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    System Integrity Protection provides restrictions on interactions with system-level processes.
+
+apple_amfi:
+  regex: 'System_AMFI::(?P<disabled>\d+)'
+  excel_sheet_name: 03-Apple Mobile File Integrity
+  only_matching: True
+  field_list:
+    - disabled
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    Apple Mobile File Integrity (AMFI) is the macOS kernel module that enforces code-signing and library validation.  It's always enabled unless it's been specifically disabled.
+    
+    This check should report as '0' meaning that the service has NOT been disabled.
+
+apple_sealed_system_volume:
+  regex: 'System_SSV::Authenticated Root status:\s+(?P<status>\w+)'
+  excel_sheet_name: 03-Sealed System Volume
+  only_matching: True
+  field_list:
+    - status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    Sealed System Volume (SSV) provides tamper protection for system files on macOS.

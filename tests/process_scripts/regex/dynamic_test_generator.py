@@ -273,8 +273,17 @@ def create_platform_test_class(
     return test_class
 
 
-def discover_yaml_files(platform: str) -> list[str]:
-    """Discover all audit YAML files for a given platform."""
+def discover_yaml_files(platform: str | None = None) -> list[str]:
+    """
+    Discover all audit YAML files.
+
+    Args:
+        platform: Platform name (kept for backward compatibility but not used)
+
+    Returns:
+        List of audit YAML filenames
+
+    """
     from pathlib import Path
 
     yaml_dir = (
@@ -285,7 +294,9 @@ def discover_yaml_files(platform: str) -> list[str]:
         / "conf.d"
     )
 
-    pattern = f"audit-{platform.lower()}-*.yaml"
-    yaml_files = [f.name for f in yaml_dir.glob(pattern)]
+    # Get all audit YAML files (excluding audit-all.yaml which is an include file)
+    yaml_files = [
+        f.name for f in yaml_dir.glob("audit-*.yaml") if f.name != "audit-all.yaml"
+    ]
 
     return sorted(yaml_files)  # Sort for consistent test order

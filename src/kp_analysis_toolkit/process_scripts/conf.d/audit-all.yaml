@@ -30,6 +30,14 @@
 
 include_all:
   files:
-    - audit-linux.yaml
-    - audit-macos.yaml
-    - audit-windows.yaml
+    - audit-crypto-policies.yaml
+    - audit-endpoint-protection.yaml
+    - audit-file-systems.yaml
+    - audit-logging.yaml
+    - audit-network.yaml
+    - audit-remote-mgmt.yaml
+    - audit-sysinfo.yaml
+    - audit-system-services.yaml
+    - audit-time-sync.yaml
+    - audit-user-auth.yaml
+    - audit-vuln-mgmt.yaml

@@ -1,8 +1,10 @@
-from pydantic import field_validator
+from pydantic import ValidationInfo, field_validator
 
 from kp_analysis_toolkit.models.base import KPATBaseModel
 from kp_analysis_toolkit.process_scripts.models.base import ConfigModel
+from kp_analysis_toolkit.process_scripts.models.enums import SysFilterAttr
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
+from kp_analysis_toolkit.utils.rich_output import get_rich_output
 
 
 class MergeFieldConfig(KPATBaseModel):
@@ -25,6 +27,7 @@ class MergeFieldConfig(KPATBaseModel):
 class GlobalConfig(KPATBaseModel, ConfigModel):
     """Global configuration that can be applied to all search sections."""
 
+    topic: str | None = None
     sys_filter: list[SystemFilter] | None = None
     max_results: int | None = None
     only_matching: bool | None = None
@@ -39,6 +42,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     regex: str
     comment: str | None = None
     excel_sheet_name: str
+    topic: str | None = None
     max_results: int = -1
     field_list: list[str] | None = None
     only_matching: bool = False
@@ -49,6 +53,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     merge_fields: list[MergeFieldConfig] | None = None
     sys_filter: list[SystemFilter] | None = None
     show_missing: bool = False
+    source_file: str | None = None  # Track the source file for better error reporting
 
     @field_validator("regex")
     @classmethod
@@ -74,7 +79,11 @@ class SearchConfig(KPATBaseModel, ConfigModel):
 
     @field_validator("only_matching")
     @classmethod
-    def validate_field_list_with_only_matching(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+    def validate_field_list_with_only_matching(
+        cls,
+        value: bool,
+        info: ValidationInfo,
+    ) -> bool:
         """Validate that field_list is only used with only_matching=True."""
         if info.data.get("field_list") and not value:
             # Override only_matching to True if field_list is specified
@@ -83,7 +92,11 @@ class SearchConfig(KPATBaseModel, ConfigModel):
 
     @field_validator("multiline")
     @classmethod
-    def validate_multiline_with_field_list(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+    def validate_multiline_with_field_list(
+        cls,
+        value: bool,
+        info: ValidationInfo,
+    ) -> bool:
         """Validate that multiline is only used when field_list is specified."""
         if value and not info.data.get("field_list"):
             message: str = "multiline can only be used when field_list is specified"
@@ -92,7 +105,11 @@ class SearchConfig(KPATBaseModel, ConfigModel):
 
     @field_validator("multiline")
     @classmethod
-    def validate_multiline_with_rs_delimiter(cls, value: bool, info: dict) -> bool:  # noqa: FBT001
+    def validate_multiline_with_rs_delimiter(
+        cls,
+        value: bool,
+        info: ValidationInfo,
+    ) -> bool:
         """Validate that rs_delimiter is only used with multiline=True."""
         if info.data.get("rs_delimiter") and not value:
             message = "rs_delimiter can only be used with multiline=True"
@@ -104,7 +121,7 @@ class SearchConfig(KPATBaseModel, ConfigModel):
     def validate_rs_delimiter_with_field_list(
         cls,
         value: str | None,
-        info: dict,
+        info: ValidationInfo,
     ) -> str | None:
         """Validate that rs_delimiter is only used when field_list is specified."""
         if value is not None and not info.data.get("field_list"):
@@ -117,6 +134,9 @@ class SearchConfig(KPATBaseModel, ConfigModel):
         merged_data = self.model_dump()
 
         # Apply global settings only if not already set locally
+        if global_config.topic and not merged_data.get("topic"):
+            merged_data["topic"] = global_config.topic
+
         if global_config.sys_filter and not merged_data.get("sys_filter"):
             merged_data["sys_filter"] = global_config.sys_filter
         elif global_config.sys_filter and merged_data.get("sys_filter"):
@@ -138,3 +158,36 @@ class SearchConfig(KPATBaseModel, ConfigModel):
             merged_data["full_scan"] = global_config.full_scan
 
         return SearchConfig(**merged_data)
+
+
+def get_sysfilter_os_type(config: SearchConfig) -> str:
+    """Get the OS type from the search configuration."""
+    try:
+        # Check if sys_filter is None or empty
+        if not config.sys_filter:
+            return "Unknown"
+
+        # Iterate through the sys_filter list to find the first one with an os_family
+        for sysfilter in config.sys_filter:
+            if sysfilter.attr == SysFilterAttr.OS_FAMILY:
+                return str(sysfilter.value)
+
+    except Exception as e:
+        # Provide detailed error context including configuration name
+        config_name = getattr(config, "name", "Unknown")
+        source_file = getattr(config, "source_file", "Unknown file")
+
+        rich_output = get_rich_output()
+        rich_output.error(
+            f"Error processing search configuration '{config_name}' "
+            f"from {source_file}: {e}",
+        )
+
+        # Re-raise with better context
+        error_msg = (
+            f"Failed to get OS type from search configuration '{config_name}' "
+            f"(loaded from {source_file}): {e}"
+        )
+        raise ValueError(error_msg) from e
+    else:
+        return "Unknown"

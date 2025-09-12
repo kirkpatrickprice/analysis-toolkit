@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from openpyxl.styles import Alignment, Font
+from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils.exceptions import IllegalCharacterError
+from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.worksheet import Worksheet
 
 from kp_analysis_toolkit.process_scripts.models.program_config import ProgramConfig
@@ -18,6 +19,8 @@ from kp_analysis_toolkit.process_scripts.models.results.base import (
     SearchResult,
     SearchResults,
 )
+from kp_analysis_toolkit.process_scripts.models.search.base import get_sysfilter_os_type
+from kp_analysis_toolkit.process_scripts.models.topic_colors import TopicColorManager
 from kp_analysis_toolkit.utils.excel_utils import (
     format_as_excel_table,
     sanitize_sheet_name,
@@ -64,6 +67,11 @@ def export_results_by_os_type(
         # Filter search results for this OS type
         os_search_results: list[SearchResults] = []
         for search_result in search_results:
+            # Skip search configs that don't apply to this OS type
+            config_os_type = get_sysfilter_os_type(search_result.search_config)
+            if config_os_type not in ("Unknown", os_type):
+                continue
+
             # Create a copy of search result with only relevant systems
             filtered_results: list[SearchResult] = [
                 r for r in search_result.results if r.system_name in system_names
@@ -112,11 +120,11 @@ def export_search_results_to_excel(
     # Ensure output directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Sort search results based on their configuration name
+    # Sort search results based on their configuration name (not excel_sheet_name)
     sorted_search_configs = sorted(
         search_results,
         key=lambda sr: sr.search_config.excel_sheet_name
-        if sr.search_config and sr.search_config.name
+        if sr.search_config and sr.search_config.excel_sheet_name
         else "",
     )
 
@@ -133,6 +141,7 @@ def export_search_results_to_excel(
             summary_data.append(
                 {
                     "Search Name": search_result.search_config.name,
+                    "Topic": search_result.search_config.topic or "Unknown",
                     "Sheet Name": sheet_name,
                     "Total Results": search_result.result_count,
                     "Unique Systems": search_result.unique_systems,
@@ -153,6 +162,9 @@ def export_search_results_to_excel(
         # Create systems summary sheet if systems data is provided
         if systems:
             _create_systems_summary_sheet(writer, systems)
+
+        # Apply worksheet tab colors based on topics
+        _apply_worksheet_tab_colors(writer, sorted_search_configs)
 
 
 def _create_results_sheet(
@@ -213,7 +225,7 @@ def _create_empty_results_sheet(
 
 
 def _create_summary_sheet(writer: pd.ExcelWriter, summary_data: list[dict]) -> None:
-    """Create a summary worksheet with overview of all searches."""
+    """Create a summary worksheet with overview of all searches, including color coding and hyperlinks."""
     summary_df = pd.DataFrame(summary_data)
 
     # Write summary to first sheet
@@ -229,9 +241,87 @@ def _create_summary_sheet(writer: pd.ExcelWriter, summary_data: list[dict]) -> N
     if not summary_df.empty:
         format_as_excel_table(worksheet, summary_df, startrow=2)
 
+        # Apply topic-based color coding and add hyperlinks
+        _apply_summary_formatting(worksheet, summary_data)
+
     # Move summary sheet to first position
     workbook = writer.book
     workbook.move_sheet("Summary", offset=-len(workbook.worksheets) + 1)
+
+
+def _apply_summary_formatting(worksheet: Worksheet, summary_data: list[dict]) -> None:
+    """Apply topic-based color coding and hyperlinks to the summary worksheet."""
+    # Find column indices
+    header_row = 2  # Headers are in row 2 (row 1 is title)
+    topic_col = None
+    sheet_name_col = None
+
+    for col_idx, cell in enumerate(worksheet[header_row], 1):
+        if cell.value == "Topic":
+            topic_col = col_idx
+        elif cell.value == "Sheet Name":
+            sheet_name_col = col_idx
+
+    if not topic_col or not sheet_name_col:
+        return  # Can't apply formatting without finding the columns
+
+    # Apply formatting to each data row
+    for row_idx, row_data in enumerate(summary_data, header_row + 1):
+        topic = row_data.get("Topic")
+        sheet_name = row_data.get("Sheet Name")
+
+        # Get color for topic
+        topic_color = TopicColorManager.get_color_for_topic(topic)
+
+        # Apply row background color based on topic
+        if topic_color:
+            fill = PatternFill(
+                start_color=topic_color.fill_color.replace("#", ""),
+                end_color=topic_color.fill_color.replace("#", ""),
+                fill_type="solid",
+            )
+
+            # Apply fill to all cells in the row
+            for col_idx in range(1, worksheet.max_column + 1):
+                cell = worksheet.cell(row=row_idx, column=col_idx)
+                cell.fill = fill
+
+        # Add hyperlink to sheet name
+        if sheet_name:
+            sheet_name_cell = worksheet.cell(row=row_idx, column=sheet_name_col)
+            # Create hyperlink using Hyperlink object with proper format
+            # Excel expects the format: #'SheetName'!A1 for sheet names with special characters
+            link = f"#'{sheet_name}'!A1"
+            sheet_name_cell.hyperlink = Hyperlink(
+                ref=link,
+                location=link,
+                tooltip=f"Click to navigate to {sheet_name} worksheet",
+            )
+            # Style the hyperlink
+            sheet_name_cell.font = Font(color="0000FF", underline="single")
+
+
+def _apply_worksheet_tab_colors(
+    writer: pd.ExcelWriter,
+    search_results: list[SearchResults],
+) -> None:
+    """Apply topic-based color coding to worksheet tabs."""
+    workbook = writer.book
+
+    for search_result in search_results:
+        topic = search_result.search_config.topic
+        sheet_name = sanitize_sheet_name(
+            search_result.search_config.excel_sheet_name
+            or search_result.search_config.name,
+        )
+
+        # Get color for topic
+        topic_color = TopicColorManager.get_color_for_topic(topic)
+
+        # Apply tab color
+        if topic_color and sheet_name in [ws.title for ws in workbook.worksheets]:
+            worksheet = workbook[sheet_name]
+            worksheet.sheet_properties.tabColor = topic_color.tab_color.replace("#", "")
 
 
 def create_dataframe_from_results(search_results: SearchResults) -> pd.DataFrame:

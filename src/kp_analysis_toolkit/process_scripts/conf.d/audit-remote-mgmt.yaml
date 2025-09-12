@@ -1,0 +1,206 @@
+---
+# Remote Access configurations
+# Migrated from OS-specific files: audit-linux-ssh.yaml, audit-windows-system.yaml, audit-macos-network.yaml, audit-endpoint-protection.yaml
+
+global:
+  topic: Remote Management
+
+# SSH Configurations (Linux and macOS)
+ssh_settings_linux_macos:
+  regex: 'Network_OpenSSHServerConfig::((usepam (?P<usePam>.*))|(maxauthtries (?P<maxAuthTries>.*))|(permitrootlogin (?P<permitRootLogin>.*))|(passwordauthentication (?P<passwordAuthentication>.*))|(challengeresponseauthentication (?P<challengeResponseAuthentcation>.*))|(pubkeyauthentication (?P<pubKeyAuthentication>.*))|(kbdinteractiveauthentication (?P<kbdInteractiveAuthentication>.*))|(permitemptypasswords (?P<permitEmptyPasswords>.*))|(clientaliveinterval (?P<clientAliveInterval>.*))|(clientalivecountmax (?P<clientAliveCountMax>.*))|(x11forwarding (?P<x11Forwarding>.*))|(allowtcpforwarding (?P<allowTCPForwarding>.*))|(protocol (?P<protocol>.*))|(kexalgorithms (?P<kexAlgorithms>.*))|(hostkeyalgorithms (?P<hostKeyAlgorithms>.*))|(ciphers (?P<ciphers>.*))|(macs (?P<macs>.*)))'
+  excel_sheet_name: 04-SSH Server Settings
+  only_matching: True
+  field_list:
+    - usePam
+    - maxAuthTries
+    - permitRootLogin
+    - passwordAuthentication
+    - challengeResponseAuthentcation
+    - pubKeyAuthentication
+    - kbdInteractiveAuthentication
+    - permitEmptyPasswords
+    - clientAliveInterval
+    - clientAliveCountMax
+    - x11Forwarding
+    - allowTCPForwarding
+    - protocol
+    - kexAlgorithms
+    - hostKeyAlgorithms
+    - ciphers
+    - macs
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Darwin]
+  comment: |-
+    This list includes all of the information you're likely to need to review SSH configurations, although if something unique comes up there are additional settings in the raw text files that you might look at.
+
+    The settings are in groups:
+        - Authentication settings -- controls how users, including the root user, authenticate through SSH
+        - Session timeout settings (clientAlive*) -- the "interval" is the number of seconds between keep-alive checks.  The maxCount is the number of keep-alives to send.  So, the SSH will timeout in Interval*maxCount seconds
+        - Forwarding settings -- X11 and raw TCP forwarding.  X11 is for GUI. Both of these settings have the likely effect of expanding the scope for a PCI DSS assessment and worth considering for other audits too
+        - Encryption settings -- Check Confluence at https://kirkpatrickprice.atlassian.net/l/cp/L6jcE4Hx for pointers on what we should see
+
+    Notes: 
+        - If the KexAlgorithms includes specifically "diffie-hellman-group-exchange" without specifying a group number (such as group14 or group21), then you'll need to check the "weak moduli" file to see if the system is configured to support moduli of less than 2,048 bits.
+        - This is the "effective configuration" (results of "sshd -T") and takes into account any system-wide crypto policies that may be in place on later versions of Linux OSes.  See the "system_crypto_policies" for additional info.
+
+    From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
+
+crypto_weak_moduli_linux_macos:
+  regex: 'Network_OpenSSHModuli::/etc/ssh/moduli::\d{10,}.*\s(?P<mod_size>1023|1535|2047)'
+  excel_sheet_name: 04-SSH Server Weak Moduli
+  field_list:
+    - 'mod_size'
+  unique: True
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Darwin]
+  comment: |-
+    If the "SSH Settings" file shows systems with KexAlgorithms which use "diffie-hellman-group-exchange" without specifying a group number (such as group14 or group21), then any moduli in this file can be used, including any that are less than 3,072 bits.  These results show if any such moduli are configured.
+
+    On 3072- vs 2048-bit as the minimum size... I've found numerous reputable references online (e.g. Mozilla, Palo Alto, Proxmox, and others) that suggest that the minimum size should be 3072.
+
+ssh_subsystems_linux_macos:
+  regex: 'Network_OpenSSHServerConfig::subsystem'
+  excel_sheet_name: 04-SSH Server Subsystems
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Darwin]
+  comment: |-
+    SSH Subsystems use the SSH protocol to provide additional functionality.  The only subsystem we're likely to ever run into is SFTP - note that this is not FTP/S (which is the FTP protocol over TLS).  SFTP denotes use of the SSH protocol and can be used by command line utilities such "scp" as well as GUIs such WinSCP and others.
+
+# Windows RDP Configurations
+rdp_config:
+  regex: 'System_RDPEncryption::((SecurityLayer\s*:\s*(?P<securityLayer>\d+))|(MinEncryptionLevel\s*:\s*(?P<minEncryptionLevel>\d+)))'
+  excel_sheet_name: 04-RDP Encryption Config
+  comment: |-
+    This section pulls together a couple of settings for how Windows handles RDP encryption.
+    First, we collect the GPO setting from the registry for the source of RDP's encryption.  https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-terminalservices-rdp-winstationextensions-securitylayer
+      SecurityLayer = 0       Use RDP Security Layer (this is sub-par)
+      SecurityLayer = 1       Negotiate the security layer (not ideal)
+      SecurityLayer = 2       Use SSL/TLS Security Layer (best)
+    If there no results, then this GPO is not set, which results in "Negotiate" behavior.
+
+    When the GPO is configured to "RDP" or when negotiated parameters result in using "RDP Security Layer", the next result provides the RDP Encryption setting.
+      MinEncryptionLevel = 1  Low
+      MinEncryptionLevel = 2  Negotiated (default)
+      MinEncryptionLevel = 3  High
+    RDP should not be used as the security layer (see above), but if it must be used, then only "High Security" should be used.
+  field_list:
+    - securityLayer
+    - minEncryptionLevel
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+# SNMP Remote Management Protocol
+snmp_windows:
+  regex: 'System_SNMPConfig::'
+  excel_sheet_name: 04-SNMP Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Simple Network Management Protocol (SNMP) is a network protocol used for monitoring and managing network devices. This configuration captures SNMP settings if present on Windows systems.
+
+snmp_status_linux:
+  regex: 'Network_SNMPInfo:: .*_status: (?P<snmpdStatus>.*)'
+  excel_sheet_name: 04-SNMP Service Status
+  only_matching: True
+  field_list:
+    - snmpdStatus
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This result shows the current status of the SNMP service on each system.  If it's enabled/active, you'll need to look at the other SNMP files to determine if there any issues in the config.
+
+snmpv2_communities_linux:
+  regex: 'Network_SNMPInfo::/etc/snmp/snmpd.conf::(?P<snmpv2AccessType>r.community.?)\s+(?P<communityString>[-\w]+)\s+(?P<accessRestriction>.*)'
+  excel_sheet_name: 04-SNMPv2 Communities
+  only_matching: True
+  field_list:
+    - snmpv2AccessType
+    - communityString
+    - accessRestriction
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    This list shows the currently configured SNMP communities for SNMPv1 and SNMPv2 implementations.  NOTE: SNMPv3 is not currently implemented in the Analysis Toolkit. If you should come across a set of SNMPv3 configurations, please send them to me and I'll work on pulling out some meaningful data.
+
+    SNMPv1 and SNMPv2 were both clear-text protocols, including for authentication which occurs by passing a simple string (the "community string").  The access model is also very simple with read-only and read-write community strings.
+    
+    SNMPv3 is strongly preferred as it can use key-based authentication to control access to SNMP info.
+
+# VPN Access Configurations
+ipsec_config_linux:
+  regex: 'Security_IPSecConfig::'
+  excel_sheet_name: 04-IPSec Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    The Linux kernel supports IPSec connections, so we'll grab the configurations if it's enabled.  Check out our Confluence page for auditing Ciphersuites at: https://kirkpatrickprice.atlassian.net/l/c/4121Zw4B
+
+ipsec_config_windows:
+  regex: 'Networking_IPSecConfig::'
+  excel_sheet_name: 04-IPsec Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  full_scan: True
+
+openvpn_config:
+  regex: 'Security_OpenVPNConfig::'
+  excel_sheet_name: 04-OpenVPN Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    OpenVPN might be the answer for remote access VPNs for administrator access, or it might be used in a site-to-site (Layer 3) VPN similar to IPSec.
+
+    Note: Our testing for OpenVPN is only known to work when OpenVPN is installed from OS packages.  OpenVPN Access Server is a distinct product from OpenVPN and these methods might not be accurate on that product.
+
+# Windows WinRM Configurations
+winrm_config:
+  regex: '(Networking_WinRM-service::\s+(AllowRemoteAccess\s+=\s+(?P<allowRemoteAccess>.*))|(AllowUnencrypted\s+=\s+(?P<allowUnencrypted>.*))|(Negotiate\s+=\s+(?P<negotiateAuth>.*))|(Basic\s+=\s+(?P<basicAuth>.*))|(Kerberos\s+=\s+(?P<kerberosAuth>.*))|(Certificate\s+=\s+(?P<certAuth>.*))|(CredSSP\s+=\s+(?P<credSSPAuth>.*)))|(Networking_WinRM-winrs::\s+AllowRemoteShellAccess\s+=\s+(?P<allowRemoteShellAccess>.*))|(Networking_WinRM-listener::\s+(Transport\s+=\s+(?P<transport>.*))|(ListeningOn\s+=\s+(?P<listeningOn>.*)))'
+  excel_sheet_name: 04-WinRM Config
+  field_list:
+    - allowRemoteAccess
+    - allowRemoteShellAccess
+    - transport
+    - listeningOn
+    - allowUnencrypted
+    - negotiateAuth
+    - basicAuth
+    - kerberosAuth
+    - certAuth
+    - credSSPAuth
+  only_matching: True
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Windows Remote Monitoring (WinRM) provides remote management capabilities (reference: WS-MAN protocol) as well as PowerShell Remoting features
+    There a few settings that should be evaluated to ensure that remote access is properly secured and encrypted
+      - Transport: Can be HTTP or HTTPS, but regardless of the setting, WinRM performs encryption according to the 'AllowUnencrypted' setting below
+      - AllowUnuncrypted: This defaults to False, which ensures that message-level encryption is enforced for the WinRM protocol even if HTTP is used as the transport
+      - Auth methods: Various authentication methods enabled on the WinRM server
+      - ListeningOn: The IP addresses where the server is listening for WinRM connections
+      - AllowRemoteAccess: Pretty much what it says
+      - AllowRemoteShellAccess: Allows PowerShell remote shell connections

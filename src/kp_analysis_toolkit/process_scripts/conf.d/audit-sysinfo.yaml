@@ -1,0 +1,128 @@
+---
+# System Information & Asset Management configurations
+# Migrated from OS-specific files: audit-linux-system.yaml, audit-windows-system.yaml, audit-macos-system.yaml
+# A lot of asset information is included on the System Summary tab in each Excel export file
+# Duplicate information has been removed
+
+# Linux System Information configurations
+
+global:
+  topic: System Information & Asset Management
+
+bios_linux:
+  regex: 'System_BIOS::\s+(Vendor: (?P<vendorName>.*)|(Version: (?P<version>.*))|(Release Date: (?P<releaseDate>.*)))'
+  excel_sheet_name: 01-BIOS Information
+  max_results: 1
+  only_matching: True
+  multiline: True
+  field_list:
+    - 'vendorName'
+    - 'version'
+    - 'releaseDate'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+
+bios_windows:
+  regex: 'System_BIOS::((SMBIOSBIosversion\s+:\s+(?P<SMBios_version>.*))|(Manufacturer\s+:\s+(?P<manufacturer>.*))|(Name\s+:\s+(?P<name>.*))|()Version\s+:\s+(?P<version>.*))'
+  excel_sheet_name: 01-BIOS Information
+  max_results: 1
+  only_matching: True
+  multiline: True
+  field_list:
+    - 'SMBios_version'
+    - 'manufacturer'
+    - 'name'
+    - 'version'
+  comment: |-
+    Compare the system BIOS information against known CVEs.  BIOS vulnerabilities are particularly nasty in that they can affect an OS before it fully boots.  They are also, thankfully, rarer than your garden-variety CVE affecting general-purpose software components.
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+installed_packages_deb:
+  regex: 'System_PackageInstalledSoftware-dpkg::(?P<pkg_name>\w+).*install'
+  excel_sheet_name: 02-Installed Software (DPKG)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    DPKG ("Debian package") is the package manager for Debian-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+
+installed_packages_rpm:
+  regex: 'System_PackageInstalledSoftware-rpm::(?P<pkg_name>[\w\-.]+)\s+(?P<install_date>.*)'
+  excel_sheet_name: 01-Installed Software (RPM)
+  only_matching: True
+  field_list:
+    - 'pkg_name'
+    - 'install_date'
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    For KPNIXAudit >= 0.6.19
+
+    RPM ("Redhat Package Manager") is the package manager for Redhat-based distros.  This section contains a list of all installed packages on the system.  You can use this to confirm if software identified during interviews is installed, but know that although rare not all software is installed as packages, so if something critical appears to be missing, be sure to ask about it.  Also, if it looks like something is missing, you might look at the running processes to determine if it's actually running.
+
+    The list also includes the date when the package was last installed or updated.  This provides a rough approximation of patching history, but it becomes less granular as time goes by.  Specifically, if the same package is updated in March and again in September, only the September date will be retained.
+
+installed_capabilities:
+  regex: 'System_InstalledCapabilities::.*Installed'
+  excel_sheet_name: 01-Installed Capabilities
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+    Windows Capabilities include such things as an OpenSSH client, Notepad and Internet Explorer.
+
+installed_features:
+  regex: 'System_InstalledFeatures::.*(Installed|Enabled)'
+  excel_sheet_name: 01-Installed Features
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    Between System_InstalledCapabilities, System_InstalledFeatures, and System_InstalledSoftware, we collect a complete list of installed software -- from Microsoft and others.
+
+installed_software:
+  regex: 'System_InstalledSoftware::(?!Display)(?!--)\w+'
+  excel_sheet_name: 01-Installed Software
+  full_scan: True
+  sys_filter:
+    - attr: os_family
+      comp: in
+      value: [Linux, Windows]
+  
+
+installed_apps_macos:
+  regex: 'System_InstalledApps-MacOS::((\s{4}(?P<appName>\w.*):)|(\s{6}Version:\s+(?P<version>.*)|(\s{6}Obtained from:\s+(?P<obtainedFrom>.*))|(\s{6}Last Modified:\s+(?P<lastModified>.*?),)|(\s{6}Kind:\s+(?P<kind>.*))|(\s{6}Signed by:\s+(?P<signedBy>.*))|(\s{6}Location:\s+(?P<location>.*))))'
+  excel_sheet_name: 01-Installed Software
+  only_matching: True
+  multiline: True
+  field_list:
+    - appName
+    - version
+    - obtainedFrom
+    - lastModified
+    - signedBy
+    - location
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  comment: |-
+    A list of all applications registered with the operating system.  Use this information to identify unexpected software as well as to confirm if the currently installed versions have any vulnerabilities.

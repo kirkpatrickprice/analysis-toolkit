@@ -4,7 +4,32 @@
         {
         "label": "uv_sync",
         "type": "shell",
-        "command": "uv sync"
-        }
+        "command": "uv",
+        "args": [
+                "sync"
+        ],
+        },
+        {
+                        "label": "uv_mkdocs_serve",
+                        "type": "shell",
+                        "command": "uv",
+                        "args": [
+                                "run",
+                                "mkdocs",
+                                "serve"
+                        ],
+                        "group": "build",
+                        "problemMatcher": [],
+                        "isBackground": true,
+                        "presentation": {
+                                "echo": true,
+                                "reveal": "always",
+                                "focus": false,
+                                "panel": "new"
+                        },
+                        "runOptions": {
+                                "runOn": "folderOpen"
+                        }
+                }
     ]
 }

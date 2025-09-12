@@ -1,0 +1,118 @@
+site_name: KP Analysis Toolkit Documentation
+site_description: Toolkit for supporting information security audits
+site_url: https://kirkpatrickprice.github.io/analysis-toolkit
+repo_url: https://github.com/kirkpatrickprice/analysis-toolkit
+repo_name: kirkpatrickprice/analysis-toolkit
+
+# Exclude GitHub-specific files from documentation
+exclude_docs: |
+  .github/
+  docs/templates/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - toc.integrate
+    - toc.follow
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  logo: assets/kp-logo.svg
+  favicon: assets/kp-logo.svg
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+nav:
+  - Home: index.md
+  - User Guides:
+    - user-guides/index.md
+    - PowerShell Primer: user-guides/powershell-primer.md
+    - Installation: user-guides/installation.md
+    - Process Scripts:
+      - Scripts Command: user-guides/scripts.md
+      - Working with Results: user-guides/scripts-results.md
+      - Audit Categories: user-guides/scripts-categories.md
+  
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_object_full_path: false
+            show_category_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            group_by_category: true
+            heading_level: 2
+
+watch:
+  - src/
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kirkpatrickprice/analysis-toolkit
+    - icon: fontawesome/solid/globe
+      link: https://kirkpatrickprice.com
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/company/kirkpatrickprice
+    - icon: fontawesome/brands/youtube
+      link: https://www.youtube.com/user/KirkpatrickPrice
+  generator: false
+
+# To display Mermaid diagrams
+extra_javascript:
+  - https://unpkg.com/mermaid@10.4.0/dist/mermaid.min.js

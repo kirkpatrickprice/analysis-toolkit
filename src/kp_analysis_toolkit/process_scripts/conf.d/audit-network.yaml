@@ -1,0 +1,448 @@
+# Network Configuration & Security audit configurations
+# This file consolidates network interfaces, routing, firewall, and network security settings across all operating systems.
+
+global:
+  topic: Network Configuration
+
+ping_results_linux:
+  regex: 'Network_ConnectivityTest::(?P<xmitPackets>\d) packets transmitted, (?P<recdPackets>\d) received, (?P<pktLoss>\d+.) packet loss'
+  excel_sheet_name: 05-Ping Results
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  only_matching: True
+  field_list:
+    - xmitPackets
+    - recdPackets
+    - pktLoss
+  comment: |-
+    A quick PING test to google.com.  On a PCI audit, ideally this would fail (pktLoss = 100%) from systems in the CDE (not necessarily those that are "connected to").
+    If it doesn't, it's worth a conversation as all inbound and outbound communication must be explicitly defined for the CDE, so is "Ping to Google, really necessary?"
+    If you're not working on a PCI audit, you can decide if this is helpful to you.
+
+ping_results_macos:
+  regex: 'Network_ConnectivityTest::(?P<xmitPackets>\d+) packets transmitted, (?P<recdPackets>\d+) packets received, (?P<pktLoss>[\d.%]+) packet loss'
+  excel_sheet_name: 05-Ping Results
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  only_matching: True
+  field_list:
+    - xmitPackets
+    - recdPackets
+    - pktLoss
+  comment: |-
+    A quick PING test to google.com.  On a PCI audit, ideally this would fail (pktLoss = 100%) from systems in the CDE (not necessarily those that are "connected to").
+    If it doesn't, it's worth a conversation as all inbound and outbound communication must be explicitly defined for the CDE, so is "Ping to Google, really necessary?"
+    If you're not working on a PCI audit, you can decide if this is helpful to you.
+
+ping_results_windows:
+  regex: 'Networking_ConnectivityTest::\s+Packets:'
+  excel_sheet_name: 05-Ping Results
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+dns_nameserver_linux:
+  regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver (?P<nameServer>[\d.]+)'
+  excel_sheet_name: 05-DNS Nameserver
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  only_matching: True
+  field_list:
+    - nameServer
+  comment: |-
+    We collect the DNS resolver configuration.  Using an external resolver (e.g. 8.8.8.8 for Google) could open up some interesting attack vectors through DNS poisoning.  And in PCI DSS, DNS Servers are listed as a possible system component to include in scope (see page 10 of v3.2.1).
+    It's also interesting to note if there are any differences across the sample population as differences could be indicative of systems under differing levels of management.
+
+dns_nameserver_macos:
+  regex: 'Network_DNSResolver::/etc/resolv.conf::nameserver (?P<nameServer>[\d.]+)'
+  excel_sheet_name: 05-DNS Nameserver
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  only_matching: True
+  field_list:
+    - nameServer
+  comment: |-
+    We collect the DNS resolver configuration.  Using an external resolver could open up some interesting attack vectors through DNS poisoning.  And in PCI DSS, DNS Servers are listed as a possible system component to include in scope (see page 10 of v3.2.1).
+    It's also interesting to note if there are any differences across the sample population as differences could be indicative of systems under differing levels of management.
+
+dns_nameserver_windows:
+  regex: 'Networking_DNSInfo::.*{[\da-f:.% ,]+}'
+  excel_sheet_name: 05-DNS Nameserver
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+
+icmp_redirect_linux:
+  regex: 'Network_ICMPRedirect::'
+  excel_sheet_name: 05-ICMP Redirect Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+      Unless the device is functioning as a router/firewall, these values should be 0.  "send_redirects" refers to sending ICMP Redirects.
+      This occurs when two routers exist on the same VLAN and R1 wants to tell the end-node to use R2 instead.  This also opens up some interesting network-layer attack vectors that are best avoided.
+      Refer to https://www.cisco.com/c/en/us/support/docs/ios-nx-os-software/nx-os-software/213841-understanding-icmp-redirect-messages.html for more info.
+
+ip_addresses_linux:
+  regex: 'Network_InterfacesIPAddress::\s+(?P<addrFamily>inet(\d)?)\s+(?P<address>[\dA-Fa-f:./]+)'
+  excel_sheet_name: 05-IP Addresses
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  only_matching: True
+  field_list:
+    - addrFamily
+    - address
+  comment: |-
+    We collect the IP address information in case it's useful.  You might need to compare these against firewall rules or something else.
+
+    Address family denotes IPv4 (inet) and IPv6 (inet6).  On IPv6, if you see globally routable (called GUAs or Globally Unique Addresses) or even ULAs (Unique Local Addresses), it's worth a conversation to determine if they're actually using IPv6.
+
+    Spotting IPv6 addresses:
+      -- Link Local start with fe80 through fe8f -- thse are unroutable (layer 2 only) and, in many IP stacks, it's really hard to disable them.  I suggest not worrying about them too much if that's all you see.
+      -- ULAs start with fd - This is roughly equivalent to an RFC1918 address that we've been using for site addresses in IPv4 (10/8, 172.16/12, and 192.168/16).  This denotes intent to use IPv6.
+      -- GUAs currently start with 2 or 3 - IANA is currently "exprimenting" with only roughly 1/8th of the available GUA space.  That's still about a gazillion times for addresses than are available under IPv4.
+
+    IPv6 impact on your audit.
+      -- PCI DSS - It's totally fine if they're using it with intent and are managing it.  Otherwise, it's a no go since it falls under "ports, protocols and services"
+      -- Anything else - It's also totally fine if they're using it with intent.  All OSes support IPv6 natively as do the OS provided firewalls.  Same with network gear.  But if you see IPv6 enabled on some end-user's work-from-home laptop and the customer isn't actively managing IPv6, then it's working with the default configuration.
+
+ip_addresses_windows:
+  regex: 'Networking_IPInfo::(?P<interfaceId>\d+)\s+(?P<ipAddress>[\da-f:.%]+)\s+(?P<prefixLength>\d+)\s+(?P<prefixOrigin>\w+)\s+(?P<suffixOrigin>\w+)\s+(?P<addressState>\w+)'
+  excel_sheet_name: 05-IP Addresses
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - 'interfaceId'
+    - 'ipAddress'
+    - 'prefixLength'
+    - 'prefixOrigin'
+    - 'suffixOrigin'
+    - 'addressState'
+  only_matching: True
+  comment: |-
+    IP Address information for each active (AddressState=Preferred) interface.  Compare this information against firewall/router configs and network diagrams.  
+    This file shows the labeled results (in Excel columns).  The "raw" version of this file shows the same data without attempting to place it in Excel columns.  Use this file unless it shows something unexpected.
+
+ip_forwarding_linux:
+  regex: 'Network_IPForwarding::'
+  excel_sheet_name: 05-IP Forwarding Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Unless the device is functioning as a router/firewall, this value should be 0.  It might also be enabled if the device is a Docker host
+
+listening_services_linux:
+  regex: 'Network_ListeningServicesSS::(?P<proto>udp(\d)?|tcp(\d)?).*?(?P<interface>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|(\[?[*:A-Fa-f\d]+\]?))(%(\w)+)?:(?P<port>\d{1,5}).*?users:\(\("(?P<binary>.*?)".*'
+  excel_sheet_name: 05-Listening Services
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  field_list:
+    - proto
+    - interface
+    - port
+    - binary
+  only_matching: True
+  comment: |-
+    We list all of the listening ports, including the binary that's listening on it.  I consider the Package Manager Updates, Running Processes and this information to be among the most valuable data we collect from each system.
+
+    For the most part, you can probably ignore anything bound to localhost (127.0.0.1 and ::1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
+    
+    Some interesting, common port numbers:
+      - 80,443,8080,8433 -- Web servers with and without encryption
+      - 20,21,989,990 -- FTP and FTP/S
+      - 25,465,587 -- SMTP email servers
+      - 23,992 -- Telnet and Telnet/S
+      - 110,143,220,993,995 -- Email client services (POP3 and IMAP with and without /S)
+      - 53 -- DNS
+      - 22 -- SSH and SFTP (distinct from FTP/S, which is FTP over TLS)
+      - 1433,1521,3306,5432 -- SQL Server, Oracle, MySQL and PostgreSQL databases
+
+    These are just a few of the highlights you're likely to stumble on.  Check out https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers or other Internet sources for more.
+
+listening_services_windows:
+  regex: 'Networking_ListeningServices::(?P<protocol>TCP|UDP)\s+(?P<ip_address>[\da-f:.%]+)\s+(?P<local_port>\d+).*LISTENING\s(?P<process_name>[\w-]+)\s+(?P<pid>\d+)'
+  excel_sheet_name: 05-Listening Services
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - 'protocol'
+    - 'ip_address'
+    - 'local_port'
+    - 'process_name'
+    - 'pid'
+  only_matching: True
+  comment: |-
+    Provide a list of all network listeners and the process that is listening on the port.  This is useful in a wide range of situations including:
+      - Identifying web (TCP/80), FTP (TCP/20-21), SSH (TCP/22), database (TCP/1433, 3306, 5432), RDP (TCP/3389) and other common servers
+      - Comparing listening services against documented lists of ports, protocols and services
+      - Comparing against hardening documentation
+      - Determining if there are any insecure ports, protocols or services in use that require additional protections.
+    Services that are bound to the localhost (IPv4 127.0.0.1 and IPv6 ::1) can only be accessed by another process on the same system.  However, services that are listening on a routable address are much more interesting.
+
+    This is the "labeled" file and should be used unless it shows something unexpected.  There is also a "raw" (without Excel columns) file if needed.
+
+listening_services_macos:
+  regex: 'Network_ListeningServices::(?P<processName>[\w-]+)\s+(?P<pid>\d+)\s+(?P<user>[\w\d]+)\s+([\d\w]+)\s+(?P<addrFamily>(IPv4|IPv6))\s(.*?)(?P<proto>(TCP|UDP))\s+(?P<addrPort>.*)\s\(LISTEN\)'
+  excel_sheet_name: 05-Listening Services
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  field_list:
+    - processName
+    - pid
+    - user
+    - addrFamily
+    - proto
+    - addrPort
+  only_matching: True
+  comment: |-
+    We list all of the listening ports, including the binary that's listening on it.  I consider the Package Manager Updates, Running Processes and this information to be among the most valuable data we collect from each system.
+
+    For the most part, you can probably ignore anything bound to localhost (127.0.0.1 and ::1) as the only processes that can interact with these items are on the same system.  Pay special attention to anything bound 0.0.0.0 (all interfaces).*
+    
+    Some interesting, common port numbers:
+      - 80,443,8080,8433 -- Web servers with and without encryption
+      - 20,21,989,990 -- FTP and FTP/S
+      - 25,465,587 -- SMTP email servers
+      - 23,992 -- Telnet and Telnet/S
+      - 110,143,220,993,995 -- Email client services (POP3 and IMAP with and without /S)
+      - 53 -- DNS
+      - 22 -- SSH and SFTP (distinct from FTP/S, which is FTP over TLS)
+      - 1433,1521,3306,5432 -- SQL Server, Oracle, MySQL and PostgreSQL databases
+
+    These are just a few of the highlights you're likely to stumble on.  Check out https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers or other Internet sources for more.
+
+    From any Linux prompt (e.g. WSL), use "man sshd_config" to learn more about what each of the settings do.
+
+lanman_server_config:
+  regex: 'Networking_LanmanServerConfig::\s*((EnableSMB1Protocol\s*:\s*(?P<enableSMB1Protocol>[\w\d]+))|(EnableSMB2Protocol\s*:\s*(?P<enableSMB2Protocol>[\w\d]+))|(AutoDisconnectTimeout\s*:\s*(?P<autoDisconnectTimeout>[\w\d]+))|(AutoShareServer\s*:\s*(?P<autoShareServer>[\w\d]+))|(AutoShareWorkstation\s*:\s*(?P<autoShareWorkstation>[\w\d]+))|(EnableSecuritySignature\s*:\s*(?P<enableSecuritySignature>[\w\d]+))|(NullSessionPipes\s*:\s*(?P<nullSessionPipes>[\w\d]+))|(NullSessionShare\s*:\s*(?P<nullSessionShare>[\w\d]+))|(RequireSecuritySignature\s*:\s*(?P<requireSecuritySignature>[\w\d]+))|(EnableSMBQUIC\s*:\s*(?P<enableSMBQuic>[\w\d]+)))'
+  excel_sheet_name: 05-LanManager Server Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - enableSMB1Protocol
+    - enableSMB2Protocol
+    - autoDisconnectTimeout
+    - autoShareServer
+    - autoShareWorkstation
+    - enableSecuritySignature
+    - nullSessionPipes
+    - nullSessionShare
+    - requireSecuritySignature
+    - enableSMBQuic
+  only_matching: True
+  multiline: True
+  comment: |-
+    LanManager is responsible for providing the SMB-based file sharing on Windows systems.  There are both "SmbServer" and "SmbClient" components.  But this is not the same thing as "Windows Server" vs "Windows 10."  Both servers and desktops will run both services.
+      - EnableSMBxProtocol              Enable/Disable specific version of the SMB protocol.  No specific recommendations.
+      - AutoDisconnectTimeout           SMB sessions will disconnect after (minutes).  Default is 15 which is also CIS recommendation.
+      - AutoShareServer/Workstation     Enable/disable the automatic shares.  Recommnedation is disabled.
+      - EnableSecuritySignature         Enable the use of signed SMB (does not require it, but permits it.  Recommendation and default is "enabled".
+      - NullSessionPipes/Shares         Shares and/or pipes that can be accessed through a null session.  Recommendation and default "blank".
+      - RequireSecuritySignature        Require the use of signed SMB.  Default is "Disabled", but recommendation is "Enabled".
+      - EnableInsecureGuestLogons       This setting disallows guest logons, which could be used directly or as a fall-back for access to network resources.  Recommnedation is Disabled.
+    Reference CIS Windows 10 and Windows Server 2016 benchmarks and https://docs.microsoft.com/en-US/troubleshoot/windows-server/networking/guest-access-in-smb2-is-disabled-by-default
+
+lanman_client_config:
+  regex: 'Networking_LanmanClientConfig::\s*((EnableInsecureGuestLogons\s*:\s*(?P<enableInsecureGuestLogons>[\w\d]+))|(EnableSecuritySignature\s*:\s*(?P<enableSecuritySignature>[\w\d]+))|(RequireSecuritySignature\s*:\s*(?P<requireSecuritySignature>[\w\d]+)))'
+  excel_sheet_name: 05-LanManager Client Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - enableInsecureGuestLogons 
+    - enableSecuritySignature   
+    - requireSecuritySignature 
+  only_matching: True
+  multiline: True
+  comment: |-
+    LanManager is responsible for providing the SMB-based file sharing on Windows systems.  There are both "SmbServer" and "SmbClient" components.  See the lanman_server results file for the server settings.  Both Servers and desktops will run both services.
+      - EnableSecuritySignature         Enable the use of signed SMB (does not require it, but permits it.  Recommendation and default is "enabled".
+      - RequireSecuritySignature        Require the use of signed SMB.  Default is "Disabled", but recommendation is "Enabled".
+      - EnableInsecureGuestLogons       This setting disallows guest logons, which could be used directly or as a fall-back for access to network resources.  Recommnedation is Disabled.
+    Reference CIS Windows 10 and Windows Server 2016 benchmarks and https://docs.microsoft.com/en-US/troubleshoot/windows-server/networking/guest-access-in-smb2-is-disabled-by-default
+
+network_shares_windows:
+  regex: 'Networking_Shares::(?!Name)(?!--)'
+  excel_sheet_name: 05-Network Shares
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  comment: |-
+    These are network shares that are available on each device.  The $ shares - ADMIN$, C$, IPC$, etc -- are hidden shares in that they don't show up when browsing the computer.  As long as NULLSESSIONS is set properly (see lanman_server results), there are no special problems with these hidden shares.
+    If NULLSESSIONS is enabled, then the IPC$ share can be used by an attacker to gather intelligence about the system.
+
+wlan_available_windows:
+  regex: 'Networking_WLANNetworks::\s*(((?P<index>\d+)\s{1,5}(?P<ssid>[\w-]+)).*802\.[\d\w]+\s+(?P<authentication>[\w\d-]+))'
+  excel_sheet_name: 05-Wireless Networks
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - 'index'
+    - 'ssid'
+    - 'authentication'
+  only_matching: True
+  comment: |-
+    A list of the wireless networks that were within range.  This does NOT mean that there is an active connection to any of these networks.  Check the ip_addresses results files to see if you can match any of these up.
+
+firewall_status_windows:
+  regex: 'Networking_WindowsFirewallStatus::((?P<name>(\w+\s)+)\s+(?P<enabled>(True|False|NotConfigured))\s+(?P<defaultInboundAction>\w+)\s+(?P<defaultOutboundAction>(\w+))\s+(?P<logFileName>([\w\\%\.]+))\s+(?P<logAllowed>\w+)\s+(?P<logBlocked>\w+)\s+(?P<logIgnored>\w+))'
+  excel_sheet_name: 05-Firewall Status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - name
+    - enabled
+    - defaultInboundAction
+    - defaultOutboundAction
+    - logFileName
+    - logAllowed
+    - logBlocked
+    - logIgnored
+  only_matching: True
+  comment: |-
+    A list of the Windows Firewall profiles.  Usually there are three (https://bobcares.com/blog/configure-windows-firewall-rules-with-powershell/):
+      - Domain -- Applies to computers in an Active Directory domain
+      - Private -- Any network marked "private" by the user when they connect to it (for instance, these are the ones where you allow the computer to discoverable)
+      - Public -- Any network that was marked "public" by the user upon connecting
+    There could be other domains, but these are three you're likely to see.  As for the other fields in this report, they should be self-explanatory.  Review the firewall_rules report for rule details.
+
+firewall_rules_windows:
+  regex: 'Networking_WindowsFirewallRules::(?!(DisplayName|--))((?P<name>.*?)\s+(?P<profile>(Domain|Public|Private|Any)\s{2}|(Domain, .*|Public, .*|Private, .*))\s+True\s+(?P<direction>\w+)\s+(?P<action>\w+))'
+  excel_sheet_name: 05-Firewall Rules
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Windows
+  field_list:
+    - name
+    - profile
+    - direction
+    - action
+  only_matching: True
+  comment: |-
+    A list of enabled firewall rules.
+
+firewall_status_macos:
+  regex: 'Network_FirewallStatus::\s+(Mode:\s(?P<mode>.*)|Firewall Logging:\s(?P<logging>.*)|Stealth Mode:\s(?P<stealthMode>.*))'
+  excel_sheet_name: 05-Firewall Status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  only_matching: True
+  multiline: True
+  field_list:
+    - mode
+    - logging
+    - stealthMode
+  comment: |-
+    MacOS' ALF (Application Level Firewall?) is the built-in desktop firewall for the system.  This section provides the basic status information, but if you want to see the rules, you'll want to inspect those separately.
+    We'll use the system_profiler command to get the data in a standard, and human-readble, format.
+
+nfs_status_macos:
+  regex: 'Network_SharesNFS::nfsd is (?P<nfsStatus>.*)'
+  excel_sheet_name: 05-NFS Status
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  only_matching: True
+  field_list:
+    - nfsStatus
+  comment: |-
+    The Network File System (NFS) is common in Unix/Linux-only environments where SMB compatability is not needed for access to/from Windows systems
+    MacOS can run an NFS server as nfsd and the directories that will be shared are listed in /etc/exports
+
+smb_status_macos:
+  regex: 'Network_SharesSamba::\s+((NetBIOSName\s+=\s+(?P<netBiosName>.+);)|ServerDescription\s+=\s+(?P<serverDesc>.*))'
+  excel_sheet_name: 05-Network Status (SMB)
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  only_matching: True
+  multiline: True
+  field_list:
+    - netBiosName
+    - serverDesc
+  comment: |-
+    MacOS SMB configuration settings if the device is configured with File Sharing.  Also be sure to check if the device is listening on port 445/tcp to determine if the system is currently available as a Windows file share (Network_ListeningServices)
+
+smb_shares_macos:
+  regex: 'Network_SharesSamba-SharedFolders::dsAttrTypeNative:((afp_shared:\s(?P<afpShared>\d+)|(directory_path:\s(?P<dirPath>.*))|(smb_createmask:\s(?P<smbCreateMask>\d+))|(smb_directorymask:\s+(?P<smbDirMask>\d+))|(smb_sealed:\s(?P<smbSealed>\d+))|(smb_shared:\s+(?P<smbShared>\d+))))|Network_SharesSamba-SharedFolders::\s+(?P<prettyName>.*)'
+  excel_sheet_name: 05-Network Shares (SMB)
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Darwin
+  only_matching: True
+  multiline: True
+  rs_delimiter: '^Network_SharesSamba-SharedFolders::$'
+  field_list:
+    - prettyName
+    - dirPath
+    - afpShared
+    - smbShared
+    - smbCreateMask
+    - smbDirMask
+
+snort_config_linux:
+  regex: 'Security_NIDSSnortConfig'
+  excel_sheet_name: 05-Snort Config
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    Snort is a network intrusion detection system (NIDS) for Linux systems. This configuration captures Snort-related settings if present on the system.
+
+file_server_status_linux:
+  regex: '(Network_SharesNFS:: .*_status: (?P<nfsStatus>.*))|(Network_SharesSamba:: .*_status: (?P<sambaStatus>.*))'
+  excel_sheet_name: 05-File Server Status
+  only_matching: True
+  full_scan: True
+  field_list:
+    - nfsStatus
+    - sambaStatus
+  multiline: True
+  sys_filter:
+    - attr: os_family
+      comp: eq
+      value: Linux
+  comment: |-
+    On Linux, there are two services that are commonly used to turn the server into a File Server: NFS and Samba
+        NFS -- Network File System -- usually used only in all-Linux environemnts or at least where the only systems that will be connecting to the system are other Linux devices
+        Samba -- An open-source implementation of the Service Message Block (SMB) protocol used by Windows systems.  SMB is a more-or-less complete implementation that is identical to a Windows-based server.  It can even provide Active Directory services.
+
+    If you find that either of these are enabled, you'll need to dig into the configuration script results (check the relevant Network_Shares* section)
