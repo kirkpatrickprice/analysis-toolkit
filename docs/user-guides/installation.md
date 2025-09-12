@@ -4,6 +4,8 @@
 
 Installing KPAT is very simple, but requires the `pipx` [Python package management utility](https://pipx.pypa.io/latest/installation/).  Once installed, this utility will handle installing, updating and maintaining the Toolkit.
 
+[Installation Video](https://youtu.be/SX4-PQj_cfE)
+
 ## Prerequisites
 
 ### System Requirements

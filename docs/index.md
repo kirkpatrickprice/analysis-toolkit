@@ -6,6 +6,8 @@ Welcome to the comprehensive documentation for the KP Analysis Toolkit - a Pytho
 
 The KP Analysis Toolkit provides specialized modules for different data formats and analysis tasks commonly used in information security audits. Built by KirkpatrickPrice, this toolkit streamlines the audit process by automating data collection analysis, format conversion, and reporting tasks.
 
+[Introducing KPAT Video](https://www.youtube.com/watch?v=QJJZ4g2ty50)
+
 ## Available Documentation
 
 ### 📚 User Guides

@@ -9,6 +9,8 @@ The `kpat_cli scripts` command is the new-and-improved version of what used to b
 - Saves all results into separate OS-specific Excel workbook (one each for supported OS)
 - Provides a search summary and a system summary worksheet
 
+[Processing Scripts Video](https://youtu.be/sCO0cy9fCks)
+
 ## Prerequisites
 
 ### System Requirements

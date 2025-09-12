@@ -8,6 +8,10 @@ This guide provides tips and pointers for working with the result files generate
 - How the result files are organized
 - Tips and tricks for working with different kinds of data
 
+[Working with Results Video](https://youtu.be/nmBycbEYuAw)
+
+[Working with Dated Content Video](https://youtu.be/N9K1vGpJc2I)
+
 ## Prerequisites
 
 ### System Requirements
