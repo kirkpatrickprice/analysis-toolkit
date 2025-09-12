@@ -8,6 +8,7 @@ Version 2.1.0
 * Created user guide documentation with MkDocs
 * Added hyperlinks from Search Summary tab to each search result details worksheet [#35](https://github.com/kirkpatrickprice/analysis-toolkit/issues/35)
 * Published user guides to Github Pages at https://kirkpatrickprice.github.io/analysis-toolkit
+* Bugfix: Improved error handling on search config problems
 
 ## 2025-08-04
 Version 2.0.6

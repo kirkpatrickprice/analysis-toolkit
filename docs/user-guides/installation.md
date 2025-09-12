@@ -28,7 +28,7 @@ Installing KPAT is very simple, but requires the `pipx` [Python package manageme
 
     ```powershell
     # Install PIPX using Python's built-in package manager
-    py -m install pipx
+    py -m pip install pipx
 
     # Update the system path variable so that PIPX commands are always available
     py -m pipx ensurepath
