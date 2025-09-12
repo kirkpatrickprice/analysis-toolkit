@@ -15,7 +15,7 @@ The `kpat_cli scripts` command is the new-and-improved version of what used to b
 - KP Analysis Toolkit installed (see [Installation Guide](../user-guides/installation.md))
 
 ### Knowledge Requirements
-- Basic PowerShell (or other command line) skills
+- Basic PowerShell (or other command line) skills ([PowerShell Primer](powershell-primer.md))
 - System hardening and vulnerability management for operating systems being reviewed
     - Reference [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks) for hardening
 - Excel skills for reviewing results
@@ -61,7 +61,7 @@ flowchart LR
 
     ```powershell
     # Change to scripts folder
-    cd "Downloads\Customers\Acme Corp\scripts"
+    cd "Downloads\Customers\Acme Corp\Scripts Results"
 
     # Run kpat_cli
     kpat_cli scripts
@@ -136,6 +136,11 @@ kpat_cli scripts -d "C:\path\to\my\starting\folder"
 The default configuration will process all Windows, MacOS and Linux systems (`audit-all.yaml`) that it can find when scanning folder the folder hiearchy.  You can override this behavior and force just one policy or operating system.
 
 1. List the available audit configuration files
+
+    ```powershell
+    kpat_cli scripts --list-audit-configs
+    ```
+
     ![List Audit Configs](../assets/kpat-scripts-audit-configs.png "List Available Audit Configs")
 
 2. Override the default
@@ -149,7 +154,7 @@ The default configuration will process all Windows, MacOS and Linux systems (`au
 ### Output Files
 All results are written into OS-specific Excel files.  The results for each search pattern are stored in separate worksheets, and a search summary and system summary worksheet will also be written:
 
-- Starting folder
+- Starting folder (e.g. `C:\Users\YourName\Downloads\Customers\Acme Corp\scripts\`)
     - `results\` folder
         - Filename: <OSType\>_search_results_timestamp.xlsx
             - `Summary` worksheet
@@ -161,7 +166,7 @@ See [Working with the Results](scripts-results.md)
 
 ## Troubleshooting
 
-When `kpat_cli scripts` encounters errors in processing files or exporting results, it will note the error and continue with the next file.  The most common warning conditions are listed blow
+When `kpat_cli scripts` encounters errors in processing files or exporting results, it will note the error and continue with the next file.  The most common warning conditions are listed below:
 
 ### Common Issues
 

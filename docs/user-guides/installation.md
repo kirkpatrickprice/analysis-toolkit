@@ -12,7 +12,7 @@ Installing KPAT is very simple, but requires the `pipx` [Python package manageme
 - Python 3.12 or later
 
 ### Knowledge Requirements
-- Basic Powershell navigation
+- Basic Powershell navigation ([PowerShell Primer](powershell-primer.md))
 
 ### Required Files/Data
 - None

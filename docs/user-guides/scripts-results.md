@@ -93,6 +93,7 @@ Beyond the basic OS-specific organization, the Excel workbooks are also organize
 - Consistent naming of worksheets across operating systems --> "Pending Updates", "IP Addresses" and "Running Processes" includes the same information for `Linux`, `MacOS`, and `Windows`
 - Summary Worksheet for search results with hyperlinks to the details
 - System Summary worksheet with all OS details in one place
+- Detailed results worksheets grouped and color-coded by topic
 
 ### Search Summary Tab
 ![Search Summary Tab](../assets/kpat-scripts-results-search-summary.png "Search Summary Tab")
@@ -110,8 +111,8 @@ Information on this worksheet includes:
 
 **Tips**
 
-- Absolutely use the hyperlinks to navigate the results from this tab
-- Excel appears to lack a `Back` button like your web browser has.  But the short key works:
+- Use the hyperlinks to navigate the results from this tab
+- Excel appears to lack a `Back` button like your web browser has.  But the keyboard shortcut works:
     - Use `Alt-LeftArrow` to return to the Summary worksheet
 - The colors between the rows in the table and worksheet tabs at the bottom are synchronized.  If they appear more vivid on the tabs, that's Excel's doing.
 
@@ -189,7 +190,7 @@ Using the results from the `Update History` worksheet, here are the steps to rep
 
 4. **(Optional) Remove "Total" Columns:** You can optionally remove the "Quarter Total" and "Grand Total" columns.  As you expand the interesting years and quarters:
 
-    1. Right-click on any "Total" column that's just cluttering up the displa
+    1. Right-click on any "Total" column that's just cluttering up the display
     2. Select "Remove..."
 
     ![Remove Grand Total](../assets/kpat-scripts-results-dated-content-step-4.png "Remove Grand Total")

@@ -2,6 +2,8 @@
 
 The KP Analysis Toolkit is a comprehensive Python application designed to assist auditors with analyzing and processing various types of data encountered during security assessments. The toolkit provides specialized modules for different data formats and analysis tasks.
 
+[View the full documentation](https://kirkpatrickprice.github.io/analysis-toolkit)
+
 ## Overview
 
 The toolkit currently includes three main modules:
@@ -43,38 +45,7 @@ For Windows users, we recommend using the [Windows Terminal](https://apps.micros
 
 ## Installation
 
-### Installing pipx
-
-**Windows and other platforms:**
-```powershell
-pip install pipx
-```
-
-**Ubuntu and Debian-based systems:**
-```bash
-sudo apt install pipx
-```
-
-### Installing the Toolkit
-
-The toolkit is distributed via PyPI and can be installed using pipx:
-
-**Windows PowerShell:**
-```powershell
-pip install pipx
-pipx ensurepath
-# Restart PowerShell to update PATH
-pipx install kp-analysis-toolkit
-```
-
-**Linux/macOS:**
-```bash
-# Install pipx (if not already installed via package manager)
-sudo apt install pipx  # or use the package manager appropriate to your OS (e.g. brew)
-pipx ensurepath
-# Restart terminal to update PATH
-pipx install kp-analysis-toolkit
-```
+See the [full installation instructions](https://kirkpatrickprice.github.io/analysis-toolkit/user-guides/installation.md)
 
 ## Updates
 
