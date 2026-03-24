@@ -21,7 +21,7 @@ jobs:
       fail-fast: false  # Continue testing other combinations even if one fails
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.12"]
+        python-version: ["3.14"]
     
     steps:
     - name: Checkout code

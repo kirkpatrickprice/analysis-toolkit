@@ -15,7 +15,7 @@ Each of these tools are presented in their own user guide page.
 ### System Requirements
 - Windows 10 or later (recommended: Windows 11)
 - PowerShell 5.1 or later
-- Python 3.12 or later
+- Python 3.14 or later
 - KP Analysis Toolkit installed (see [Installation Guide](installation.md))
 - Windows Terminal (recommended) as a replacement for the legacy Windows Console terminal
 

@@ -68,7 +68,7 @@ Converts Rich Text Format (RTF) files to plain text files using ASCII encoding. 
 
 ## System Requirements
 
-- **Python 3.12 or higher**
+- **Python 3.14 or higher**
 - **Windows, macOS, or Linux** (Windows is the primary development platform)
 - **Command line interface** (PowerShell recommended for Windows users)
 

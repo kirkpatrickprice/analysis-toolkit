@@ -1,5 +1,13 @@
 # KPAT Changes
 
+## 2026-03-24
+Version 2.1.1
+
+* Bumped Python to 3.14
+* Bumped Pydantic to 2.12.5 (to support Python 3.14)
+* Changed all documentation to replace `pipx`-based installation with `uv`.
+* Added additional unit tests for edge cases
+
 ## 2025-09-12
 Version 2.1.0
 

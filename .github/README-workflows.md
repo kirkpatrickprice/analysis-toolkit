@@ -45,7 +45,7 @@ This repository includes three automated workflows using the latest GitHub Actio
 
 **Features:**
 - Tests on Windows, macOS, and Linux (comprehensive cross-platform support)
-- Uses Python 3.12
+- Uses Python 3.14
 - Runs all 460+ unit tests with pytest
 - Includes syntax checking across all platforms
 - Generates JUnit XML test reports
@@ -116,7 +116,7 @@ uv run python -c "import compileall; import sys; sys.exit(0 if compileall.compil
 
 ## 🐛 Known Issues
 
-**StopIteration in CI**: Some tests may fail in GitHub Actions with `StopIteration` errors due to mock exhaustion in pytest with Python 3.12+. This is typically caused by mocks with limited `side_effect` values. If you encounter this:
+**StopIteration in CI**: Some tests may fail in GitHub Actions with `StopIteration` errors due to mock exhaustion in pytest with Python 3.14+. This is typically caused by mocks with limited `side_effect` values. If you encounter this:
 
 1. Check if mocks have enough return values for all expected calls
 2. Consider using `unittest.mock.DEFAULT` or more values in `side_effect`

@@ -236,7 +236,7 @@ kpat_cli scripts --verbose --conf your-config.yaml
 ## Dependencies
 ### Pre-Requisites
 
-- **Python 3.12+**
+- **Python 3.14+**
 
 ### Automatically Installed
 - **Pydantic** for data modeling and validation
