@@ -16,6 +16,7 @@ from kp_analysis_toolkit.process_scripts.models.program_config import (
 from kp_analysis_toolkit.process_scripts.models.search.base import (
     SearchConfig,
     get_sysfilter_os_type,
+    get_sysfilter_os_types,
 )
 from kp_analysis_toolkit.process_scripts.search_engine import (
     execute_search,
@@ -330,15 +331,16 @@ def _export_file_centric_results(
     # Initialize dictionary with all OSFamilyType values
     os_results: dict[str, list] = {os_type.value: [] for os_type in OSFamilyType}
 
-    # Group results by OS type
+    # Group results by OS type — a search may apply to multiple OS families (comp: in)
     for result in search_results:
-        os_type = get_sysfilter_os_type(result.search_config)
-        matching_os = OSFamilyType.UNDEFINED.value
-        for enum_os in OSFamilyType:
-            if enum_os.value == os_type:
-                matching_os = enum_os.value
-                break
-        os_results[matching_os].append(result)
+        os_types = get_sysfilter_os_types(result.search_config)
+        for os_type in os_types:
+            matching_os = OSFamilyType.UNDEFINED.value
+            for enum_os in OSFamilyType:
+                if enum_os.value.lower() == os_type.lower():
+                    matching_os = enum_os.value
+                    break
+            os_results[matching_os].append(result)
 
     _export_results_by_os_type(
         program_config,

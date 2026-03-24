@@ -191,3 +191,39 @@ def get_sysfilter_os_type(config: SearchConfig) -> str:
         raise ValueError(error_msg) from e
     else:
         return "Unknown"
+
+
+def get_sysfilter_os_types(config: SearchConfig) -> list[str]:
+    """Get all applicable OS types from the search configuration as a list.
+
+    Unlike get_sysfilter_os_type(), this handles comp:in filters by returning
+    every OS family in the list rather than collapsing to a single string.
+    Returns ["Unknown"] when no os_family filter is present.
+    """
+    try:
+        if not config.sys_filter:
+            return ["Unknown"]
+
+        for sysfilter in config.sys_filter:
+            if sysfilter.attr == SysFilterAttr.OS_FAMILY:
+                if isinstance(sysfilter.value, list | set):
+                    return [str(v) for v in sysfilter.value]
+                return [str(sysfilter.value)]
+
+    except Exception as e:
+        config_name = getattr(config, "name", "Unknown")
+        source_file = getattr(config, "source_file", "Unknown file")
+
+        rich_output = get_rich_output()
+        rich_output.error(
+            f"Error processing search configuration '{config_name}' "
+            f"from {source_file}: {e}",
+        )
+
+        error_msg = (
+            f"Failed to get OS types from search configuration '{config_name}' "
+            f"(loaded from {source_file}): {e}"
+        )
+        raise ValueError(error_msg) from e
+    else:
+        return ["Unknown"]
