@@ -25,15 +25,15 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install uv
-      uses: astral-sh/setup-uv@v4
+      uses: astral-sh/setup-uv@v6
       with:
         version: "latest"
     
@@ -51,7 +51,7 @@ jobs:
         uv run python -c "import compileall; import sys; sys.exit(0 if compileall.compile_dir('src/kp_analysis_toolkit', quiet=1) else 1)"
     
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
@@ -60,7 +60,7 @@ jobs:
           .pytest_cache/
     
     - name: Publish test results
-      uses: dorny/test-reporter@v1.9.1
+      uses: dorny/test-reporter@v3
       if: always() && github.event_name == 'pull_request'
       with:
         name: Pytest Results (${{ matrix.os }}, Python ${{ matrix.python-version }})

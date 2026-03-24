@@ -1,40 +1,46 @@
 # GitHub Actions Workflows
 
-This repository includes three automated workflows using the latest GitHub Actions. The workflows are optimized for efficient CI/CD with comprehensive cross-platform testing when needed and quick feedback during development.
+This repository includes four automated workflows using the latest GitHub Actions. The workflows are optimized for efficient CI/CD with comprehensive cross-platform testing when needed and quick feedback during development.
 
 ## 📦 Publish Workflow (`publish.yml`)
 
 **Triggers:**
-- After `Cross-Platform Unit Tests` workflow completes successfully on `main` branch
-- Manual trigger via GitHub web interface
+- Push of a version tag matching `v*.*.*` (e.g. `v2.1.1`)
+- Manual trigger via GitHub web interface (emergency use)
 
 **Features:**
-- **Depends on cross-platform tests**: Only runs after test.yml passes on all platforms
-- Automatically detects version changes in `src/kp_analysis_toolkit/__init__.py`
-- Builds and publishes to PyPI using trusted publishing
-- Creates GitHub releases with automatic changelogs
-- Uses semantic versioning
-- Provides detailed logging and notifications
+- **Tag-based**: Publishing is an explicit, intentional act — push a tag, get a release
+- Verifies that the pushed tag matches `__version__` in `src/kp_analysis_toolkit/__init__.py`
+- Builds and publishes to PyPI using the official PyPA action
+- Creates a GitHub release tied to the tag
+- No fragile commit-diff logic — the tag IS the version signal
 
 **Requirements:**
 - `PYPI_API_TOKEN` secret configured in repository settings
-- Cross-platform tests must pass first
-- Optional: GitHub environment named `pypi` for enhanced security (currently disabled)
+- Version in `__init__.py` must match the tag being pushed
 
-**Process:**
-1. Waits for `Cross-Platform Unit Tests` workflow to complete successfully
-2. Monitors changes to `__version__` in `__init__.py`
-3. Compares current version with previous commit
-4. If version changed and tests passed, builds package using `uv build`
-5. Publishes to PyPI using official PyPA action
-6. Creates GitHub release with version tag
-7. Provides success/failure notifications
+**Release Process:**
+1. Bump `__version__` in `src/kp_analysis_toolkit/__init__.py`
+2. Commit and push to `main` — cross-platform tests run automatically
+3. Once satisfied, create and push the version tag:
+   ```bash
+   git tag v2.1.1
+   git push origin v2.1.1
+   ```
+4. The publish workflow triggers, verifies the tag/version match, builds, and publishes to PyPI
+5. A GitHub release is created automatically
+6. The Deploy Documentation workflow triggers automatically after a successful publish
 
-**Manual Release:**
-1. Update version in `src/kp_analysis_toolkit/__init__.py`
-2. Commit and push to `main` branch
-3. Cross-platform tests run automatically
-4. If tests pass, publish workflow detects change and publishes
+## 📄 Deploy Documentation Workflow (`deploy-docs.yml`)
+
+**Triggers:**
+- After `Publish to PyPI` workflow completes successfully
+- Manual trigger via GitHub web interface
+
+**Features:**
+- Deploys MkDocs documentation to GitHub Pages at https://kirkpatrickprice.github.io/analysis-toolkit
+- Only fires on genuine publish success — the tag-based publish workflow has no "skipped" path that could trigger docs prematurely
+- Uses full git history (`fetch-depth: 0`) for the `git-revision-date-localized` plugin
 
 ## 🧪 Cross-Platform Test Workflow (`test.yml`)
 
@@ -52,7 +58,7 @@ This repository includes three automated workflows using the latest GitHub Actio
 - Uploads test artifacts
 - Publishes test results in PR comments
 - **Required for publishing**: Publish workflow waits for this to complete successfully
-- Uses latest GitHub Actions (checkout@v4, setup-python@v5, upload-artifact@v4)
+- Uses latest GitHub Actions (checkout@v6, setup-python@v6, upload-artifact@v6)
 
 **Manual Trigger:**
 1. Go to the "Actions" tab in GitHub
