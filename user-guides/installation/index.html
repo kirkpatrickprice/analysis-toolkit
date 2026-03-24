@@ -537,18 +537,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#first-steps-pipx-installation" class="md-nav__link">
+  <a href="#first-steps-uv-installation" class="md-nav__link">
     <span class="md-ellipsis">
-      First Steps -- PIPX Installation
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#install-the-analysis-toolkit" class="md-nav__link">
-    <span class="md-ellipsis">
-      Install the Analysis Toolkit
+      First Steps -- UV Installation
     </span>
   </a>
   
@@ -771,13 +762,14 @@
 
 <h1 id="installation-guide">Installation Guide<a class="headerlink" href="#installation-guide" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>Installing KPAT is very simple, but requires the <code>pipx</code> <a href="https://pipx.pypa.io/latest/installation/">Python package management utility</a>.  Once installed, this utility will handle installing, updating and maintaining the Toolkit.</p>
+<p>Installing KPAT is very simple, but requires the <code>uv</code> <a href="https://docs.astral.sh/uv/">Python package and project manager</a>.  Once installed, this utility will handle installing, updating and maintaining the Toolkit.</p>
+<p><a href="https://youtu.be/SX4-PQj_cfE">Installation Video</a></p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <h3 id="system-requirements">System Requirements<a class="headerlink" href="#system-requirements" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Windows 10 or later (recommended: Windows 11)</li>
 <li>PowerShell 5.1 or later</li>
-<li>Python 3.12 or later</li>
+<li>Astral UV</li>
 </ul>
 <h3 id="knowledge-requirements">Knowledge Requirements<a class="headerlink" href="#knowledge-requirements" title="Permanent link">&para;</a></h3>
 <ul>
@@ -788,67 +780,33 @@
 <li>None</li>
 </ul>
 <h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
-<h3 id="first-steps-pipx-installation">First Steps -- PIPX Installation<a class="headerlink" href="#first-steps-pipx-installation" title="Permanent link">&para;</a></h3>
-<p><strong>Windows Installation</strong></p>
+<h3 id="first-steps-uv-installation">First Steps -- UV Installation<a class="headerlink" href="#first-steps-uv-installation" title="Permanent link">&para;</a></h3>
+<p><strong>NOTE for KP users: All installation steps are already completed for KP laptops</strong></p>
 <ol>
-<li>Install Python from <a href="https://python.org">Python Software Foundation</a> if not already installed (already installed for KP laptops)</li>
-<li>Launch Windows Terminal (already installed on Windows 11)</li>
+<li>Install Astral's UV from <a href="https://docs.astral.sh/uv/">UV documentation</a> if not already installed 
+    <strong>NOTE:</strong> The UV documentation includes instructions for MacOS, Windows, and Linux.</li>
+<li>Launch a terminal session
+    <strong>Windows</strong> Windows Terminal (already installed on Windows 11)
+    <strong>MacOS/Linux</strong> Open a terminal session</li>
 <li>
-<p>Run the following commands to install <code>pipx</code></p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c"># Install PIPX using Python&#39;s built-in package manager</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">py</span> <span class="n">-m</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">pipx</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c"># Update the system path variable so that PIPX commands are always available</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">py</span> <span class="n">-m</span> <span class="n">pipx</span> <span class="n">ensurepath</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c"># Close and reopen your terminal window</span>
+<p>Run the following commands to install KP Analysis Toolkit</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c"># Install KPAT using UV</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">uv</span> <span class="n">tool</span> <span class="n">install</span> <span class="n">kp-analysis-toolkit</span>
 </span></code></pre></div>
 </li>
 </ol>
-<p><strong>MacOS Installation</strong></p>
-<p>The default version of Python on MacOS is inadequate, so you'll need to either download and install a current version from <a href="http://python.org">Python Software Foundation</a> or use <code>homebrew</code> to install a current version.</p>
-<p>Once installed, the process is identical to the Windows installation, except that we replace the <code>py</code> --&gt; <code>python3</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Install PIPX using Python&#39;s built-in package manager</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>python3<span class="w"> </span>-m<span class="w"> </span>install<span class="w"> </span>pipx
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Update the system path variable so that PIPX commands are always available</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>python3<span class="w"> </span>-m<span class="w"> </span>pipx<span class="w"> </span>ensurepath
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Close and reopen your terminal window</span>
-</span></code></pre></div>
-<p><strong>Linux Installation</strong></p>
-<p>The only difference for Linux is that <code>pipx</code> is available as an OS package.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># For Ubuntu/Debian-based systems</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>apt-get<span class="w"> </span>install<span class="w"> </span>pipx
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># For Redhat/RPM-based systems</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>dnf<span class="w"> </span>install<span class="w"> </span>pipx
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># If not available as an OS package</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>pipx
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># Update the system path variable so that PIPX commands are always available</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>python3<span class="w"> </span>-m<span class="w"> </span>pipx<span class="w"> </span>ensurepath
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Close and reopen your terminal window</span>
-</span></code></pre></div>
-<h3 id="install-the-analysis-toolkit">Install the Analysis Toolkit<a class="headerlink" href="#install-the-analysis-toolkit" title="Permanent link">&para;</a></h3>
-<p>With <code>pipx</code> installed, there's just one more step to installing the Toolkit.</p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c"># Install the Toolkit using PIPX</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">pipx</span> <span class="n">install</span> <span class="n">kp-analysis-toolkit</span>
-</span></code></pre></div>
 <p>This will download the installation packages from the official <a href="https://pypi.org/project/kp-analysis-toolkit/">Python Package Index</a>.</p>
 <h3 id="test-the-installation">Test the Installation<a class="headerlink" href="#test-the-installation" title="Permanent link">&para;</a></h3>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># Test the installation</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">kpat_cli</span> <span class="p">-</span><span class="n">-version</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c"># Test the installation</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">kpat_cli</span> <span class="p">-</span><span class="n">-version</span>
 </span></code></pre></div>
 <p><img alt="KPAT Version" src="../../assets/kpat-version.png" title="KPAT Version" /></p>
 <p><strong><em>Note:</em></strong> The first attempt to run the command may take a bit longer as Windows Defender performs an AV scan on the program files.</p>
 <h3 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h3>
 <h4 id="primary-command">Primary Command<a class="headerlink" href="#primary-command" title="Permanent link">&para;</a></h4>
 <p>The toolkit is available under one common command: <code>kpat_cli</code>.  Help is available throughout by appending <code>--help</code> to the end of any other command:</p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c"># Access the help pages</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">kpat_cli</span> <span class="p">-</span><span class="n">-help</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c"># Access the help pages</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">kpat_cli</span> <span class="p">-</span><span class="n">-help</span>
 </span></code></pre></div>
 <p><img alt="Top-Level Help" src="../../assets/kpat-help.png" title="Top-level Help" /></p>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>

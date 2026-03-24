@@ -615,7 +615,7 @@
 <ul>
 <li>Windows 10 or later (recommended: Windows 11)</li>
 <li>PowerShell 5.1 or later</li>
-<li>Python 3.12 or later</li>
+<li>Python 3.14 or later</li>
 <li>KP Analysis Toolkit installed (see <a href="installation/">Installation Guide</a>)</li>
 <li>Windows Terminal (recommended) as a replacement for the legacy Windows Console terminal</li>
 </ul>
@@ -678,14 +678,14 @@
 <p><strong>Symptoms:</strong> Powershell or Bash reports that it cannot find the <code>kpat_cli</code> command</p>
 <p><strong>Solutions:</strong> </p>
 <ol>
-<li>Reinstate the <code>pipx</code> system path variable with <code>py -m pipx ensurepath</code></li>
+<li>Reinstate the <code>uv</code> system path variable with <code>uv tool update-shell</code></li>
 <li>Restart your Terminal session</li>
 <li>Check that KPAT is intalled with</li>
 </ol>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># Check for pipx-managed programs</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">pipx</span> <span class="n">list</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c"># Check for uv-managed programs</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">uv</span> <span class="n">tool</span> <span class="n">list</span>
 </span></code></pre></div>
-<p><img alt="PIPX List" src="../assets/pipx-list.png" title="PIPX List" /></p>
+<p><img alt="UV Tool List" src="../assets/uv-tool-list.png" title="UV Tool List" /></p>
 <h4 id="slow-performance">Slow Performance<a class="headerlink" href="#slow-performance" title="Permanent link">&para;</a></h4>
 <p><strong>Symptoms:</strong> Very slow performance in WSL</p>
 <p><strong>Solutions:</strong> </p>
@@ -694,7 +694,7 @@
 <li>Install the toolkit in Windows -- see <a href="installation/">installation instructions</a></li>
 </ol>
 <h3 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h3>
-<p>An extensive help system is built into the tool and is involved by appending <code>--help</code> to any command.</p>
+<p>An extensive help system is built into the tool and is invoked by appending <code>--help</code> to any command.</p>
 <p><img alt="Top-Level Help" src="../assets/kpat-help.png" title="Top-level Help" /></p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">kpat_cli</span> <span class="no">[module]</span> <span class="p">-</span><span class="n">-help</span>
 </span></code></pre></div>
