@@ -102,16 +102,16 @@ kpat_cli nipper --help
 
 **Solutions:** 
 
-1. Reinstate the `pipx` system path variable with `py -m pipx ensurepath`
+1. Reinstate the `uv` system path variable with `uv tool update-shell`
 2. Restart your Terminal session
 3. Check that KPAT is intalled with
 
 ```powershell
-# Check for pipx-managed programs
-pipx list
+# Check for uv-managed programs
+uv tool list
 ```
 
-![PIPX List](../assets/pipx-list.png "PIPX List")
+![UV Tool List](../assets/uv-tool-list.png "UV Tool List")
 
 #### Slow Performance
 **Symptoms:** Very slow performance in WSL
@@ -123,7 +123,7 @@ pipx list
 
 
 ### Getting Help
-An extensive help system is built into the tool and is involved by appending `--help` to any command.
+An extensive help system is built into the tool and is invoked by appending `--help` to any command.
 
 ![Top-Level Help](../assets/kpat-help.png "Top-level Help")
 

@@ -2,7 +2,9 @@ import pytest
 
 from kp_analysis_toolkit.process_scripts.models.search.base import (
     GlobalConfig,
+    MergeFieldConfig,
     SearchConfig,
+    get_sysfilter_os_type,
 )
 from kp_analysis_toolkit.process_scripts.models.search.sys_filters import SystemFilter
 
@@ -308,3 +310,78 @@ class TestGlobalConfigInheritance:
         assert merged_config.only_matching is True
         assert merged_config.unique is True
         assert merged_config.full_scan is True
+
+
+class TestMergeFieldConfig:
+    """Tests for MergeFieldConfig.validate_source_columns()."""
+
+    def test_one_source_column_raises_error(self) -> None:
+        """Fewer than two source columns raises ValidationError."""
+        with pytest.raises(ValueError, match="at least two source_columns"):
+            MergeFieldConfig(source_columns=["col1"], dest_column="dest")
+
+    def test_zero_source_columns_raises_error(self) -> None:
+        """Zero source columns raises ValidationError."""
+        with pytest.raises(ValueError, match="at least two source_columns"):
+            MergeFieldConfig(source_columns=[], dest_column="dest")
+
+    def test_two_source_columns_is_valid(self) -> None:
+        """Exactly two source columns is the minimum valid configuration."""
+        mfc = MergeFieldConfig(source_columns=["col1", "col2"], dest_column="dest")
+        assert len(mfc.source_columns) == 2  # noqa: PLR2004
+
+    def test_three_source_columns_is_valid(self) -> None:
+        """More than two source columns is also valid."""
+        mfc = MergeFieldConfig(
+            source_columns=["col1", "col2", "col3"], dest_column="dest"
+        )
+        assert len(mfc.source_columns) == 3  # noqa: PLR2004
+
+
+class TestGetSysfilterOsType:
+    """Tests for get_sysfilter_os_type()."""
+
+    def test_no_sys_filter_returns_unknown(self) -> None:
+        """A config with no sys_filter returns 'Unknown'."""
+        config = SearchConfig(name="test", regex=r"test", excel_sheet_name="Sheet1")
+        assert get_sysfilter_os_type(config) == "Unknown"
+
+    def test_empty_sys_filter_returns_unknown(self) -> None:
+        """A config with sys_filter=None returns 'Unknown'."""
+        config = SearchConfig(
+            name="test", regex=r"test", excel_sheet_name="Sheet1", sys_filter=None
+        )
+        assert get_sysfilter_os_type(config) == "Unknown"
+
+    def test_os_family_filter_returns_value_string(self) -> None:
+        """A sys_filter on OS_FAMILY returns that filter's value as a string."""
+        config = SearchConfig(
+            name="test",
+            regex=r"test",
+            excel_sheet_name="Sheet1",
+            sys_filter=[SystemFilter(attr="os_family", comp="eq", value="Windows")],
+        )
+        assert get_sysfilter_os_type(config) == "Windows"
+
+    def test_non_os_family_filter_returns_unknown(self) -> None:
+        """A sys_filter on a non-OS_FAMILY attribute returns 'Unknown'."""
+        config = SearchConfig(
+            name="test",
+            regex=r"test",
+            excel_sheet_name="Sheet1",
+            sys_filter=[SystemFilter(attr="distro_family", comp="eq", value="deb")],
+        )
+        assert get_sysfilter_os_type(config) == "Unknown"
+
+    def test_multiple_filters_returns_os_family_value(self) -> None:
+        """When multiple filters exist, the OS_FAMILY filter's value is returned."""
+        config = SearchConfig(
+            name="test",
+            regex=r"test",
+            excel_sheet_name="Sheet1",
+            sys_filter=[
+                SystemFilter(attr="distro_family", comp="eq", value="deb"),
+                SystemFilter(attr="os_family", comp="eq", value="Linux"),
+            ],
+        )
+        assert get_sysfilter_os_type(config) == "Linux"

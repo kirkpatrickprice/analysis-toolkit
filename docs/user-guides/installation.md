@@ -2,7 +2,7 @@
 
 ## Overview
 
-Installing KPAT is very simple, but requires the `pipx` [Python package management utility](https://pipx.pypa.io/latest/installation/).  Once installed, this utility will handle installing, updating and maintaining the Toolkit.
+Installing KPAT is very simple, but requires the `uv` [Python package and project manager](https://docs.astral.sh/uv/).  Once installed, this utility will handle installing, updating and maintaining the Toolkit.
 
 [Installation Video](https://youtu.be/SX4-PQj_cfE)
 
@@ -11,7 +11,7 @@ Installing KPAT is very simple, but requires the `pipx` [Python package manageme
 ### System Requirements
 - Windows 10 or later (recommended: Windows 11)
 - PowerShell 5.1 or later
-- Python 3.12 or later
+- Astral UV
 
 ### Knowledge Requirements
 - Basic Powershell navigation ([PowerShell Primer](powershell-primer.md))
@@ -21,66 +21,21 @@ Installing KPAT is very simple, but requires the `pipx` [Python package manageme
 
 ## Getting Started
 
-### First Steps -- PIPX Installation
-**Windows Installation**
+### First Steps -- UV Installation
 
-1. Install Python from [Python Software Foundation](https://python.org) if not already installed (already installed for KP laptops)
-2. Launch Windows Terminal (already installed on Windows 11)
-3. Run the following commands to install `pipx`
+**NOTE for KP users: All installation steps are already completed for KP laptops**
+
+1. Install Astral's UV from [UV documentation](https://docs.astral.sh/uv/) if not already installed 
+    **NOTE:** The UV documentation includes instructions for MacOS, Windows, and Linux.
+2. Launch a terminal session
+    **Windows** Windows Terminal (already installed on Windows 11)
+    **MacOS/Linux** Open a terminal session
+3. Run the following commands to install KP Analysis Toolkit
 
     ```powershell
-    # Install PIPX using Python's built-in package manager
-    py -m pip install pipx
-
-    # Update the system path variable so that PIPX commands are always available
-    py -m pipx ensurepath
-
-    # Close and reopen your terminal window
+    # Install KPAT using UV
+    uv tool install kp-analysis-toolkit
     ```
-
-**MacOS Installation**
-
-The default version of Python on MacOS is inadequate, so you'll need to either download and install a current version from [Python Software Foundation](http://python.org) or use `homebrew` to install a current version.
-
-Once installed, the process is identical to the Windows installation, except that we replace the `py` --> `python3`:
-
-```bash
-# Install PIPX using Python's built-in package manager
-python3 -m install pipx
-
-# Update the system path variable so that PIPX commands are always available
-python3 -m pipx ensurepath
-
-# Close and reopen your terminal window
-```
-
-**Linux Installation**
-
-The only difference for Linux is that `pipx` is available as an OS package.
-
-```bash
-# For Ubuntu/Debian-based systems
-apt-get install pipx
-
-# For Redhat/RPM-based systems
-dnf install pipx
-
-# If not available as an OS package
-python3 -m pip install --user pipx
-
-# Update the system path variable so that PIPX commands are always available
-python3 -m pipx ensurepath
-
-# Close and reopen your terminal window
-```
-
-### Install the Analysis Toolkit
-With `pipx` installed, there's just one more step to installing the Toolkit.
-
-```powershell
-# Install the Toolkit using PIPX
-pipx install kp-analysis-toolkit
-```
 
 This will download the installation packages from the official [Python Package Index](https://pypi.org/project/kp-analysis-toolkit/).
 

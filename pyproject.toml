@@ -11,14 +11,14 @@ authors = [
 description = "Python utilities to parse technical information for security audits"
 readme = "README.md"
 keywords = ["pii discovery", "data discovery", "credit card discovery"]
-requires-python = ">=3.12,<4"
+requires-python = ">=3.14,<4"
 dependencies = [
     "charset-normalizer>=3.4.0",
     "click>=8.1.8",
     "openpyxl>=3.1.5",
     "packaging>=21.0",
     "pandas>=1.5.1",
-    "pydantic>=2.11.5",
+    "pydantic>=2.12.5",
     "pyyaml>=6.0",
     "rich>=14.0.0",
     "rich-click>=1.8.0",

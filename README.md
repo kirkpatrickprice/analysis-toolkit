@@ -37,8 +37,8 @@ The toolkit is built on Python and supports cross-platform operation:
 - **Testing coverage**: All platforms tested via CI/CD pipeline
 
 ### Prerequisites
-- **Python 3.12 or higher**
-- **pipx** (Python application installer)
+- **Astral UV** Python package and project manager
+    - **Python 3.14 or higher** -- Installed automatically by UV
 
 ### Recommended Tools
 For Windows users, we recommend using the [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701) from the Microsoft Store for a better command-line experience.
@@ -60,7 +60,7 @@ Starting with version 2.0, the toolkit automatically checks for updates on PyPI 
 │ Latest version:  2.0.1                                  │
 │                                                         │
 │ To upgrade, run:                                        │
-│ pipx upgrade kp-analysis-toolkit                        │
+│ uv tool update kp-analysis-toolkit                      │
 │                                                         │
 │ Or if you want to skip this check in the future:        │
 │ kpat_cli --skip-update-check                            │
@@ -74,14 +74,14 @@ Note: Upgrade checks can be disabled using the --skip-update-check option.
 
 **Why does the toolkit exit instead of upgrading automatically?**
 - **File locking**: When Python applications upgrade themselves while running, file locks can cause upgrade failures
-- **Reliability**: Manual upgrades using `pipx upgrade` are more reliable and consistent
+- **Reliability**: Manual upgrades using `uv tool update` are more reliable and consistent
 - **User control**: You have full control over when and how upgrades happen
-- **Error handling**: `pipx` provides better error messages and troubleshooting information
+- **Error handling**: `uv tool update` provides better error messages and troubleshooting information
 
 ### Manual Updates
-Update manually using `pipx`:
+Update manually using `uv`:
 ```bash
-pipx upgrade kp-analysis-toolkit
+uv tool update kp-analysis-toolkit
 ```
 
 ### Disabling Update Checks
