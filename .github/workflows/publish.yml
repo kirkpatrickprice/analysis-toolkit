@@ -6,6 +6,9 @@ on:
       - 'v*.*.*'
   workflow_dispatch:  # Allow manual emergency publishes
 
+permissions:
+  contents: write  # Required to create GitHub releases
+
 jobs:
   publish:
     runs-on: ubuntu-latest
