@@ -29,7 +29,7 @@ package_history_deb:
     This list shows the time-and-date of each package installation action.  Since "updating packages" means "installing the new version", this also can be used to show patching history.  However, know that "installing new packages" and "patching existing packages" look the same in these logs, so it's not 100% fool-proof.
 
 installed_hotfixes_windows:
-  regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})\s[\d:\s]+\s+(AM|PM)\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
+  regex: '(System_InstalledHotfixes::(?P<hfDescription>.*Update)\s+(?P<hfKbNum>KB\d+)\s+(?P<hfDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4}))|(System_WindowsUpdateHistory::Installation\s+(?P<wuDate>\d{1,4}[-/]\d{1,4}[-/]\d{1,4})(?:\s+[\d:]+(?:\s*[AP]M)?)?\s+(?P<wuDescription>.*(Cumulative|Security)\sUpdate.*)\((?P<wuKbNum>KB\d+))'
   excel_sheet_name: 02-Update History
   field_list:
     - hfDate

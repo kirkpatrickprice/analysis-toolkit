@@ -10,7 +10,7 @@ global:
 # ==========================
 
 local_admin_user_windows:
-  regex: 'Users_LocalAdministrator::((Name[ ]+:[ ]+(?P<name>[\w ]+))|(Enabled[ ]+:[ ]+(?P<enabled>[\w ]+))|(LastLogon[ ]+:[ ]+(?P<lastLogon>[\w ]+))|(PasswordLastSet[ ]+:[ ]+(?P<passwordLastSet>[\w ]+))|(PasswordRequired[ ]+:[ ]+(?P<passwordReqd>[\w ]+))|(PasswordExpires[ ]+:[ ]+(?P<passwordExpires>[\w /-:]+)))'
+  regex: 'Users_LocalAdministrator::((Name[ ]+:[ ]+(?P<name>[\w ]+))|(Enabled[ ]+:[ ]+(?P<enabled>[\w ]+))|(LastLogon[ ]+:[ ]+(?P<lastLogon>[\w /:-]+))|(PasswordLastSet[ ]+:[ ]+(?P<passwordLastSet>[\w /:-]+))|(PasswordRequired[ ]+:[ ]+(?P<passwordReqd>[\w ]+))|(PasswordExpires[ ]+:[ ]+(?P<passwordExpires>[\w /:-]+)))'
   excel_sheet_name: 07-Local Admin User
   field_list:
     - name
@@ -58,7 +58,7 @@ local_password_policy_windows:
   full_scan: True
 
 local_users_windows:
-  regex: 'Users_LocalUsers::(?!Name)((?P<userName>[\w .$-]+?)(?P<enabled>(True|False))[ ]+(?P<lastLogon>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3}).*?(?P<userMayChangePassword>(True|False))[ ]+(?P<passwordExpires>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<passwordLastSet>([\d/-]+ [\d:]+ (AM|PM)?)|[ ]{3})[ ]*(?P<sid>S-[\d-]+))'
+  regex: 'Users_LocalUsers::(?!Name)(?!----)(?P<userName>.+?)\s\s+(?P<enabled>True|False)(?:[ ](?P<lastLogon>\d[\d/-]*(?:[ ][\d:]+(?:[ ][AP]M)?)?))?\s+(?P<userMayChangePassword>True|False)(?:[ ](?P<passwordExpires>\d[\d/-]*(?:[ ][\d:]+(?:[ ][AP]M)?)?))?\s+(?:(?P<passwordLastSet>\d[\d/-]*(?:[ ][\d:]+(?:[ ][AP]M)?)?)\s+)?(?P<sid>S-[\d-]+)'
   excel_sheet_name: 07-Local Users
   field_list:
     - userName
