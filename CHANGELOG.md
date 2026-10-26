@@ -1,5 +1,10 @@
 # KPAT Changes
 
+## 2026-10-26
+Version 2.1.3
+
+* Capped supported Python to 3.14 (`>=3.14,<3.15`). PyYAML does not yet publish Python 3.15 wheels, so `uv tool install` on 3.15 tried to compile PyYAML from source and failed on Windows without the Microsoft C++ Build Tools.
+
 ## 2026-03-24
 Version 2.1.1
 
